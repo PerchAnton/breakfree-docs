@@ -17,6 +17,8 @@ corroborates the ordered Home/Insert/Draw/Design/Layout/References/Mailings/Revi
 View/Help tabs and Home grouping. Its PDF text was accessible, but the screenshot
 endpoint failed. Draw visibility and contextual tabs depend on settings/content.
 
+The official [Word 2024 theme announcement](https://support.microsoft.com/en-gb/word/what-s-new-in-word-2024-for-windows-and-mac) and its [theme image](https://support.microsoft.com/en-gb/word/media/office-theme.png) were also inspected in a browser. The Word portion shows a light, rounded ribbon surface, compact icon rows, understated tab selection and a style gallery. This is a publisher image without controlled window/DPI/build metadata, so it informs composition only. No external artwork is included in the application.
+
 A running Windows/Word 2024 reference is unavailable on this macOS host. Therefore
 **no matched screenshot comparison, measured Word pixel deltas, visual fidelity
 percentage or native Windows 100%/125%/150% pass is reported**. Exact reference build,
@@ -25,32 +27,35 @@ font metrics, spacing and order under a named Windows configuration remain an R1
 ## Implemented geometry
 
 Values below are Docs design values in device-independent points (DIP), **not
-measurements taken from Word**. Source constants are in `src/presentation.rs`.
+measurements taken from Word**. Source constants are in `src/presentation.rs`; original vector controls are in `src/chrome.rs`.
 
 | Area | Docs value / observable behavior |
 | :--- | :--- |
 | Default window / minimum | 1366 × 900 / 640 × 480 DIP; native custom title controls |
-| Title | 40 DIP high; 26 × 26 approved icon, Save/Undo/Redo left; actual filename and dirty marker; command search; window controls right |
+| Title | 44 DIP high; 24 × 24 approved transparent icon, 28 × 28 Save/Undo/Redo icons; actual filename and dirty marker; 28-DIP search field; 46-DIP-wide vector window controls |
 | Tabs | 32 DIP; File, Home, Insert, Draw, Design, Layout, References, Mailings, Review, View, Help; narrow windows use More tabs |
-| Ribbon | 110 DIP expanded; 76 DIP content area plus bottom group captions; collapsible via button, double-click tab or Ctrl+F1 |
-| Home groups, full | Clipboard 142, Font 250, Paragraph 252, Styles 280, Editing 136 DIP; separators and 4-DIP inter-control spacing |
-| Home groups, compact | Below 1160 DIP: 96/205/220/125/96 DIP; fewer style samples |
-| Home overflow | Below 850 DIP: 76/178/192 DIP; Styles/Editing move into More menu; document never lies under the ribbon |
-| Controls | Typical small buttons 26–32 × 23–26 DIP; Paste 48–58 × 65; three rows in Font/Paragraph; 13-DIP UI text, 11-DIP captions |
-| Workspace | Neutral #e5e5e5; white continuous canvas, border #c5c5c5; centered when space allows; horizontal/vertical scrolling when required |
+| Ribbon | 112 DIP expanded; white rounded inset (8 DIP horizontally / 4 vertically), 96-DIP groups with bottom captions; collapsible via button, double-click tab or Ctrl+F1 |
+| Home groups, full | Clipboard 156, Font 278, Paragraph 256, Styles 300, Editing 116 DIP; 8-DIP group gaps and separators |
+| Home groups, compact | Below 1180 DIP available ribbon width: 86/218/216/120/104 DIP; compact Clipboard and one style preview |
+| Home overflow | Below 900 DIP available ribbon width: 82/166/164 DIP; Styles/Editing move into More menu; document never lies under the ribbon |
+| Controls | Small buttons 24–32 × 24–26 DIP; Paste 48 × 72; two rows in Font/Paragraph, three in Clipboard/Editing; 13-DIP UI text, 11-DIP captions; 15 × 16 group launchers |
+| Workspace | Neutral #e8e8e8; white continuous canvas, border #c5c5c5; soft canvas shadow; 10-DIP workspace top gap; centered when space allows; horizontal/vertical scrolling when required |
 | Canvas | 816 DIP wide at 100% document zoom, 96-DIP side/top margins, content-driven height; **no page segmentation** |
 | Text | Host Arial/DejaVu or embedded fallback; starts at 11 pt (14.667 DIP), 1.25 line height, 0.5-em paragraph gap; model emphasis/alignment projected into hit-testable text |
-| Ruler | Horizontal canvas ruler, 96 DIP per inch, eighth-inch ticks; zoom scales with document; no draggable margins or vertical/page ruler yet |
+| Ruler | 22-DIP-high horizontal canvas ruler with shaded margins, 96 DIP per inch, eighth-inch ticks; zoom scales with document; no draggable margins or vertical/page ruler yet |
 | Panes | Navigation left 240 DIP (195–320); Formatting right 220 DIP (195–300); visible on request |
-| Status | 24 DIP; real Unicode word count and paragraph count, saved state, continuous-layout label and 50–200% zoom |
-| File | Left action rail and content/settings area; New/Open/Save/Save As active, Print disabled with explanation |
+| Status | 24 DIP; real Unicode word count and paragraph count, saved state, continuous-layout label and 50–200% zoom; ±10% buttons and click percentage to reset to 100% |
+| File | 180-DIP left action rail and scrollable Home/Options body; 158 × 160 blank-document tile, real current-file properties; New/Open/Save/Save As active, Print disabled with explanation |
 
 ## Commands and interaction
 
 Active Home commands are plain-text clipboard, bold/italic, four alignments, Find,
 Replace selected/next match and Select All. Bold/italic show selected state and set
-pending insertion style at an empty selection. Original vector strokes draw history,
-alignment and ribbon-collapse icons, avoiding dependence on special icon glyphs.
+pending insertion style at an empty selection. Original vector strokes draw clipboard, file, history, search, paragraph, window and
+launcher controls. Button names are exposed to the toolkit accessibility tree.
+Selected formatting has a pale violet fill even without hover; focus uses an outline.
+Font/size fields report the current display values and explain their read-only state.
+Style previews remain disabled and do not claim applied model styles.
 Native egui hover/pressed/disabled/focus states remain active; unsupported controls
 have tooltips explaining the missing capability. Styling uses restrained violet
 #7047ae, pale selected-state fill, light chrome and readable dark text.
@@ -73,7 +78,7 @@ and multilingual OS IME behavior remain unverified/incomplete.
 
 ## Actual application capture
 
-![Rust editor on macOS](screenshots/rust-home-macos.png)
+![Refined Home on macOS](screenshots/rust-home-refined-macos.png)
 
 Captured from the running native Rust executable using eframe's opt-in screenshot
 feature, with `examples/Welcome.bfdoc`, Home expanded, navigation hidden, English UI,
@@ -84,6 +89,25 @@ paragraph. It is not a Windows capture or a paired Word comparison. The emoji at
 the end renders as a missing glyph on this host; its scalar content survives edits
 and native saves. No complete emoji/complex-script rendering support is claimed.
 
+Additional native renders from the same harness:
+
+- [720 × 700 DIP Home / overflow](screenshots/rust-home-narrow-macos.png), same saved fixture, backing scale 2.
+- [1366 × 900 DIP File](screenshots/rust-file-macos.png), a real new empty document: zero words, one paragraph, zero characters; no fabricated recent files.
+- [Earlier Home capture](screenshots/rust-home-macos.png) is retained as the previous implementation checkpoint.
+
+The capture helper uses the same `DocsApp`, controls and layout as the editor.
+To reproduce fixed-size captures (a native desktop session is required):
+
+```sh
+EFRAME_SCREENSHOT_TO="$PWD/artifacts/home.png" cargo run --locked --features capture --example capture_ui -- 1366 900 home
+EFRAME_SCREENSHOT_TO="$PWD/artifacts/narrow.png" cargo run --locked --features capture --example capture_ui -- 720 700 home
+EFRAME_SCREENSHOT_TO="$PWD/artifacts/file.png" cargo run --locked --features capture --example capture_ui -- 1366 900 file
+```
+
+Create `artifacts` first. On Windows PowerShell, set `$env:EFRAME_SCREENSHOT_TO`
+to the absolute PNG path and run the same Cargo arguments. `navigation` is also
+accepted in place of `home`. This development example adds no production CLI flags.
+
 ## Intentional brand differences
 
 - BreakFree Docs title and approved transparent page/rainbow icon.
@@ -93,9 +117,8 @@ and native saves. No complete emoji/complex-script rendering support is claimed.
 
 ## Remaining differences and reproducible comparison gate
 
-Current gaps include print pagination and page rulers, vertical ruler, richer Home
-icons, font/color/size controls, lists/styles, contextual object tabs, full KeyTips,
-view-mode buttons, richer File navigation and complete native window/accessibility
+Current gaps include print pagination and page rulers, vertical ruler, font/color/size controls, lists/styles, contextual object tabs, full KeyTips,
+view-mode buttons, additional File operations and complete native window/accessibility
 behavior. Metrics are provisional until measured against the named reference.
 
 For the next review, record Windows edition/build, Word 2024 edition/build, Docs
@@ -109,4 +132,8 @@ and unsaved dialogs. Attach paired images and a delta table; do not invent a sco
 
 Local widget tests exercise synthetic scales 1/1.25/1.5 at 960/1366/1920 physical
 widths, verify group bounds and nonoverlap with workspace/status, and collapsed
-ribbon. These are CPU layout tests, not native Windows scaling or visual validation.
+ribbon. Added 27 width/scale cases at 640/720/899/900/916/1195/1196/1366/1920 DIP and
+1/1.25/1.5 verify each Home control stays in its group, controls do not overlap, and
+title/search/window controls remain separate. Pointer tests cover disabled commands,
+selection across formatting/history, zoom/reset and File navigation/dirty New. These
+are CPU layout tests, not native Windows scaling or visual validation.

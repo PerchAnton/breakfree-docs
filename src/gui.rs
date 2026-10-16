@@ -1,6 +1,8 @@
 //! Custom native office shell. Document changes always go through commands::Editor.
 use crate::{
-    Result, VERSION, layout,
+    Result, VERSION,
+    chrome::{self, Icon},
+    layout,
     model::{Alignment, boundaries},
     presentation::*,
     session::Session,
@@ -16,13 +18,14 @@ use std::path::PathBuf;
 
 const INK: Color32 = Color32::from_rgb(35, 35, 35);
 const ACCENT: Color32 = Color32::from_rgb(112, 71, 174);
-const CHROME: Color32 = Color32::from_rgb(249, 249, 249);
-const WORKSPACE: Color32 = Color32::from_rgb(229, 229, 229);
+const CHROME: Color32 = Color32::from_rgb(243, 243, 243);
+const WORKSPACE: Color32 = Color32::from_rgb(232, 232, 232);
 const EDIT_ID: &str = "document-text";
 const SEARCH_ID: &str = "command-search";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Action {
+    File,
     New,
     Open,
     Save,
@@ -49,6 +52,7 @@ pub enum Action {
 impl Action {
     fn label(self) -> &'static str {
         match self {
+            Self::File => "File",
             Self::New => "New document",
             Self::Open => "Open document",
             Self::Save => "Save",
@@ -75,6 +79,7 @@ impl Action {
     }
 }
 const COMMANDS: &[Action] = &[
+    Action::File,
     Action::New,
     Action::Open,
     Action::Save,
@@ -149,6 +154,14 @@ impl DocsApp {
             s.spacing.button_padding = vec2(6., 3.);
             s.spacing.interact_size.y = 24.;
             s.visuals.panel_fill = CHROME;
+            s.visuals.widgets.inactive.bg_fill = Color32::from_gray(248);
+            s.visuals.widgets.inactive.bg_stroke = Stroke::new(1.0_f32, Color32::from_gray(218));
+            s.visuals.widgets.hovered.bg_stroke = Stroke::new(1.0_f32, Color32::from_gray(185));
+            s.visuals.widgets.active.bg_stroke = Stroke::new(1.0_f32, ACCENT);
+            s.visuals.widgets.inactive.corner_radius = 3.into();
+            s.visuals.widgets.hovered.corner_radius = 3.into();
+            s.visuals.widgets.active.corner_radius = 3.into();
+            s.visuals.override_text_color = Some(INK);
             s.visuals.selection.bg_fill = Color32::from_rgb(222, 210, 239);
             s.visuals.selection.stroke = Stroke::new(1.0_f32, ACCENT);
             s.visuals.widgets.hovered.bg_fill = Color32::from_rgb(231, 231, 231);
@@ -160,9 +173,11 @@ impl DocsApp {
             s.text_styles
                 .insert(egui::TextStyle::Small, FontId::proportional(11.));
         });
-        let image = image::load_from_memory(include_bytes!("../docs/brand/breakfree-docs.webp"))
-            .ok()
-            .map(|i| i.into_rgba8());
+        let image = image::load_from_memory(include_bytes!(
+            "../docs/brand/breakfree-docs-transparent.webp"
+        ))
+        .ok()
+        .map(|i| i.into_rgba8());
         let icon = image.map(|i| {
             ctx.load_texture(
                 "BreakFree Docs logo",
@@ -329,6 +344,7 @@ impl DocsApp {
         }
         let (start, end) = self.session.editor.selection;
         match action {
+            Action::File => self.backstage = true,
             Action::New => self.request(Pending::New, ctx),
             Action::Open => {
                 if let Some(path) = rfd::FileDialog::new()
@@ -517,25 +533,31 @@ impl DocsApp {
                 }
                 if let Some(icon) = &self.icon {
                     ui.put(
-                        Rect::from_min_size(rect.min + vec2(8., 7.), vec2(26., 26.)),
-                        egui::Image::new(icon).fit_to_exact_size(vec2(26., 26.)),
+                        Rect::from_min_size(rect.min + vec2(10., 10.), vec2(24., 24.)),
+                        egui::Image::new(icon).fit_to_exact_size(vec2(24., 24.)),
                     );
                 }
-                ui.scope_builder(
-                    egui::UiBuilder::new()
-                        .max_rect(Rect::from_min_size(
-                            rect.min + vec2(42., 7.),
-                            vec2(132., 26.),
-                        ))
-                        .layout(Layout::left_to_right(Align::Center)),
-                    |ui| {
-                        self.command(ui, "Save", Action::Save, vec2(42., 25.));
-                        self.command(ui, "↶", Action::Undo, vec2(28., 25.));
-                        self.command(ui, "↷", Action::Redo, vec2(28., 25.));
-                    },
-                );
-                let search_w = (w * 0.26).clamp(160., 360.);
-                let search_x = (w * 0.58 - search_w / 2.).max(330.0_f32.min(w * 0.48));
+                for (i, (icon, action)) in [
+                    (Icon::Save, Action::Save),
+                    (Icon::Undo, Action::Undo),
+                    (Icon::Redo, Action::Redo),
+                ]
+                .into_iter()
+                .enumerate()
+                {
+                    self.ribbon_control(
+                        ui,
+                        Rect::from_min_size(
+                            rect.min + vec2(43. + i as f32 * 30., 8.),
+                            vec2(28., 28.),
+                        ),
+                        icon,
+                        "",
+                        action,
+                    );
+                }
+                let search_w = (w * 0.25).clamp(155., 350.);
+                let search_x = (w * 0.56 - search_w / 2.).max(285.);
                 let name = self
                     .session
                     .path
@@ -545,27 +567,46 @@ impl DocsApp {
                     .unwrap_or("Untitled".into());
                 let title = format!(
                     "{}{} — BreakFree Docs",
-                    if self.session.dirty() { "• " } else { "" },
-                    name
+                    name,
+                    if self.session.dirty() { " *" } else { "" }
                 );
-                ui.put(
-                    Rect::from_min_max(
-                        rect.min + vec2(180., 7.),
-                        pos2(rect.min.x + search_x - 10., rect.min.y + 33.),
-                    ),
-                    egui::Label::new(&title).truncate(),
-                )
-                .on_hover_text(&title);
+                let title_rect = Rect::from_min_max(
+                    rect.min + vec2(147., 8.),
+                    pos2(search_x - 16., rect.top() + 36.),
+                );
+                ui.put(title_rect, egui::Label::new(&title).truncate())
+                    .on_hover_text(&title);
+                self.record("document-title", title_rect);
                 let search_rect = Rect::from_min_size(
-                    rect.min + vec2(search_x, 7.),
-                    vec2(search_w.min(w - search_x - 140.), 26.),
+                    rect.min + vec2(search_x, 8.),
+                    vec2(search_w.min(w - search_x - 150.), 28.),
+                );
+                ui.painter()
+                    .rect_filled(search_rect, 4., Color32::from_gray(250));
+                ui.painter().rect_stroke(
+                    search_rect,
+                    4.,
+                    Stroke::new(1.0_f32, Color32::from_gray(219)),
+                    egui::StrokeKind::Inside,
+                );
+                chrome::paint(
+                    ui,
+                    Icon::Search,
+                    search_rect.left_center() + vec2(14., 0.),
+                    15.,
+                    Color32::from_gray(95),
                 );
                 let response = ui.put(
-                    search_rect,
+                    Rect::from_min_max(
+                        search_rect.min + vec2(28., 4.),
+                        search_rect.max - vec2(5., 2.),
+                    ),
                     egui::TextEdit::singleline(&mut self.command_search)
                         .id(Id::new(SEARCH_ID))
-                        .hint_text("Search commands (Alt+Q)"),
+                        .frame(false)
+                        .hint_text("Search (Alt+Q)"),
                 );
+                self.record("command-search", search_rect);
                 if self.focus_search {
                     response.request_focus();
                     self.focus_search = false;
@@ -573,38 +614,29 @@ impl DocsApp {
                 if response.changed() {
                     self.palette = !self.command_search.is_empty();
                 }
-                ui.scope_builder(
-                    egui::UiBuilder::new()
-                        .max_rect(Rect::from_min_size(
-                            pos2(rect.right() - 126., rect.top()),
-                            vec2(126., TITLE_HEIGHT),
-                        ))
-                        .layout(Layout::left_to_right(Align::Center)),
-                    |ui| {
-                        if ui
-                            .add_sized([38., 32.], Button::new("—"))
-                            .on_hover_text("Minimize")
-                            .clicked()
-                        {
-                            ctx.send_viewport_cmd(ViewportCommand::Minimized(true));
+                let max = ctx.input(|i| i.viewport().maximized.unwrap_or(false));
+                for (i, (icon, name)) in [
+                    (Icon::Minimize, "Minimize"),
+                    (Icon::Maximize(max), "Maximize / restore"),
+                    (Icon::Close, "Close"),
+                ]
+                .into_iter()
+                .enumerate()
+                {
+                    let r = Rect::from_min_size(
+                        pos2(rect.right() - 138. + i as f32 * 46., rect.top()),
+                        vec2(46., TITLE_HEIGHT),
+                    );
+                    let response = chrome::control(ui, r, icon, "", name, true, false);
+                    self.record(&format!("window-{i}"), response.rect);
+                    if response.on_hover_text(name).clicked() {
+                        match i {
+                            0 => ctx.send_viewport_cmd(ViewportCommand::Minimized(true)),
+                            1 => ctx.send_viewport_cmd(ViewportCommand::Maximized(!max)),
+                            _ => self.request(Pending::Close, ctx),
                         }
-                        if ui
-                            .add_sized([38., 32.], Button::new("□"))
-                            .on_hover_text("Maximize / restore")
-                            .clicked()
-                        {
-                            let max = ctx.input(|i| i.viewport().maximized.unwrap_or(false));
-                            ctx.send_viewport_cmd(ViewportCommand::Maximized(!max));
-                        }
-                        if ui
-                            .add_sized([38., 32.], Button::new("×"))
-                            .on_hover_text("Close")
-                            .clicked()
-                        {
-                            self.request(Pending::Close, ctx);
-                        }
-                    },
-                );
+                    }
+                }
             });
         self.record("title", panel.response.rect);
     }
@@ -627,6 +659,7 @@ impl DocsApp {
                             } else {
                                 INK
                             }))
+                            .frame_when_inactive(self.backstage)
                             .fill(if self.backstage {
                                 ACCENT
                             } else {
@@ -646,12 +679,16 @@ impl DocsApp {
                     for (index, label) in TABS.iter().enumerate().take(visible) {
                         let response = ui.add_sized(
                             [label.len() as f32 * 6.5 + 16., 26.],
-                            Button::new(*label).fill(if self.tab == index && !self.backstage {
-                                Color32::from_rgb(235, 226, 247)
-                            } else {
-                                Color32::TRANSPARENT
-                            }),
+                            Button::new(RichText::new(*label).color(
+                                if self.tab == index && !self.backstage {
+                                    ACCENT
+                                } else {
+                                    INK
+                                },
+                            ))
+                            .frame_when_inactive(false),
                         );
+                        self.record(&format!("tab-{label}"), response.rect);
                         if response.clicked() {
                             self.tab = index;
                             self.backstage = false;
@@ -668,7 +705,7 @@ impl DocsApp {
                         }
                     }
                     if visible < TABS.len() {
-                        ui.menu_button("More tabs ▾", |ui| {
+                        ui.menu_button("More tabs", |ui| {
                             for (index, label) in TABS.iter().enumerate().skip(visible) {
                                 if ui.button(*label).clicked() {
                                     self.tab = index;
@@ -691,40 +728,361 @@ impl DocsApp {
         self.record("tabs", panel.response.rect);
     }
 
-    fn home_group(&mut self, ui: &mut Ui, index: usize, width: f32) {
-        let content=ui.allocate_ui_with_layout(vec2(width,RIBBON_HEIGHT-10.),Layout::top_down(Align::Min),|ui|{
-            let origin=ui.cursor().min;
-            ui.scope_builder(egui::UiBuilder::new().max_rect(Rect::from_min_size(origin,vec2(width,76.))).layout(Layout::top_down(Align::Min)),|ui|{
-                match index {
-                    0=>{ui.horizontal(|ui|{self.command(ui,"Paste",Action::Paste,vec2(if width<100.{48.}else{58.},65.));ui.vertical(|ui|{self.command(ui,if width<100.{"X"}else{"Cut"},Action::Cut,vec2((width-62.).max(22.),22.));self.command(ui,if width<100.{"C"}else{"Copy"},Action::Copy,vec2((width-62.).max(22.),22.));if width>=100.{Self::disabled(ui,"Format",vec2(width-62.,22.),"Format Painter is not implemented.");}});});},
-                    1=>{
-                        ui.horizontal(|ui|{Self::disabled(ui,&self.body_font,vec2(width-58.,26.),"Font family editing is planned; the current host body font is shown.");Self::disabled(ui,"11",vec2(44.,26.),"Font size editing is not implemented; document display starts at 11 pt.");});
-                        ui.horizontal(|ui|{Self::disabled(ui,"A+",vec2(30.,22.),"Font sizing is planned.");Self::disabled(ui,"A-",vec2(30.,22.),"Font sizing is planned.");Self::disabled(ui,"Aa",vec2(30.,22.),"Change case is planned.");});
-                        ui.horizontal(|ui|{self.command(ui,"B",Action::Bold,vec2(26.,25.));self.command(ui,"I",Action::Italic,vec2(26.,25.));Self::disabled(ui,"U",vec2(26.,25.),"Underline is not supported by native content v1.");Self::disabled(ui,"abc",vec2(30.,25.),"Strikethrough is not supported.");});
-                    },
-                    2=>{
-                        ui.horizontal(|ui|{for label in ["• List","1. List","<",">"]{Self::disabled(ui,label,vec2(32.,24.),"Lists and indentation are planned for D2.");}});
-                        ui.horizontal(|ui|{Self::disabled(ui,"Lines",vec2(68.,23.),"Line spacing editing is not implemented.");Self::disabled(ui,"¶",vec2(27.,23.),"Formatting marks are not implemented.");});
-                        ui.horizontal(|ui|{for(label,a)in[("≡←",Action::Left),("≡",Action::Center),("→≡",Action::Right),("☰",Action::Justify)]{self.command(ui,label,a,vec2(30.,25.));}if width>200. {self.command(ui,"…",Action::Formatting,vec2(26.,25.));}});
-                    },
-                    3=>{ui.horizontal(|ui|{let count=if width>200.{3}else{1};for label in ["Normal","No Spacing","Heading 1"].into_iter().take(count){Self::disabled(ui,label,vec2((width-12.)/count as f32,66.),"Styles are planned for D2; no style is applied by this control.");}});},
-                    4=>{self.command(ui,"Find",Action::Find,vec2(width-6.,23.));self.command(ui,"Replace",Action::Replace,vec2(width-6.,23.));self.command(ui,"Select All",Action::SelectAll,vec2(width-6.,23.));},_=>{}
-                }
-            });
-            ui.painter().text(pos2(origin.x+width/2.,origin.y+88.),Align2::CENTER_CENTER,HOME_GROUPS[index],FontId::proportional(11.),Color32::from_gray(90));
-            ui.allocate_rect(Rect::from_min_size(origin,vec2(width,96.)),Sense::hover());
-        });
-        self.record(HOME_GROUPS[index], content.response.rect);
-        let x = content.response.rect.right() + 3.;
-        ui.painter().line_segment(
-            [
-                pos2(x, content.response.rect.top() + 2.),
-                pos2(x, content.response.rect.bottom() - 5.),
-            ],
-            Stroke::new(1.0_f32, Color32::from_gray(214)),
+    fn ribbon_control(&mut self, ui: &mut Ui, rect: Rect, icon: Icon, label: &str, action: Action) {
+        let response = chrome::control(
+            ui,
+            rect,
+            icon,
+            label,
+            action.label(),
+            self.enabled(action),
+            self.checked(action),
         );
+        self.record(&format!("command-{action:?}"), response.rect);
+        let shortcut = match action {
+            Action::Save => "Ctrl+S",
+            Action::Undo => "Ctrl+Z",
+            Action::Redo => "Ctrl+Y",
+            Action::Cut => "Ctrl+X",
+            Action::Copy => "Ctrl+C",
+            Action::Paste => "Ctrl+V",
+            Action::Bold => "Ctrl+B",
+            Action::Italic => "Ctrl+I",
+            Action::Find => "Ctrl+F",
+            Action::Replace => "Ctrl+H",
+            Action::SelectAll => "Ctrl+A",
+            Action::Left => "Ctrl+L",
+            Action::Center => "Ctrl+E",
+            Action::Right => "Ctrl+R",
+            Action::Justify => "Ctrl+J",
+            _ => "",
+        };
+        let shortcut = if cfg!(target_os = "macos") {
+            shortcut.replace("Ctrl", "Command")
+        } else {
+            shortcut.to_owned()
+        };
+        let tip = format!(
+            "{}{}{}",
+            action.label(),
+            if shortcut.is_empty() { "" } else { " · " },
+            shortcut
+        );
+        if response
+            .on_hover_text(&tip)
+            .on_disabled_hover_text(if self.composing {
+                "Finish text composition first."
+            } else {
+                &tip
+            })
+            .clicked()
+        {
+            self.execute(action, ui.ctx());
+        }
     }
 
+    fn unavailable(
+        &mut self,
+        ui: &mut Ui,
+        rect: Rect,
+        icon: Icon,
+        label: &str,
+        name: &str,
+        why: &str,
+    ) {
+        let response =
+            chrome::control(ui, rect, icon, label, name, false, false).on_disabled_hover_text(why);
+        self.record(&format!("unavailable-{name}"), response.rect);
+    }
+
+    fn home_group(&mut self, ui: &mut Ui, index: usize, width: f32) {
+        let (bounds, _) = ui.allocate_exact_size(vec2(width, RIBBON_HEIGHT - 16.), Sense::hover());
+        self.record(HOME_GROUPS[index], bounds);
+        ui.scope_builder(egui::UiBuilder::new().max_rect(bounds), |ui| {
+            self.home_contents(ui, index, width, bounds);
+        });
+        if index < 4 {
+            let x = bounds.right() + 3.;
+            ui.painter().line_segment(
+                [pos2(x, bounds.top() + 3.), pos2(x, bounds.bottom() - 3.)],
+                Stroke::new(1.0_f32, chrome::LINE),
+            );
+        }
+    }
+
+    fn home_contents(&mut self, ui: &mut Ui, index: usize, width: f32, bounds: Rect) {
+        let origin = bounds.min;
+        let r =
+            |x: f32, y: f32, w: f32, h: f32| Rect::from_min_size(origin + vec2(x, y), vec2(w, h));
+        ui.set_clip_rect(bounds.intersect(ui.clip_rect()));
+        match index {
+            0 => {
+                self.ribbon_control(ui, r(0., 2., 48., 72.), Icon::Paste, "Paste", Action::Paste);
+                let wide = width >= 140.;
+                self.ribbon_control(
+                    ui,
+                    r(51., 0., width - 54., 24.),
+                    Icon::Cut,
+                    if wide { "Cut" } else { "" },
+                    Action::Cut,
+                );
+                self.ribbon_control(
+                    ui,
+                    r(51., 25., width - 54., 24.),
+                    Icon::Copy,
+                    if wide { "Copy" } else { "" },
+                    Action::Copy,
+                );
+                self.unavailable(ui,r(51.,50.,width-54.,24.),Icon::Brush,if wide{"Format Painter"}else{""},"Format Painter","Format Painter is planned; copy text formatting manually with Bold and Italic.");
+            }
+            1 => {
+                let full = width >= 270.;
+                let field_w = if full { 119. } else { width - 53. };
+                let response = chrome::field(
+                    ui,
+                    r(2., 7., field_w, 25.),
+                    &self.body_font,
+                    "Current body font. Changing fonts is planned.",
+                );
+                self.record("font-family", response.rect);
+                let response = chrome::field(
+                    ui,
+                    r(field_w + 5., 7., 43., 25.),
+                    "11",
+                    "Current body size: 11 pt. Font size editing is planned.",
+                );
+                self.record("font-size", response.rect);
+                if full {
+                    for (i, (text, name)) in [
+                        ("A+", "Grow font"),
+                        ("A−", "Shrink font"),
+                        ("Aa", "Change case"),
+                        ("A", "Clear formatting"),
+                    ]
+                    .into_iter()
+                    .enumerate()
+                    {
+                        self.unavailable(
+                            ui,
+                            r(170. + i as f32 * 25., 7., 24., 25.),
+                            Icon::Text(text),
+                            "",
+                            name,
+                            "Font size, case and clear-formatting commands are planned.",
+                        );
+                    }
+                }
+                self.ribbon_control(ui, r(1., 43., 25., 26.), Icon::Text("B"), "", Action::Bold);
+                self.ribbon_control(
+                    ui,
+                    r(27., 43., 25., 26.),
+                    Icon::Text("I"),
+                    "",
+                    Action::Italic,
+                );
+                for (i, (text, name)) in [
+                    ("U", "Underline"),
+                    ("abc", "Strikethrough"),
+                    ("x₂", "Subscript"),
+                    ("x²", "Superscript"),
+                ]
+                .into_iter()
+                .enumerate()
+                {
+                    self.unavailable(
+                        ui,
+                        r(53. + i as f32 * 27., 43., 26., 26.),
+                        Icon::Text(text),
+                        "",
+                        name,
+                        "This character formatting is not supported by native content v1.",
+                    );
+                }
+                if full {
+                    for (i, (text, name)) in [
+                        ("A", "Text effects"),
+                        ("ab", "Text highlight"),
+                        ("A", "Font color"),
+                    ]
+                    .into_iter()
+                    .enumerate()
+                    {
+                        let rect = r(165. + i as f32 * 34., 43., 32., 26.);
+                        self.unavailable(
+                            ui,
+                            rect,
+                            Icon::Text(text),
+                            "",
+                            name,
+                            "Text effects, highlighting and color are planned.",
+                        );
+                        if i > 0 {
+                            ui.painter().line_segment(
+                                [
+                                    rect.left_bottom() + vec2(6., -3.),
+                                    rect.right_bottom() + vec2(-6., -3.),
+                                ],
+                                Stroke::new(2.0_f32, Color32::from_gray(175)),
+                            );
+                        }
+                    }
+                }
+            }
+            2 => {
+                let full = width >= 250.;
+                let step = if full { 32. } else { 27. };
+                for (i, (icon, name)) in [
+                    (Icon::Bullets, "Bullets"),
+                    (Icon::Numbers, "Numbering"),
+                    (Icon::Text("1.a"), "Multilevel list"),
+                    (Icon::Indent(false), "Decrease indent"),
+                    (Icon::Indent(true), "Increase indent"),
+                    (Icon::Text("A↓"), "Sort"),
+                    (Icon::Text("¶"), "Show marks"),
+                ]
+                .into_iter()
+                .enumerate()
+                {
+                    if full || i < 6 {
+                        self.unavailable(
+                            ui,
+                            r(i as f32 * step, 7., step - 1., 25.),
+                            icon,
+                            "",
+                            name,
+                            "Lists, indentation, sorting and formatting marks are planned.",
+                        );
+                    }
+                }
+                for (i, action) in [Action::Left, Action::Center, Action::Right, Action::Justify]
+                    .into_iter()
+                    .enumerate()
+                {
+                    self.ribbon_control(
+                        ui,
+                        r(i as f32 * 27., 43., 26., 26.),
+                        Icon::Align(i as u8),
+                        "",
+                        action,
+                    );
+                }
+                self.unavailable(
+                    ui,
+                    r(112., 43., 26., 26.),
+                    Icon::Spacing,
+                    "",
+                    "Line spacing",
+                    "Paragraph spacing controls are planned.",
+                );
+                if width >= 200. {
+                    self.unavailable(
+                        ui,
+                        r(146., 43., 26., 26.),
+                        Icon::Shading,
+                        "",
+                        "Shading",
+                        "Paragraph shading is planned.",
+                    );
+                    self.unavailable(
+                        ui,
+                        r(178., 43., 26., 26.),
+                        Icon::Border,
+                        "",
+                        "Borders",
+                        "Paragraph borders are planned.",
+                    );
+                }
+            }
+            3 => {
+                let count = if width >= 280. { 3 } else { 1 };
+                let card = (width - 20.) / count as f32;
+                for (i, label) in ["Normal", "No Spacing", "Heading 1"]
+                    .into_iter()
+                    .take(count)
+                    .enumerate()
+                {
+                    let rect = r(i as f32 * card, 3., card - 3., 70.);
+                    ui.painter().rect_filled(rect, 2., Color32::WHITE);
+                    ui.painter().rect_stroke(
+                        rect,
+                        2.,
+                        Stroke::new(1.0_f32, chrome::LINE),
+                        egui::StrokeKind::Inside,
+                    );
+                    let response = ui
+                        .add_enabled_ui(false, |ui| ui.put(rect, Button::new("").frame(false)))
+                        .inner
+                        .on_disabled_hover_text(
+                            "Styles are planned. This preview does not apply a style.",
+                        );
+                    response.widget_info(|| {
+                        egui::WidgetInfo::labeled(egui::WidgetType::Button, false, label)
+                    });
+                    self.record(&format!("style-{label}"), response.rect);
+                    ui.painter().text(
+                        pos2(rect.center().x, rect.top() + 27.),
+                        Align2::CENTER_CENTER,
+                        "AaBbCc",
+                        FontId::new(
+                            if i == 2 { 20. } else { 18. },
+                            egui::FontFamily::Name("body".into()),
+                        ),
+                        Color32::from_gray(135),
+                    );
+                    ui.painter().text(
+                        pos2(rect.center().x, rect.bottom() - 13.),
+                        Align2::CENTER_CENTER,
+                        label,
+                        FontId::proportional(11.),
+                        Color32::from_gray(135),
+                    );
+                }
+                self.unavailable(
+                    ui,
+                    r(width - 18., 3., 17., 70.),
+                    Icon::Chevron(false),
+                    "",
+                    "More styles",
+                    "Styles are planned.",
+                );
+            }
+            4 => {
+                for (i, (icon, label, action)) in [
+                    (Icon::Search, "Find", Action::Find),
+                    (Icon::Replace, "Replace", Action::Replace),
+                    (Icon::Select, "Select All", Action::SelectAll),
+                ]
+                .into_iter()
+                .enumerate()
+                {
+                    self.ribbon_control(
+                        ui,
+                        r(0., i as f32 * 25., width - 3., 24.),
+                        icon,
+                        label,
+                        action,
+                    );
+                }
+            }
+            _ => {}
+        }
+        ui.painter().text(
+            pos2(origin.x + width / 2., origin.y + 86.),
+            Align2::CENTER_CENTER,
+            HOME_GROUPS[index],
+            FontId::proportional(11.),
+            Color32::from_gray(94),
+        );
+        if matches!(index, 1 | 2) {
+            self.ribbon_control(
+                ui,
+                r(width - 16., 79., 15., 16.),
+                Icon::Launch,
+                "",
+                Action::Formatting,
+            );
+        }
+    }
     fn ribbon(&mut self, ctx: &egui::Context) {
         if self.ribbon_collapsed || self.backstage {
             return;
@@ -733,20 +1091,32 @@ impl DocsApp {
             .exact_height(RIBBON_HEIGHT)
             .frame(
                 egui::Frame::new()
-                    .fill(Color32::from_rgb(253, 253, 253))
-                    .inner_margin(egui::Margin::symmetric(10, 4)),
+                    .fill(CHROME)
+                    .inner_margin(egui::Margin::symmetric(8, 4)),
             )
             .show(ctx, |ui| {
+                let shell = ui.max_rect();
+                ui.painter().rect_filled(shell, 6., Color32::WHITE);
+                ui.painter().rect_stroke(
+                    shell,
+                    6.,
+                    Stroke::new(1.0_f32, Color32::from_gray(225)),
+                    egui::StrokeKind::Inside,
+                );
+                ui.shrink_clip_rect(shell);
+                ui.add_space(4.);
                 if self.tab == 0 {
                     let widths = group_widths(ui.available_width());
                     ui.horizontal(|ui| {
+                        ui.spacing_mut().item_spacing.x = 8.;
+                        ui.add_space(5.);
                         for (i, w) in widths.into_iter().enumerate() {
                             if w > 0. {
                                 self.home_group(ui, i, w);
                             }
                         }
                         if widths[3] == 0. {
-                            ui.menu_button("More ▾", |ui| {
+                            ui.menu_button("More", |ui| {
                                 ui.label("Styles");
                                 for name in ["Normal", "Heading 1"] {
                                     Self::disabled(
@@ -960,18 +1330,39 @@ impl DocsApp {
         }
     }
 
+    fn save_status(&self) -> &'static str {
+        if self.session.dirty() {
+            "Unsaved changes"
+        } else if self.session.path.is_some() {
+            "Saved locally"
+        } else {
+            "Not saved yet"
+        }
+    }
+
     fn status(&mut self, ctx: &egui::Context) {
-        let panel=egui::TopBottomPanel::bottom("status").exact_height(STATUS_HEIGHT).frame(egui::Frame::new().fill(CHROME).inner_margin(egui::Margin::symmetric(10,1))).show(ctx,|ui|{
-            ui.horizontal_centered(|ui|{
-                let doc=&self.session.editor.document;
-                ui.small(format!("{} words   {} paragraphs",doc.word_count(),doc.paragraphs.len()));
-                if ui.available_width()>600.{ui.separator();ui.small(if self.session.dirty(){"Unsaved changes"}else if self.session.path.is_some(){"Saved locally"}else{"New document"});}
-                ui.with_layout(Layout::right_to_left(Align::Center),|ui|{
-                    ui.add(egui::Slider::new(&mut self.zoom,50.0..=200.0).suffix("%").clamping(egui::SliderClamping::Always));
-                    if ui.available_width()>240.{ui.small("Continuous · no pagination").on_hover_text("This canvas has no computed pages. Page count and Print Layout are unavailable.");}
+        if self.backstage {
+            return;
+        }
+        let panel=egui::TopBottomPanel::bottom("status").exact_height(STATUS_HEIGHT)
+            .frame(egui::Frame::new().fill(CHROME).inner_margin(egui::Margin::symmetric(10,0))).show(ctx,|ui| {
+                ui.horizontal_centered(|ui| {
+                    let doc=&self.session.editor.document;
+                    ui.small(format!("{} words",doc.word_count()));
+                    ui.add_space(10.);ui.small(format!("{} paragraphs",doc.paragraphs.len()));
+                    if ui.available_width()>520. {ui.add_space(10.);ui.small(self.save_status());}
+                    ui.with_layout(Layout::right_to_left(Align::Center),|ui| {
+                        let percent=ui.add_sized([42.,20.],Button::new(format!("{:.0}%",self.zoom)).frame_when_inactive(false));
+                        self.record("zoom-reset",percent.rect);
+                        if percent.on_hover_text("Reset document zoom to 100%").clicked(){self.zoom=100.;}
+                        let plus=ui.add_sized([22.,20.],Button::new("+").frame_when_inactive(false));self.record("zoom-in",plus.rect);if plus.on_hover_text("Zoom in").clicked(){self.zoom=(self.zoom+10.).min(200.);}
+                        ui.spacing_mut().slider_width=110.;
+                        let slider=ui.add(egui::Slider::new(&mut self.zoom,50.0..=200.0).show_value(false).clamping(egui::SliderClamping::Always));self.record("zoom-slider",slider.rect);
+                        let minus=ui.add_sized([22.,20.],Button::new("−").frame_when_inactive(false));self.record("zoom-out",minus.rect);if minus.on_hover_text("Zoom out").clicked(){self.zoom=(self.zoom-10.).max(50.);}
+                        if ui.available_width()>195. {ui.separator();ui.small("Continuous layout").on_hover_text("Pagination and Print Layout are not implemented. This canvas has no computed page count.");}
+                    });
                 });
             });
-        });
         self.record("status", panel.response.rect);
     }
 
@@ -1127,9 +1518,14 @@ impl DocsApp {
     }
 
     fn ruler(ui: &mut Ui, width: f32, zoom: f32) {
-        let (rect, _) = ui.allocate_exact_size(vec2(width, 25.), Sense::hover());
+        let (rect, _) = ui.allocate_exact_size(vec2(width, 22.), Sense::hover());
         let margin = CANVAS_MARGIN * zoom;
-        ui.painter().rect_filled(rect, 0., Color32::from_gray(245));
+        ui.painter().rect_filled(rect, 0., Color32::from_gray(214));
+        ui.painter().rect_filled(
+            Rect::from_min_max(rect.min + vec2(margin, 0.), rect.max - vec2(margin, 0.)),
+            0.,
+            Color32::from_gray(250),
+        );
         let left = rect.left() + margin;
         let right = rect.right() - margin;
         for tick in 0..=((right - left) / (12. * zoom)) as usize {
@@ -1177,11 +1573,12 @@ impl DocsApp {
             .max(300.);
         egui::ScrollArea::both().auto_shrink([false,false]).show(ui,|ui|{
             let space=((ui.available_width()-width-32.)/2.).max(12.);
+            ui.add_space(10.);
             ui.horizontal_top(|ui|{
                 ui.add_space(space);
                 ui.vertical(|ui|{
-                    if self.rulers {Self::ruler(ui,width,zoom);}
-                    let frame=egui::Frame::new().fill(Color32::WHITE).stroke(Stroke::new(1.0_f32,Color32::from_gray(197))).inner_margin(0).show(ui,|ui|{
+                    if self.rulers {Self::ruler(ui,width,zoom);ui.add_space(7.);}
+                    let frame=egui::Frame::new().fill(Color32::WHITE).stroke(Stroke::new(1.0_f32,Color32::from_gray(197))).shadow(egui::epaint::Shadow{offset:[0,2],blur:5,spread:0,color:Color32::from_black_alpha(24)}).inner_margin(0).show(ui,|ui|{
                         ui.set_min_size(vec2(width,min_height));
                         ui.add_space(margin);
                         ui.horizontal_top(|ui|{
@@ -1225,72 +1622,210 @@ impl DocsApp {
     }
 
     fn file_view(&mut self, ui: &mut Ui) {
-        ui.horizontal_top(|ui| {
-            egui::Frame::new()
-                .fill(Color32::from_rgb(242, 239, 247))
-                .inner_margin(15)
-                .show(ui, |ui| {
-                    ui.set_width(165.);
-                    ui.set_min_height(ui.available_height());
-                    if ui.button("← Back to document").clicked() {
-                        self.backstage = false;
-                        self.focus_document = true;
-                    }
-                    ui.separator();
-                    for action in [Action::New, Action::Open, Action::Save, Action::SaveAs] {
-                        self.command(ui, action.label(), action, vec2(160., 34.));
-                    }
-                    Self::disabled(
-                        ui,
-                        "Print",
-                        vec2(160., 34.),
-                        "Printing and pagination are planned for D3.",
-                    );
-                    if ui.add_sized([160., 34.], Button::new("Settings")).clicked() {
-                        self.settings = true;
-                    }
-                });
-            ui.add_space(28.);
-            ui.vertical(|ui| {
-                ui.add_space(22.);
-                ui.heading(if self.settings {
-                    "Settings"
-                } else {
-                    "BreakFree Docs"
-                });
-                ui.add_space(15.);
+        let full = ui.max_rect();
+
+        let rail = Rect::from_min_max(full.min, pos2(full.left() + 180., full.bottom()));
+
+        ui.painter()
+            .rect_filled(rail, 0., Color32::from_rgb(242, 239, 247));
+
+        ui.painter().line_segment(
+            [rail.right_top(), rail.right_bottom()],
+            Stroke::new(1.0_f32, chrome::LINE),
+        );
+
+        self.record("file-rail", rail);
+
+        ui.scope_builder(
+            egui::UiBuilder::new().max_rect(rail.shrink2(vec2(12., 14.))),
+            |ui| {
+                let (back_rect, _) = ui.allocate_exact_size(vec2(156., 32.), Sense::hover());
+                let back = chrome::control(
+                    ui,
+                    back_rect,
+                    Icon::Back,
+                    "Back",
+                    "Back to document",
+                    true,
+                    false,
+                );
+
+                self.record("file-back", back.rect);
+
+                if back.clicked() {
+                    self.backstage = false;
+
+                    self.focus_document = true;
+                }
+                ui.add_space(20.);
+
+                let home = ui.add_sized(
+                    [156., 34.],
+                    Button::new("Home")
+                        .selected(!self.settings)
+                        .frame_when_inactive(!self.settings),
+                );
+
+                self.record("file-home", home.rect);
+
+                if home.clicked() {
+                    self.settings = false;
+                }
+                ui.add_space(8.);
+
+                for (icon, label, action) in [
+                    (Icon::Document, "New", Action::New),
+                    (Icon::Open, "Open", Action::Open),
+                    (Icon::Save, "Save", Action::Save),
+                    (Icon::Save, "Save As", Action::SaveAs),
+                ] {
+                    let (rect, _) = ui.allocate_exact_size(vec2(156., 34.), Sense::hover());
+
+                    self.ribbon_control(ui, rect, icon, label, action);
+                }
+                ui.add_space(10.);
+
+                ui.separator();
+
+                Self::disabled(
+                    ui,
+                    "Print",
+                    vec2(156., 34.),
+                    "Printing requires pagination, planned for D3.",
+                );
+
+                ui.add_space(8.);
+
+                let options = ui.add_sized(
+                    [156., 34.],
+                    Button::new("Options")
+                        .selected(self.settings)
+                        .frame_when_inactive(self.settings),
+                );
+
+                self.record("file-options", options.rect);
+
+                if options.clicked() {
+                    self.settings = true;
+                }
+            },
+        );
+
+        let body = Rect::from_min_max(full.min + vec2(210., 24.), full.max - vec2(28., 20.));
+
+        ui.scope_builder(egui::UiBuilder::new().max_rect(body), |ui| {
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                ui.label(RichText::new(if self.settings { "Options" } else { "Home" }).size(28.));
+
+                ui.add_space(24.);
+
                 if self.settings {
-                    ui.checkbox(&mut self.rulers, "Show canvas rulers");
+                    ui.label(RichText::new("Display").size(18.));
+
+                    ui.add_space(14.);
+
+                    ui.checkbox(&mut self.rulers, "Show canvas ruler");
+
                     ui.checkbox(&mut self.navigation, "Show navigation pane");
+
                     ui.checkbox(&mut self.ribbon_collapsed, "Collapse ribbon");
+
+                    ui.add_space(18.);
+
                     ui.label("Document zoom");
+
                     ui.add(egui::Slider::new(&mut self.zoom, 50.0..=200.0).suffix("%"));
+
+                    ui.add_space(20.);
+
+                    ui.small("These display options apply to this window.");
                 } else {
-                    ui.heading(
-                        self.session
-                            .path
-                            .as_ref()
-                            .and_then(|p| p.file_name())
-                            .map(|p| p.to_string_lossy().into_owned())
-                            .unwrap_or("Untitled".into()),
+                    ui.label(RichText::new("New").size(18.));
+
+                    ui.add_space(12.);
+
+                    let (tile, _) = ui.allocate_exact_size(vec2(158., 160.), Sense::hover());
+
+                    let response = ui.put(tile, Button::new("").frame_when_inactive(false));
+
+                    response.widget_info(|| {
+                        egui::WidgetInfo::labeled(egui::WidgetType::Button, true, "Blank document")
+                    });
+
+                    self.record("file-blank", response.rect);
+
+                    let sheet =
+                        Rect::from_center_size(tile.center() - vec2(0., 14.), vec2(74., 96.));
+
+                    ui.painter().rect_filled(sheet, 0., Color32::WHITE);
+
+                    ui.painter().rect_stroke(
+                        sheet,
+                        0.,
+                        Stroke::new(1.0_f32, Color32::from_gray(175)),
+                        egui::StrokeKind::Inside,
                     );
+
+                    ui.painter().text(
+                        pos2(tile.center().x, tile.bottom() - 13.),
+                        Align2::CENTER_CENTER,
+                        "Blank document",
+                        FontId::proportional(13.),
+                        INK,
+                    );
+
+                    if response.clicked() {
+                        self.execute(Action::New, ui.ctx());
+                    }
+                    ui.add_space(25.);
+
+                    ui.separator();
+
+                    ui.add_space(18.);
+
+                    ui.label(RichText::new("Current document").size(18.));
+
+                    ui.add_space(12.);
+
+                    let name = self
+                        .session
+                        .path
+                        .as_ref()
+                        .and_then(|p| p.file_name())
+                        .map(|p| p.to_string_lossy().into_owned())
+                        .unwrap_or("Untitled".into());
+
+                    ui.add(egui::Label::new(RichText::new(name).strong()).truncate());
+
+                    if let Some(path) = &self.session.path {
+                        let text = path.display().to_string();
+
+                        ui.add(egui::Label::new(&text).truncate())
+                            .on_hover_text(&text);
+                    }
                     let doc = &self.session.editor.document;
+
                     ui.label(format!(
-                        "{} words · {} paragraphs · {} characters",
+                        "{} words · {} paragraph{} · {} characters",
                         doc.word_count(),
                         doc.paragraphs.len(),
+                        if doc.paragraphs.len() == 1 { "" } else { "s" },
                         doc.character_count()
                     ));
+
+                    ui.add_space(8.);
+
                     ui.label(if self.session.dirty() {
                         "Unsaved changes"
                     } else {
                         "No unsaved changes"
                     });
-                    ui.add_space(15.);
-                    self.command(ui, "Create a blank document", Action::New, vec2(220., 45.));
-                    ui.add_space(10.);
-                    ui.label("Files stay on this device. Native format: .bfdoc.");
-                    ui.label("Continuous layout; pagination and printing are not implemented.");
+
+                    ui.add_space(18.);
+
+                    ui.small("Local document format: BreakFree Docs (.bfdoc)");
+
+                    ui.small("Continuous layout. Pagination and printing are planned.");
                 }
             });
         });
@@ -1384,7 +1919,9 @@ impl DocsApp {
         }
         self.shortcuts(ctx);
         self.title(ctx);
-        self.tabs(ctx);
+        if !self.backstage {
+            self.tabs(ctx);
+        }
         self.ribbon(ctx);
         self.status(ctx);
         self.navigation_panel(ctx);
@@ -1440,9 +1977,11 @@ impl eframe::App for DocsApp {
 }
 
 pub fn run(session: Session) -> Result<()> {
-    let icon = image::load_from_memory(include_bytes!("../docs/brand/breakfree-docs.webp"))
-        .map_err(|e| e.to_string())?
-        .into_rgba8();
+    let icon = image::load_from_memory(include_bytes!(
+        "../docs/brand/breakfree-docs-transparent.webp"
+    ))
+    .map_err(|e| e.to_string())?
+    .into_rgba8();
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([1366., 900.])

@@ -13,9 +13,9 @@ pub const TABS: &[&str] = &[
     "Help",
 ];
 pub const HOME_GROUPS: &[&str] = &["Clipboard", "Font", "Paragraph", "Styles", "Editing"];
-pub const TITLE_HEIGHT: f32 = 40.0;
+pub const TITLE_HEIGHT: f32 = 44.0;
 pub const TABS_HEIGHT: f32 = 32.0;
-pub const RIBBON_HEIGHT: f32 = 110.0;
+pub const RIBBON_HEIGHT: f32 = 112.0;
 pub const STATUS_HEIGHT: f32 = 24.0;
 pub const CANVAS_WIDTH: f32 = 816.0;
 pub const CANVAS_MARGIN: f32 = 96.0;
@@ -64,9 +64,9 @@ pub enum RibbonDensity {
     Overflow,
 }
 pub fn density(width: f32) -> RibbonDensity {
-    if width >= 1160.0 {
+    if width >= 1180.0 {
         RibbonDensity::Full
-    } else if width >= 850.0 {
+    } else if width >= 900.0 {
         RibbonDensity::Compact
     } else {
         RibbonDensity::Overflow
@@ -74,9 +74,9 @@ pub fn density(width: f32) -> RibbonDensity {
 }
 pub fn group_widths(width: f32) -> [f32; 5] {
     match density(width) {
-        RibbonDensity::Full => [142., 250., 252., 280., 136.],
-        RibbonDensity::Compact => [96., 205., 220., 125., 96.],
-        RibbonDensity::Overflow => [76., 178., 192., 0., 0.],
+        RibbonDensity::Full => [156., 278., 256., 300., 116.],
+        RibbonDensity::Compact => [86., 218., 216., 120., 104.],
+        RibbonDensity::Overflow => [82., 166., 164., 0., 0.],
     }
 }
 pub fn selected_text(document: &Document, range: (usize, usize)) -> String {

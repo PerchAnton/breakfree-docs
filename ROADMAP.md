@@ -107,6 +107,9 @@ native dialog/IME, accessibility and target-platform reviews are outstanding.
   real statistics, navigation, formatting pane and adaptive ribbon overflow.
 - [x] Cover shared editing, format/history, lifecycle, transient IME and synthetic
   100/125/150% geometry with actual Rust widget events.
+- [x] Refine Home icon density, two-row Font/Paragraph, style previews, title/search,
+  File Home/Options and status zoom; inspect native wide/narrow/File captures and
+  test individual control containment and nonoverlap at responsive breakpoints.
 - [ ] Capture Word 2024 Windows and Docs at matched build/language/theme/window,
   document zoom and Windows 100/125/150%; record measured deltas in UI_SPEC.
 - [ ] Verify native Windows keyboard, IME, dialogs, font fallback, clipping and focus.

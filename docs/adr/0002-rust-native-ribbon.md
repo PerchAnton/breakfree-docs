@@ -30,6 +30,7 @@ backstage, navigation, formatting pane, rulers and status bar follow
 | session | Path, saved checkpoint and Save/Discard/Cancel decisions | None |
 | presentation | Text-diff/selection conversion, ribbon sizing policy | None |
 | layout | Font loading, rich galley projection and hit testing | egui text layout only; no widgets |
+| chrome | Original vector icons and accessible shell controls; no document state | egui only |
 | gui | Native input surface, custom ribbon, dialogs and panes | eframe/egui |
 | integration | OS arguments and protocol JSON; main dispatches this same GUI | None |
 

@@ -1,4 +1,6 @@
 //! Independent document engine. Desktop dependencies are feature gated.
+#[cfg(feature = "desktop")]
+mod chrome;
 pub mod commands;
 #[cfg(feature = "desktop")]
 pub mod gui;

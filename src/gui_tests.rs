@@ -437,3 +437,132 @@ fn windows_plain_text_paste_normalizes_line_endings() {
     assert!(app.error.is_none());
     assert_eq!(app.session.editor.undo_stack.len(), 1);
 }
+
+#[test]
+fn dense_controls_fit_each_group_and_window_at_breakpoints() {
+    for dpi in [1., 1.25, 1.5] {
+        for width in [640., 720., 899., 900., 916., 1195., 1196., 1366., 1920.] {
+            let ctx = egui::Context::default();
+            let mut app = DocsApp::new(Session::default(), &ctx);
+            for _ in 0..3 {
+                frame(&ctx, &mut app, vec![], [width * dpi, 900. * dpi], dpi);
+            }
+            let get = |name: &str| app.regions.iter().find(|r| r.name == name).unwrap().rect;
+            assert!(get("document-title").right() <= get("command-search").left());
+            assert!(get("command-search").right() <= get("window-0").left());
+            let ribbon = get("ribbon");
+            assert!(
+                (get("title").height() - TITLE_HEIGHT).abs() < 0.1,
+                "title height {:?}",
+                get("title")
+            );
+            let mut group: Option<&Region> = None;
+            let mut controls = Vec::<&Region>::new();
+            for region in &app.regions {
+                if HOME_GROUPS.contains(&region.name.as_str()) {
+                    group = Some(region);
+                    controls.clear();
+                } else if let Some(parent) = group {
+                    if region.name == "ribbon" {
+                        break;
+                    }
+                    if region.name.starts_with("command-")
+                        || region.name.starts_with("unavailable-")
+                        || region.name.starts_with("style-")
+                        || region.name.starts_with("font-")
+                    {
+                        assert!(
+                            parent.rect.expand(0.1).contains_rect(region.rect),
+                            "{} outside {} at {width}/{dpi}: {:?}",
+                            region.name,
+                            parent.name,
+                            region.rect
+                        );
+                        assert!(ribbon.expand(0.1).contains_rect(region.rect));
+                        for previous in &controls {
+                            assert!(
+                                !previous
+                                    .rect
+                                    .shrink(0.1)
+                                    .intersects(region.rect.shrink(0.1)),
+                                "{} overlaps {} at {width}/{dpi}",
+                                previous.name,
+                                region.name
+                            );
+                        }
+                        controls.push(region);
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn revised_shell_controls_preserve_selection_and_real_document_state() {
+    let (ctx, mut app) = setup();
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Paste("Hello\nУкраїна e\u{301}".into())],
+        [1366., 900.],
+        1.,
+    );
+    app.execute(Action::SelectAll, &ctx);
+    click_region(&ctx, &mut app, "command-Italic");
+    click_region(&ctx, &mut app, "command-Right");
+    let styled = app.session.editor.document.clone();
+    assert!(
+        styled
+            .paragraphs
+            .iter()
+            .all(|p| p.alignment == Alignment::Right && p.styles.iter().all(|s| s.italic))
+    );
+    click_region(&ctx, &mut app, "unavailable-Underline");
+    click_region(&ctx, &mut app, "style-Heading 1");
+    assert_eq!(app.session.editor.document, styled);
+    click_region(&ctx, &mut app, "command-Undo");
+    assert!(
+        app.session
+            .editor
+            .document
+            .paragraphs
+            .iter()
+            .all(|p| p.alignment == Alignment::Left)
+    );
+    click_region(&ctx, &mut app, "command-Redo");
+    assert_eq!(app.session.editor.document, styled);
+    click_region(&ctx, &mut app, "zoom-in");
+    assert_eq!(app.zoom, 110.);
+    click_region(&ctx, &mut app, "zoom-out");
+    assert_eq!(app.zoom, 100.);
+    app.zoom = 150.;
+    click_region(&ctx, &mut app, "zoom-reset");
+    assert_eq!(app.zoom, 100.);
+    app.backstage = true;
+    click_region(&ctx, &mut app, "file-options");
+    assert!(app.settings);
+    click_region(&ctx, &mut app, "file-home");
+    assert!(!app.settings);
+    click_region(&ctx, &mut app, "file-blank");
+    assert!(app.pending.is_some());
+    click_region(&ctx, &mut app, "unsaved-cancel");
+    assert_eq!(app.session.editor.document, styled);
+    click_region(&ctx, &mut app, "file-back");
+    assert!(!app.backstage);
+    click_region(&ctx, &mut app, "tab-View");
+    assert_eq!(app.tab, 8);
+    click_region(&ctx, &mut app, "tab-Home");
+    assert_eq!(app.tab, 0);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    ctx.memory_mut(|m| m.request_focus(Id::new("document-text")));
+    frame(&ctx, &mut app, vec![key(Key::Z, true)], [1366., 900.], 1.);
+    assert!(
+        app.session
+            .editor
+            .document
+            .paragraphs
+            .iter()
+            .all(|p| p.alignment == Alignment::Left)
+    );
+}

@@ -10,19 +10,24 @@ and must not be presented as Rust results.
 
 | Local check | Observed result |
 | :--- | :--- |
-| `cargo test --locked` | 27 passed: 14 engine/storage/presentation, 3 CLI subprocess and 10 actual egui widget event tests; no skipped tests |
+| `cargo test --locked` | 29 passed: 14 engine/storage/presentation, 3 CLI subprocess and 12 actual egui widget event tests; no skipped tests |
 | `cargo test --locked --no-default-features` | 17 passed; core and CLI build without GUI dependencies |
 | `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
 | `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
 | Copied executable outside checkout | Release capabilities/malformed-open checks; capture-feature GUI also rendered `--new` and answered `--version` from an empty temporary directory without Office/source files |
 | Repository references, contract and artwork | `python3 tools/check_repository.py` passed; approved logo embedded directly and archive copy byte-identical |
 | Workflow YAML / whitespace | Ruby YAML parse and `git diff --check` passed |
-| Native rendering | Real native `--new` window launched; `--open` rendered Welcome fixture to the committed [capture](screenshots/rust-home-macos.png) through opt-in eframe capture |
-| Synthetic DPI | Actual widgets at 1/1.25/1.5 scale and 960/1366/1920 physical widths; ribbon/group/workspace/status bounds and collapse assertions passed |
+| Native rendering | Real native `--new` window launched; `--open` rendered Welcome fixture to the committed [Home capture](screenshots/rust-home-refined-macos.png), plus native 720-DIP overflow and File captures through opt-in eframe capture |
+| Synthetic DPI | Actual widgets at 1/1.25/1.5 scale and 960/1366/1920 physical widths; ribbon/group/workspace/status bounds and collapse assertions passed; 27 additional width/scale combinations check individual Home control containment/nonoverlap and title/search/window bounds |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
 and native release build. Its observed run/commit results are recorded in
 PROJECT_LOG after publication, separately from this local evidence.
+
+The design refinement also checks actual pointer activation of italic/alignment,
+selection preservation, quick Undo/Redo, disabled underline/style controls leaving
+the model unchanged, zoom ±/reset, File Home/Options/Back and dirty New/Cancel.
+The reference theme image was inspected, but no controlled Word comparison was run.
 
 ## D01–D09 evidence map
 
@@ -38,10 +43,11 @@ PROJECT_LOG after publication, separately from this local evidence.
 | D08 | Corrupt JSON/UTF-8, foreign type, unknown version/fields, duplicate keys, invalid styles/text and unsupported extension rejected; source unchanged | Bounded regression tests, not completed fuzzing |
 | D09 | Actual egui keyboard and pointer event loop covers edit/selection, emphasis, undo/redo and save; model compared with projection | Native OS keyboard/dialog/IME and full focus/accessibility review pending |
 
-The native executable was launched and captured on macOS. Computer Use inventory
-was accessible, but it did not expose the unbundled executable; selecting its path
-returned `Invalid app`. Therefore no manual OS keyboard or picker interaction is
-claimed. Word for macOS is not the approved Windows reference and was not used as
+The native executable and fixed-size capture harness were launched and captured on
+macOS. The earlier unbundled application was not exposed to Computer Use. During
+the design refinement, a temporary local app bundle was tried; Computer Use reported
+that permissions were not granted. Therefore no manual OS keyboard or picker
+interaction is claimed. The temporary bundle is not a distribution artifact. Word for macOS is not the approved Windows reference and was not used as
 a substitute. Windows itself and Word 2024 for Windows are unavailable here.
 
 ## Integration and independence

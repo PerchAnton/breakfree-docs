@@ -9,6 +9,9 @@ Prepared 2026-10-16. No release or tag is published by this entry.
 
 - Standalone Rust document model, shared edit commands, undo/redo and native GUI.
 - Custom Home ribbon, File, navigation/formatting panes and real document statistics.
+- Refined light desktop shell: original vector controls, compact Font/Paragraph
+  rows, style previews, File Home/Options, status zoom buttons and responsive
+  bounds tests; native wide/narrow/File captures.
 - Versioned `.bfdoc` content v1, checked temporary-file replacement, file errors and
   Save/Discard/Cancel; process integration v1 and independent executable.
 - English/Ukrainian/Russian and grapheme regression tests, CPU widget event tests,

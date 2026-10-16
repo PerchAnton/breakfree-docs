@@ -142,8 +142,11 @@ plain text. Unimplemented font/style/list commands are disabled with explanation
 File provides New/Open/Save/Save As, unsaved Save/Discard/Cancel and view settings;
 Print is disabled. Navigation and the formatting pane operate on real model ranges.
 The white canvas is continuous; pagination, page numbers and print layout are absent.
-Status reports real word/paragraph counts and zoom. The ribbon compacts and moves
-commands into overflow menus as the window narrows.
+Status reports real word/paragraph counts and zoom. The ribbon uses compact vector controls, two-row Font/Paragraph groups and
+disabled style previews; it compacts and moves commands into overflow menus as
+the window narrows. File has Home/Options navigation and real document properties.
+The status bar provides zoom out/in and a click-to-reset percentage.
+See [current native screenshots and capture commands](docs/UI_SPEC.md#actual-application-capture).
 
 Ctrl (Command on macOS) + N/O/S, Shift+S, B/I, Z/Y or Shift+Z handle file, emphasis
 and history actions. Ctrl/Command + L/E/R/J aligns paragraphs; F/H opens Find/Replace.
