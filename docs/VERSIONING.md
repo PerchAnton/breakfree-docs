@@ -44,7 +44,8 @@ owner's approval and identify pending approval accurately. Do not treat lack of 
 reply, test success, CI success, a PR, or a source commit as approval/publication.
 If the version is unchanged, report that same version; no automatic task-by-task
 increment is required. Record an explicit approval with its scope in the project
-journal when received. Do not claim a private chat instruction is a GitHub comment.
+journal when received. Attribute owner instructions to their actual source; only label them GitHub
+comments when they were posted there.
 
 The first candidate under this policy is **`0.1.0-alpha.1`, submitted for owner
 approval**. No alpha/beta/RC/stable publication is authorized by this policy itself.
@@ -57,7 +58,7 @@ Approval of a number does not authorize a merge, tag, upload or GitHub Release.
 2. Run locked tests, lint and builds required by AGENTS. Verify that `--version`
    and capabilities `app_version` equal Cargo metadata. Keep protocol/content
    version tests unchanged unless a separate format/contract decision requires it.
-3. Send the change for review, update both complete project journals, and report
+3. Send the change for review, update the project journal, and report
    the current version with actual checks, limits and approval status.
 4. After explicit publication authorization, verify the approved commit, target
    platform evidence, dependency/license gates and artifact version. A future tag
