@@ -19,9 +19,28 @@ Use Cargo-compatible semantic versions, with positive numeric candidate counters
 Here the owner's `0.1.0x` denotes the first release family. Alpha, beta and RC
 candidates sort before stable `0.1.0`; do not use a fourth numeric Cargo component
 or invent `0.1.0x` as a literal executable version. Restart the candidate counter
-at 1 when entering a new stage. Increment it for a distinct candidate, without
-renumbering existing published candidates. Documentation-only updates do not
-require a bump. Future maintenance release numbers require a separate decision.
+at 1 when entering an explicitly approved new stage. Future maintenance release
+numbers require a separate decision.
+
+## Every change gets a version and changelog entry
+
+The owner's updated instruction on 2026-10-16 requires a version increment and a
+dated CHANGELOG.md entry for **every delivered change set**, including code,
+design, documentation, configuration and journal-only work. Increment the current
+stage's numeric counter by one: `0.1.0-alpha.1` becomes `0.1.0-alpha.2`, then
+`0.1.0-alpha.3`. Do not wait for a release or another reminder to apply this rule.
+
+A change set is one coherent work iteration. Edits, fixes found during its
+validation, and the separately committed journal recording that work share its
+new version. This avoids a recursive version increment for documenting the same
+increment. A subsequent change set requires the next number, even if the previous
+candidate is still awaiting approval. Read-only reviews with no repository changes
+report the existing version. Do not renumber published candidates or silently
+move to beta, RC, stable or the next release cycle.
+
+This replaces the earlier policy that exempted documentation-only work and did
+not require an increment after each task. Historical entries retain the policy
+and version that applied when they were recorded.
 
 ## Source of truth and compatibility
 
@@ -42,19 +61,22 @@ Every final work report must end with the exact checked-in application version,
 including reports that only change documentation or journals. Submit it for the
 owner's approval and identify pending approval accurately. Do not treat lack of a
 reply, test success, CI success, a PR, or a source commit as approval/publication.
-If the version is unchanged, report that same version; no automatic task-by-task
-increment is required. Record an explicit approval with its scope in the project
-journal when received. Attribute owner instructions to their actual source; only label them GitHub
-comments when they were posted there.
+For a read-only check, report the unchanged version. For changes, report the newly
+incremented version and link its changelog entry. Record an explicit approval with
+its scope in the project journal when received. Attribute owner instructions to
+their actual source; only label them GitHub comments when they were posted there.
 
-The first candidate under this policy is **`0.1.0-alpha.1`, submitted for owner
-approval**. No alpha/beta/RC/stable publication is authorized by this policy itself.
+The first candidate was `0.1.0-alpha.1`; the per-change policy is introduced in
+**`0.1.0-alpha.2`, submitted for owner approval**. No alpha/beta/RC/stable
+publication is authorized by this policy itself.
 Approval of a number does not authorize a merge, tag, upload or GitHub Release.
 
 ## Candidate preparation
 
-1. Choose the stage/counter under the current owner-approved cycle; update Cargo
-   metadata and add a dated, unreleased changelog entry describing actual changes.
+1. Increment the current stage's counter for the change set; update Cargo.toml
+   and the root package in Cargo.lock together. Add a dated, unreleased changelog
+   entry describing actual changes. Keep dependency versions unchanged unless
+   they are part of the task. Stage transitions need explicit owner approval.
 2. Run locked tests, lint and builds required by AGENTS. Verify that `--version`
    and capabilities `app_version` equal Cargo metadata. Keep protocol/content
    version tests unchanged unless a separate format/contract decision requires it.

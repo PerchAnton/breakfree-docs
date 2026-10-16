@@ -20,8 +20,12 @@ native input, dialogs, accessibility and Windows scaling verification.
 
 Follow [versioning and owner approval](docs/VERSIONING.md). Every work report,
 including documentation-only work, ends with the current application version for
-owner approval. Do not bump automatically, infer approval or publish a tag/release
-without a separate explicit instruction. Keep candidate scope in CHANGELOG.md.
+owner approval. Every delivered change set, including documentation and journal
+work, increments the current prerelease counter and adds a dated CHANGELOG.md
+entry. Its implementation, validation and separate journal commit share one
+version; a later change set increments it again. Read-only checks keep the current
+version. Do not infer approval or publish a tag/release without a separate
+explicit instruction.
 
 Keep project history in [docs/PROJECT_LOG.md](docs/PROJECT_LOG.md), using Europe/Kyiv
 timestamps and direct event links. Read the current log and instructions before

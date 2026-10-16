@@ -91,8 +91,10 @@ The first cycle is `0.1.0-alpha.N` → `0.1.0-beta.N` → `0.1.0-rc.N` → `0.1.
 After publishing the first stable release, development moves to `0.2.0`. Read
 [versioning and approval](docs/VERSIONING.md) and [CHANGELOG](CHANGELOG.md).
 `Cargo.toml` defines the current application version; `--version`, capabilities
-and GUI Help show that same build version. Every work report ends with the current
-version for owner approval. No release or tag is automatically published.
+and GUI Help show that same build version. Every delivered change set increments
+the prerelease counter and updates CHANGELOG, including documentation-only work.
+Every work report ends with the current version for owner approval. No release
+or tag is automatically published.
 
 ## Build and run
 

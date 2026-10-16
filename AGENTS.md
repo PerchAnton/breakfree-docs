@@ -54,10 +54,14 @@ Application, process-protocol and document-content versions are independent.
 End **every work report**, including documentation/journal-only work, with the
 current checked-in application version for the owner's approval. State whether
 approval is pending or explicitly received; never infer approval from silence.
-Do not automatically bump the version after every task. Propose a bump for a new
-candidate, and obtain explicit owner approval for stage transitions and release
-numbers before tagging/publishing. A version approval is not permission to merge,
-tag or publish. Preserve historical version records and immutable tags/artifacts.
+Every delivered change set must increment the current prerelease counter and add
+a dated CHANGELOG.md entry, including code, design, documentation and journal-only
+work. One coherent work iteration uses one new version; its implementation,
+validation and separately committed journal share that version. A later change
+set requires another increment. Read-only checks do not increment the version.
+Obtain explicit owner approval for stage transitions and release numbers before
+tagging/publishing. A version approval is not permission to merge, tag or publish.
+Preserve historical version records and immutable tags/artifacts.
 
 ## Validation
 

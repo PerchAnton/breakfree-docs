@@ -12,7 +12,9 @@ The owner-defined release cycle is `0.1.0-alpha.N` → beta → RC → `0.1.0`;
 the `0.2.0` cycle starts after actual first stable publication. See
 [VERSIONING](docs/VERSIONING.md) and [CHANGELOG](CHANGELOG.md). D0–D8/R1 remain
 feature/evidence milestones; version numbers do not mark those gates complete.
-Every work report includes the current application version for owner approval.
+Every delivered change set increments the current prerelease counter and updates
+CHANGELOG, including documentation-only work. Every work report includes the
+current application version for owner approval.
 
 ## 1. Product destination and current position
 
