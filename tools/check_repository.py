@@ -31,7 +31,7 @@ packaged = ROOT / "prototypes/python/src/breakfree_docs/assets/breakfree-docs.we
 assert (
     hashlib.sha256(source.read_bytes()).digest() == hashlib.sha256(packaged.read_bytes()).digest()
 )
-assert 'include_bytes!("../docs/brand/breakfree-docs.webp")' in (ROOT / "src/gui.rs").read_text()
+assert 'include_bytes!("../docs/brand/breakfree-docs.webp")' in (ROOT / "src/gui.rs").read_text(encoding="utf-8")
 snapshot = json.loads((ROOT / "contracts/v1/snapshot.json").read_text(encoding="utf-8"))
 assert snapshot["protocol_version"] == 1
 assert snapshot["app_id"] == "breakfree.docs"

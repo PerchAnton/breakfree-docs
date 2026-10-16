@@ -20,7 +20,9 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install pinned Rust toolchain
-        run: rustup show
+        run: |
+          rustup toolchain install 1.99.1 --profile minimal --component rustfmt,clippy
+          rustup show
       - name: Linux native build libraries
         if: runner.os == 'Linux'
         run: |
