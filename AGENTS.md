@@ -28,11 +28,52 @@ Use local evidence reporting and the pinned `contracts/v1/` snapshot until it ex
 - Keep `docs/PROJECT_LOG.md` in this repository; record work, checks, comments,
   reviews, help requests/offers and next actions with Europe/Kyiv timestamps and
   source links. Update an event with the same link instead of duplicating it.
+  Follow the mandatory two-copy publication rule below.
 - Fetch safely and preserve local/remote work before log updates. Commit log changes
   separately on the review branch. Never force push, auto-merge, release, or send
   public replies/assignments without separate owner instruction.
 - After the initial audit, inspect changes since the prior recorded check, including
   replies to old issues/PRs. Distinguish local tests, server CI, merge and release.
+
+## Журнал и приватное зеркало
+
+The owner requires **two complete copies** after every significant stage and every
+journal update. This rule replaces the former instruction not to duplicate the
+project journal in gitwork. Publishing only the primary journal is incomplete.
+
+- Primary repository: <https://github.com/PerchAnton/breakfree-docs>.
+  Primary path: `docs/PROJECT_LOG.md`. Publish through the project's review
+  branch/PR workflow, with journal updates in separate commits.
+- Private repository: <https://github.com/PerchAnton/gitwork>, branch `main`.
+  Exact mirror path: `breakfree/breakfree-docs/PROJECT_LOG.md`.
+  This must be a full, text-identical copy of the published primary journal.
+- Before writing, read the current
+  [project prompt](https://github.com/PerchAnton/gitwork/blob/main/prompts/breakfree-docs.md),
+  applicable repository instructions and both existing journals. Safely fetch/read
+  current remote revisions and preserve other chats' and contributors' records.
+  If the mirror has missing history, reconcile it into the primary journal first,
+  publish that source, then copy its complete text. Do not publish private
+  correspondence or secrets while reconciling history.
+- Keep completed work, actual checks and limitations, comments/reviews with
+  `@authors`, human/bot classification and direct links, help offers/requests and
+  concrete next actions. Record Europe/Kyiv timestamps and the inspected period;
+  include new replies on older issues/PRs. Preserve history and avoid duplicate
+  events with the same link. An offer is not an assignment; stars/forks are not offers.
+- After publishing the primary journal, read fresh `gitwork/main` and update only
+  this project's mirror, `breakfree/breakfree-docs/SYNC.md` and its row in the
+  Breakfree table of `README.md`. The row includes status, mirror/source links,
+  check time and next step. Preserve all other projects and unrelated files.
+- Keep mirror metadata out of the copied journal. `SYNC.md` records the source
+  repository, source branch/path, full published source commit SHA, immutable
+  source-file link and synchronization time with the Europe/Kyiv timezone.
+  Commit the mirror/metadata update separately in `gitwork/main`.
+- Never force push. On a concurrent update, read the new head, preserve both
+  authors' records and retry a normal fast-forward update. Verify both files by
+  reading them back from GitHub and comparing their complete text. Do not claim
+  synchronization from a successful primary push alone.
+- If the private repository or write is unavailable, retain a ready local copy
+  and explicitly report: **«приватная копия не отправлена»**. Otherwise provide
+  links to both published journals and commits in both repositories.
 
 ## Validation
 
