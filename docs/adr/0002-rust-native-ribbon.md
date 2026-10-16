@@ -44,8 +44,9 @@ Native `.bfdoc` content v1 and process protocol v1 are unchanged and independent
 The historical Welcome fixture is tested by the Rust reader. Unicode scalar
 indices, half-open grapheme-aligned edits, first-affected-paragraph alignment
 inheritance, 100-operation snapshot history and pending caret emphasis are retained.
-Each committed input event, paste, deletion or formatting command is an undo step;
-time-based typing coalescing is not implemented. No Unicode normalization occurs.
+Input events delivered in one widget update form one text undo operation; explicit
+paste, deletion and formatting commands have separate boundaries. Time-based typing
+coalescing is not implemented. No Unicode normalization occurs.
 Model limits remain 100,000 scalars and 16 MiB encoded files.
 
 Storage uses a same-directory tempfile, checked writes, flush, file sync,

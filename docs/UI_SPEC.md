@@ -63,7 +63,8 @@ No application account, cloud connection or copied product branding is present.
 Text input uses the actual native toolkit text widget with a model-derived rich
 galley; it is not a painted string over a hidden document. Committed input and IME
 commit call the same Rust commands as tests. Preedit stays transient. The model
-owns undo; each input event, paste and formatting action has a distinct boundary.
+owns undo; one widget update batches committed text events into one transaction.
+Explicit paste/deletion/formatting commands have separate history boundaries.
 Left/Right and deletion honor extended grapheme boundaries. Tab traverses controls;
 F6 cycles document/command-search/navigation, Alt+Q searches real commands. Standard
 Ctrl/Command N/O/S/Shift+S, B/I, Z/Y/Shift+Z, F/H and L/E/R/J are implemented.

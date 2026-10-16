@@ -14,7 +14,7 @@ and must not be presented as Rust results.
 | `cargo test --locked --no-default-features` | 17 passed; core and CLI build without GUI dependencies |
 | `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
 | `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
-| Copied executable outside checkout | Capabilities/version and malformed-open checks without Office or source files; CLI tests also run from a temporary working directory |
+| Copied executable outside checkout | Release capabilities/malformed-open checks; capture-feature GUI also rendered `--new` and answered `--version` from an empty temporary directory without Office/source files |
 | Repository references, contract and artwork | `python3 tools/check_repository.py` passed; approved logo embedded directly and archive copy byte-identical |
 | Workflow YAML / whitespace | Ruby YAML parse and `git diff --check` passed |
 | Native rendering | Real native `--new` window launched; `--open` rendered Welcome fixture to the committed [capture](screenshots/rust-home-macos.png) through opt-in eframe capture |

@@ -139,8 +139,8 @@ commands into overflow menus as the window narrows.
 Ctrl (Command on macOS) + N/O/S, Shift+S, B/I, Z/Y or Shift+Z handle file, emphasis
 and history actions. Ctrl/Command + L/E/R/J aligns paragraphs; F/H opens Find/Replace.
 Ctrl+F1 collapses the ribbon; Alt+F/H opens File/Home; Alt+Q focuses command search;
-F6 cycles document/search/navigation focus. Tab traverses controls. Each committed
-input event, paste and formatting operation has a separate undo boundary. Full
+F6 cycles document/search/navigation focus. Tab traverses controls. Input events delivered in one widget update form one text undo operation;
+explicit paste and formatting commands have separate boundaries. Full
 Word KeyTips and assistive-technology behavior are pending review.
 
 ## Check
