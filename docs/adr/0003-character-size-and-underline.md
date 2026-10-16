@@ -64,3 +64,20 @@ all reference-editor edge cases. The entire selection changes in one undo entry;
 no-op limits add none. Caret-only changes remain pending and preserve other style
 properties. Buttons, command search and Ctrl/Command+Shift+>/< call this engine
 command. No model schema, content version or integration protocol change is needed.
+
+## Alpha.5 Font dialog transaction
+
+Represent a partial font change as GUI-independent `commands::FontPatch`, with an
+optional value for each supported property. The modal keeps its own draft; no live
+preview mutates the document. OK sends one validated `set_font` command. Properties
+not edited retain each run's original value, including mixed selections; an empty
+patch does nothing. The selection, pending insertion style and history follow the
+existing range rules. Cancel, Escape and invalid size entry do not commit. A
+caret-only patch changes pending insertion style without a document/history entry.
+
+The Font launcher and keyboard shortcuts use this dialog; the Paragraph launcher
+still opens the existing formatting pane. Modal drafts block document commands and
+window close until resolved. The preview uses representative defaults for mixed
+properties, disclosed in the dialog, and is clipped at extreme sizes. Font-family
+choice remains disabled. This extends command/UI behavior without changing the
+persisted model, dependencies, native content v2 or process protocol v1.

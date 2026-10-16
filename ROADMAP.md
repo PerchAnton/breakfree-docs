@@ -116,6 +116,10 @@ native dialog/IME, accessibility and target-platform reviews are outstanding.
   common font-size stepping; preserve mixed runs/history and 640-DIP overflow.
   Alpha.4 native macOS keyboard/paste, formatting, Save/Open and Cancel/Discard
   smoke passed; automated non-ASCII character typing remains unresolved.
+- [x] Give Font its own draft dialog and one shared undo transaction; preserve mixed
+  formatting, cancellation and Unicode save/reopen. Split Find primary/options.
+  Alpha.5: 48 full / 26 core-only local tests, native macOS keyboard/save smoke and
+  wide/minimum-window Home/Font captures; Windows comparison remains open.
 - [ ] Capture Word 2024 Windows and Docs at matched build/language/theme/window,
   document zoom and Windows 100/125/150%; record measured deltas in UI_SPEC.
 - [ ] Verify native Windows keyboard, IME, dialogs, font fallback, clipping and focus.
@@ -233,3 +237,4 @@ Use public specifications and original test cases, not copied application code. 
 | 2026-10-16 | Owner approved Rust and Word 2024 Windows reference; replaced runtime with Rust and added R1 ribbon proof gate | Native v1/CLI preserved; toolkit adoption and matched Windows visual/DPI evidence pending |
 | 2026-10-16 | Owner requested font size and underline as the next small increment; alpha.3 implements shared formatting and native content v2 | Strict v1 reading retained; protocol v1 unchanged. Local history/storage/widget checks and wide/narrow native captures recorded; Windows comparison remains pending |
 | 2026-10-16 | Owner approved alpha.3; alpha.4 tightens Home geometry/menus/icons and implements shared font-size stepping | 44 full / 24 core-only local tests, three native widths and macOS keyboard/dialog smoke; Windows reference/native DPI and IME gates remain open |
+| 2026-10-16 | Owner approved alpha.4; alpha.5 adds transactional Font dialog and split Find | 48 full / 26 core-only local tests; native macOS dialog/history/save/reopen and four inspected captures; Windows/Word/IME gates remain open |

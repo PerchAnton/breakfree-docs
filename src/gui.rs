@@ -16,6 +16,10 @@ use eframe::egui::{
 };
 use std::path::PathBuf;
 
+#[path = "font_dialog.rs"]
+mod font_dialog;
+use font_dialog::{FontDialog, FontDialogOutcome};
+
 const INK: Color32 = Color32::from_rgb(35, 35, 35);
 const ACCENT: Color32 = Color32::from_rgb(112, 71, 174);
 const CHROME: Color32 = Color32::from_rgb(243, 243, 243);
@@ -40,6 +44,7 @@ pub enum Action {
     Italic,
     Underline,
     FontSize,
+    FontDialog,
     GrowFont,
     ShrinkFont,
     Left,
@@ -71,6 +76,7 @@ impl Action {
             Self::Italic => "Italic",
             Self::Underline => "Underline",
             Self::FontSize => "Font size",
+            Self::FontDialog => "Font dialog",
             Self::GrowFont => "Grow font",
             Self::ShrinkFont => "Shrink font",
             Self::Left => "Align left",
@@ -102,6 +108,7 @@ const COMMANDS: &[Action] = &[
     Action::Italic,
     Action::Underline,
     Action::FontSize,
+    Action::FontDialog,
     Action::GrowFont,
     Action::ShrinkFont,
     Action::Left,
@@ -145,6 +152,7 @@ pub struct DocsApp {
     focus_font_size: bool,
     font_size_text: String,
     font_size_dirty: bool,
+    font_dialog: Option<FontDialog>,
     pending: Option<Pending>,
     error: Option<String>,
     backstage: bool,
@@ -222,6 +230,7 @@ impl DocsApp {
             focus_font_size: false,
             font_size_text: String::new(),
             font_size_dirty: false,
+            font_dialog: None,
             pending: None,
             error: None,
             backstage: false,
@@ -246,6 +255,12 @@ impl DocsApp {
         });
     }
     fn enabled(&self, action: Action) -> bool {
+        if self.font_dialog.is_some() {
+            return false;
+        }
+        if action == Action::FontDialog && (self.pending.is_some() || self.error.is_some()) {
+            return false;
+        }
         if self.composing {
             return matches!(action, Action::Copy | Action::Ribbon | Action::Rulers);
         }
@@ -435,6 +450,13 @@ impl DocsApp {
                 self.ribbon_collapsed = false;
                 self.focus_font_size = true;
                 self.focus_document = false;
+            }
+            Action::FontDialog => {
+                self.font_dialog = Some(FontDialog::new(self.session.editor.selected_font()));
+                self.focus_document = false;
+                self.focus_font_size = false;
+                self.palette = false;
+                ctx.memory_mut(|m| m.surrender_focus(Id::new(EDIT_ID)));
             }
             Action::GrowFont | Action::ShrinkFont => {
                 let result =
@@ -801,6 +823,7 @@ impl DocsApp {
             Action::Italic => "Ctrl+I",
             Action::Underline => "Ctrl+U",
             Action::FontSize => "Ctrl+Shift+P",
+            Action::FontDialog => "Ctrl+D",
             Action::GrowFont => "Ctrl+Shift+>",
             Action::ShrinkFont => "Ctrl+Shift+<",
             Action::Find => "Ctrl+F",
@@ -1040,14 +1063,34 @@ impl DocsApp {
 
     fn editing_menu(&mut self, ui: &mut Ui, rect: Rect, find: bool) {
         let name = if find { "Find" } else { "Select" };
-        let response = chrome::dropdown(
-            ui,
-            rect,
-            if find { Icon::Search } else { Icon::Select },
-            name,
-            name,
-            !self.composing,
-        )
+        // Find's primary target opens navigation immediately; its arrow owns the menu.
+        let rect = if find {
+            let primary = Rect::from_min_max(rect.min, pos2(rect.right() - 18., rect.bottom()));
+            self.ribbon_control(ui, primary, Icon::Search, "Find", Action::Find);
+            Rect::from_min_max(primary.right_top(), rect.max)
+        } else {
+            rect
+        };
+        let response = if find {
+            chrome::control(
+                ui,
+                rect,
+                Icon::Chevron(false),
+                "",
+                "Find options",
+                self.enabled(Action::Find),
+                false,
+            )
+        } else {
+            chrome::dropdown(
+                ui,
+                rect,
+                Icon::Select,
+                name,
+                name,
+                self.enabled(Action::SelectAll),
+            )
+        }
         .on_hover_text(if find {
             "Find and navigation"
         } else {
@@ -1351,7 +1394,11 @@ impl DocsApp {
                 r(width - 16., 71., 15., 16.),
                 Icon::Launch,
                 "",
-                Action::Formatting,
+                if index == 1 {
+                    Action::FontDialog
+                } else {
+                    Action::Formatting
+                },
             );
         }
     }
@@ -1459,6 +1506,10 @@ impl DocsApp {
     }
 
     fn shortcuts(&mut self, ctx: &egui::Context) {
+        // Modal drafts must never dispatch edits, Save or New into the background.
+        if self.font_dialog.is_some() {
+            return;
+        }
         let document_focus = ctx.memory(|m| m.has_focus(Id::new(EDIT_ID)));
         if ctx.input_mut(|i| i.consume_key(Modifiers::CTRL, Key::F1)) {
             self.ribbon_collapsed = !self.ribbon_collapsed;
@@ -1493,6 +1544,8 @@ impl DocsApp {
                 (Key::F, false, Action::Find),
                 (Key::H, false, Action::Replace),
                 (Key::P, true, Action::FontSize),
+                (Key::D, false, Action::FontDialog),
+                (Key::F, true, Action::FontDialog),
             ] {
                 let modifiers = Modifiers {
                     shift,
@@ -2130,6 +2183,18 @@ impl DocsApp {
     }
 
     fn dialogs(&mut self, ctx: &egui::Context) {
+        if let Some(mut dialog) = self.font_dialog.take() {
+            match dialog.show(ctx, &self.body_font, &mut self.regions) {
+                FontDialogOutcome::Open => self.font_dialog = Some(dialog),
+                FontDialogOutcome::Cancel => self.sync_view(),
+                FontDialogOutcome::Apply(patch) => {
+                    let (start, end) = self.session.editor.selection;
+                    let result = self.session.editor.set_font(start, end, patch);
+                    self.fail(result);
+                    self.sync_view();
+                }
+            }
+        }
         if self.pending.is_some() {
             egui::Modal::new(Id::new("unsaved-changes")).show(ctx, |ui| {
                 ui.set_width(380.);
@@ -2208,7 +2273,11 @@ impl DocsApp {
 
     pub fn update_ui(&mut self, ctx: &egui::Context) {
         self.regions.clear();
-        let close_requested = ctx.input(|i| i.viewport().close_requested());
+        let mut close_requested = ctx.input(|i| i.viewport().close_requested());
+        if close_requested && self.font_dialog.is_some() {
+            ctx.send_viewport_cmd(ViewportCommand::CancelClose);
+            close_requested = false;
+        }
         let size_ready = !close_requested || self.allow_close || self.commit_font_size_input();
         if !size_ready {
             ctx.send_viewport_cmd(ViewportCommand::CancelClose);

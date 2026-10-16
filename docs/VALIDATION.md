@@ -8,20 +8,20 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.4**. Earlier capture/CI evidence retains its
+Current local checkpoint: **0.1.0-alpha.5**. Earlier capture/CI evidence retains its
 original scope; this iteration does not establish native Windows behavior.
 
 | Local check | Observed result |
 | :--- | :--- |
-| `cargo test --locked` | 44 passed: 21 engine/storage/presentation, 3 CLI subprocess and 20 actual egui widget event tests; no skipped tests |
-| `cargo test --locked --no-default-features` | 24 passed; core and CLI build without GUI dependencies |
+| `cargo test --locked` | 48 passed: 23 engine/storage/presentation, 3 CLI subprocess and 22 actual egui widget event tests; no skipped tests |
+| `cargo test --locked --no-default-features` | 26 passed; core and CLI build without GUI dependencies |
 | `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
 | `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
-| Copied executable outside checkout | Alpha.4 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
+| Copied executable outside checkout | Alpha.5 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
 | Repository references, contract and artwork | `python3 tools/check_repository.py` passed; approved logo embedded directly and archive copy byte-identical |
 | Workflow YAML / whitespace | Ruby YAML parse and `git diff --check` passed |
-| Native rendering | Alpha.4 Formatting fixture and Home inspected at [1366 × 900 DIP](screenshots/rust-home-alpha4-macos.png), [960 × 700](screenshots/rust-home-alpha4-compact-macos.png) and [640 × 700](screenshots/rust-home-alpha4-narrow-macos.png), backing scale 2. Earlier captures retain their version context |
-| Native macOS interaction | ASCII typing, exact Unicode paste, selection, B/U, size field, Grow shortcut, undo/redo, system Save/Open, dirty New/Cancel/Discard passed through Computer Use; saved v2 text/styles inspected. Native non-ASCII typing/IME is not certified; see the scoped result below |
+| Native rendering | Alpha.5 Home and Font dialog inspected at 1366 × 900 and 640 × 480 DIP, backing scale 2; see [current captures](UI_SPEC.md#actual-application-capture). Earlier captures retain their version context |
+| Native macOS interaction | Alpha.5 Unicode paste, Font shortcut, draft cancellation, invalid size, combined B/I/U/size, one-step undo/redo, system Save/Open and split Find passed through Computer Use. Saved v2 text/styles inspected. Alpha.4 lifecycle smoke is preserved below; native non-ASCII typing/IME is not certified |
 | Synthetic DPI | Actual widgets at 1/1.25/1.5 scale and 960/1366/1920 physical widths; ribbon/group/workspace/status bounds and collapse assertions passed; 27 additional width/scale combinations check individual Home control containment/nonoverlap and title/search/window bounds |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
@@ -57,9 +57,39 @@ Paste/Find/Select menus, Escape cancellation and working overflow. Strict geomet
 checks now include menu triggers and the More button. The initial 640-DIP budget
 failure was resolved by narrowing the overflow Font group, keeping the assertions.
 
+## Alpha.5 Font and Editing validation
+
+Shared-command tests cover partial Font patches, untouched mixed values, exact
+selection/pending style/history snapshots, invalid grapheme boundaries, no-op and
+caret-only commands, and save/reopen. Actual widgets cover launchers and Command/Ctrl+D,
+Cancel/Escape, invalid size, Enter/OK, blocked background edits and window close,
+composition disablement, direct Find/options and unchanged overflow behavior.
+Dialog bounds and every recorded control fit 640 × 480 DIP at synthetic 1/1.25/1.5
+scales, including a 400-pt clipped preview. These are not native Windows DPI results.
+The initial dialog inherited horizontal child layout and exceeded the minimum width;
+explicit vertical columns fixed it without weakening geometry assertions.
+
+Native macOS Computer Use on the release binary independently verified:
+
+| Action | Observed evidence |
+| :--- | :--- |
+| Paste English / Ukrainian / Russian combining text; Command+A/D | Exact three paragraphs; Font dialog opens, size field selected |
+| Draft 19.5 pt + Bold Italic + Underline; Escape | Draft discarded; reopening shows original 11 pt, regular, no underline |
+| Type 401; Enter | Visible validation error; dialog stays open with invalid size selected |
+| Replace with 19.5, choose Bold Italic/Underline, Enter | All selected text changes together; original Unicode selection retained |
+| Command+Z; Command+Shift+Z | One undo restores 11 pt/regular/no underline; one redo restores all four properties |
+| System Save, New, system Open | Reopened exact three paragraphs, 19.5 pt + bold/italic/underline, Saved locally, empty history |
+| Find primary click; separate options arrow | First click opens/focuses navigation; arrow opens Find/Navigation menu |
+
+The saved v2 document was independently decoded and all text/run properties asserted.
+SHA-256: `11ba3dafe02908d251a113325e717effc0e8afddf921134fb4009f45a7ad4df9`.
+The test session was closed after saving. Non-ASCII character typing was not retested;
+alpha.4's unresolved result below still applies. Native OS IME, assistive technology,
+Windows scaling and a controlled Word 2024 comparison remain unverified.
+
 ## Native macOS alpha.4 smoke
 
-The current release binary was copied to a temporary app bundle and verified with
+The alpha.4 release binary was copied to a temporary app bundle and verified with
 `--version`/`--capabilities` outside the checkout. Computer Use successfully opened
 it in this iteration. This supersedes the earlier launch/permission limitation only
 for the specific checks below; the bundle is not a supported installer.

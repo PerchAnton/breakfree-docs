@@ -67,14 +67,27 @@ outside that interval it moves one point, bounded to 1–400 pt. Mixed selection
 retain differing sizes; one click is one undo operation. Ctrl/Command+Shift+>/<
 (period/comma) invokes the same command while the document has focus. Composition
 disables these commands. The Paste icon performs plain-text paste; its lower menu
-contains the same action and an explained disabled Paste Special. Find and Select
-open real command menus; overflow retains Find/Replace/Select All/Formatting.
+contains the same action and an explained disabled Paste Special. Find opens
+navigation directly; its separate 18-DIP arrow opens options. Select opens a real
+command menu; overflow retains Find/Replace/Select All/Formatting.
 Style previews remain disabled and do not claim applied model styles. A single
 63-DIP gallery holds inline Normal/No Spacing/Heading 1 names and three disabled
 navigation buttons; no selected style frame is drawn.
 Native egui hover/pressed/disabled/focus states remain active; unsupported controls
 have tooltips explaining the missing capability. Styling uses restrained violet
 #7047ae, pale selected-state fill, light chrome and readable dark text.
+
+The Font group launcher opens a modal with a 420-DIP content width: Font, Font style
+and Size columns (172/136/92 DIP), preset list, mixed-state Underline checkbox,
+54-DIP-high clipped preview and 82 × 27 DIP OK/Cancel buttons. These are Docs design
+values, not measured reference values. Style choices set bold/italic together;
+untouched properties retain mixed values. Size is initially focused and selected.
+Enter/OK applies one command; Escape/Cancel discards all draft changes. Invalid size
+stays visible in the dialog. Background document commands and window close are
+blocked until the draft is resolved. Font-family choice is explained and disabled.
+The Paragraph launcher retains the formatting pane. The official keyboard source
+above confirms the Windows Font dialog shortcuts; its complete dialog and effects
+are not claimed as implemented.
 
 Other tabs expose disabled, explained controls. View has real rulers, navigation
 and zoom; Help shows version and shortcuts. Object-specific contextual tabs are
@@ -89,11 +102,32 @@ Explicit paste/deletion/formatting commands have separate history boundaries.
 Left/Right and deletion honor extended grapheme boundaries. Tab traverses controls;
 F6 cycles document/command-search/navigation, Alt+Q searches real commands. Standard
 Ctrl/Command N/O/S/Shift+S, B/I/U, Shift+P (focus/select size), Z/Y/Shift+Z, F/H and
-L/E/R/J are implemented.
+L/E/R/J are implemented. Ctrl/Command+D or Shift+F opens the Font dialog.
 Full sequential ribbon KeyTips, complete Word F6 traversal, native assistive technology
 and multilingual OS IME behavior remain unverified/incomplete.
 
 ## Actual application capture
+
+![Alpha.5 Font dialog on macOS](screenshots/rust-font-alpha5-macos.png)
+
+Alpha.5, captured 2026-10-16: [Home](screenshots/rust-home-alpha5-macos.png) and
+Font dialog at 1366 × 900 DIP / 2732 × 1800 px; minimum-window
+[Home](screenshots/rust-home-alpha5-narrow-macos.png) and
+[Font](screenshots/rust-font-alpha5-narrow-macos.png) at 640 × 480 DIP / 1280 × 960 px.
+All four native renders were inspected. Formatting fixture, English UI, light theme,
+Arial, 100% document zoom and macOS backing scale 2. The Font capture selects the
+whole fixture and reports mixed size/style/underline without editing it. Home's
+caret rests at the final 11-pt italic run. No ribbon controls overlap; all modal
+controls fit the minimum window. Find's primary target and its 18-DIP arrow are
+separate; the 104-DIP ribbon geometry is otherwise retained from alpha.4.
+
+The development capture helper now waits eight frames and requests an actual
+native framebuffer screenshot, allowing modal measurement passes to finish. Its
+previous two-pass capture omitted the initial modal; those incomplete images were
+replaced. This does not change the production CLI. The native keyboard/save smoke
+is recorded in [VALIDATION](VALIDATION.md). No matched Word/Windows capture exists.
+
+Historical alpha.4 captures follow:
 
 ![Alpha.4 Home on macOS](screenshots/rust-home-alpha4-macos.png)
 
@@ -156,15 +190,17 @@ The capture helper uses the same `DocsApp`, controls and layout as the editor.
 To reproduce fixed-size captures (a native desktop session is required):
 
 ```sh
-EFRAME_SCREENSHOT_TO="$PWD/artifacts/home.png" cargo run --locked --features capture --example capture_ui -- 1366 900 home
-EFRAME_SCREENSHOT_TO="$PWD/artifacts/narrow.png" cargo run --locked --features capture --example capture_ui -- 720 700 home
-EFRAME_SCREENSHOT_TO="$PWD/artifacts/file.png" cargo run --locked --features capture --example capture_ui -- 1366 900 file
-EFRAME_SCREENSHOT_TO="$PWD/artifacts/formatting.png" cargo run --locked --features capture --example capture_ui -- 1366 900 formatting
-EFRAME_SCREENSHOT_TO="$PWD/artifacts/formatting-compact.png" cargo run --locked --features capture --example capture_ui -- 960 700 formatting
-EFRAME_SCREENSHOT_TO="$PWD/artifacts/formatting-narrow.png" cargo run --locked --features capture --example capture_ui -- 640 700 formatting
+BREAKFREE_CAPTURE_TO="$PWD/artifacts/home.png" cargo run --locked --features capture --example capture_ui -- 1366 900 home
+BREAKFREE_CAPTURE_TO="$PWD/artifacts/narrow.png" cargo run --locked --features capture --example capture_ui -- 720 700 home
+BREAKFREE_CAPTURE_TO="$PWD/artifacts/file.png" cargo run --locked --features capture --example capture_ui -- 1366 900 file
+BREAKFREE_CAPTURE_TO="$PWD/artifacts/formatting.png" cargo run --locked --features capture --example capture_ui -- 1366 900 formatting
+BREAKFREE_CAPTURE_TO="$PWD/artifacts/formatting-compact.png" cargo run --locked --features capture --example capture_ui -- 960 700 formatting
+BREAKFREE_CAPTURE_TO="$PWD/artifacts/formatting-narrow.png" cargo run --locked --features capture --example capture_ui -- 640 700 formatting
+BREAKFREE_CAPTURE_TO="$PWD/artifacts/font.png" cargo run --locked --features capture --example capture_ui -- 1366 900 font
+BREAKFREE_CAPTURE_TO="$PWD/artifacts/font-narrow.png" cargo run --locked --features capture --example capture_ui -- 640 480 font
 ```
 
-Create `artifacts` first. On Windows PowerShell, set `$env:EFRAME_SCREENSHOT_TO`
+Create `artifacts` first. On Windows PowerShell, set `$env:BREAKFREE_CAPTURE_TO`
 to the absolute PNG path and run the same Cargo arguments. `navigation` is also
 accepted in place of `home`. This development example adds no production CLI flags.
 

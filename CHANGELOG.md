@@ -3,7 +3,30 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
-## 0.1.0-alpha.4 — Unreleased; submitted for owner approval
+## 0.1.0-alpha.5 — Unreleased; submitted for owner approval
+
+Prepared 2026-10-16. The owner approved alpha.4 in the project chat; that approval
+covers its version number, not a merge, tag or release.
+
+- Give Home's Font launcher its own native Font dialog, also available through
+  Ctrl/Command+D and Ctrl/Command+Shift+F. Keep the Paragraph launcher separate.
+- Add compact Font / Font style / Size columns, preset sizes, mixed underline,
+  a clipped preview, and OK/Cancel. Unsupported font-family choice stays disabled.
+- Stage changes without editing the document; OK applies changed properties in
+  one shared undo transaction, preserving untouched mixed runs and Unicode ranges.
+  Escape/Cancel keeps the original; invalid sizes keep the dialog open. Document
+  shortcuts and window close cannot bypass the modal draft.
+- Split Find into a direct navigation action and a separate options arrow; retain
+  Select and overflow menus and the 104-DIP Home layout.
+- Extend engine and real-widget tests for dialog keyboard/pointer behavior,
+  mixed formatting, history, save/reopen and minimum-window bounds at synthetic DPI.
+- Verify native macOS Font cancellation/validation/undo and Unicode Save/Open;
+  inspect Home/Font at 1366×900 and 640×480 DIP. Capture helper waits for modal layout.
+
+Native content v2 and protocol v1 stay unchanged. No release, merge, dependency or
+license change is included. Native Windows/Word comparison remains unverified.
+
+## 0.1.0-alpha.4 — Unreleased; version approved by owner on 2026-10-16
 
 Prepared 2026-10-16. The owner approved alpha.3 in the project chat; that approval
 covers its version number, not a merge, tag or release.

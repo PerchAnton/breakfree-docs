@@ -944,14 +944,213 @@ fn home_menus_cancel_without_edits_and_dispatch_real_commands() {
     click_region(&ctx, &mut app, "home-menu-Select");
     click_region(&ctx, &mut app, "command-SelectAll");
     assert_eq!(app.session.editor.selection, (0, 7));
-    click_region(&ctx, &mut app, "home-menu-Find");
     click_region(&ctx, &mut app, "command-Find");
     assert!(app.navigation);
     assert!(ctx.memory(|m| m.has_focus(Id::new("find-text"))));
     assert_eq!(app.session.editor.document, before);
     assert_eq!(app.session.editor.undo_stack.len(), history);
+    app.navigation = false;
+    click_region(&ctx, &mut app, "home-menu-Find");
+    click_region(&ctx, &mut app, "command-Navigation");
+    assert!(app.navigation);
     click_region_at(&ctx, &mut app, "home-overflow", [640., 900.]);
     click_region_at(&ctx, &mut app, "command-Replace", [640., 900.]);
     assert!(app.replace_mode);
     assert_eq!(app.session.editor.document, before);
+}
+
+#[test]
+fn font_dialog_drafts_cancel_validate_and_apply_one_shared_transaction() {
+    for width in [640., 1366.] {
+        let (ctx, mut app) = setup();
+        app.session
+            .editor
+            .replace(0, 0, "English\nЇ e\u{301} ё", "Paste")
+            .unwrap();
+        app.session.editor.emphasize(0, 7, true, true).unwrap();
+        app.session
+            .editor
+            .set_font_size(0, 7, "28".parse().unwrap())
+            .unwrap();
+        app.execute(Action::SelectAll, &ctx);
+        let before = app.session.editor.document.clone();
+        let selection = app.session.editor.selection;
+        let history = app.session.editor.undo_stack.len();
+        click_region_at(&ctx, &mut app, "command-FontDialog", [width, 480.]);
+        assert!(app.font_dialog.is_some());
+        let bounds = app
+            .regions
+            .iter()
+            .find(|r| r.name == "font-dialog")
+            .unwrap()
+            .rect;
+        assert!(
+            Rect::from_min_size(Pos2::ZERO, vec2(width, 480.)).contains_rect(bounds),
+            "{bounds:?}"
+        );
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::Text("19.5".into())],
+            [width, 480.],
+            1.,
+        );
+        click_region_at(
+            &ctx,
+            &mut app,
+            "font-dialog-style-Bold Italic",
+            [width, 480.],
+        );
+        click_region_at(&ctx, &mut app, "font-dialog-underline", [width, 480.]);
+        frame(
+            &ctx,
+            &mut app,
+            vec![key(Key::N, true), key(Key::Z, true), key(Key::B, true)],
+            [width, 480.],
+            1.,
+        );
+        assert_eq!(app.session.editor.document, before);
+        click_region_at(&ctx, &mut app, "font-dialog-cancel", [width, 480.]);
+        assert!(app.font_dialog.is_none());
+        assert_eq!(app.session.editor.document, before);
+        assert_eq!(app.session.editor.undo_stack.len(), history);
+        frame(&ctx, &mut app, vec![], [width, 480.], 1.);
+        frame(&ctx, &mut app, vec![key(Key::D, true)], [width, 480.], 1.);
+        assert!(app.font_dialog.is_some());
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::Text("401".into())],
+            [width, 480.],
+            1.,
+        );
+        click_region_at(&ctx, &mut app, "font-dialog-ok", [width, 480.]);
+        assert!(app.font_dialog.is_some());
+        assert_eq!(app.session.editor.document, before);
+        // The invalid field is selected again; a replacement plus Enter applies.
+        frame(&ctx, &mut app, vec![], [width, 480.], 1.);
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::Text("19.5".into())],
+            [width, 480.],
+            1.,
+        );
+        click_region_at(&ctx, &mut app, "font-dialog-underline", [width, 480.]);
+        frame(
+            &ctx,
+            &mut app,
+            vec![key(Key::Enter, false)],
+            [width, 480.],
+            1.,
+        );
+        assert!(app.font_dialog.is_none());
+        assert_eq!(app.session.editor.selection, selection);
+        assert_eq!(app.session.editor.undo_stack.len(), history + 1);
+        let after = app.session.editor.document.clone();
+        for (old, new) in before.paragraphs.iter().zip(&after.paragraphs) {
+            for (a, b) in old.styles.iter().zip(&new.styles) {
+                assert_eq!(a.bold, b.bold);
+                assert_eq!(a.italic, b.italic);
+                assert!(b.underline);
+                assert_eq!(b.font_size.to_string(), "19.5");
+            }
+        }
+        app.execute(Action::Undo, &ctx);
+        assert_eq!(app.session.editor.document, before);
+        app.execute(Action::Redo, &ctx);
+        assert_eq!(app.session.editor.document, after);
+        app.execute(Action::FontDialog, &ctx);
+        frame(&ctx, &mut app, vec![], [width, 480.], 1.);
+        frame(
+            &ctx,
+            &mut app,
+            vec![key(Key::Escape, false)],
+            [width, 480.],
+            1.,
+        );
+        assert!(app.font_dialog.is_none());
+        assert_eq!(app.session.editor.document, after);
+    }
+}
+
+#[test]
+fn font_dialog_keyboard_default_action_modal_close_and_dpi_bounds() {
+    for dpi in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        let screen = [640. * dpi, 480. * dpi];
+        app.execute(Action::FontDialog, &ctx);
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![], screen, dpi);
+        }
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::Text("400".into())],
+            screen,
+            dpi,
+        );
+        for _ in 0..2 {
+            frame(&ctx, &mut app, vec![], screen, dpi);
+        }
+        let bounds = app
+            .regions
+            .iter()
+            .find(|r| r.name == "font-dialog")
+            .unwrap()
+            .rect;
+        assert!(
+            Rect::from_min_size(Pos2::ZERO, vec2(640., 480.)).contains_rect(bounds),
+            "{bounds:?}"
+        );
+        for region in app
+            .regions
+            .iter()
+            .filter(|r| r.name.starts_with("font-dialog-"))
+        {
+            assert!(
+                bounds.contains_rect(region.rect),
+                "{} {:?}",
+                region.name,
+                region.rect
+            );
+        }
+        let mut input = egui::RawInput {
+            screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(640., 480.))),
+            ..Default::default()
+        };
+        input
+            .viewports
+            .get_mut(&egui::ViewportId::ROOT)
+            .unwrap()
+            .events
+            .push(egui::ViewportEvent::Close);
+        let result = ctx.run(input, |ctx| app.update_ui(ctx));
+        assert!(
+            result.viewport_output[&egui::ViewportId::ROOT]
+                .commands
+                .contains(&ViewportCommand::CancelClose)
+        );
+        assert!(app.font_dialog.is_some());
+        assert_eq!(
+            app.session.editor.typing_style.font_size,
+            FontSize::default()
+        );
+        frame(&ctx, &mut app, vec![key(Key::Enter, false)], screen, dpi);
+        assert!(app.font_dialog.is_none());
+        assert_eq!(app.session.editor.typing_style.font_size.to_string(), "400");
+        assert!(!app.session.dirty());
+        assert!(app.session.editor.undo_stack.is_empty());
+        app.composing = true;
+        app.execute(Action::FontDialog, &ctx);
+        assert!(app.font_dialog.is_none());
+        app.composing = false;
+        app.pending = Some(Pending::New);
+        app.execute(Action::FontDialog, &ctx);
+        assert!(app.font_dialog.is_none());
+        app.pending = None;
+        app.error = Some("Cannot open document".into());
+        app.execute(Action::FontDialog, &ctx);
+        assert!(app.font_dialog.is_none());
+    }
 }

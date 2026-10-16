@@ -1,6 +1,15 @@
 //! Shared validated commands: desktop input and tests never implement separate edits.
 use crate::{Result, model::*};
 
+/// A partial character-format change. Unspecified properties keep each run's value.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct FontPatch {
+    pub bold: Option<bool>,
+    pub italic: Option<bool>,
+    pub underline: Option<bool>,
+    pub font_size: Option<FontSize>,
+}
+
 #[derive(Clone, Debug)]
 pub struct Operation {
     pub label: String,
@@ -116,6 +125,38 @@ impl Editor {
 
     pub fn set_font_size(&mut self, start: usize, end: usize, size: FontSize) -> Result<()> {
         self.format_range(start, end, "Font size", |style| style.font_size = size)
+    }
+
+    /// Apply a dialog's changes together, with one undo boundary and no live edits.
+    pub fn set_font(&mut self, start: usize, end: usize, patch: FontPatch) -> Result<()> {
+        validate_range(&self.document.text(), start, end)?;
+        if patch == FontPatch::default() {
+            return Ok(());
+        }
+        self.format_range(start, end, "Font", |style| {
+            if let Some(value) = patch.bold {
+                style.bold = value;
+            }
+            if let Some(value) = patch.italic {
+                style.italic = value;
+            }
+            if let Some(value) = patch.underline {
+                style.underline = value;
+            }
+            if let Some(value) = patch.font_size {
+                style.font_size = value;
+            }
+        })
+    }
+
+    /// Uniform values for the selection; None means mixed or only separators.
+    pub fn selected_font(&self) -> FontPatch {
+        FontPatch {
+            bold: self.selected_value(|s| s.bold),
+            italic: self.selected_value(|s| s.italic),
+            underline: self.selected_value(|s| s.underline),
+            font_size: self.selected_font_size(),
+        }
     }
 
     pub fn step_font_size(&mut self, start: usize, end: usize, grow: bool) -> Result<()> {

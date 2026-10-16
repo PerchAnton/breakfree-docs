@@ -146,7 +146,10 @@ insertion style. The size field accepts 1–400 pt in half-point steps (for exam
 sizes show an empty field. Grow/Shrink Font steps each selected run independently
 through common presets, with one undo operation. At a caret it changes pending
 insertion size. Native paste is plain text; the Paste menu explains this scope.
-Find and Select menus expose their working commands. Unimplemented font-family,
+Find opens navigation directly; its arrow and Select expose command menus.
+The Font launcher opens a dialog for style, size and underline with a preview.
+Only OK applies the draft, together in one undo operation; Cancel/Escape discards
+it. Mixed properties stay unchanged unless edited. Unimplemented font-family,
 style and list commands are disabled with explanations.
 
 This build reads native content v1 and v2 and **saves v2**. Opening a v1 file does
@@ -163,6 +166,7 @@ See [current native screenshots and capture commands](docs/UI_SPEC.md#actual-app
 
 Ctrl (Command on macOS) + N/O/S, Shift+S, B/I/U, Z/Y or Shift+Z handle file, emphasis
 and history actions. Ctrl/Command+Shift+P focuses and selects the size field.
+Ctrl/Command+D or Ctrl/Command+Shift+F opens the Font dialog.
 Ctrl/Command+Shift+> / < grows/shrinks the selected text (period/comma keys).
 Ctrl/Command + L/E/R/J aligns paragraphs; F/H opens Find/Replace.
 Ctrl+F1 collapses the ribbon; Alt+F/H opens File/Home; Alt+Q focuses command search;

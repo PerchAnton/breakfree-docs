@@ -1,5 +1,5 @@
 use breakfree_docs::{
-    commands::Editor,
+    commands::{Editor, FontPatch},
     model::*,
     presentation,
     session::{LeaveChoice, Session},
@@ -22,6 +22,77 @@ fn sample() -> Editor {
     e.set_font_size(8, 18, "18.5".parse().unwrap()).unwrap();
     e.align(8, 18, Alignment::Center).unwrap();
     e
+}
+
+#[test]
+fn font_patch_preserves_mixed_properties_and_roundtrips_as_one_operation() {
+    let mut e = sample();
+    let end = e.document.character_count();
+    e.selection = (0, end);
+    let before = e.document.clone();
+    let typing = e.typing_style;
+    let history = e.undo_stack.len();
+    assert_eq!(e.selected_font().bold, None);
+    assert_eq!(e.selected_font().font_size, None);
+    let patch = FontPatch {
+        italic: Some(true),
+        font_size: Some("23.5".parse().unwrap()),
+        ..Default::default()
+    };
+    e.set_font(0, end, patch).unwrap();
+    let after = e.document.clone();
+    assert_eq!(e.undo_stack.len(), history + 1);
+    assert_eq!(e.undo_stack.last().unwrap().label, "Font");
+    for (old, new) in before.paragraphs.iter().zip(&after.paragraphs) {
+        assert_eq!(old.text, new.text);
+        assert_eq!(old.alignment, new.alignment);
+        for (a, b) in old.styles.iter().zip(&new.styles) {
+            assert_eq!(a.bold, b.bold);
+            assert_eq!(a.underline, b.underline);
+            assert!(b.italic);
+            assert_eq!(b.font_size.to_string(), "23.5");
+        }
+    }
+    let after_typing = e.typing_style;
+    e.undo();
+    assert_eq!(e.document, before);
+    assert_eq!(e.typing_style, typing);
+    assert_eq!(e.selection, (0, end));
+    e.redo();
+    assert_eq!(e.document, after);
+    assert_eq!(e.typing_style, after_typing);
+    e.set_font(0, end, patch).unwrap();
+    assert_eq!(e.undo_stack.len(), history + 1);
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp.path().join("Font.bfdoc");
+    storage::save(&e.document, &path).unwrap();
+    assert_eq!(storage::load(&path).unwrap(), after);
+}
+
+#[test]
+fn font_patch_validates_graphemes_and_preserves_caret_history() {
+    let mut e = Editor::default();
+    e.replace(0, 0, "e\u{301} ї", "Type").unwrap();
+    let original = e.document.clone();
+    let history = e.undo_stack.len();
+    let patch = FontPatch {
+        bold: Some(true),
+        underline: Some(true),
+        ..Default::default()
+    };
+    assert!(e.set_font(0, 1, patch).is_err());
+    assert_eq!(e.document, original);
+    e.set_font(4, 4, patch).unwrap();
+    assert_eq!(e.document, original);
+    assert_eq!(e.undo_stack.len(), history);
+    let typing = e.typing_style;
+    e.set_font(0, 4, FontPatch::default()).unwrap();
+    assert_eq!(e.typing_style, typing);
+    e.replace(4, 4, "ё", "Type").unwrap();
+    assert_eq!(e.document.paragraphs[0].styles[4], typing);
+    e.undo();
+    assert_eq!(e.document, original);
+    assert_eq!(e.typing_style, typing);
 }
 
 #[test]
