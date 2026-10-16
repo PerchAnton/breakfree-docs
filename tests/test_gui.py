@@ -13,7 +13,9 @@ try:
 
     from breakfree_docs.gui import MainWindow
     from breakfree_docs.layout import project, raw_text
-except ImportError:
+except ModuleNotFoundError as error:
+    if error.name != "PySide6":
+        raise
     QApplication = None
 
 from breakfree_docs.commands import Editor

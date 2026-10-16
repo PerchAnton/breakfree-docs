@@ -21,8 +21,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Linux Qt runtime libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y libegl1 libopengl0
       - name: Install this repository only
         run: python -m pip install -e ".[desktop,dev]"
+      - name: Require working desktop test imports
+        run: python -c "from PySide6.QtWidgets import QApplication; from PySide6.QtTest import QTest; print('Qt desktop imports OK')"
       - name: Lint
         run: python -m ruff check src tests tools
       - name: Formatting

@@ -143,7 +143,11 @@ are intentionally absent.
 For a headless host, set `QT_QPA_PLATFORM=offscreen` before tests. PowerShell:
 `$env:QT_QPA_PLATFORM = "offscreen"`; then replace `.venv/bin/python` above with
 `.\.venv\Scripts\python.exe`. Offscreen tests do not prove native platform input
-or accessibility. The wheel check installs a fresh environment outside the source
+or accessibility. Minimal Debian/Ubuntu hosts can also need Qt runtime libraries:
+`sudo apt-get install libegl1 libopengl0`. Native X11 desktop prerequisites vary;
+see the [Qt Linux requirements](https://doc.qt.io/qt-6/linux-requirements.html).
+Installed but broken Qt imports fail tests instead of silently skipping the GUI.
+The wheel check installs a fresh environment outside the source
 tree, with no Qt or Office, and needs package-index access for pinned regex.
 
 Build output is `dist/breakfree_docs-0.1.0.dev1-py3-none-any.whl` plus a source

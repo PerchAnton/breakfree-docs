@@ -77,9 +77,11 @@ or Slides repository, runtime service or account.
   file association, signing, updater, merge or release.
 - Windows/Linux native input and desktop-dialog claims require their own results.
   CI uses Python 3.12 on three OSes. The first implementation commit passed all
-  three server jobs (build, tests and isolated wheel); exact revisions and later
-  outcomes are recorded separately in PROJECT_LOG. Offscreen CI does not establish
-  native platform support.
+  three server jobs, but the initial Linux job skipped 8 GUI cases because its Qt
+  runtime import failed. Windows/macOS ran all 24. The workflow now installs Linux
+  runtime libraries and requires working Qt imports; import failures cannot silently
+  skip desktop tests. Exact later outcomes are recorded in PROJECT_LOG. Offscreen
+  CI does not establish native platform support.
 - Native save is write-then-replace with tested pre-replacement failures, without
   concurrent-writer protection, recovery, directory fsync or ACL preservation.
 - No DOCX, PDF, printing, collaboration, macros, cloud services or AI.
