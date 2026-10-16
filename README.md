@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/brand/breakfree-docs.webp" alt="BreakFree Docs — document pages with a rainbow ribbon" width="160" height="160">
+  <img src="docs/brand/breakfree-docs-transparent.webp" alt="BreakFree Docs — document pages with a rainbow ribbon" width="160" height="160">
 </p>
 
 <h1 align="center">BreakFree Docs</h1>
