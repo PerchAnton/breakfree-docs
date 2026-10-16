@@ -85,6 +85,15 @@ The [detailed roadmap](ROADMAP.md) defines architecture proposals, feature areas
 
 DOCX support will be measured separately for reading, editing and writing. Text preservation, page layout, unsupported elements and font substitution need separate results. Opening one sample is not proof of general compatibility.
 
+## Versions and release approval
+
+The first cycle is `0.1.0-alpha.N` → `0.1.0-beta.N` → `0.1.0-rc.N` → `0.1.0`.
+After publishing the first stable release, development moves to `0.2.0`. Read
+[versioning and approval](docs/VERSIONING.md) and [CHANGELOG](CHANGELOG.md).
+`Cargo.toml` defines the current application version; `--version`, capabilities
+and GUI Help show that same build version. Every work report ends with the current
+version for owner approval. No release or tag is automatically published.
+
 ## Build and run
 
 Install [Rust](https://rust-lang.org/tools/install/); `rust-toolchain.toml` selects

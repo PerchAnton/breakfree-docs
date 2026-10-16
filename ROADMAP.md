@@ -8,6 +8,12 @@ planning identifiers, not published releases; no readiness percentage is claimed
 
 [Overview](README.md) · [Initial acceptance scenarios](docs/REQUIREMENTS.md) · [Suite plan](https://github.com/PerchAnton/breakfree-office/blob/main/ROADMAP.md) · [Evidence rules](https://github.com/PerchAnton/breakfree-office/blob/main/docs/DEVELOPMENT_STANDARD.md)
 
+The owner-defined release cycle is `0.1.0-alpha.N` → beta → RC → `0.1.0`;
+the `0.2.0` cycle starts after actual first stable publication. See
+[VERSIONING](docs/VERSIONING.md) and [CHANGELOG](CHANGELOG.md). D0–D8/R1 remain
+feature/evidence milestones; version numbers do not mark those gates complete.
+Every work report includes the current application version for owner approval.
+
 ## 1. Product destination and current position
 
 Build a local-first word processor that grows from everyday writing into structured, reviewable and interoperable documents. A visible feature is not complete until editing, undo, persistence and output work together.

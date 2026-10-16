@@ -44,6 +44,22 @@ Use local evidence reporting and the pinned `contracts/v1/` snapshot until it ex
 - After the initial audit, inspect changes since the prior recorded check, including
   replies to old issues/PRs. Distinguish local tests, server CI, merge and release.
 
+## Versioning and owner approval
+
+Follow `docs/VERSIONING.md`. The first release cycle uses `0.1.0-alpha.N`,
+`0.1.0-beta.N`, `0.1.0-rc.N`, then the first stable `0.1.0`. Only after that stable
+release is actually published may development move to the `0.2.0` cycle.
+`Cargo.toml` is the application-version source; keep Cargo.lock consistent.
+Application, process-protocol and document-content versions are independent.
+
+End **every work report**, including documentation/journal-only work, with the
+current checked-in application version for the owner's approval. State whether
+approval is pending or explicitly received; never infer approval from silence.
+Do not automatically bump the version after every task. Propose a bump for a new
+candidate, and obtain explicit owner approval for stage transitions and release
+numbers before tagging/publishing. A version approval is not permission to merge,
+tag or publish. Preserve historical version records and immutable tags/artifacts.
+
 ## Журнал и приватное зеркало
 
 The owner requires **two complete copies** after every significant stage and every

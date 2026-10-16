@@ -18,6 +18,11 @@ checks in [README](README.md); keep GUI edits routed through shared model comman
 The core builds with `--no-default-features`. CPU egui event tests are distinct from
 native input, dialogs, accessibility and Windows scaling verification.
 
+Follow [versioning and owner approval](docs/VERSIONING.md). Every work report,
+including documentation-only work, ends with the current application version for
+owner approval. Do not bump automatically, infer approval or publish a tag/release
+without a separate explicit instruction. Keep candidate scope in CHANGELOG.md.
+
 Keep project history in [docs/PROJECT_LOG.md](docs/PROJECT_LOG.md), using Europe/Kyiv
 timestamps and direct event links. Read the current log and instructions before
 editing, safely fetch updates and preserve other authors' work. Commit log updates

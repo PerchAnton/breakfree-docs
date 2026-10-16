@@ -1,6 +1,6 @@
 [package]
 name = "breakfree-docs"
-version = "0.2.0-dev.1"
+version = "0.1.0-alpha.1"
 edition = "2024"
 rust-version = "1.88"
 description = "Independent Rust document editor with an office ribbon"
