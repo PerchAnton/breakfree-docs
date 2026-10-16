@@ -143,7 +143,10 @@ Home has real clipboard, bold/italic/underline, font size, alignment, Find/Repla
 and Select All commands. At a collapsed caret, character formatting sets the next
 insertion style. The size field accepts 1–400 pt in half-point steps (for example,
 `12.5`); Enter or leaving the field applies it and Escape cancels. Mixed selected
-sizes show an empty field. Native paste is plain text. Unimplemented font-family,
+sizes show an empty field. Grow/Shrink Font steps each selected run independently
+through common presets, with one undo operation. At a caret it changes pending
+insertion size. Native paste is plain text; the Paste menu explains this scope.
+Find and Select menus expose their working commands. Unimplemented font-family,
 style and list commands are disabled with explanations.
 
 This build reads native content v1 and v2 and **saves v2**. Opening a v1 file does
@@ -160,6 +163,7 @@ See [current native screenshots and capture commands](docs/UI_SPEC.md#actual-app
 
 Ctrl (Command on macOS) + N/O/S, Shift+S, B/I/U, Z/Y or Shift+Z handle file, emphasis
 and history actions. Ctrl/Command+Shift+P focuses and selects the size field.
+Ctrl/Command+Shift+> / < grows/shrinks the selected text (period/comma keys).
 Ctrl/Command + L/E/R/J aligns paragraphs; F/H opens Find/Replace.
 Ctrl+F1 collapses the ribbon; Alt+F/H opens File/Home; Alt+Q focuses command search;
 F6 cycles document/search/navigation focus. Tab traverses controls. Input events delivered in one widget update form one text undo operation;

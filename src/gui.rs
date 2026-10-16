@@ -3,7 +3,7 @@ use crate::{
     Result, VERSION,
     chrome::{self, Icon},
     layout,
-    model::{Alignment, FontSize, boundaries},
+    model::{Alignment, FONT_SIZE_PRESETS, FontSize, boundaries},
     presentation::*,
     session::Session,
     storage,
@@ -40,6 +40,8 @@ pub enum Action {
     Italic,
     Underline,
     FontSize,
+    GrowFont,
+    ShrinkFont,
     Left,
     Center,
     Right,
@@ -69,6 +71,8 @@ impl Action {
             Self::Italic => "Italic",
             Self::Underline => "Underline",
             Self::FontSize => "Font size",
+            Self::GrowFont => "Grow font",
+            Self::ShrinkFont => "Shrink font",
             Self::Left => "Align left",
             Self::Center => "Center",
             Self::Right => "Align right",
@@ -98,6 +102,8 @@ const COMMANDS: &[Action] = &[
     Action::Italic,
     Action::Underline,
     Action::FontSize,
+    Action::GrowFont,
+    Action::ShrinkFont,
     Action::Left,
     Action::Center,
     Action::Right,
@@ -429,6 +435,14 @@ impl DocsApp {
                 self.ribbon_collapsed = false;
                 self.focus_font_size = true;
                 self.focus_document = false;
+            }
+            Action::GrowFont | Action::ShrinkFont => {
+                let result =
+                    self.session
+                        .editor
+                        .step_font_size(start, end, action == Action::GrowFont);
+                self.fail(result);
+                self.sync_view();
             }
             Action::Left | Action::Center | Action::Right | Action::Justify => {
                 let a = match action {
@@ -787,6 +801,8 @@ impl DocsApp {
             Action::Italic => "Ctrl+I",
             Action::Underline => "Ctrl+U",
             Action::FontSize => "Ctrl+Shift+P",
+            Action::GrowFont => "Ctrl+Shift+>",
+            Action::ShrinkFont => "Ctrl+Shift+<",
             Action::Find => "Ctrl+F",
             Action::Replace => "Ctrl+H",
             Action::SelectAll => "Ctrl+A",
@@ -888,6 +904,13 @@ impl DocsApp {
                 .map(|size| size.to_string())
                 .unwrap_or_default();
         }
+        ui.painter().rect_filled(rect, 2., Color32::WHITE);
+        ui.painter().rect_stroke(
+            rect,
+            2.,
+            Stroke::new(1.0_f32, if focused { ACCENT } else { chrome::LINE }),
+            egui::StrokeKind::Inside,
+        );
         let edit_rect = Rect::from_min_max(rect.min, pos2(rect.right() - 18., rect.bottom()));
         let response = ui
             .add_enabled_ui(!self.composing, |ui| {
@@ -897,7 +920,8 @@ impl DocsApp {
                         .id(id)
                         .font(FontId::proportional(13.))
                         .desired_width(0.)
-                        .margin(vec2(3., 4.))
+                        .frame(false)
+                        .margin(vec2(4., 4.))
                         .hint_text("—")
                         .char_limit(8),
                 )
@@ -936,7 +960,7 @@ impl DocsApp {
             .on_disabled_hover_text("Finish text composition first.");
         let arrow = chrome::control(
             ui,
-            Rect::from_min_max(pos2(rect.right() - 17., rect.top()), rect.max),
+            Rect::from_min_max(pos2(rect.right() - 18., rect.top()), rect.max),
             Icon::Chevron(false),
             "",
             "Font size presets",
@@ -948,9 +972,7 @@ impl DocsApp {
             egui::ScrollArea::vertical()
                 .max_height(280.)
                 .show(ui, |ui| {
-                    for points in [
-                        8_u16, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72,
-                    ] {
+                    for &points in FONT_SIZE_PRESETS {
                         let size = FontSize::try_from(points * 2).expect("valid font preset");
                         let response = ui.selectable_label(
                             self.session.editor.selected_font_size() == Some(size),
@@ -966,6 +988,88 @@ impl DocsApp {
         });
     }
 
+    fn unavailable_menu(&mut self, ui: &mut Ui, rect: Rect, icon: Icon, name: &str, why: &str) {
+        let response =
+            chrome::dropdown(ui, rect, icon, "", name, false).on_disabled_hover_text(why);
+        self.record(&format!("unavailable-{name}"), response.rect);
+    }
+
+    fn paste_control(&mut self, ui: &mut Ui, rect: Rect) {
+        let enabled = self.enabled(Action::Paste);
+        let color = if enabled {
+            chrome::INK
+        } else {
+            Color32::from_gray(150)
+        };
+        let top = Rect::from_min_size(rect.min, vec2(rect.width(), 37.));
+        let response = chrome::button(ui, top, Action::Paste.label(), enabled, false);
+        self.record("command-Paste", response.rect);
+        chrome::paint(ui, Icon::Paste, top.center(), 28., color);
+        if response
+            .on_hover_text("Paste plain text · Ctrl/Command+V")
+            .on_disabled_hover_text("Finish text composition first.")
+            .clicked()
+        {
+            self.execute(Action::Paste, ui.ctx());
+        }
+        let bottom = Rect::from_min_max(top.left_bottom(), rect.max);
+        let menu = chrome::button(ui, bottom, "Paste options", enabled, false)
+            .on_hover_text("Paste options");
+        self.record("home-menu-Paste", menu.rect);
+        ui.painter().text(
+            bottom.center_top() + vec2(0., 9.),
+            Align2::CENTER_CENTER,
+            "Paste",
+            FontId::proportional(12.),
+            color,
+        );
+        chrome::paint(
+            ui,
+            Icon::Chevron(false),
+            bottom.center_bottom() - vec2(0., 6.),
+            9.,
+            color,
+        );
+        egui::Popup::menu(&menu).show(|ui| {
+            self.command(ui, "Paste plain text", Action::Paste, vec2(180., 27.));
+            ui.separator();
+            Self::disabled(ui, "Paste Special…", vec2(180., 27.),
+                "Rich clipboard formats are not implemented. Paste inserts plain text using the current typing style.");
+        });
+    }
+
+    fn editing_menu(&mut self, ui: &mut Ui, rect: Rect, find: bool) {
+        let name = if find { "Find" } else { "Select" };
+        let response = chrome::dropdown(
+            ui,
+            rect,
+            if find { Icon::Search } else { Icon::Select },
+            name,
+            name,
+            !self.composing,
+        )
+        .on_hover_text(if find {
+            "Find and navigation"
+        } else {
+            "Selection commands"
+        });
+        self.record(&format!("home-menu-{name}"), response.rect);
+        egui::Popup::menu(&response).show(|ui| {
+            if find {
+                self.command(ui, "Find", Action::Find, vec2(160., 27.));
+                self.command(ui, "Navigation pane", Action::Navigation, vec2(160., 27.));
+            } else {
+                self.command(ui, "Select all", Action::SelectAll, vec2(160., 27.));
+                Self::disabled(
+                    ui,
+                    "Select Objects",
+                    vec2(160., 27.),
+                    "Document objects are not implemented.",
+                );
+            }
+        });
+    }
+
     fn home_contents(&mut self, ui: &mut Ui, index: usize, width: f32, bounds: Rect) {
         let origin = bounds.min;
         let r =
@@ -973,69 +1077,83 @@ impl DocsApp {
         ui.set_clip_rect(bounds.intersect(ui.clip_rect()));
         match index {
             0 => {
-                self.ribbon_control(ui, r(0., 2., 48., 72.), Icon::Paste, "Paste", Action::Paste);
-                let wide = width >= 140.;
-                self.ribbon_control(
+                self.paste_control(ui, r(0., 1., 46., 69.));
+                self.ribbon_control(ui, r(49., 0., 27., 23.), Icon::Cut, "", Action::Cut);
+                self.ribbon_control(ui, r(49., 24., 27., 23.), Icon::Copy, "", Action::Copy);
+                self.unavailable(
                     ui,
-                    r(51., 0., width - 54., 24.),
-                    Icon::Cut,
-                    if wide { "Cut" } else { "" },
-                    Action::Cut,
+                    r(49., 48., 27., 23.),
+                    Icon::Brush,
+                    "",
+                    "Format Painter",
+                    "Format Painter is planned; use the supported direct-formatting controls.",
                 );
-                self.ribbon_control(
-                    ui,
-                    r(51., 25., width - 54., 24.),
-                    Icon::Copy,
-                    if wide { "Copy" } else { "" },
-                    Action::Copy,
-                );
-                self.unavailable(ui,r(51.,50.,width-54.,24.),Icon::Brush,if wide{"Format Painter"}else{""},"Format Painter","Format Painter is planned; copy text formatting manually with Bold and Italic.");
             }
             1 => {
-                let full = width >= 270.;
-                let field_w = if full { 95. } else { width - 78. };
+                let full = width >= 300.;
+                let family = if full { 112. } else { width - 182. };
                 let response = chrome::field(
                     ui,
-                    r(2., 7., field_w, 25.),
+                    r(2., 5., family, 25.),
                     &self.body_font,
                     "Current body font. Changing fonts is planned.",
                 );
                 self.record("font-family", response.rect);
-                self.font_size_control(ui, r(field_w + 5., 7., 68., 25.));
-                if full {
-                    for (i, (text, name)) in [
-                        ("A+", "Grow font"),
-                        ("A−", "Shrink font"),
-                        ("Aa", "Change case"),
-                        ("A", "Clear formatting"),
-                    ]
-                    .into_iter()
-                    .enumerate()
-                    {
-                        self.unavailable(
-                            ui,
-                            r(170. + i as f32 * 25., 7., 24., 25.),
-                            Icon::Text(text),
-                            "",
-                            name,
-                            "Preset stepping, case and clear-formatting commands are planned. Use the size field to set font size.",
-                        );
-                    }
-                }
-                self.ribbon_control(ui, r(1., 43., 25., 26.), Icon::Text("B"), "", Action::Bold);
+                self.font_size_control(ui, r(family + 4., 5., 64., 25.));
+                let x = family + 72.;
                 self.ribbon_control(
                     ui,
-                    r(27., 43., 25., 26.),
+                    r(x, 5., 25., 25.),
+                    Icon::FontStep(true),
+                    "",
+                    Action::GrowFont,
+                );
+                self.ribbon_control(
+                    ui,
+                    r(x + 26., 5., 25., 25.),
+                    Icon::FontStep(false),
+                    "",
+                    Action::ShrinkFont,
+                );
+                self.unavailable_menu(
+                    ui,
+                    r(x + 56., 5., 32., 25.),
+                    Icon::Text("Aa"),
+                    "Change case",
+                    "Changing letter case is planned.",
+                );
+                if full {
+                    self.unavailable(
+                        ui,
+                        r(x + 92., 5., 25., 25.),
+                        Icon::ClearFormatting,
+                        "",
+                        "Clear formatting",
+                        "Clearing all formatting is planned.",
+                    );
+                }
+                self.ribbon_control(ui, r(0., 34., 24., 25.), Icon::Text("B"), "", Action::Bold);
+                self.ribbon_control(
+                    ui,
+                    r(25., 34., 24., 25.),
                     Icon::Text("I"),
                     "",
                     Action::Italic,
                 );
                 self.ribbon_control(
                     ui,
-                    r(53., 43., 26., 26.),
+                    r(50., 34., 24., 25.),
                     Icon::Text("U"),
                     "",
                     Action::Underline,
+                );
+                self.unavailable(
+                    ui,
+                    r(75., 34., 11., 25.),
+                    Icon::Chevron(false),
+                    "",
+                    "Underline styles",
+                    "Single underline is supported. Other underline styles are planned.",
                 );
                 for (i, (text, name)) in [
                     ("abc", "Strikethrough"),
@@ -1047,68 +1165,81 @@ impl DocsApp {
                 {
                     self.unavailable(
                         ui,
-                        r(80. + i as f32 * 27., 43., 26., 26.),
+                        r(89. + i as f32 * 26., 34., 25., 25.),
                         Icon::Text(text),
                         "",
                         name,
                         "This character formatting is not implemented.",
                     );
                 }
+                ui.painter().line_segment(
+                    [origin + vec2(170., 36.), origin + vec2(170., 57.)],
+                    Stroke::new(1.0_f32, chrome::LINE),
+                );
+                self.unavailable_menu(
+                    ui,
+                    r(176., 34., 32., 25.),
+                    Icon::TextEffects,
+                    "Text effects",
+                    "Text effects are planned.",
+                );
+                if width >= 246. {
+                    self.unavailable_menu(
+                        ui,
+                        r(212., 34., 32., 25.),
+                        Icon::Highlight,
+                        "Text highlight",
+                        "Text highlighting is planned.",
+                    );
+                }
                 if full {
-                    for (i, (text, name)) in [
-                        ("A", "Text effects"),
-                        ("ab", "Text highlight"),
-                        ("A", "Font color"),
-                    ]
-                    .into_iter()
-                    .enumerate()
-                    {
-                        let rect = r(165. + i as f32 * 34., 43., 32., 26.);
-                        self.unavailable(
-                            ui,
-                            rect,
-                            Icon::Text(text),
-                            "",
-                            name,
-                            "Text effects, highlighting and color are planned.",
-                        );
-                        if i > 0 {
-                            ui.painter().line_segment(
-                                [
-                                    rect.left_bottom() + vec2(6., -3.),
-                                    rect.right_bottom() + vec2(-6., -3.),
-                                ],
-                                Stroke::new(2.0_f32, Color32::from_gray(175)),
-                            );
-                        }
-                    }
+                    self.unavailable_menu(
+                        ui,
+                        r(248., 34., 32., 25.),
+                        Icon::FontColor,
+                        "Font color",
+                        "Font colors are planned.",
+                    );
                 }
             }
             2 => {
-                let full = width >= 250.;
-                let step = if full { 32. } else { 27. };
                 for (i, (icon, name)) in [
                     (Icon::Bullets, "Bullets"),
                     (Icon::Numbers, "Numbering"),
-                    (Icon::Text("1.a"), "Multilevel list"),
+                    (Icon::Multilevel, "Multilevel list"),
+                ]
+                .into_iter()
+                .enumerate()
+                {
+                    self.unavailable_menu(
+                        ui,
+                        r(i as f32 * 31., 5., 30., 25.),
+                        icon,
+                        name,
+                        "Lists are planned.",
+                    );
+                }
+                ui.painter().line_segment(
+                    [origin + vec2(95., 7.), origin + vec2(95., 28.)],
+                    Stroke::new(1.0_f32, chrome::LINE),
+                );
+                for (i, (icon, name)) in [
                     (Icon::Indent(false), "Decrease indent"),
                     (Icon::Indent(true), "Increase indent"),
-                    (Icon::Text("A↓"), "Sort"),
+                    (Icon::Sort, "Sort"),
                     (Icon::Text("¶"), "Show marks"),
                 ]
                 .into_iter()
                 .enumerate()
                 {
-                    if full || i < 6 {
-                        self.unavailable(
-                            ui,
-                            r(i as f32 * step, 7., step - 1., 25.),
-                            icon,
-                            "",
-                            name,
-                            "Lists, indentation, sorting and formatting marks are planned.",
-                        );
-                    }
+                    self.unavailable(
+                        ui,
+                        r(99. + i as f32 * 26., 5., 25., 25.),
+                        icon,
+                        "",
+                        name,
+                        "Indentation, sorting and formatting marks are planned.",
+                    );
                 }
                 for (i, action) in [Action::Left, Action::Center, Action::Right, Action::Justify]
                     .into_iter()
@@ -1116,114 +1247,99 @@ impl DocsApp {
                 {
                     self.ribbon_control(
                         ui,
-                        r(i as f32 * 27., 43., 26., 26.),
+                        r(i as f32 * 25., 34., 24., 25.),
                         Icon::Align(i as u8),
                         "",
                         action,
                     );
                 }
-                self.unavailable(
+                self.unavailable_menu(
                     ui,
-                    r(112., 43., 26., 26.),
+                    r(101., 34., 31., 25.),
                     Icon::Spacing,
-                    "",
                     "Line spacing",
                     "Paragraph spacing controls are planned.",
                 );
-                if width >= 200. {
-                    self.unavailable(
-                        ui,
-                        r(146., 43., 26., 26.),
-                        Icon::Shading,
-                        "",
-                        "Shading",
-                        "Paragraph shading is planned.",
-                    );
-                    self.unavailable(
-                        ui,
-                        r(178., 43., 26., 26.),
-                        Icon::Border,
-                        "",
-                        "Borders",
-                        "Paragraph borders are planned.",
-                    );
-                }
+                ui.painter().line_segment(
+                    [origin + vec2(135., 36.), origin + vec2(135., 57.)],
+                    Stroke::new(1.0_f32, chrome::LINE),
+                );
+                self.unavailable_menu(
+                    ui,
+                    r(139., 34., 31., 25.),
+                    Icon::Shading,
+                    "Shading",
+                    "Paragraph shading is planned.",
+                );
+                self.unavailable_menu(
+                    ui,
+                    r(174., 34., 31., 25.),
+                    Icon::Border,
+                    "Borders",
+                    "Paragraph borders are planned.",
+                );
             }
             3 => {
+                // Names are the preview, matching the reference's compact gallery.
+                // No selected frame: named styles do not exist in the model yet.
+                let gallery = r(0., 3., width - 1., 63.);
+                ui.painter().rect_stroke(
+                    gallery,
+                    2.,
+                    Stroke::new(1.0_f32, chrome::LINE),
+                    egui::StrokeKind::Inside,
+                );
                 let count = if width >= 280. { 3 } else { 1 };
-                let card = (width - 20.) / count as f32;
+                let card = (width - 19.) / count as f32;
                 for (i, label) in ["Normal", "No Spacing", "Heading 1"]
                     .into_iter()
                     .take(count)
                     .enumerate()
                 {
-                    let rect = r(i as f32 * card, 3., card - 3., 70.);
-                    ui.painter().rect_filled(rect, 2., Color32::WHITE);
-                    ui.painter().rect_stroke(
-                        rect,
-                        2.,
-                        Stroke::new(1.0_f32, chrome::LINE),
-                        egui::StrokeKind::Inside,
-                    );
-                    let response = ui
-                        .add_enabled_ui(false, |ui| ui.put(rect, Button::new("").frame(false)))
-                        .inner
+                    let rect = r(2. + i as f32 * card, 5., card - 3., 59.);
+                    let response = chrome::button(ui, rect, label, false, false)
                         .on_disabled_hover_text(
-                            "Styles are planned. This preview does not apply a style.",
+                            "Named styles are planned. This preview does not apply a style.",
                         );
-                    response.widget_info(|| {
-                        egui::WidgetInfo::labeled(egui::WidgetType::Button, false, label)
-                    });
                     self.record(&format!("style-{label}"), response.rect);
-                    ui.painter().text(
-                        pos2(rect.center().x, rect.top() + 27.),
+                    ui.painter().with_clip_rect(rect).text(
+                        rect.center(),
                         Align2::CENTER_CENTER,
-                        "AaBbCc",
+                        label,
                         FontId::new(
-                            if i == 2 { 20. } else { 18. },
+                            if i == 2 { 18. } else { 12. },
                             egui::FontFamily::Name("body".into()),
                         ),
                         Color32::from_gray(135),
                     );
-                    ui.painter().text(
-                        pos2(rect.center().x, rect.bottom() - 13.),
-                        Align2::CENTER_CENTER,
-                        label,
-                        FontId::proportional(11.),
-                        Color32::from_gray(135),
-                    );
                 }
-                self.unavailable(
-                    ui,
-                    r(width - 18., 3., 17., 70.),
-                    Icon::Chevron(false),
-                    "",
-                    "More styles",
-                    "Styles are planned.",
-                );
-            }
-            4 => {
-                for (i, (icon, label, action)) in [
-                    (Icon::Search, "Find", Action::Find),
-                    (Icon::Replace, "Replace", Action::Replace),
-                    (Icon::Select, "Select All", Action::SelectAll),
+                for (i, (icon, name)) in [
+                    (Icon::Chevron(true), "Previous styles"),
+                    (Icon::Chevron(false), "Next styles"),
+                    (Icon::Chevron(false), "More styles"),
                 ]
                 .into_iter()
                 .enumerate()
                 {
-                    self.ribbon_control(
-                        ui,
-                        r(0., i as f32 * 25., width - 3., 24.),
-                        icon,
-                        label,
-                        action,
-                    );
+                    let rect = r(width - 17., 4. + i as f32 * 20., 15., 19.);
+                    self.unavailable(ui, rect, icon, "", name, "Named styles are planned.");
                 }
+            }
+            4 => {
+                self.editing_menu(ui, r(0., 0., width - 3., 23.), true);
+                self.ribbon_control(
+                    ui,
+                    r(0., 24., width - 3., 23.),
+                    Icon::Replace,
+                    "Replace",
+                    Action::Replace,
+                );
+                self.editing_menu(ui, r(0., 48., width - 3., 23.), false);
             }
             _ => {}
         }
         ui.painter().text(
-            pos2(origin.x + width / 2., origin.y + 86.),
+            pos2(origin.x + width / 2., origin.y + 78.),
             Align2::CENTER_CENTER,
             HOME_GROUPS[index],
             FontId::proportional(11.),
@@ -1232,7 +1348,7 @@ impl DocsApp {
         if matches!(index, 1 | 2) {
             self.ribbon_control(
                 ui,
-                r(width - 16., 79., 15., 16.),
+                r(width - 16., 71., 15., 16.),
                 Icon::Launch,
                 "",
                 Action::Formatting,
@@ -1272,7 +1388,7 @@ impl DocsApp {
                             }
                         }
                         if widths[3] == 0. {
-                            ui.menu_button("More", |ui| {
+                            let menu = ui.menu_button("More", |ui| {
                                 ui.label("Styles");
                                 for name in ["Normal", "Heading 1"] {
                                     Self::disabled(
@@ -1292,6 +1408,7 @@ impl DocsApp {
                                     self.command(ui, action.label(), action, vec2(145., 25.));
                                 }
                             });
+                            self.record("home-overflow", menu.response.rect);
                         }
                     });
                 } else if self.tab == 8 {
@@ -1394,6 +1511,8 @@ impl DocsApp {
                     (Key::B, false, Action::Bold),
                     (Key::I, false, Action::Italic),
                     (Key::U, false, Action::Underline),
+                    (Key::Period, true, Action::GrowFont),
+                    (Key::Comma, true, Action::ShrinkFont),
                     (Key::L, false, Action::Left),
                     (Key::E, false, Action::Center),
                     (Key::R, false, Action::Right),

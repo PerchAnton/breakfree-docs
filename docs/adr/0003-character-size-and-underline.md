@@ -52,3 +52,15 @@ Actual widget-event tests cover size entry/cancel/errors/presets, underline shor
 selection retention, styled IME commits, save/reopen and rich-layout hit testing.
 See [validation](../VALIDATION.md) for results actually obtained. Native Windows
 input/DPI, accessibility and a controlled Word 2024 comparison remain open.
+
+## Alpha.4 Home extension
+
+The owner's next Home refinement adds Grow/Shrink Font using the same validated
+range transaction. Each selected run steps independently to the next/previous
+preset (8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72 pt).
+Outside that preset interval, move one point and clamp at 1/400 pt. Preserve half
+points outside the interval. This is an explicit Docs policy, not a claim about
+all reference-editor edge cases. The entire selection changes in one undo entry;
+no-op limits add none. Caret-only changes remain pending and preserve other style
+properties. Buttons, command search and Ctrl/Command+Shift+>/< call this engine
+command. No model schema, content version or integration protocol change is needed.

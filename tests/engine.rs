@@ -480,3 +480,91 @@ fn invalid_v2_styles_and_v1_extensions_are_rejected_without_modifying_files() {
         assert_eq!(fs::read(&path).unwrap(), bytes);
     }
 }
+
+#[test]
+fn font_steps_preserve_mixed_runs_unicode_and_exact_history() {
+    let mut e = sample();
+    let before = e.document.clone();
+    let typing = e.typing_style;
+    let range = (0, e.document.character_count());
+    let count = e.undo_stack.len();
+    e.step_font_size(range.0, range.1, true).unwrap();
+    let after = e.document.clone();
+    assert_eq!(e.selection, range);
+    assert_eq!(e.undo_stack.len(), count + 1);
+    for (old, new) in before
+        .paragraphs
+        .iter()
+        .flat_map(|p| &p.styles)
+        .zip(after.paragraphs.iter().flat_map(|p| &p.styles))
+    {
+        assert_eq!(
+            (old.bold, old.italic, old.underline),
+            (new.bold, new.italic, new.underline)
+        );
+        assert_eq!(
+            new.font_size.to_string(),
+            if old.font_size.to_string() == "18.5" {
+                "20"
+            } else {
+                "12"
+            }
+        );
+    }
+    assert_eq!(before.text(), after.text());
+    e.undo();
+    assert_eq!(e.document, before);
+    assert_eq!(e.typing_style, typing);
+    e.redo();
+    assert_eq!(e.document, after);
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("stepped.bfdoc");
+    storage::save(&after, &path).unwrap();
+    assert_eq!(storage::load(&path).unwrap(), after);
+    let accent = e
+        .document
+        .text()
+        .chars()
+        .position(|c| c == '\u{301}')
+        .unwrap();
+    assert!(e.step_font_size(accent, accent + 1, false).is_err());
+    assert_eq!(e.document, after);
+    assert_eq!(e.undo_stack.len(), count + 1);
+    e.selection = (range.1, range.1);
+    e.step_font_size(range.1, range.1, false).unwrap();
+    assert_eq!(e.document, after);
+    assert_eq!(e.undo_stack.len(), count + 1);
+    assert_eq!(e.typing_style.font_size.to_string(), "11");
+}
+
+#[test]
+fn font_steps_are_bounded_and_noops_do_not_consume_history() {
+    for half in 2..=800 {
+        let size = FontSize::try_from(half).unwrap();
+        assert!(u16::from(size.stepped(true)) >= half);
+        assert!(u16::from(size.stepped(false)) <= half);
+        assert!(FontSize::try_from(u16::from(size.stepped(true))).is_ok());
+        assert!(FontSize::try_from(u16::from(size.stepped(false))).is_ok());
+    }
+    for (from, grow, expected) in [
+        ("18.5", false, "18"),
+        ("28", true, "36"),
+        ("72", true, "73"),
+        ("100.5", false, "99.5"),
+        ("8", false, "7"),
+    ] {
+        assert_eq!(
+            from.parse::<FontSize>().unwrap().stepped(grow).to_string(),
+            expected
+        );
+    }
+    let mut e = Editor::default();
+    e.replace(0, 0, "ї", "Type").unwrap();
+    for (size, grow) in [("400", true), ("1", false)] {
+        e.set_font_size(0, 1, size.parse().unwrap()).unwrap();
+        let count = e.undo_stack.len();
+        e.step_font_size(0, 1, grow).unwrap();
+        assert_eq!(e.undo_stack.len(), count);
+        assert_eq!(e.selected_font_size().unwrap().to_string(), size);
+    }
+}

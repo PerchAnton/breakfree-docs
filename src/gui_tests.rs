@@ -317,8 +317,12 @@ fn search_selects_real_model_ranges_and_failed_open_keeps_edits() {
 }
 
 fn click_region(ctx: &egui::Context, app: &mut DocsApp, name: &str) {
+    click_region_at(ctx, app, name, [1366., 900.]);
+}
+
+fn click_region_at(ctx: &egui::Context, app: &mut DocsApp, name: &str, size: [f32; 2]) {
     for _ in 0..2 {
-        frame(ctx, app, vec![], [1366., 900.], 1.);
+        frame(ctx, app, vec![], size, 1.);
     }
     let pos = app
         .regions
@@ -340,7 +344,7 @@ fn click_region(ctx: &egui::Context, app: &mut DocsApp, name: &str) {
                     modifiers: Modifiers::NONE,
                 },
             ],
-            [1366., 900.],
+            size,
             1.,
         );
     }
@@ -451,6 +455,14 @@ fn dense_controls_fit_each_group_and_window_at_breakpoints() {
             assert!(get("document-title").right() <= get("command-search").left());
             assert!(get("command-search").right() <= get("window-0").left());
             let ribbon = get("ribbon");
+            if let Some(more) = app.regions.iter().find(|r| r.name == "home-overflow") {
+                assert!(
+                    ribbon.contains_rect(more.rect),
+                    "overflow at {width}/{dpi}: {:?}",
+                    more.rect
+                );
+                assert!(get("Paragraph").right() <= more.rect.left());
+            }
             assert!(
                 (get("title").height() - TITLE_HEIGHT).abs() < 0.1,
                 "title height {:?}",
@@ -470,6 +482,7 @@ fn dense_controls_fit_each_group_and_window_at_breakpoints() {
                         || region.name.starts_with("unavailable-")
                         || region.name.starts_with("style-")
                         || region.name.starts_with("font-")
+                        || region.name.starts_with("home-menu-")
                     {
                         assert!(
                             parent.rect.expand(0.1).contains_rect(region.rect),
@@ -858,4 +871,87 @@ fn save_and_close_resolve_pending_size_before_operating_on_document() {
         "24"
     );
     assert_eq!(storage::load(&path).unwrap(), saved);
+}
+
+#[test]
+fn font_step_controls_keep_mixed_selection_at_wide_and_minimum_width() {
+    for width in [640., 1366.] {
+        let (ctx, mut app) = setup();
+        app.session
+            .editor
+            .replace(0, 0, "A ї e\u{301}", "Type")
+            .unwrap();
+        app.session
+            .editor
+            .set_font_size(0, 1, "28".parse().unwrap())
+            .unwrap();
+        app.session.editor.underline(0, 6, true).unwrap();
+        app.execute(Action::SelectAll, &ctx);
+        let before = app.session.editor.document.clone();
+        let count = app.session.editor.undo_stack.len();
+        click_region_at(&ctx, &mut app, "command-GrowFont", [width, 900.]);
+        let after = app.session.editor.document.clone();
+        assert_eq!(app.session.editor.selection, (0, 6));
+        assert_eq!(app.session.editor.undo_stack.len(), count + 1);
+        assert_eq!(after.paragraphs[0].styles[0].font_size.to_string(), "36");
+        assert_eq!(after.paragraphs[0].styles[5].font_size.to_string(), "12");
+        assert!(after.paragraphs[0].styles.iter().all(|s| s.underline));
+        app.execute(Action::Undo, &ctx);
+        assert_eq!(app.session.editor.document, before);
+        app.execute(Action::Redo, &ctx);
+        assert_eq!(app.session.editor.document, after);
+        click_region_at(&ctx, &mut app, "command-ShrinkFont", [width, 900.]);
+        assert_eq!(app.session.editor.document, before);
+        frame(&ctx, &mut app, vec![], [width, 900.], 1.);
+        let mut grow = key(Key::Period, true);
+        if let egui::Event::Key { modifiers, .. } = &mut grow {
+            modifiers.shift = true;
+        }
+        frame(&ctx, &mut app, vec![grow], [width, 900.], 1.);
+        assert_eq!(app.session.editor.document, after);
+        app.composing = true;
+        click_region_at(&ctx, &mut app, "command-ShrinkFont", [width, 900.]);
+        assert_eq!(app.session.editor.document, after);
+    }
+}
+
+#[test]
+fn home_menus_cancel_without_edits_and_dispatch_real_commands() {
+    let (ctx, mut app) = setup();
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("Hello ї".into())],
+        [1366., 900.],
+        1.,
+    );
+    let before = app.session.editor.document.clone();
+    let history = app.session.editor.undo_stack.len();
+    click_region(&ctx, &mut app, "home-menu-Paste");
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    assert!(
+        app.regions
+            .iter()
+            .any(|r| r.name == "command-Paste" && r.rect.width() >= 180.)
+    );
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Escape, false)],
+        [1366., 900.],
+        1.,
+    );
+    click_region(&ctx, &mut app, "home-menu-Select");
+    click_region(&ctx, &mut app, "command-SelectAll");
+    assert_eq!(app.session.editor.selection, (0, 7));
+    click_region(&ctx, &mut app, "home-menu-Find");
+    click_region(&ctx, &mut app, "command-Find");
+    assert!(app.navigation);
+    assert!(ctx.memory(|m| m.has_focus(Id::new("find-text"))));
+    assert_eq!(app.session.editor.document, before);
+    assert_eq!(app.session.editor.undo_stack.len(), history);
+    click_region_at(&ctx, &mut app, "home-overflow", [640., 900.]);
+    click_region_at(&ctx, &mut app, "command-Replace", [640., 900.]);
+    assert!(app.replace_mode);
+    assert_eq!(app.session.editor.document, before);
 }

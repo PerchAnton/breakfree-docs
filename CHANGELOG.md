@@ -3,7 +3,29 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
-## 0.1.0-alpha.3 — Unreleased; submitted for owner approval
+## 0.1.0-alpha.4 — Unreleased; submitted for owner approval
+
+Prepared 2026-10-16. The owner approved alpha.3 in the project chat; that approval
+covers its version number, not a merge, tag or release.
+
+- Tighten Home to 104 DIP: compact Clipboard with split Paste, closer Font/Paragraph
+  rows, joined size field, original dropdown/vector icons and inset group launchers.
+- Replace separate AaBbCc tiles with a single gallery of inline style-name previews;
+  styles remain disabled and no applied style is fabricated.
+- Add working Grow/Shrink Font buttons and Ctrl/Command+Shift+>/< shortcuts. Each
+  selected run steps independently through presets in one shared undo transaction;
+  pending caret style, Unicode boundaries and unrelated formatting are preserved.
+- Add real Find/Select menus; keep commands reachable via overflow at 640 DIP.
+  Extend control/menu geometry and pointer/keyboard regressions.
+- Inspect native macOS captures at 1366, 960 and 640 DIP. Verify a native macOS
+  keyboard/Unicode-paste → format → undo/redo → system Save/Open loop plus dirty
+  New/Cancel/Discard. Automated non-ASCII character typing remains unresolved;
+  native IME and Windows/Word comparison are not certified.
+
+Native content v2 and protocol v1 stay unchanged. No release, merge, dependency or
+license change is included.
+
+## 0.1.0-alpha.3 — Unreleased; version approved by owner on 2026-10-16
 
 Prepared 2026-10-16. No release or tag is published by this entry.
 

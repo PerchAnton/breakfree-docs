@@ -15,7 +15,7 @@ pub const TABS: &[&str] = &[
 pub const HOME_GROUPS: &[&str] = &["Clipboard", "Font", "Paragraph", "Styles", "Editing"];
 pub const TITLE_HEIGHT: f32 = 44.0;
 pub const TABS_HEIGHT: f32 = 32.0;
-pub const RIBBON_HEIGHT: f32 = 112.0;
+pub const RIBBON_HEIGHT: f32 = 104.0;
 pub const STATUS_HEIGHT: f32 = 24.0;
 pub const CANVAS_WIDTH: f32 = 816.0;
 pub const CANVAS_MARGIN: f32 = 96.0;
@@ -74,9 +74,9 @@ pub fn density(width: f32) -> RibbonDensity {
 }
 pub fn group_widths(width: f32) -> [f32; 5] {
     match density(width) {
-        RibbonDensity::Full => [156., 278., 256., 300., 116.],
-        RibbonDensity::Compact => [86., 218., 216., 120., 104.],
-        RibbonDensity::Overflow => [82., 166., 164., 0., 0.],
+        RibbonDensity::Full => [86., 304., 246., 350., 116.],
+        RibbonDensity::Compact => [82., 246., 218., 140., 104.],
+        RibbonDensity::Overflow => [82., 232., 206., 0., 0.],
     }
 }
 pub fn selected_text(document: &Document, range: (usize, usize)) -> String {

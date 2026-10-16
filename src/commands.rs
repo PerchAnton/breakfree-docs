@@ -118,6 +118,17 @@ impl Editor {
         self.format_range(start, end, "Font size", |style| style.font_size = size)
     }
 
+    pub fn step_font_size(&mut self, start: usize, end: usize, grow: bool) -> Result<()> {
+        self.format_range(
+            start,
+            end,
+            if grow { "Grow font" } else { "Shrink font" },
+            |style| {
+                style.font_size = style.font_size.stepped(grow);
+            },
+        )
+    }
+
     fn format_range(
         &mut self,
         start: usize,

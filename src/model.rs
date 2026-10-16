@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 use unicode_segmentation::UnicodeSegmentation;
 
 pub const MAX_CHARACTERS: usize = 100_000;
+pub const FONT_SIZE_PRESETS: &[u16] =
+    &[8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72];
 
 /// Exact half-point units: 1–400 pt, with no floating-point values in the model.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -33,6 +35,30 @@ impl From<FontSize> for u16 {
 impl FontSize {
     pub fn points(self) -> f32 {
         f32::from(self.0) / 2.
+    }
+
+    /// Step each run independently through common presets. Outside the preset
+    /// interval, move one point; preserve half points and clamp to model limits.
+    pub fn stepped(self, grow: bool) -> Self {
+        let value = if grow && (16..144).contains(&self.0) {
+            FONT_SIZE_PRESETS
+                .iter()
+                .map(|p| p * 2)
+                .find(|p| *p > self.0)
+                .unwrap()
+        } else if !grow && (16..=144).contains(&self.0) && self.0 > 16 {
+            FONT_SIZE_PRESETS
+                .iter()
+                .rev()
+                .map(|p| p * 2)
+                .find(|p| *p < self.0)
+                .unwrap()
+        } else if grow {
+            (self.0 + 2).min(800)
+        } else {
+            self.0.saturating_sub(2).max(2)
+        };
+        Self(value)
     }
 }
 impl std::fmt::Display for FontSize {

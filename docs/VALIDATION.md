@@ -8,19 +8,20 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.3**. Earlier capture/CI evidence retains its
+Current local checkpoint: **0.1.0-alpha.4**. Earlier capture/CI evidence retains its
 original scope; this iteration does not establish native Windows behavior.
 
 | Local check | Observed result |
 | :--- | :--- |
-| `cargo test --locked` | 40 passed: 19 engine/storage/presentation, 3 CLI subprocess and 18 actual egui widget event tests; no skipped tests |
-| `cargo test --locked --no-default-features` | 22 passed; core and CLI build without GUI dependencies |
+| `cargo test --locked` | 44 passed: 21 engine/storage/presentation, 3 CLI subprocess and 20 actual egui widget event tests; no skipped tests |
+| `cargo test --locked --no-default-features` | 24 passed; core and CLI build without GUI dependencies |
 | `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
 | `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
 | Copied executable outside checkout | Release capabilities/malformed-open checks; capture-feature GUI also rendered `--new` and answered `--version` from an empty temporary directory without Office/source files |
 | Repository references, contract and artwork | `python3 tools/check_repository.py` passed; approved logo embedded directly and archive copy byte-identical |
 | Workflow YAML / whitespace | Ruby YAML parse and `git diff --check` passed |
-| Native rendering | Alpha.3 Formatting v2 fixture rendered through the real native capture harness at [1366 × 900 DIP](screenshots/rust-formatting-macos.png) and [720 × 700 DIP](screenshots/rust-formatting-narrow-macos.png); size/underline and Home field inspected. Prior Welcome/Home/File captures retain alpha.1 scope |
+| Native rendering | Alpha.4 Formatting fixture and Home inspected at [1366 × 900 DIP](screenshots/rust-home-alpha4-macos.png), [960 × 700](screenshots/rust-home-alpha4-compact-macos.png) and [640 × 700](screenshots/rust-home-alpha4-narrow-macos.png), backing scale 2. Earlier captures retain their version context |
+| Native macOS interaction | ASCII typing, exact Unicode paste, selection, B/U, size field, Grow shortcut, undo/redo, system Save/Open, dirty New/Cancel/Discard passed through Computer Use; saved v2 text/styles inspected. Native non-ASCII typing/IME is not certified; see the scoped result below |
 | Synthetic DPI | Actual widgets at 1/1.25/1.5 scale and 960/1366/1920 physical widths; ribbon/group/workspace/status bounds and collapse assertions passed; 27 additional width/scale combinations check individual Home control containment/nonoverlap and title/search/window bounds |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
@@ -49,6 +50,39 @@ schemas and failed writes. V1 opening preserves source bytes; explicit v2 save
 preserves all supported styles. Missing/null/out-of-range/fractional sizes and
 duplicate/unknown run fields are rejected.
 
+Alpha.4 adds preset stepping across mixed runs and every valid half-point size,
+no-op bounds/history, native roundtrip and grapheme rejection. Pointer/keyboard
+widget tests cover wide/minimum-width Grow/Shrink, composition disablement,
+Paste/Find/Select menus, Escape cancellation and working overflow. Strict geometry
+checks now include menu triggers and the More button. The initial 640-DIP budget
+failure was resolved by narrowing the overflow Font group, keeping the assertions.
+
+## Native macOS alpha.4 smoke
+
+The current release binary was copied to a temporary app bundle and verified with
+`--version`/`--capabilities` outside the checkout. Computer Use successfully opened
+it in this iteration. This supersedes the earlier launch/permission limitation only
+for the specific checks below; the bundle is not a supported installer.
+
+| Action | Observed evidence |
+| :--- | :--- |
+| ASCII typing and Unicode clipboard paste | Three paragraphs: `English`, `Українська`, `Русский é`; toolkit accessibility text retained the combining accent |
+| Command+A/B/U, Shift+P, Enter | Selection retained; Bold/Underline on; 18.5-pt field applied |
+| Command+Shift+period, Z, Shift+Z | Grow to 20 pt, undo to 18.5, redo to 20, with selection retained |
+| Command+S, native save dialog | Saved local v2 document; status became Saved locally |
+| Command+N/O, native open dialog | Reopened exact three paragraphs; field 20 pt and Bold/Underline on, empty session history |
+| Unsaved replacement → New → Cancel | Temporary text retained and document stayed dirty |
+| New → Discard | New empty document; saved file still contained original Unicode and 20-pt bold/underlined runs |
+
+The saved file's decoded text/run properties were independently asserted after
+Discard. Its SHA-256 is `c980222ae7823c9140b047536ac7d1a32afee2aede4e32fd0f06d72a564ead32`.
+The first automated `typeText` attempt omitted Cyrillic characters and the combining
+accent; clipboard paste worked. The cause was not isolated between input injection,
+keyboard layout and application handling. Therefore non-ASCII character-by-character
+native typing and OS IME remain unresolved and need a real keyboard/layout check.
+No native screen-reader certification, Windows/DPI comparison, or complete native
+Save/Discard/Cancel matrix is implied; the modal Save branch retains widget coverage.
+
 ## D01–D09 evidence map
 
 | ID | Rust evidence | Remaining limits |
@@ -58,16 +92,16 @@ duplicate/unknown run fields are rejected.
 | D03 | Exact bold/italic/underline/size/alignment snapshots and native roundtrips; mixed-size galley geometry and scalar hit tests; actual Home controls | Font-family choice, named styles and lists unsupported; no pagination/fidelity claim |
 | D04 | Exact text/format undo/redo, branch redo clearing, pending insertion style, selection restoration, widget shortcut history and one-commit IME transaction | 100 snapshot operations, no persistent history or time-based coalescing |
 | D05 | Complete v2 roundtrip, every alignment, read-only Welcome v1 conversion, GUI save/reopen through shared session | No downgrade to v1, autosave or recovery |
-| D06 | Core Save/Discard/Cancel and failure; pointer events activate all three real modal buttons; failed save keeps dirty session; close approval flag | Actual OS pickers, cancelled picker and native window-manager closing still need manual platform review |
+| D06 | Core Save/Discard/Cancel and failure; pointer events activate all three real modal buttons; failed save keeps dirty session; close approval flag | macOS Save/Open and Cancel/Discard smoke recorded below; cancelled picker, modal Save and native window-manager close need further platform review |
 | D07 | Real partial temporary write, injected errors before sync/replace, real replacement failure and missing parent; previous file bytes and dirty model preserved | No power-loss, directory fsync, concurrent-writer, ACL/extended-attribute or network-filesystem guarantee |
 | D08 | Corrupt JSON/UTF-8, foreign type, unknown version/fields, duplicate keys, invalid styles/text and unsupported extension rejected; source unchanged | Bounded regression tests, not completed fuzzing |
-| D09 | Actual egui keyboard and pointer event loop covers edit/selection, emphasis, undo/redo and save; model compared with projection | Native OS keyboard/dialog/IME and full focus/accessibility review pending |
+| D09 | Actual egui keyboard and pointer event loop covers edit/selection, emphasis, undo/redo and save; model compared with projection | Limited macOS native keyboard/dialog smoke above; non-ASCII typing, IME, full focus/accessibility and Windows remain pending |
 
 The native executable and fixed-size capture harness were launched and captured on
 macOS. The earlier unbundled application was not exposed to Computer Use. During
 the design refinement, a temporary local app bundle was tried; Computer Use reported
-that permissions were not granted. Therefore no manual OS keyboard or picker
-interaction is claimed. The temporary bundle is not a distribution artifact. Word for macOS is not the approved Windows reference and was not used as
+that permissions were not granted. No native keyboard/picker result is claimed
+for those historical attempts; alpha.4 results are recorded above. The temporary bundle is not a distribution artifact. Word for macOS is not the approved Windows reference and was not used as
 a substitute. In alpha.3, Computer Use inventory was available, but opening the
 temporary review bundle timed out and reset its runtime; no manual keyboard pass
 is claimed for this attempt. Windows itself and Word 2024 for Windows are unavailable here.
