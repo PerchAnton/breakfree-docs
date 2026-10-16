@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://github.com/PerchAnton/breakfree-office"><img src="https://raw.githubusercontent.com/PerchAnton/breakfree-office/main/docs/brand/breakfree-icon.webp" alt="BreakFree Office" width="160" height="160"></a>
+  <img src="docs/brand/breakfree-docs.webp" alt="BreakFree Docs — document pages with a rainbow ribbon" width="160" height="160">
 </p>
 
 <h1 align="center">BreakFree Docs</h1>
@@ -27,57 +27,59 @@
 ---
 
 > [!IMPORTANT]
-> **Planning stage — not a working editor yet.** This repository contains project documentation and the development plan. There are no installers, build commands or verified DOCX compatibility claims. Everything described below is proposed unless explicitly marked as completed.
+> **Planning stage — not a working editor yet.** This repository contains original project documentation and approved branding. There are no installers or verified DOCX compatibility results. The roadmap describes proposed work, not shipped functionality.
 
 ## Write without getting in your own way
 
-BreakFree Docs aims to make everyday writing clear and dependable: start a document, give it structure, save it locally and return to it with confidence.
+BreakFree Docs is being planned for everyday writing and, over time, demanding document workflows. The aim is a dependable editor for letters, reports and long-form documents, with local files, clear controls and an extensible foundation.
 
-We are beginning with a small editor that works reliably, not a promise to reproduce every feature of Microsoft Word at once.
+Start with a small workflow that earns trust. Expand it through demonstrated results, not a list of buttons that do not work.
 
 ## The first useful workflow
 
 > **Create → Write → Format → Save → Reopen → Continue.**
 
-The first milestone will focus on plain text, paragraphs, basic formatting, undo/redo and safe local persistence. Saving and reopening must preserve all supported content. The exact native file format and implementation stack still need to be chosen.
+The first implementation milestone covers paragraphs, selection, basic emphasis and alignment, undo/redo, safe local persistence and unsaved-change handling. The [first-milestone requirements](docs/REQUIREMENTS.md) remain the acceptance contract for this initial editor.
 
-| Proposed first | Investigate next | Outside the initial scope |
+## Where we are heading
+
+| Foundation | Everyday documents | Advanced workflows |
 | :--- | :--- | :--- |
-| Text and paragraph editing | Styles, lists and tables | Full Word feature parity |
-| Basic emphasis and alignment | Images and pagination | VBA and macro execution |
-| Undo, redo and unsaved-change prompts | Print and PDF export | Cloud collaboration |
-| Local save and reopen | A documented DOCX subset | Enterprise administration |
+| Independent document model and command system | Styles, lists, tables and images | Comments and tracked changes |
+| Unicode input and keyboard access | Pagination, sections and headers | Footnotes, references and equations |
+| Undo, recovery and versioned persistence | Search, navigation, print and PDF | Templates, mail merge and automation |
+| Tests that run without the interface | A tested DOCX subset | Optional assistant integrations |
 
-See the [acceptance criteria](docs/REQUIREMENTS.md) and [roadmap](ROADMAP.md) for the proposed sequence.
+All items are planned. Advanced capabilities are separate milestones, not promises for the first release. Full compatibility with every Word feature is not an initial release requirement.
 
-## Design direction
+## Built around the document
 
-**Keep the document in the user's hands.** Prioritize local files and useful offline work. Saving should be explicit and recoverable; unsupported content should never disappear silently.
+**Your files stay under your control.** Offline essentials, recoverable saves and explicit handling of unsupported content are design requirements. Imported macros and remote resources must not run or load silently.
 
-**Make the basics accessible.** Keyboard operation, readable controls and international text belong in the foundation, not in a final cosmetic pass.
+**The interface is not the engine.** The proposed architecture separates the document model, editing operations, layout, storage and application shell. Desktop UI, command-line tools and future opt-in automation will use the same validated command interface.
 
-**Share a family resemblance.** Docs will use the BreakFree identity while remaining a separate application. The approved office-document icon and its restrained rainbow accent express freedom and inclusion.
+**Text and accessibility come first.** Input methods, international text, keyboard navigation, screen-reader behavior and font fallback must influence architecture selection, not wait until the final polish stage.
 
-These are implementation goals, not completed features.
+**A distinct member of one family.** Docs has its own approved page icon, with the shared aubergine tile and rainbow ribbon expressing freedom and inclusion.
 
-## File compatibility
+## Roadmap and evidence
 
-DOCX import and export are research and development goals. Compatibility will need fixture-based tests for text, formatting, tables, images and layout. Supporting one sample is not proof that an arbitrary Word document will round-trip correctly.
+The [detailed roadmap](ROADMAP.md) defines architecture proposals, feature areas, milestone dependencies, release gates, compatibility evidence and performance investigations. The [suite development standard](https://github.com/PerchAnton/breakfree-office/blob/main/docs/DEVELOPMENT_STANDARD.md) describes how progress must be reported.
 
-A future compatibility matrix must list supported features, limitations and behavior for unsupported elements. No macro support is planned for the first milestone.
+DOCX support will be measured separately for reading, editing and writing. Text preservation, page layout, unsupported elements and font substitution need separate results. Opening one sample is not proof of general compatibility.
 
 ## Development status
 
 | Area | Current position |
 | :--- | :--- |
-| Product direction | Documented |
-| Implementation language and UI toolkit | Not selected |
-| Native persistence format | Not selected |
-| Windows, macOS and Linux | Candidate targets; no supported builds yet |
-| Application code and automated tests | Not present yet |
-| Software license | Owner decision pending |
+| Identity and planning documents | Available |
+| Implementation language | Rust-first proposal for review; not adopted yet |
+| UI toolkit and native persistence format | Selection and prototypes pending |
+| Windows, macOS and Linux | Intended evaluation targets; no supported builds |
+| Application code, test results and releases | Not available |
+| License | Owner decision pending |
 
-There is nothing to install yet. Build instructions will be added when they can be run and verified. This is the first development priority within the suite.
+There is nothing to install yet. Reproducible build instructions will be published with a working implementation. Docs remains the first development priority within the suite.
 
 ## The BreakFree family
 
@@ -90,15 +92,15 @@ There is nothing to install yet. Build instructions will be added when they can 
 
 ## Get involved
 
-Suggest a writing workflow, discuss accessibility or help evaluate the first technical foundation in [Issues](https://github.com/PerchAnton/breakfree-docs/issues). Use synthetic examples rather than confidential files. Read [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md) before preparing changes.
+Propose a writing workflow, accessibility improvement or technical experiment in [Issues](https://github.com/PerchAnton/breakfree-docs/issues). Read [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md). Use synthetic documents, not customer data or private correspondence.
 
 Everyone is welcome, including LGBTQ+ contributors and users. Follow the [shared Code of Conduct](https://github.com/PerchAnton/breakfree-office/blob/main/CODE_OF_CONDUCT.md).
 
 ## License and independence
 
-No software license has been selected; public visibility alone is not a reuse license. Licensing will be resolved before substantive third-party implementation contributions are accepted.
+The software and brand-asset licenses remain owner decisions. Public visibility is not a grant of reuse rights. Third-party dependencies and assets must retain any required notices.
 
-BreakFree Docs is independent and is not affiliated with Microsoft. Microsoft Word and DOCX references describe intended workflows and interoperability goals, not endorsement or a completed replacement.
+BreakFree Docs is an independent project, not affiliated with Microsoft. References to Word and DOCX describe intended workflows and interoperability goals, not endorsement or verified equivalence.
 
 ---
 
