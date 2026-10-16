@@ -18,6 +18,8 @@ fn sample() -> Editor {
     .unwrap();
     e.emphasize(0, 7, true, true).unwrap();
     e.emphasize(8, 18, false, true).unwrap();
+    e.underline(0, 18, true).unwrap();
+    e.set_font_size(8, 18, "18.5".parse().unwrap()).unwrap();
     e.align(8, 18, Alignment::Center).unwrap();
     e
 }
@@ -64,6 +66,8 @@ fn unicode_scalar_and_grapheme_boundaries() {
             if !boundaries(text).contains(&i) {
                 assert!(e.replace(i, i, "x", "Input").is_err());
                 assert!(e.emphasize(0, i, true, true).is_err());
+                assert!(e.underline(0, i, true).is_err());
+                assert!(e.set_font_size(0, i, "24".parse().unwrap()).is_err());
             }
         }
         e.replace(0, text.chars().count(), "new", "Replace")
@@ -165,7 +169,7 @@ fn rejects_corrupt_foreign_unknown_and_duplicate_fields() {
             .unwrap();
     for (key, value) in [
         ("format", serde_json::json!("breakfree.sheets.native")),
-        ("content_version", serde_json::json!(2)),
+        ("content_version", serde_json::json!(3)),
         ("content_version", serde_json::json!(true)),
         ("unknown", serde_json::json!("preserve")),
         ("paragraphs", serde_json::json!([])),
@@ -176,8 +180,8 @@ fn rejects_corrupt_foreign_unknown_and_duplicate_fields() {
     }
     let mut duplicate = String::from_utf8(storage::encode(&sample().document).unwrap()).unwrap();
     duplicate = duplicate.replacen(
-        "\"content_version\": 1",
-        "\"content_version\": 1, \"content_version\": 1",
+        "\"content_version\": 2",
+        "\"content_version\": 2, \"content_version\": 2",
         1,
     );
     assert!(storage::decode(duplicate.as_bytes()).is_err());
@@ -280,4 +284,199 @@ fn ribbon_sizes_and_overflow_at_dpi_factors() {
         presentation::HOME_GROUPS,
         ["Clipboard", "Font", "Paragraph", "Styles", "Editing"]
     );
+}
+
+#[test]
+fn size_and_underline_history_preserve_other_styles_and_selection() {
+    let mut e = sample();
+    let before = e.document.clone();
+    let before_typing = e.typing_style;
+    let range = (0, e.document.character_count());
+    e.set_font_size(range.0, range.1, "24.5".parse().unwrap())
+        .unwrap();
+    let sized = e.document.clone();
+    for (old, new) in before
+        .paragraphs
+        .iter()
+        .flat_map(|p| &p.styles)
+        .zip(sized.paragraphs.iter().flat_map(|p| &p.styles))
+    {
+        assert_eq!(
+            (old.bold, old.italic, old.underline),
+            (new.bold, new.italic, new.underline)
+        );
+        assert_eq!(new.font_size.to_string(), "24.5");
+    }
+    assert_eq!(e.selection, range);
+    e.underline(range.0, range.1, true).unwrap();
+    let styled = e.document.clone();
+    assert!(e.underline_selected());
+    e.undo();
+    assert_eq!(e.document, sized);
+    e.undo();
+    assert_eq!(e.document, before);
+    assert_eq!(e.typing_style, before_typing);
+    e.redo();
+    assert_eq!(e.document, sized);
+    e.redo();
+    assert_eq!(e.document, styled);
+    assert_eq!(e.selection, range);
+    let count = e.undo_stack.len();
+    e.underline(range.0, range.1, true).unwrap();
+    e.set_font_size(range.0, range.1, "24.5".parse().unwrap())
+        .unwrap();
+    assert_eq!(
+        e.undo_stack.len(),
+        count,
+        "No-op formatting must not consume undo entries"
+    );
+    e.replace(range.0, range.1, "ї e\u{301}", "Replace")
+        .unwrap();
+    assert!(
+        e.document.paragraphs[0]
+            .styles
+            .iter()
+            .all(|s| s.underline && s.font_size.to_string() == "24.5")
+    );
+    e.undo();
+    assert_eq!(e.document, styled);
+}
+
+#[test]
+fn pending_size_and_underline_survive_typing_history_and_mixed_selection() {
+    let mut e = Editor::default();
+    e.set_font_size(0, 0, "14.5".parse().unwrap()).unwrap();
+    e.underline(0, 0, true).unwrap();
+    let pending = e.typing_style;
+    assert!(e.undo_stack.is_empty());
+    assert_eq!(e.document, Document::default());
+    e.replace(0, 0, "English\nУкраїнська\nРусский e\u{301}", "Input")
+        .unwrap();
+    assert!(
+        e.document
+            .paragraphs
+            .iter()
+            .flat_map(|p| &p.styles)
+            .all(|s| *s == pending)
+    );
+    let typed = e.document.clone();
+    e.undo();
+    assert_eq!(e.typing_style, pending);
+    e.redo();
+    assert_eq!(e.document, typed);
+    assert_eq!(e.typing_style, pending);
+    e.set_font_size(0, 7, "18".parse().unwrap()).unwrap();
+    e.underline(0, 7, false).unwrap();
+    e.selection = (0, e.document.character_count());
+    assert_eq!(e.selected_font_size(), None);
+    assert!(!e.underline_selected());
+    e.underline(e.selection.0, e.selection.1, true).unwrap();
+    assert!(e.underline_selected());
+    e.selection = (7, 8); // Only a paragraph separator, no character style to report.
+    assert_eq!(e.selected_font_size(), None);
+}
+
+#[test]
+fn font_size_input_is_exact_and_bounded() {
+    for text in ["1", "1.5", "11", "12.5", "399.5", "400", " 24.0 "] {
+        let size: FontSize = text.parse().unwrap();
+        assert_eq!(size.to_string().parse::<FontSize>().unwrap(), size);
+    }
+    for text in [
+        "", "0", "0.5", "400.5", "401", "NaN", "inf", "1.25", "12e1", "-12", "+12", ".5", "999999",
+        "11.50", "12,5",
+    ] {
+        assert!(text.parse::<FontSize>().is_err(), "accepted {text}");
+    }
+    assert!(FontSize::try_from(0).is_err());
+    assert!(FontSize::try_from(801).is_err());
+}
+
+#[test]
+fn v1_load_is_read_only_and_v2_roundtrip_preserves_new_styles() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("v1.bfdoc");
+    let old = include_bytes!("../examples/Welcome.bfdoc");
+    fs::write(&path, old).unwrap();
+    let document = storage::load(&path).unwrap();
+    assert_eq!(fs::read(&path).unwrap(), old);
+    assert!(
+        document
+            .paragraphs
+            .iter()
+            .flat_map(|p| &p.styles)
+            .all(|s| !s.underline && s.font_size == FontSize::default())
+    );
+    let mut s = Session::new(document, Some(path.clone()));
+    s.editor.underline(0, 7, true).unwrap();
+    s.editor
+        .set_font_size(0, 7, "28.5".parse().unwrap())
+        .unwrap();
+    s.save(&path).unwrap();
+    let new = fs::read(&path).unwrap();
+    let json: serde_json::Value = serde_json::from_slice(&new).unwrap();
+    assert_eq!(json["content_version"], 2);
+    assert_eq!(storage::load(&path).unwrap(), s.editor.document);
+    assert!(!s.dirty());
+}
+
+#[test]
+fn invalid_v2_styles_and_v1_extensions_are_rejected_without_modifying_files() {
+    let original: serde_json::Value =
+        serde_json::from_slice(&storage::encode(&sample().document).unwrap()).unwrap();
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("invalid.bfdoc");
+    let mut inputs = Vec::new();
+    for (key, value) in [
+        ("font_size_half_points", serde_json::json!(0)),
+        ("font_size_half_points", serde_json::json!(801)),
+        ("font_size_half_points", serde_json::json!(-1)),
+        ("font_size_half_points", serde_json::json!(22.5)),
+        ("font_size_half_points", serde_json::json!(true)),
+        ("font_size_half_points", serde_json::json!(null)),
+        ("underline", serde_json::json!("true")),
+        ("underline", serde_json::json!(null)),
+        ("unknown", serde_json::json!(true)),
+    ] {
+        let mut data = original.clone();
+        data["paragraphs"][0]["runs"][0][key] = value;
+        inputs.push(serde_json::to_vec(&data).unwrap());
+    }
+    for key in ["underline", "font_size_half_points"] {
+        let mut data = original.clone();
+        data["paragraphs"][0]["runs"][0]
+            .as_object_mut()
+            .unwrap()
+            .remove(key);
+        inputs.push(serde_json::to_vec(&data).unwrap());
+    }
+    let encoded = String::from_utf8(storage::encode(&sample().document).unwrap()).unwrap();
+    inputs.push(
+        encoded
+            .replacen(
+                "\"underline\": true",
+                "\"underline\": true, \"underline\": false",
+                1,
+            )
+            .into_bytes(),
+    );
+    inputs.push(
+        encoded
+            .replacen("\"content_version\": 2", "\"content_version\": 1", 1)
+            .into_bytes(),
+    );
+    let old = String::from_utf8(include_bytes!("../examples/Welcome.bfdoc").to_vec()).unwrap();
+    inputs.push(
+        old.replacen("\"bold\": true", "\"bold\": true, \"underline\": null", 1)
+            .into_bytes(),
+    );
+    for bytes in inputs {
+        fs::write(&path, &bytes).unwrap();
+        assert!(
+            storage::load(&path).is_err(),
+            "accepted {}",
+            String::from_utf8_lossy(&bytes)
+        );
+        assert_eq!(fs::read(&path).unwrap(), bytes);
+    }
 }

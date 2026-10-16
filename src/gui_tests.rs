@@ -518,7 +518,7 @@ fn revised_shell_controls_preserve_selection_and_real_document_state() {
             .iter()
             .all(|p| p.alignment == Alignment::Right && p.styles.iter().all(|s| s.italic))
     );
-    click_region(&ctx, &mut app, "unavailable-Underline");
+    click_region(&ctx, &mut app, "unavailable-Strikethrough");
     click_region(&ctx, &mut app, "style-Heading 1");
     assert_eq!(app.session.editor.document, styled);
     click_region(&ctx, &mut app, "command-Undo");
@@ -590,4 +590,272 @@ fn icon_control_size_does_not_depend_on_platform_font_height() {
             });
         });
     }
+}
+
+fn edit_size(ctx: &egui::Context, app: &mut DocsApp, text: &str, finish: Key) {
+    let mut shortcut = key(Key::P, true);
+    if let egui::Event::Key { modifiers, .. } = &mut shortcut {
+        modifiers.shift = true;
+    }
+    frame(ctx, app, vec![shortcut], [1366., 900.], 1.);
+    assert!(ctx.memory(|m| m.has_focus(Id::new(FONT_SIZE_ID))));
+    frame(
+        ctx,
+        app,
+        vec![egui::Event::Text(text.into())],
+        [1366., 900.],
+        1.,
+    );
+    frame(ctx, app, vec![key(finish, false)], [1366., 900.], 1.);
+    frame(ctx, app, vec![], [1366., 900.], 1.);
+}
+
+#[test]
+fn home_size_and_underline_preserve_selection_history_and_saved_content() {
+    let (ctx, mut app) = setup();
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Paste(
+            "English\nУкраїнська\nРусский e\u{301}".into(),
+        )],
+        [1366., 900.],
+        1.,
+    );
+    app.execute(Action::SelectAll, &ctx);
+    let selection = app.session.editor.selection;
+    click_region(&ctx, &mut app, "command-Underline");
+    assert!(app.checked(Action::Underline));
+    let underlined = app.session.editor.document.clone();
+    edit_size(&ctx, &mut app, "24.5", Key::Enter);
+    assert!(app.error.is_none(), "{:?}", app.error);
+    assert_eq!(app.session.editor.selection, selection);
+    assert_eq!(app.font_size_text, "24.5");
+    assert!(ctx.memory(|m| m.has_focus(Id::new(EDIT_ID))));
+    let formatted = app.session.editor.document.clone();
+    assert!(
+        formatted
+            .paragraphs
+            .iter()
+            .flat_map(|p| &p.styles)
+            .all(|s| s.underline && s.font_size.to_string() == "24.5")
+    );
+    frame(&ctx, &mut app, vec![key(Key::Z, true)], [1366., 900.], 1.);
+    assert_eq!(app.session.editor.document, underlined);
+    frame(&ctx, &mut app, vec![key(Key::Y, true)], [1366., 900.], 1.);
+    assert_eq!(app.session.editor.document, formatted);
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("font-controls.bfdoc");
+    app.session.path = Some(path.clone());
+    app.execute(Action::Save, &ctx);
+    app.finish(Pending::New, &ctx);
+    app.finish(Pending::Open(path), &ctx);
+    assert_eq!(app.session.editor.document, formatted);
+    app.execute(Action::SelectAll, &ctx);
+    click_region(&ctx, &mut app, "font-size-menu");
+    click_region(&ctx, &mut app, "size-preset-18");
+    assert_eq!(
+        app.session.editor.selected_font_size().unwrap().to_string(),
+        "18"
+    );
+    assert!(app.checked(Action::Underline));
+    assert_eq!(app.session.editor.selection, selection);
+}
+
+#[test]
+fn size_field_cancel_invalid_mixed_and_blur_do_not_lose_document_text() {
+    let (ctx, mut app) = setup();
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("Hello ї e\u{301}".into())],
+        [1366., 900.],
+        1.,
+    );
+    app.execute(Action::SelectAll, &ctx);
+    let original = app.session.editor.document.clone();
+    let undo = app.session.editor.undo_stack.len();
+    edit_size(&ctx, &mut app, "72", Key::Escape);
+    assert_eq!(app.session.editor.document, original);
+    assert_eq!(app.session.editor.undo_stack.len(), undo);
+    assert!(ctx.memory(|m| m.has_focus(Id::new(EDIT_ID))));
+    edit_size(&ctx, &mut app, "0.5", Key::Enter);
+    assert!(app.error.as_ref().unwrap().contains("1–400"));
+    assert_eq!(app.session.editor.document, original);
+    assert_eq!(app.session.editor.undo_stack.len(), undo);
+    app.error = None;
+    app.session
+        .editor
+        .set_font_size(0, 5, "18".parse().unwrap())
+        .unwrap();
+    app.execute(Action::SelectAll, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    assert!(app.font_size_text.is_empty());
+    edit_size(&ctx, &mut app, "14", Key::Tab);
+    assert!(app.error.is_none());
+    assert_eq!(
+        app.session.editor.selected_font_size().unwrap().to_string(),
+        "14"
+    );
+    assert_eq!(app.session.editor.document.text(), original.text());
+}
+
+#[test]
+fn caret_font_commands_and_ime_use_the_same_pending_style() {
+    let (ctx, mut app) = setup();
+    frame(&ctx, &mut app, vec![key(Key::U, true)], [1366., 900.], 1.);
+    edit_size(&ctx, &mut app, "18", Key::Enter);
+    assert!(!app.session.dirty());
+    assert!(app.session.editor.undo_stack.is_empty());
+    let pending = app.session.editor.typing_style;
+    assert!(pending.underline);
+    assert_eq!(pending.font_size.to_string(), "18");
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text(
+            "English\nУкраїнська\nРусский e\u{301}".into(),
+        )],
+        [1366., 900.],
+        1.,
+    );
+    frame(
+        &ctx,
+        &mut app,
+        vec![
+            egui::Event::Ime(egui::ImeEvent::Enabled),
+            egui::Event::Ime(egui::ImeEvent::Preedit("ї".into())),
+        ],
+        [1366., 900.],
+        1.,
+    );
+    assert!(!app.enabled(Action::Underline));
+    assert!(!app.enabled(Action::FontSize));
+    let before = app.session.editor.document.clone();
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Ime(egui::ImeEvent::Commit("ї".into()))],
+        [1366., 900.],
+        1.,
+    );
+    assert!(
+        app.session
+            .editor
+            .document
+            .paragraphs
+            .iter()
+            .flat_map(|p| &p.styles)
+            .all(|s| *s == pending)
+    );
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.document, before);
+    assert_eq!(app.session.editor.typing_style, pending);
+}
+
+#[test]
+fn mixed_font_layout_changes_real_geometry_and_preserves_unicode_hits() {
+    let (ctx, _) = setup();
+    let mut editor = crate::commands::Editor::default();
+    editor
+        .replace(0, 0, "small\nЇ e\u{301} ё", "Input")
+        .unwrap();
+    editor.set_font_size(6, 12, "28".parse().unwrap()).unwrap();
+    editor.underline(6, 12, true).unwrap();
+    for zoom in [0.5, 1., 2.] {
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            let g = layout::galley(
+                ctx,
+                &editor.document,
+                &editor.document.text(),
+                Style::default(),
+                600.,
+                14.6667 * zoom,
+            );
+            assert!(g.rows[1].row.size.y > g.rows[0].row.size.y * 2.);
+            assert!(g.job.sections.iter().any(|s| s.format.underline.width > 0.
+                && (s.format.font_id.size - 28. * 4. / 3. * zoom).abs() < 0.01));
+            for i in [0, 3, 5, 6, 7, 8, 10, 11, 12] {
+                let p = g.pos_from_cursor(CCursor::new(i));
+                assert_eq!(g.cursor_from_pos(p.center().to_vec2()).index, i);
+            }
+        });
+    }
+}
+
+#[test]
+fn save_and_close_resolve_pending_size_before_operating_on_document() {
+    let (ctx, mut app) = setup();
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("Keep formatting".into())],
+        [1366., 900.],
+        1.,
+    );
+    app.execute(Action::SelectAll, &ctx);
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("pending-size.bfdoc");
+    app.session.path = Some(path.clone());
+    app.execute(Action::Save, &ctx);
+    app.execute(Action::FontSize, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("32".into())],
+        [1366., 900.],
+        1.,
+    );
+    assert!(app.font_size_dirty);
+    frame(&ctx, &mut app, vec![key(Key::S, true)], [1366., 900.], 1.);
+    let saved = storage::load(&path).unwrap();
+    assert!(
+        saved.paragraphs[0]
+            .styles
+            .iter()
+            .all(|s| s.font_size.to_string() == "32")
+    );
+    assert!(!app.session.dirty());
+    app.execute(Action::FontSize, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("401".into())],
+        [1366., 900.],
+        1.,
+    );
+    frame(&ctx, &mut app, vec![key(Key::S, true)], [1366., 900.], 1.);
+    assert!(app.error.is_some());
+    assert_eq!(storage::load(&path).unwrap(), saved);
+    app.error = None;
+    app.execute(Action::FontSize, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("24".into())],
+        [1366., 900.],
+        1.,
+    );
+    let mut close = egui::RawInput::default();
+    close
+        .viewports
+        .get_mut(&egui::ViewportId::ROOT)
+        .unwrap()
+        .events
+        .push(egui::ViewportEvent::Close);
+    let output = ctx.run(close, |ctx| app.update_ui(ctx));
+    assert!(app.pending.is_some());
+    assert!(
+        output.viewport_output[&egui::ViewportId::ROOT]
+            .commands
+            .contains(&ViewportCommand::CancelClose)
+    );
+    assert_eq!(
+        app.session.editor.selected_font_size().unwrap().to_string(),
+        "24"
+    );
+    assert_eq!(storage::load(&path).unwrap(), saved);
 }

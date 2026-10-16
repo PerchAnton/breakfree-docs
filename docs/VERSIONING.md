@@ -52,8 +52,11 @@ prototypes and journal entries retain their original version context.
 
 The earlier **unreleased** `0.2.0-dev.1` is superseded by `0.1.0-alpha.1` to enter
 the requested first cycle. This is application renumbering, not a native-document
-migration. Protocol `protocol_version: 1` and `.bfdoc` `content_version: 1` stay
-unchanged. Neither is inferred from the application version.
+migration. At that checkpoint protocol and content versions both remained 1.
+Alpha.3 separately introduces native content v2 for size/underline under
+[ADR 0003](adr/0003-character-size-and-underline.md), with v1 reading retained.
+Protocol `protocol_version: 1` stays unchanged. Neither compatibility version is
+inferred from the application version.
 
 ## End-of-work report and approval
 
@@ -66,8 +69,9 @@ incremented version and link its changelog entry. Record an explicit approval wi
 its scope in the project journal when received. Attribute owner instructions to
 their actual source; only label them GitHub comments when they were posted there.
 
-The first candidate was `0.1.0-alpha.1`; the per-change policy is introduced in
-**`0.1.0-alpha.2`, submitted for owner approval**. No alpha/beta/RC/stable
+The first candidate was `0.1.0-alpha.1`; the per-change policy was introduced in
+`0.1.0-alpha.2`. The current candidate is defined by Cargo.toml and CHANGELOG.
+No alpha/beta/RC/stable
 publication is authorized by this policy itself.
 Approval of a number does not authorize a merge, tag, upload or GitHub Release.
 

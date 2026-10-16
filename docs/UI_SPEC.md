@@ -39,9 +39,10 @@ measurements taken from Word**. Source constants are in `src/presentation.rs`; o
 | Home groups, compact | Below 1180 DIP available ribbon width: 86/218/216/120/104 DIP; compact Clipboard and one style preview |
 | Home overflow | Below 900 DIP available ribbon width: 82/166/164 DIP; Styles/Editing move into More menu; document never lies under the ribbon |
 | Controls | Small buttons 24–32 × 24–26 DIP; Paste 48 × 72; two rows in Font/Paragraph, three in Clipboard/Editing; 13-DIP UI text, 11-DIP captions; 15 × 16 group launchers |
+| Font size | 68 × 25 DIP total: 50-DIP editable field and 17-DIP preset arrow with a 1-DIP gap; font-family field shrinks to retain the same group widths |
 | Workspace | Neutral #e8e8e8; white continuous canvas, border #c5c5c5; soft canvas shadow; 10-DIP workspace top gap; centered when space allows; horizontal/vertical scrolling when required |
 | Canvas | 816 DIP wide at 100% document zoom, 96-DIP side/top margins, content-driven height; **no page segmentation** |
-| Text | Host Arial/DejaVu or embedded fallback; starts at 11 pt (14.667 DIP), 1.25 line height, 0.5-em paragraph gap; model emphasis/alignment projected into hit-testable text |
+| Text | Host Arial/DejaVu or embedded fallback; default 11 pt (14.667 DIP), per-run 1–400 pt in half-points and underline; 1.25 line height, default-size 0.5-em paragraph gap; model styles/alignment projected into hit-testable text |
 | Ruler | 22-DIP-high horizontal canvas ruler with shaded margins, 96 DIP per inch, eighth-inch ticks; zoom scales with document; no draggable margins or vertical/page ruler yet |
 | Panes | Navigation left 240 DIP (195–320); Formatting right 220 DIP (195–300); visible on request |
 | Status | 24 DIP; real Unicode word count and paragraph count, saved state, continuous-layout label and 50–200% zoom; ±10% buttons and click percentage to reset to 100% |
@@ -49,12 +50,18 @@ measurements taken from Word**. Source constants are in `src/presentation.rs`; o
 
 ## Commands and interaction
 
-Active Home commands are plain-text clipboard, bold/italic, four alignments, Find,
-Replace selected/next match and Select All. Bold/italic show selected state and set
+Active Home commands are plain-text clipboard, bold/italic/underline, font size,
+four alignments, Find, Replace selected/next match and Select All. Emphasis controls show selected state and set
 pending insertion style at an empty selection. Original vector strokes draw clipboard, file, history, search, paragraph, window and
 launcher controls. Button names are exposed to the toolkit accessibility tree.
 Selected formatting has a pale violet fill even without hover; focus uses an outline.
-Font/size fields report the current display values and explain their read-only state.
+Font-family selection remains read-only with an explanation. Font size is editable:
+1–400 pt in half-point steps, an empty field for mixed selections, and common presets
+in a scrollable menu. Enter or leaving the field applies one shared command; Escape
+cancels. Tab preserves traversal to the next control; Enter returns to the document.
+Invalid input produces a visible error without changing model/history. Keyboard Save
+commits pending size input before writing. Size and underline are disabled during
+document IME composition. At a caret they set the next insertion style only.
 Style previews remain disabled and do not claim applied model styles.
 Native egui hover/pressed/disabled/focus states remain active; unsupported controls
 have tooltips explaining the missing capability. Styling uses restrained violet
@@ -72,11 +79,27 @@ owns undo; one widget update batches committed text events into one transaction.
 Explicit paste/deletion/formatting commands have separate history boundaries.
 Left/Right and deletion honor extended grapheme boundaries. Tab traverses controls;
 F6 cycles document/command-search/navigation, Alt+Q searches real commands. Standard
-Ctrl/Command N/O/S/Shift+S, B/I, Z/Y/Shift+Z, F/H and L/E/R/J are implemented.
+Ctrl/Command N/O/S/Shift+S, B/I/U, Shift+P (focus/select size), Z/Y/Shift+Z, F/H and
+L/E/R/J are implemented.
 Full sequential ribbon KeyTips, complete Word F6 traversal, native assistive technology
 and multilingual OS IME behavior remain unverified/incomplete.
 
 ## Actual application capture
+
+![Alpha.3 character formatting on macOS](screenshots/rust-formatting-macos.png)
+
+Alpha.3, captured 2026-10-16: actual native rendering of
+[Formatting.bfdoc](../examples/Formatting.bfdoc), English UI, light theme, 100%
+document zoom, Arial, 1366 × 900 DIP / 2732 × 1800 physical pixels (backing scale 2).
+The model contains four paragraphs and 21 Unicode words. The first run is bold
+28 pt; the Home field reports 28 at its caret. Subsequent runs use 14, 11 and
+18.5 pt, including underlined `é · ї · ё`. The same fixture was inspected at
+[720 × 700 DIP / 1440 × 1400 physical pixels](screenshots/rust-formatting-narrow-macos.png).
+Home retains size/underline controls without overlap; the continuous canvas scrolls
+horizontally at this width. No pagination or native Windows result is implied.
+
+The following captures retain the earlier alpha.1 shell checkpoint (before active
+size/underline controls), rather than representing the current formatting scope:
 
 ![Refined Home on macOS](screenshots/rust-home-refined-macos.png)
 
@@ -102,6 +125,8 @@ To reproduce fixed-size captures (a native desktop session is required):
 EFRAME_SCREENSHOT_TO="$PWD/artifacts/home.png" cargo run --locked --features capture --example capture_ui -- 1366 900 home
 EFRAME_SCREENSHOT_TO="$PWD/artifacts/narrow.png" cargo run --locked --features capture --example capture_ui -- 720 700 home
 EFRAME_SCREENSHOT_TO="$PWD/artifacts/file.png" cargo run --locked --features capture --example capture_ui -- 1366 900 file
+EFRAME_SCREENSHOT_TO="$PWD/artifacts/formatting.png" cargo run --locked --features capture --example capture_ui -- 1366 900 formatting
+EFRAME_SCREENSHOT_TO="$PWD/artifacts/formatting-narrow.png" cargo run --locked --features capture --example capture_ui -- 720 700 formatting
 ```
 
 Create `artifacts` first. On Windows PowerShell, set `$env:EFRAME_SCREENSHOT_TO`

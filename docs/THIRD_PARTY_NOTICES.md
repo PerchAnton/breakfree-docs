@@ -8,7 +8,7 @@ copyright and license files; do not strip them when distributing binaries.
 
 | Direct runtime dependency | Purpose | Upstream license |
 | :--- | :--- | :--- |
-| serde / serde_json | Native v1 schema and JSON | MIT OR Apache-2.0 |
+| serde / serde_json | Native v1/v2 schemas and JSON | MIT OR Apache-2.0 |
 | unicode-segmentation | Extended grapheme boundaries and word statistics | MIT OR Apache-2.0 |
 | tempfile | Same-directory checked replacement | MIT OR Apache-2.0 |
 | eframe / egui / epaint | Native desktop, widgets and text projection | MIT OR Apache-2.0 |

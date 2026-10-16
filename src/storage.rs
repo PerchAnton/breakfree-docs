@@ -1,4 +1,4 @@
-//! Strict .bfdoc v1 compatibility and checked temporary-file replacement.
+//! Strict .bfdoc v1/v2 reading, v2 writing and checked temporary-file replacement.
 use crate::{Result, model::*};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -8,20 +8,21 @@ use std::{
 };
 
 pub const FORMAT_ID: &str = "breakfree.docs.native";
+pub const CONTENT_VERSION: u32 = 2;
 pub const MAX_FILE_BYTES: usize = 16 * 1024 * 1024;
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct Native {
+struct Native<R> {
     format: String,
     content_version: u32,
-    paragraphs: Vec<NativeParagraph>,
+    paragraphs: Vec<NativeParagraph<R>>,
 }
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct NativeParagraph {
+struct NativeParagraph<R> {
     alignment: Alignment,
-    runs: Vec<Run>,
+    runs: Vec<R>,
 }
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -29,6 +30,35 @@ struct Run {
     text: String,
     bold: bool,
     italic: bool,
+    underline: bool,
+    font_size_half_points: FontSize,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RunV1 {
+    text: String,
+    bold: bool,
+    italic: bool,
+}
+impl From<RunV1> for Run {
+    fn from(run: RunV1) -> Self {
+        Self {
+            text: run.text,
+            bold: run.bold,
+            italic: run.italic,
+            underline: false,
+            font_size_half_points: FontSize::default(),
+        }
+    }
+}
+
+// Inspect only the header first, then deserialize the entire versioned schema.
+// Do not round-trip through Value: that would discard duplicate JSON keys.
+#[derive(Deserialize)]
+struct Header {
+    format: String,
+    content_version: u32,
 }
 
 pub fn encode(document: &Document) -> Result<Vec<u8>> {
@@ -39,16 +69,20 @@ pub fn encode(document: &Document) -> Result<Vec<u8>> {
         .map(|p| {
             let mut runs: Vec<Run> = Vec::new();
             for (ch, style) in p.text.chars().zip(&p.styles) {
-                if let Some(last) = runs
-                    .last_mut()
-                    .filter(|r| r.bold == style.bold && r.italic == style.italic)
-                {
+                if let Some(last) = runs.last_mut().filter(|r| {
+                    r.bold == style.bold
+                        && r.italic == style.italic
+                        && r.underline == style.underline
+                        && r.font_size_half_points == style.font_size
+                }) {
                     last.text.push(ch);
                 } else {
                     runs.push(Run {
                         text: ch.to_string(),
                         bold: style.bold,
                         italic: style.italic,
+                        underline: style.underline,
+                        font_size_half_points: style.font_size,
                     });
                 }
             }
@@ -60,7 +94,7 @@ pub fn encode(document: &Document) -> Result<Vec<u8>> {
         .collect();
     let mut bytes = serde_json::to_vec_pretty(&Native {
         format: FORMAT_ID.into(),
-        content_version: 1,
+        content_version: CONTENT_VERSION,
         paragraphs,
     })
     .map_err(|e| e.to_string())?;
@@ -75,17 +109,31 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
     if bytes.len() > MAX_FILE_BYTES {
         return Err("File exceeds 16 MiB.".into());
     }
-    let file: Native =
+    let file: Header =
         serde_json::from_slice(bytes).map_err(|e| format!("Invalid native document: {e}"))?;
     if file.format != FORMAT_ID {
         return Err("Not a BreakFree Docs native document.".into());
     }
-    if file.content_version != 1 {
-        return Err("Unsupported document content version; source was not changed.".into());
-    }
+    let native_paragraphs = match file.content_version {
+        1 => serde_json::from_slice::<Native<RunV1>>(bytes)
+            .map_err(|e| format!("Invalid native v1 document: {e}"))?
+            .paragraphs
+            .into_iter()
+            .map(|p| NativeParagraph {
+                alignment: p.alignment,
+                runs: p.runs.into_iter().map(Run::from).collect(),
+            })
+            .collect(),
+        CONTENT_VERSION => {
+            serde_json::from_slice::<Native<Run>>(bytes)
+                .map_err(|e| format!("Invalid native v2 document: {e}"))?
+                .paragraphs
+        }
+        _ => return Err("Unsupported document content version; source was not changed.".into()),
+    };
     let mut paragraphs = Vec::new();
-    let mut total = file.paragraphs.len().saturating_sub(1);
-    for p in file.paragraphs {
+    let mut total = native_paragraphs.len().saturating_sub(1);
+    for p in native_paragraphs {
         let mut text = String::new();
         let mut styles = Vec::new();
         for run in p.runs {
@@ -101,6 +149,8 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
                 Style {
                     bold: run.bold,
                     italic: run.italic,
+                    underline: run.underline,
+                    font_size: run.font_size_half_points,
                 },
                 count,
             ));

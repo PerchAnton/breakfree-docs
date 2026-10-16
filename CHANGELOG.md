@@ -3,6 +3,26 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.3 — Unreleased; submitted for owner approval
+
+Prepared 2026-10-16. No release or tag is published by this entry.
+
+- Add real Home font-size input/presets (1–400 pt, half-point steps), underline,
+  Ctrl/Command+U and Ctrl/Command+Shift+P; show uniform/mixed selection values.
+- Keep selection, pending insertion style and exact undo/redo in shared Rust
+  commands. Enter/blur applies size, Escape cancels, invalid input preserves the
+  document; Save/close resolves pending size before acting on the model.
+- Render actual run sizes and underline in the hit-testable text projection;
+  document zoom does not modify stored sizes.
+- Write native content v2, with strict read-only v1 conversion to 11-pt/no-underline
+  defaults. **Older v1-only builds cannot open v2 saves.** No lossy downgrade;
+  process protocol remains v1. Add a formatted Unicode v2 fixture and ADR 0003.
+- Extend engine/storage/widget regression coverage for Unicode, formatting,
+  history, malformed v2 files and failed writes preserving previous bytes.
+
+Native Windows keyboard/DPI/IME/accessibility and a matched Word 2024 comparison
+remain unverified. Font-family choice, named styles and pagination remain out of scope.
+
 ## 0.1.0-alpha.2 — Unreleased; submitted for owner approval
 
 Prepared 2026-10-16. No release or tag is published by this entry.

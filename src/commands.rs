@@ -8,6 +8,8 @@ pub struct Operation {
     after: Document,
     before_selection: (usize, usize),
     after_selection: (usize, usize),
+    before_typing_style: Style,
+    after_typing_style: Style,
 }
 
 #[derive(Default)]
@@ -22,12 +24,19 @@ pub struct Editor {
 impl Editor {
     pub fn new(document: Document) -> Self {
         Self {
+            typing_style: document.style_at(0),
             document,
             ..Self::default()
         }
     }
 
-    fn commit(&mut self, document: Document, label: &str, selection: (usize, usize)) {
+    fn commit(
+        &mut self,
+        document: Document,
+        label: &str,
+        selection: (usize, usize),
+        typing: Style,
+    ) {
         if document != self.document {
             self.undo_stack.push(Operation {
                 label: label.into(),
@@ -35,6 +44,8 @@ impl Editor {
                 after: document.clone(),
                 before_selection: self.selection,
                 after_selection: selection,
+                before_typing_style: self.typing_style,
+                after_typing_style: typing,
             });
             if self.undo_stack.len() > 100 {
                 self.undo_stack.remove(0);
@@ -43,6 +54,7 @@ impl Editor {
             self.document = document;
         }
         self.selection = selection;
+        self.typing_style = typing;
     }
 
     pub fn replace(&mut self, start: usize, end: usize, text: &str, label: &str) -> Result<()> {
@@ -84,36 +96,59 @@ impl Editor {
             .find(|p| *p >= after)
             .unwrap_or(after);
         self.selection = (start, end);
-        self.commit(result, label, (caret, caret));
+        self.commit(result, label, (caret, caret), self.typing_style);
         Ok(())
     }
 
     pub fn emphasize(&mut self, start: usize, end: usize, bold: bool, enabled: bool) -> Result<()> {
+        self.format_range(start, end, if bold { "Bold" } else { "Italic" }, |style| {
+            if bold {
+                style.bold = enabled;
+            } else {
+                style.italic = enabled;
+            }
+        })
+    }
+
+    pub fn underline(&mut self, start: usize, end: usize, enabled: bool) -> Result<()> {
+        self.format_range(start, end, "Underline", |style| style.underline = enabled)
+    }
+
+    pub fn set_font_size(&mut self, start: usize, end: usize, size: FontSize) -> Result<()> {
+        self.format_range(start, end, "Font size", |style| style.font_size = size)
+    }
+
+    fn format_range(
+        &mut self,
+        start: usize,
+        end: usize,
+        label: &str,
+        change: impl Fn(&mut Style),
+    ) -> Result<()> {
         validate_range(&self.document.text(), start, end)?;
         if start == end {
-            if bold {
-                self.typing_style.bold = enabled;
-            } else {
-                self.typing_style.italic = enabled;
-            }
+            change(&mut self.typing_style);
             return Ok(());
         }
         let mut result = self.document.clone();
         let mut offset = 0;
+        let mut typing = None;
         for p in &mut result.paragraphs {
             for (i, style) in p.styles.iter_mut().enumerate() {
                 if (start..end).contains(&(offset + i)) {
-                    if bold {
-                        style.bold = enabled;
-                    } else {
-                        style.italic = enabled;
-                    }
+                    change(style);
+                    typing.get_or_insert(*style);
                 }
             }
             offset += p.styles.len() + 1;
         }
         self.selection = (start, end);
-        self.commit(result, if bold { "Bold" } else { "Italic" }, (start, end));
+        self.commit(
+            result,
+            label,
+            (start, end),
+            typing.unwrap_or(self.typing_style),
+        );
         Ok(())
     }
 
@@ -129,18 +164,27 @@ impl Editor {
             p.alignment = alignment;
         }
         self.selection = (start, end);
-        self.commit(result, "Align paragraphs", (start, end));
+        self.commit(result, "Align paragraphs", (start, end), self.typing_style);
         Ok(())
     }
 
     pub fn emphasis_selected(&self, bold: bool) -> bool {
+        self.selected_value(|s| if bold { s.bold } else { s.italic }) == Some(true)
+    }
+
+    pub fn underline_selected(&self) -> bool {
+        self.selected_value(|s| s.underline) == Some(true)
+    }
+
+    /// None represents mixed values or a selection containing only separators.
+    pub fn selected_font_size(&self) -> Option<FontSize> {
+        self.selected_value(|s| s.font_size)
+    }
+
+    fn selected_value<T: Copy + Eq>(&self, value: impl Fn(Style) -> T) -> Option<T> {
         let (start, end) = self.selection;
         if start == end {
-            return if bold {
-                self.typing_style.bold
-            } else {
-                self.typing_style.italic
-            };
+            return Some(value(self.typing_style));
         }
         let mut offset = 0;
         let mut selected = Vec::new();
@@ -150,18 +194,21 @@ impl Editor {
                     .iter()
                     .enumerate()
                     .filter(|(i, _)| (start..end).contains(&(offset + i)))
-                    .map(|(_, s)| if bold { s.bold } else { s.italic }),
+                    .map(|(_, s)| value(*s)),
             );
             offset += p.styles.len() + 1;
         }
-        !selected.is_empty() && selected.iter().all(|s| *s)
+        selected
+            .first()
+            .copied()
+            .filter(|first| selected.iter().all(|s| s == first))
     }
 
     pub fn undo(&mut self) {
         if let Some(op) = self.undo_stack.pop() {
             self.document = op.before.clone();
             self.selection = op.before_selection;
-            self.typing_style = self.document.style_at(self.selection.0);
+            self.typing_style = op.before_typing_style;
             self.redo_stack.push(op);
         }
     }
@@ -169,7 +216,7 @@ impl Editor {
         if let Some(op) = self.redo_stack.pop() {
             self.document = op.after.clone();
             self.selection = op.after_selection;
-            self.typing_style = self.document.style_at(self.selection.0);
+            self.typing_style = op.after_typing_style;
             self.undo_stack.push(op);
         }
     }

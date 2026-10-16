@@ -1,0 +1,25 @@
+{
+  "format": "breakfree.docs.native",
+  "content_version": 2,
+  "paragraphs": [
+    {
+      "alignment": "left",
+      "runs": [{"text": "BreakFree Docs", "bold": true, "italic": false, "underline": false, "font_size_half_points": 56}]
+    },
+    {
+      "alignment": "left",
+      "runs": [{"text": "English · Українська · Русский", "bold": false, "italic": false, "underline": false, "font_size_half_points": 28}]
+    },
+    {
+      "alignment": "left",
+      "runs": [
+        {"text": "Underline and combining text: ", "bold": false, "italic": false, "underline": false, "font_size_half_points": 22},
+        {"text": "é · ї · ё", "bold": false, "italic": false, "underline": true, "font_size_half_points": 37}
+      ]
+    },
+    {
+      "alignment": "left",
+      "runs": [{"text": "Select text, change its size, undo, save and reopen.", "bold": false, "italic": true, "underline": false, "font_size_half_points": 22}]
+    }
+  ]
+}

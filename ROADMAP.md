@@ -123,6 +123,11 @@ Rust selection is complete; this gate evaluates GUI behavior and visual fidelity
 
 ### D2 — Everyday document structure
 
+- [x] Add direct font size and underline through shared commands and Home controls;
+  preserve mixed selections, pending input, undo/redo and v1-read/v2-save content.
+  [ADR 0003](docs/adr/0003-character-size-and-underline.md) and
+  [validation](docs/VALIDATION.md) record the narrow alpha.3 increment; this does not
+  complete D2 or the native-platform R1 gate.
 - [ ] Add paragraph/character styles with inheritance and direct-formatting rules.
 - [ ] Add lists, indentation, tabs, spacing, links and Unicode-aware search/replace.
 - [ ] Add table editing and images with explicit sizing and anchoring semantics.
@@ -222,3 +227,4 @@ Use public specifications and original test cases, not copied application code. 
 | 2026-10-16 | Expanded the independent roadmap, quality gates and app identity | Documentation only; no feature completion claimed |
 | 2026-10-16 | Added a reversible standalone D1 editor experiment, local evidence and optional Office I0–I3 dependencies | Narrow implemented subset checked above; D0 adoption, full D1 review and Office reconciliation remain open |
 | 2026-10-16 | Owner approved Rust and Word 2024 Windows reference; replaced runtime with Rust and added R1 ribbon proof gate | Native v1/CLI preserved; toolkit adoption and matched Windows visual/DPI evidence pending |
+| 2026-10-16 | Owner requested font size and underline as the next small increment; alpha.3 implements shared formatting and native content v2 | Strict v1 reading retained; protocol v1 unchanged. Local history/storage/widget checks and wide/narrow native captures recorded; Windows comparison remains pending |

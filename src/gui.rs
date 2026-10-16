@@ -3,7 +3,7 @@ use crate::{
     Result, VERSION,
     chrome::{self, Icon},
     layout,
-    model::{Alignment, boundaries},
+    model::{Alignment, FontSize, boundaries},
     presentation::*,
     session::Session,
     storage,
@@ -22,6 +22,7 @@ const CHROME: Color32 = Color32::from_rgb(243, 243, 243);
 const WORKSPACE: Color32 = Color32::from_rgb(232, 232, 232);
 const EDIT_ID: &str = "document-text";
 const SEARCH_ID: &str = "command-search";
+const FONT_SIZE_ID: &str = "font-size-input";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Action {
@@ -37,6 +38,8 @@ pub enum Action {
     Paste,
     Bold,
     Italic,
+    Underline,
+    FontSize,
     Left,
     Center,
     Right,
@@ -64,6 +67,8 @@ impl Action {
             Self::Paste => "Paste plain text",
             Self::Bold => "Bold",
             Self::Italic => "Italic",
+            Self::Underline => "Underline",
+            Self::FontSize => "Font size",
             Self::Left => "Align left",
             Self::Center => "Center",
             Self::Right => "Align right",
@@ -91,6 +96,8 @@ const COMMANDS: &[Action] = &[
     Action::Paste,
     Action::Bold,
     Action::Italic,
+    Action::Underline,
+    Action::FontSize,
     Action::Left,
     Action::Center,
     Action::Right,
@@ -129,6 +136,9 @@ pub struct DocsApp {
     focus_document: bool,
     focus_search: bool,
     focus_find: bool,
+    focus_font_size: bool,
+    font_size_text: String,
+    font_size_dirty: bool,
     pending: Option<Pending>,
     error: Option<String>,
     backstage: bool,
@@ -203,6 +213,9 @@ impl DocsApp {
             focus_document: true,
             focus_search: false,
             focus_find: false,
+            focus_font_size: false,
+            font_size_text: String::new(),
+            font_size_dirty: false,
             pending: None,
             error: None,
             backstage: false,
@@ -243,6 +256,7 @@ impl DocsApp {
         match action {
             Action::Bold => self.session.editor.emphasis_selected(true),
             Action::Italic => self.session.editor.emphasis_selected(false),
+            Action::Underline => self.session.editor.underline_selected(),
             Action::Left | Action::Center | Action::Right | Action::Justify => {
                 let p = self
                     .session
@@ -336,10 +350,16 @@ impl DocsApp {
             }
         }
         self.backstage = false;
+        self.font_size_dirty = false;
         self.sync_view();
     }
     pub fn execute(&mut self, action: Action, ctx: &egui::Context) {
         if !self.enabled(action) {
+            return;
+        }
+        // A keyboard Save may leave the size field focused. Commit it before
+        // dispatch, so Save/New/Undo cannot silently operate on an older model.
+        if action != Action::FontSize && !self.commit_font_size_input() {
             return;
         }
         let (start, end) = self.session.editor.selection;
@@ -395,6 +415,21 @@ impl DocsApp {
                 self.fail(result);
                 self.sync_view();
             }
+            Action::Underline => {
+                let result = self
+                    .session
+                    .editor
+                    .underline(start, end, !self.checked(action));
+                self.fail(result);
+                self.sync_view();
+            }
+            Action::FontSize => {
+                self.tab = 0;
+                self.backstage = false;
+                self.ribbon_collapsed = false;
+                self.focus_font_size = true;
+                self.focus_document = false;
+            }
             Action::Left | Action::Center | Action::Right | Action::Justify => {
                 let a = match action {
                     Action::Center => Alignment::Center,
@@ -435,6 +470,8 @@ impl DocsApp {
             RichText::new(label).strong()
         } else if action == Action::Italic && label == "I" {
             RichText::new(label).italics()
+        } else if action == Action::Underline {
+            RichText::new(label).underline()
         } else {
             RichText::new(label)
         };
@@ -748,6 +785,8 @@ impl DocsApp {
             Action::Paste => "Ctrl+V",
             Action::Bold => "Ctrl+B",
             Action::Italic => "Ctrl+I",
+            Action::Underline => "Ctrl+U",
+            Action::FontSize => "Ctrl+Shift+P",
             Action::Find => "Ctrl+F",
             Action::Replace => "Ctrl+H",
             Action::SelectAll => "Ctrl+A",
@@ -810,6 +849,123 @@ impl DocsApp {
         }
     }
 
+    fn commit_font_size_input(&mut self) -> bool {
+        if !self.font_size_dirty {
+            return true;
+        }
+        match self.font_size_text.parse::<FontSize>() {
+            Ok(size) => {
+                self.apply_font_size(size);
+                true
+            }
+            Err(error) => {
+                self.error = Some(error);
+                self.font_size_dirty = false;
+                false
+            }
+        }
+    }
+
+    fn apply_font_size(&mut self, size: FontSize) {
+        if self.composing {
+            return;
+        }
+        let (start, end) = self.session.editor.selection;
+        let result = self.session.editor.set_font_size(start, end, size);
+        self.fail(result);
+        self.font_size_dirty = false;
+        self.sync_view();
+    }
+
+    fn font_size_control(&mut self, ui: &mut Ui, rect: Rect) {
+        let id = Id::new(FONT_SIZE_ID);
+        let focused = ui.memory(|m| m.has_focus(id));
+        if !focused && !self.font_size_dirty {
+            self.font_size_text = self
+                .session
+                .editor
+                .selected_font_size()
+                .map(|size| size.to_string())
+                .unwrap_or_default();
+        }
+        let edit_rect = Rect::from_min_max(rect.min, pos2(rect.right() - 18., rect.bottom()));
+        let response = ui
+            .add_enabled_ui(!self.composing, |ui| {
+                ui.put(
+                    edit_rect,
+                    egui::TextEdit::singleline(&mut self.font_size_text)
+                        .id(id)
+                        .font(FontId::proportional(13.))
+                        .desired_width(0.)
+                        .margin(vec2(3., 4.))
+                        .hint_text("—")
+                        .char_limit(8),
+                )
+            })
+            .inner;
+        response.widget_info(|| {
+            egui::WidgetInfo::labeled(
+                egui::WidgetType::TextEdit,
+                !self.composing,
+                "Font size in points",
+            )
+        });
+        self.record("font-size", response.rect);
+        if self.focus_font_size && !self.composing {
+            response.request_focus();
+            let mut state = egui::TextEdit::load_state(ui.ctx(), id).unwrap_or_default();
+            state.cursor.set_char_range(Some(CCursorRange::two(
+                CCursor::new(0),
+                CCursor::new(self.font_size_text.chars().count()),
+            )));
+            state.store(ui.ctx(), id);
+            self.focus_font_size = false;
+        }
+        if response.changed() {
+            self.font_size_dirty = true;
+        }
+        if !self.composing && self.font_size_dirty && response.lost_focus() {
+            if self.commit_font_size_input() && !ui.input(|i| i.key_pressed(Key::Enter)) {
+                // Preserve the destination of Tab or a pointer focus change.
+                self.focus_document = false;
+            }
+        } else if response.lost_focus() && ui.input(|i| i.key_pressed(Key::Enter)) {
+            self.sync_view();
+        }
+        response.on_hover_text("Font size in points (1–400, steps of 0.5). Enter or leave the field to apply; Escape cancels. Blank means mixed sizes.")
+            .on_disabled_hover_text("Finish text composition first.");
+        let arrow = chrome::control(
+            ui,
+            Rect::from_min_max(pos2(rect.right() - 17., rect.top()), rect.max),
+            Icon::Chevron(false),
+            "",
+            "Font size presets",
+            !self.composing,
+            false,
+        );
+        self.record("font-size-menu", arrow.rect);
+        egui::Popup::menu(&arrow).show(|ui| {
+            egui::ScrollArea::vertical()
+                .max_height(280.)
+                .show(ui, |ui| {
+                    for points in [
+                        8_u16, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72,
+                    ] {
+                        let size = FontSize::try_from(points * 2).expect("valid font preset");
+                        let response = ui.selectable_label(
+                            self.session.editor.selected_font_size() == Some(size),
+                            size.to_string(),
+                        );
+                        self.record(&format!("size-preset-{points}"), response.rect);
+                        if response.clicked() {
+                            self.apply_font_size(size);
+                            ui.close();
+                        }
+                    }
+                });
+        });
+    }
+
     fn home_contents(&mut self, ui: &mut Ui, index: usize, width: f32, bounds: Rect) {
         let origin = bounds.min;
         let r =
@@ -837,7 +993,7 @@ impl DocsApp {
             }
             1 => {
                 let full = width >= 270.;
-                let field_w = if full { 119. } else { width - 53. };
+                let field_w = if full { 95. } else { width - 78. };
                 let response = chrome::field(
                     ui,
                     r(2., 7., field_w, 25.),
@@ -845,13 +1001,7 @@ impl DocsApp {
                     "Current body font. Changing fonts is planned.",
                 );
                 self.record("font-family", response.rect);
-                let response = chrome::field(
-                    ui,
-                    r(field_w + 5., 7., 43., 25.),
-                    "11",
-                    "Current body size: 11 pt. Font size editing is planned.",
-                );
-                self.record("font-size", response.rect);
+                self.font_size_control(ui, r(field_w + 5., 7., 68., 25.));
                 if full {
                     for (i, (text, name)) in [
                         ("A+", "Grow font"),
@@ -868,7 +1018,7 @@ impl DocsApp {
                             Icon::Text(text),
                             "",
                             name,
-                            "Font size, case and clear-formatting commands are planned.",
+                            "Preset stepping, case and clear-formatting commands are planned. Use the size field to set font size.",
                         );
                     }
                 }
@@ -880,8 +1030,14 @@ impl DocsApp {
                     "",
                     Action::Italic,
                 );
+                self.ribbon_control(
+                    ui,
+                    r(53., 43., 26., 26.),
+                    Icon::Text("U"),
+                    "",
+                    Action::Underline,
+                );
                 for (i, (text, name)) in [
-                    ("U", "Underline"),
                     ("abc", "Strikethrough"),
                     ("x₂", "Subscript"),
                     ("x²", "Superscript"),
@@ -891,11 +1047,11 @@ impl DocsApp {
                 {
                     self.unavailable(
                         ui,
-                        r(53. + i as f32 * 27., 43., 26., 26.),
+                        r(80. + i as f32 * 27., 43., 26., 26.),
                         Icon::Text(text),
                         "",
                         name,
-                        "This character formatting is not supported by native content v1.",
+                        "This character formatting is not implemented.",
                     );
                 }
                 if full {
@@ -1162,7 +1318,7 @@ impl DocsApp {
                 } else if self.tab == 9 {
                     ui.label(format!("BreakFree Docs {VERSION}"));
                     ui.label("Local .bfdoc documents · no pagination yet");
-                    ui.label("Ctrl+N/O/S · Ctrl+B/I · Ctrl+Z/Y · Ctrl+F · Ctrl+F1");
+                    ui.label("Ctrl+N/O/S · Ctrl+B/I/U · Ctrl+Shift+P · Ctrl+Z/Y · Ctrl+F");
                 } else {
                     let groups = placeholder_groups(self.tab);
                     let width = ((ui.available_width() - 24.) / groups.len() as f32).min(130.);
@@ -1219,6 +1375,7 @@ impl DocsApp {
                 (Key::S, false, Action::Save),
                 (Key::F, false, Action::Find),
                 (Key::H, false, Action::Replace),
+                (Key::P, true, Action::FontSize),
             ] {
                 let modifiers = Modifiers {
                     shift,
@@ -1236,6 +1393,7 @@ impl DocsApp {
                     (Key::Y, false, Action::Redo),
                     (Key::B, false, Action::Bold),
                     (Key::I, false, Action::Italic),
+                    (Key::U, false, Action::Underline),
                     (Key::L, false, Action::Left),
                     (Key::E, false, Action::Center),
                     (Key::R, false, Action::Right),
@@ -1318,6 +1476,13 @@ impl DocsApp {
             }
         }
         if ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Escape)) {
+            if ctx.memory(|m| {
+                m.has_focus(Id::new(FONT_SIZE_ID)) || m.had_focus_last_frame(Id::new(FONT_SIZE_ID))
+            }) {
+                self.font_size_dirty = false;
+                ctx.memory_mut(|m| m.surrender_focus(Id::new(FONT_SIZE_ID)));
+                self.sync_view();
+            }
             if self.composing {
                 self.composing = false;
                 self.sync_view();
@@ -1508,6 +1673,19 @@ impl DocsApp {
                 ui.separator();
                 self.command(ui, "Bold", Action::Bold, vec2(150., 28.));
                 self.command(ui, "Italic", Action::Italic, vec2(150., 28.));
+                self.command(ui, "Underline", Action::Underline, vec2(150., 28.));
+                let size = self
+                    .session
+                    .editor
+                    .selected_font_size()
+                    .map(|s| format!("{s} pt"))
+                    .unwrap_or("Mixed sizes".into());
+                self.command(
+                    ui,
+                    &format!("Font size: {size}"),
+                    Action::FontSize,
+                    vec2(180., 28.),
+                );
                 ui.separator();
                 ui.label("Paragraph alignment");
                 for a in [Action::Left, Action::Center, Action::Right, Action::Justify] {
@@ -1824,6 +2002,7 @@ impl DocsApp {
                     ui.add_space(18.);
 
                     ui.small("Local document format: BreakFree Docs (.bfdoc)");
+                    ui.small("Saves use format v2. Earlier v1-only builds cannot open new saves.");
 
                     ui.small("Continuous layout. Pagination and printing are planned.");
                 }
@@ -1910,10 +2089,12 @@ impl DocsApp {
 
     pub fn update_ui(&mut self, ctx: &egui::Context) {
         self.regions.clear();
-        if ctx.input(|i| i.viewport().close_requested())
-            && self.session.dirty()
-            && !self.allow_close
-        {
+        let close_requested = ctx.input(|i| i.viewport().close_requested());
+        let size_ready = !close_requested || self.allow_close || self.commit_font_size_input();
+        if !size_ready {
+            ctx.send_viewport_cmd(ViewportCommand::CancelClose);
+        }
+        if close_requested && size_ready && self.session.dirty() && !self.allow_close {
             ctx.send_viewport_cmd(ViewportCommand::CancelClose);
             self.request(Pending::Close, ctx);
         }

@@ -137,10 +137,18 @@ it advertises no desktop launch actions and rejects launch attempts clearly.
 
 ## Use the editor
 
-Open [examples/Welcome.bfdoc](examples/Welcome.bfdoc) for formatted Unicode text.
-Home has real clipboard, bold/italic, alignment, Find/Replace and Select All commands.
-At a collapsed caret, bold/italic set the next insertion style. Native paste is
-plain text. Unimplemented font/style/list commands are disabled with explanations.
+Open [examples/Welcome.bfdoc](examples/Welcome.bfdoc) for the original v1 fixture or
+[examples/Formatting.bfdoc](examples/Formatting.bfdoc) for sized/underlined Unicode text.
+Home has real clipboard, bold/italic/underline, font size, alignment, Find/Replace
+and Select All commands. At a collapsed caret, character formatting sets the next
+insertion style. The size field accepts 1–400 pt in half-point steps (for example,
+`12.5`); Enter or leaving the field applies it and Escape cancels. Mixed selected
+sizes show an empty field. Native paste is plain text. Unimplemented font-family,
+style and list commands are disabled with explanations.
+
+This build reads native content v1 and v2 and **saves v2**. Opening a v1 file does
+not change it; an explicit save converts it to v2. Earlier v1-only builds cannot
+open new saves. Use Save As to keep an older copy. See [format details](docs/NATIVE_FORMAT.md).
 File provides New/Open/Save/Save As, unsaved Save/Discard/Cancel and view settings;
 Print is disabled. Navigation and the formatting pane operate on real model ranges.
 The white canvas is continuous; pagination, page numbers and print layout are absent.
@@ -150,8 +158,9 @@ the window narrows. File has Home/Options navigation and real document propertie
 The status bar provides zoom out/in and a click-to-reset percentage.
 See [current native screenshots and capture commands](docs/UI_SPEC.md#actual-application-capture).
 
-Ctrl (Command on macOS) + N/O/S, Shift+S, B/I, Z/Y or Shift+Z handle file, emphasis
-and history actions. Ctrl/Command + L/E/R/J aligns paragraphs; F/H opens Find/Replace.
+Ctrl (Command on macOS) + N/O/S, Shift+S, B/I/U, Z/Y or Shift+Z handle file, emphasis
+and history actions. Ctrl/Command+Shift+P focuses and selects the size field.
+Ctrl/Command + L/E/R/J aligns paragraphs; F/H opens Find/Replace.
 Ctrl+F1 collapses the ribbon; Alt+F/H opens File/Home; Alt+Q focuses command search;
 F6 cycles document/search/navigation focus. Tab traverses controls. Input events delivered in one widget update form one text undo operation;
 explicit paste and formatting commands have separate boundaries. Full
@@ -186,7 +195,7 @@ See [UI_SPEC](docs/UI_SPEC.md) for comparison conditions and remaining visual ga
 | :--- | :--- |
 | Identity and planning documents | Available |
 | Implementation language | Rust approved; language decision complete |
-| UI toolkit and native persistence format | Native eframe/egui ribbon experiment; strict `.bfdoc` content v1 |
+| UI toolkit and native persistence format | Native eframe/egui ribbon experiment; strict `.bfdoc` v1/v2 reading, v2 writing |
 | Windows, macOS and Linux | macOS local build/render; native Windows/Linux evaluation pending |
 | Application code and tests | Available; [evidence and limits](docs/VALIDATION.md) |
 | Releases and installers | None |

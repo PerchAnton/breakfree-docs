@@ -7,8 +7,9 @@ use breakfree_docs::{
 use eframe::egui;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    if args.len() != 3 || !["home", "file", "navigation"].contains(&args[2].as_str()) {
-        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|file|navigation>; set EFRAME_SCREENSHOT_TO".into());
+    if args.len() != 3 || !["home", "file", "navigation", "formatting"].contains(&args[2].as_str())
+    {
+        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|file|navigation|formatting>; set EFRAME_SCREENSHOT_TO".into());
     }
     if std::env::var_os("EFRAME_SCREENSHOT_TO").is_none() {
         return Err("Set EFRAME_SCREENSHOT_TO to an output PNG path".into());
@@ -18,7 +19,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if !(640.0..=1920.0).contains(&width) || !(480.0..=1080.0).contains(&height) {
         return Err("Capture dimensions outside 640–1920 × 480–1080 DIP".into());
     }
-    let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("examples/Welcome.bfdoc");
+    let fixture =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(if args[2] == "formatting" {
+            "examples/Formatting.bfdoc"
+        } else {
+            "examples/Welcome.bfdoc"
+        });
     let session = if args[2] == "file" {
         Session::default()
     } else {

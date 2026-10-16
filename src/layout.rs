@@ -60,12 +60,18 @@ pub fn configure_fonts(ctx: &egui::Context) -> String {
 }
 
 fn format(style: Style, size: f32) -> TextFormat {
+    let size = size * style.font_size.points() / Style::default().font_size.points();
     TextFormat {
         font_id: FontId::new(
             size,
             FontFamily::Name(if style.bold { "body-bold" } else { "body" }.into()),
         ),
         italics: style.italic,
+        underline: if style.underline {
+            egui::Stroke::new((size / 14.).max(1.), Color32::from_rgb(24, 24, 24))
+        } else {
+            egui::Stroke::NONE
+        },
         color: Color32::from_rgb(24, 24, 24),
         line_height: Some(size * 1.25),
         ..Default::default()
@@ -107,7 +113,7 @@ pub fn galley(
             start = end;
         }
         if chars.is_empty() {
-            job.append("", 0., format(Style::default(), size));
+            job.append("", 0., format(typing_style, size));
         }
         let mut paragraph = ctx.fonts_mut(|f| f.layout_job(job)).as_ref().clone();
         for placed in &mut paragraph.rows {

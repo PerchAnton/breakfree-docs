@@ -6,6 +6,10 @@
 - Supersedes: ADR 0001's Python/Qt implementation choice
 - License: unchanged; project and brand licenses remain undecided
 
+Alpha.3 extension: [ADR 0003](0003-character-size-and-underline.md) adds character
+size/underline and native v2 writing with strict v1 reading. The v1-only and fixed
+size statements below describe the initial Rust checkpoint.
+
 ## Decision and scope
 
 Implement every runtime layer in Rust. The owner's explicit instruction settles
