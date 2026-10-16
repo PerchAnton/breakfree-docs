@@ -1,26 +1,38 @@
 # Dependency and asset notices
 
-The BreakFree Docs software and brand licenses remain owner decisions. This file
-does not change them. Project implementation and tests are original. No dependency
-implementation source, font, alternate product branding or Office engine is copied
-into this repository.
+Project and brand licenses remain owner decisions. This file does not grant a
+project license. Application code/tests are original. No other application's
+implementation or branding is vendored. Cargo.lock records exact dependency
+versions, including target-specific packages. Each crate retains its upstream
+copyright and license files; do not strip them when distributing binaries.
 
-| Dependency | Pin | Purpose | Upstream license / source |
-| :--- | :--- | :--- | :--- |
-| regex | 2026.9.29 | Extended grapheme segmentation in the model | Apache-2.0 AND CNRI-Python; [PyPI](https://pypi.org/project/regex/2026.9.29/), [source](https://github.com/mrabarnett/mrab-regex) |
-| PySide6-Essentials / shiboken6 / Qt | 6.11.1 | Optional desktop and QtTest bindings; Qt dynamically loaded from the installed wheels | PySide metadata: LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only; Qt components have their own notices. [Qt for Python licensing](https://doc.qt.io/qtforpython-6/licenses.html), [Qt licensing](https://doc.qt.io/qt-6/licensing.html) |
-| setuptools | 82.0.1 | Build backend | MIT; [source](https://github.com/pypa/setuptools) |
-| build | 1.3.0 | Developer wheel/sdist command | MIT; [source](https://github.com/pypa/build) |
-| Ruff | 0.14.0 | Developer formatting/lint checks | MIT; [source](https://github.com/astral-sh/ruff) |
+| Direct runtime dependency | Purpose | Upstream license |
+| :--- | :--- | :--- |
+| serde / serde_json | Native v1 schema and JSON | MIT OR Apache-2.0 |
+| unicode-segmentation | Extended grapheme boundaries and word statistics | MIT OR Apache-2.0 |
+| tempfile | Same-directory checked replacement | MIT OR Apache-2.0 |
+| eframe / egui / epaint | Native desktop, widgets and text projection | MIT OR Apache-2.0 |
+| rfd | Native file picker / Linux XDG portal | MIT |
+| arboard | Plain-text OS clipboard | MIT OR Apache-2.0 |
+| image | Approved WebP logo decode and PNG capture | MIT OR Apache-2.0 |
 
-Python itself and transitive build tools retain their respective upstream licenses.
-Dependency distributions carry upstream copyright/license materials; do not strip
-them when redistributing. This prototype publishes no bundled runtime, installer
-or release. Before distributing one, inventory the exact Qt components and bundled
-third-party notices, satisfy the chosen licensing terms and review replacement and
-relinking requirements. Optional desktop installation is not an owner license decision.
+Exact resolved macOS versions, repository URLs and declared SPDX expressions are
+in [dependencies-macos.json](dependencies-macos.json), generated from locked Cargo
+metadata for aarch64-apple-darwin. This is an inventory, not a completed legal or
+security audit. Windows/Linux transitive inventories and a full binary-distribution
+notice bundle remain a release gate; this PR publishes no binary release/installer.
+Source dependency terms are supplied in each downloaded crate.
 
-`src/breakfree_docs/assets/breakfree-docs.webp` is a byte-identical copy of the
-approved `docs/brand/breakfree-docs.webp` needed in the installed wheel. Both retain
-the existing pending brand-license status. No font files are bundled; Qt uses the
-system general UI font, whose fallback and shaping depend on the host.
+Egui's default-font dependency embeds Ubuntu, Hack, Noto Emoji and emoji-icon-font.
+Their original notices are preserved locally: [Ubuntu Font Licence](licenses/UFL.txt),
+[SIL Open Font License](licenses/OFL.txt), [Hack notice](licenses/Hack-Regular.txt)
+and [emoji-icon-font MIT](licenses/emoji-icon-font-mit-license.txt). These are real
+embedded dependencies, unlike the optional host Arial/Segoe UI/DejaVu fonts, which
+are read from the user's system and are not redistributed. Host font availability,
+font fallback, color emoji and shaping vary; no universal rendering claim is made.
+
+The runtime embeds the unchanged approved `docs/brand/breakfree-docs.webp` directly.
+The historical Python archive retains its identical packaged copy and original
+regex/PySide/Qt/build-tool metadata. Those are not dependencies of the Rust editor.
+Historical Qt/PySide distributions retain their LGPL/GPL and component notices;
+see [Qt for Python licensing](https://doc.qt.io/qtforpython-6/licenses.html).

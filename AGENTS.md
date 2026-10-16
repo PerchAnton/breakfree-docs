@@ -1,9 +1,10 @@
 # Working in BreakFree Docs
 
 Read README.md, ROADMAP.md, docs/REQUIREMENTS.md, CONTRIBUTING.md, existing ADR and
-docs/PROJECT_LOG.md before making changes. The repository now includes a reversible
-Python/Qt editor prototype. ADR 0001 is proposed for review; the Rust-first
-long-term proposal and license decisions remain open.
+docs/PROJECT_LOG.md before making changes. The owner has selected Rust for the
+model, commands, persistence, integration and native GUI. Do not request language
+approval again. ADR 0002 supersedes the archived Python experiment; GUI-library,
+platform and license reviews remain open.
 
 ## Scope
 
@@ -16,9 +17,17 @@ Use local evidence reporting and the pinned `contracts/v1/` snapshot until it ex
 
 - Preserve BreakFree Docs and its approved app-specific icon at `docs/brand/breakfree-docs.webp`. Do not replace it with the suite icon or a musical symbol.
 - Keep public documentation in English and distinguish proposed, implemented and verified work.
-- Obtain owner review for architecture, license changes and major dependencies.
+- Rust is mandatory. Do not implement the editor in JavaScript/TypeScript, Electron
+  or an HTML interface hosted in a WebView. Keep the GUI separate from the engine.
+- Follow desktop Word 2024 for Windows as the approved visual reference; implement
+  a custom office ribbon and components. Preserve BreakFree identity. Follow
+  docs/UI_SPEC.md; disable unfinished commands with explanations and show real
+  model statistics. Do not imply pagination or visual equivalence without evidence.
+- Obtain owner review for remaining architecture, license changes and major dependencies.
+  Rust selection is already approved.
 - Write original project code and documentation. Do not copy another application's source or branding. Retain all legally required dependency and asset notices.
-- Keep the document model, command engine and layout independent of the UI toolkit.
+- Keep the document model, command engine and layout policy independent of the UI toolkit.
+  Keep toolkit-specific text rendering/hit testing in a replaceable layout adapter.
 - Do not execute imported macros/scripts or silently upload documents.
 - Do not discard unsupported content silently or overwrite a valid file after a failed save.
 - Test Unicode, editing, undo/redo, layout and persistence separately.
@@ -77,8 +86,12 @@ project journal in gitwork. Publishing only the primary journal is incomplete.
 
 ## Validation
 
-Run the documented unit/Qt tests and Ruff checks for relevant implementation changes.
-Use `tools/check_repository.py` for local links, snapshot and brand identity; check
-changed YAML separately. Build a wheel and run `tools/check_wheel.py` for packaging
-changes. No sibling checkout or Office service may be required. Record results and
-limitations separately in `docs/VALIDATION.md` and the project log.
+Run `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`,
+`cargo test --locked` and `cargo test --locked --no-default-features`. Use
+`python3 tools/check_repository.py` for documentation, contract and brand checks;
+Python is a developer check only, not an editor runtime. Build the native binary
+with `cargo build --locked --release`. No sibling checkout or Office service may
+be required. Record actual platform, native-input, screenshot and DPI evidence in
+docs/VALIDATION.md, docs/UI_SPEC.md and both project journals. Synthetic egui DPI
+tests do not establish Windows 100%/125%/150% behavior. Never merge or release
+without separate owner instruction.

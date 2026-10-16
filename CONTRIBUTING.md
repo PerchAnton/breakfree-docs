@@ -6,17 +6,17 @@ Use this repository for writing workflows, the document model, editing and persi
 
 Start with [ROADMAP.md](ROADMAP.md) and [the first milestone](docs/REQUIREMENTS.md). Discuss major architecture or dependencies in an issue before implementing them. Licensing must be agreed with the owner before substantive third-party code is accepted.
 
-The owner-requested first editor is implemented as a reversible Python/Qt prototype
-in [ADR 0001](docs/adr/0001-reversible-desktop-prototype.md). Architecture and major
-dependency approval remain review gates; the prototype does not adopt a final stack
-or a project license. No substantive third-party implementation source is vendored.
+The owner has approved Rust for every runtime layer and Word 2024 for Windows as
+the visual reference. Do not ask to approve the language again. Follow
+[ADR 0002](docs/adr/0002-rust-native-ribbon.md) and [UI_SPEC](docs/UI_SPEC.md).
+GUI toolkit, dependency licensing and native-platform reviews remain open; no
+project license is adopted. No third-party implementation source is vendored.
 
 Keep pull requests focused. Explain the user outcome and checks actually run. Use
-synthetic documents, never customer data, private correspondence or unlicensed assets.
-Run the commands in [README.md](README.md), add meaningful engine/persistence tests
-for behavior changes and keep GUI edits routed through the same model commands.
-For pure-model work the desktop extra is optional. CI's offscreen Qt tests are not
-evidence of native IME or assistive-technology support.
+synthetic documents, never customer data or private correspondence. Run the Cargo
+checks in [README](README.md); keep GUI edits routed through shared model commands.
+The core builds with `--no-default-features`. CPU egui event tests are distinct from
+native input, dialogs, accessibility and Windows scaling verification.
 
 Keep project history in [docs/PROJECT_LOG.md](docs/PROJECT_LOG.md), using Europe/Kyiv
 timestamps and direct event links. Read the current log and instructions before

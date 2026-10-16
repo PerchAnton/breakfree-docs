@@ -1,9 +1,12 @@
 # ADR 0001 — Reversible standalone desktop prototype
 
-- Status: **implemented experiment, proposed for owner review; not an adopted final stack**
+- Status: **superseded by [ADR 0002](0002-rust-native-ribbon.md); historical experiment only**
 - Date: 2026-10-16
 - Scope: D0 prototype and the D1 writing loop
 - License: unchanged; software and brand licensing remain owner decisions
+
+The historical Python source and tests are retained in `prototypes/python/`.
+The context below describes the earlier decision, not current language policy.
 
 ## Context and inputs
 

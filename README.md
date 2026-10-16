@@ -27,7 +27,7 @@
 ---
 
 > [!IMPORTANT]
-> **Working prototype, pending architecture review.** Create, edit, format, undo,
+> **Working Rust editor, native ribbon prototype.** Create, edit, format, undo,
 > save and reopen local `.bfdoc` documents in a standalone desktop window. No Office
 > installation, cloud service or neighboring repository is required. There are no
 > installers, releases or DOCX compatibility claims. The detailed roadmap remains
@@ -67,11 +67,13 @@ replacement preserve the previous file. There is no autosave, crash recovery or
 power-loss guarantee; see [file semantics](docs/NATIVE_FORMAT.md). Unsupported
 formats and content versions are rejected explicitly.
 
-**The interface is not the engine.** The immutable document model, commands,
-undo/redo, persistence, text projection, Qt layout and GUI are separate modules.
+**The interface is not the engine.** The value-based document model, commands,
+undo/redo, persistence, text projection, native layout and GUI are separate Rust modules.
 The GUI and tests use the same edit commands. The process adapter supplies the
-optional Office launch interface. [ADR 0001](docs/adr/0001-reversible-desktop-prototype.md)
-records Python/Qt as a reversible experiment, not a final architecture decision.
+optional Office launch interface. Rust is approved by the owner;
+[ADR 0002](docs/adr/0002-rust-native-ribbon.md) records the replaceable native GUI
+prototype. [UI_SPEC](docs/UI_SPEC.md) defines the Word 2024 Windows reference,
+measurable layout and pending comparison gates.
 
 **Text and accessibility come first.** Input methods, international text, keyboard navigation, screen-reader behavior and font fallback must influence architecture selection, not wait until the final polish stage.
 
@@ -83,94 +85,95 @@ The [detailed roadmap](ROADMAP.md) defines architecture proposals, feature areas
 
 DOCX support will be measured separately for reading, editing and writing. Text preservation, page layout, unsupported elements and font substitution need separate results. Opening one sample is not proof of general compatibility.
 
-## Run the prototype
+## Build and run
 
-Use Python 3.11–3.14 with pip. The evaluated host uses Python 3.14.3 and Qt 6.11.1
-on macOS arm64. Windows and Linux instructions are provided for evaluation; see
-[validation](docs/VALIDATION.md) for results actually available.
+Install [Rust](https://rust-lang.org/tools/install/); `rust-toolchain.toml` selects
+1.99.1 and `Cargo.lock` pins dependencies. All runtime layers are Rust. No Office,
+Python, Node, neighboring repository or cloud account is required. Dependency
+installation needs registry access; the installed editor makes no network requests.
+The earlier Python experiment is retained only in `prototypes/python/`.
 
-macOS / Linux, from this repository:
+On macOS install Xcode Command Line Tools. On Debian/Ubuntu install native build
+libraries (`pkg-config libxkbcommon-dev libwayland-dev libgl1-mesa-dev libegl1-mesa-dev`)
+and use a working desktop/OpenGL session. Linux file dialogs use an XDG portal.
+Then, from this checkout:
 
 ```sh
-python3 -m venv .venv
-.venv/bin/python -m pip install -e ".[desktop,dev]"
-.venv/bin/breakfree-docs --new
-.venv/bin/breakfree-docs --open "/absolute/path/My document.bfdoc"
-.venv/bin/breakfree-docs --capabilities
-.venv/bin/breakfree-docs --version
+cargo build --locked --release
+./target/release/breakfree-docs --new
+./target/release/breakfree-docs --open "/absolute/path/My document.bfdoc"
+./target/release/breakfree-docs --capabilities
+./target/release/breakfree-docs --version
 ```
 
-Windows PowerShell (Python 3.12 example, no activation-policy change needed):
+On Windows install Rust's MSVC toolchain and Visual Studio Build Tools with
+**Desktop development with C++** (MSVC and Windows SDK). In PowerShell:
 
 ```powershell
-py -3.12 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e ".[desktop,dev]"
-.\.venv\Scripts\breakfree-docs.exe --new
-.\.venv\Scripts\breakfree-docs.exe --open "C:\Users\YourName\Documents\My document.bfdoc"
-.\.venv\Scripts\breakfree-docs.exe --capabilities
-.\.venv\Scripts\breakfree-docs.exe --version
+cargo build --locked --release
+.\target\release\breakfree-docs.exe --new
+.\target\release\breakfree-docs.exe --open "C:\Users\YourName\Documents\My document.bfdoc"
+.\target\release\breakfree-docs.exe --capabilities
+.\target\release\breakfree-docs.exe --version
 ```
 
-Open [examples/Welcome.bfdoc](examples/Welcome.bfdoc) through the File menu for a
-synthetic formatted Unicode example. `python -m breakfree_docs` is an equivalent
-launcher after installation. Qt is an
-optional desktop extra: `pip install .` installs the model/CLI without Qt, and
-`--capabilities` / `--version` still work. A core-only installation advertises no
-desktop launch actions and reports a missing-dependency error for `--new`/`--open`.
-Application and dependency installation
-may need package-index access; the installed editor makes no network requests.
+The native executable is `breakfree-docs` (`.exe` on Windows); there is no installer,
+file association or signing yet. Build/CI success is distinct from native-platform
+input validation; see [VALIDATION](docs/VALIDATION.md). `cargo run --locked -- --new`
+is convenient during development. `cargo build --locked --no-default-features`
+builds a model/CLI binary that answers information commands without a GUI toolkit;
+it advertises no desktop launch actions and rejects launch attempts clearly.
 
-Use the File menu or keyboard shortcuts for New, Open, Save and Save As. Select
-text and use Bold/Italic; at a collapsed caret they set the next insertion style.
-Use Left/Center/Right/Justify for paragraphs. Ctrl (Command on macOS) + Z undoes
-one committed key/input operation; paste and formatting are separate operations.
-Ctrl/Command + Shift + L/E/R/J aligns paragraphs. Clipboard paste is plain text.
-Tab moves focus; use menus to reach all commands. Unsaved changes have Save,
-Discard and Cancel choices. Only `.bfdoc` is supported; DOCX, PDF and printing
-are intentionally absent.
+## Use the editor
 
-## Build and check
+Open [examples/Welcome.bfdoc](examples/Welcome.bfdoc) for formatted Unicode text.
+Home has real clipboard, bold/italic, alignment, Find/Replace and Select All commands.
+At a collapsed caret, bold/italic set the next insertion style. Native paste is
+plain text. Unimplemented font/style/list commands are disabled with explanations.
+File provides New/Open/Save/Save As, unsaved Save/Discard/Cancel and view settings;
+Print is disabled. Navigation and the formatting pane operate on real model ranges.
+The white canvas is continuous; pagination, page numbers and print layout are absent.
+Status reports real word/paragraph counts and zoom. The ribbon compacts and moves
+commands into overflow menus as the window narrows.
+
+Ctrl (Command on macOS) + N/O/S, Shift+S, B/I, Z/Y or Shift+Z handle file, emphasis
+and history actions. Ctrl/Command + L/E/R/J aligns paragraphs; F/H opens Find/Replace.
+Ctrl+F1 collapses the ribbon; Alt+F/H opens File/Home; Alt+Q focuses command search;
+F6 cycles document/search/navigation focus. Tab traverses controls. Each committed
+input event, paste and formatting operation has a separate undo boundary. Full
+Word KeyTips and assistive-technology behavior are pending review.
+
+## Check
 
 ```sh
-.venv/bin/python -m unittest discover -s tests -v
-.venv/bin/python -m ruff check src tests tools
-.venv/bin/python -m ruff format --check src tests tools
-.venv/bin/python tools/check_repository.py
-.venv/bin/python -m build
-.venv/bin/python tools/check_wheel.py
+cargo fmt --check
+cargo clippy --locked --all-targets -- -D warnings
+cargo test --locked
+cargo test --locked --no-default-features
+python3 tools/check_repository.py
 ```
 
-For a headless host, set `QT_QPA_PLATFORM=offscreen` before tests. PowerShell:
-`$env:QT_QPA_PLATFORM = "offscreen"`; then replace `.venv/bin/python` above with
-`.\.venv\Scripts\python.exe`. Offscreen tests do not prove native platform input
-or accessibility. Minimal Debian/Ubuntu hosts can also need Qt runtime libraries:
-`sudo apt-get install libegl1 libopengl0`. Native X11 desktop prerequisites vary;
-see the [Qt Linux requirements](https://doc.qt.io/qt-6/linux-requirements.html).
-Installed but broken Qt imports fail tests instead of silently skipping the GUI.
-The wheel check installs a fresh environment outside the source
-tree, with no Qt or Office, and needs package-index access for pinned regex.
-
-Build output is `dist/breakfree_docs-0.1.0.dev1-py3-none-any.whl` plus a source
-archive. Install that wheel with the desktop extra on a target machine:
+Python is optional for the documentation/brand check only. GUI event tests run the
+actual egui widgets without creating OS windows; they do not prove native IME or
+Windows scaling. To capture this application's native rendering on a desktop:
 
 ```sh
-python -m pip install "./dist/breakfree_docs-0.1.0.dev1-py3-none-any.whl[desktop]"
-breakfree-docs --new
+mkdir -p artifacts
+EFRAME_SCREENSHOT_TO="$PWD/artifacts/editor.png" cargo run --locked --features capture -- --new
 ```
 
-This is a Python distribution with a generated executable launcher, not a bundled
-runtime or OS installer. The wheel includes the approved Docs icon. Build/test
-steps consume only this repository and pinned package dependencies. No release or
-automatic merge is configured.
+PowerShell: create `artifacts`, set `$env:EFRAME_SCREENSHOT_TO` to an absolute PNG
+path, then run the same Cargo command. The capture-only feature exits after a frame.
+See [UI_SPEC](docs/UI_SPEC.md) for comparison conditions and remaining visual gates.
 
 ## Development status
 
 | Area | Current position |
 | :--- | :--- |
 | Identity and planning documents | Available |
-| Implementation language | Python prototype; Rust-first long-term proposal remains open |
-| UI toolkit and native persistence format | Qt 6 experiment; strict native `.bfdoc` content v1 |
-| Windows, macOS and Linux | macOS local evaluation; other platform verification tracked separately |
+| Implementation language | Rust approved; language decision complete |
+| UI toolkit and native persistence format | Native eframe/egui ribbon experiment; strict `.bfdoc` content v1 |
+| Windows, macOS and Linux | macOS local build/render; native Windows/Linux evaluation pending |
 | Application code and tests | Available; [evidence and limits](docs/VALIDATION.md) |
 | Releases and installers | None |
 | License | Owner decision pending |

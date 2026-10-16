@@ -11,9 +11,10 @@ A person creates a short document, types several paragraphs, applies basic forma
 ## In scope
 
 A single document window, paragraphs, text selection, basic emphasis, paragraph
-alignment, undo/redo, local persistence and unsaved-change handling. The reversible
-Python/Qt experiment and native content v1 are documented in [ADR 0001](adr/0001-reversible-desktop-prototype.md).
-Architecture adoption, licensing and supported-platform decisions remain open.
+alignment, undo/redo, local persistence and unsaved-change handling. Rust is the approved runtime language. The native ribbon prototype and preserved
+content v1 are documented in [ADR 0002](adr/0002-rust-native-ribbon.md). Follow the
+Word 2024 Windows reference in [UI_SPEC](UI_SPEC.md). GUI-library adoption, licensing
+and supported-platform decisions remain open.
 
 ## Acceptance scenarios
 

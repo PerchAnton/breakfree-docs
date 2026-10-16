@@ -1,95 +1,67 @@
-# Prototype validation and remaining gates
+# Rust editor validation and remaining gates
 
-Evaluation date: **2026-10-16, Europe/Kyiv**. This is local prototype evidence, not
-a supported-platform declaration, release, server-CI result or architecture approval.
-The environment is macOS 27.0.1 arm64, Python 3.14.3, Qt/PySide6 6.11.1 and regex
-2026.9.29. See the project log for checked commits, PR and subsequent CI observations.
+Evaluation: **2026-10-16, Europe/Kyiv**, macOS 27.0.1 arm64, rustc/cargo 1.99.1,
+eframe 0.33.0 and locked egui/epaint 0.33.3. Rust is owner-approved; toolkit adoption,
+license, supported-platform and full D1 reviews remain separate gates. Historical
+Python/Qt results are preserved in [history/python-validation.md](history/python-validation.md)
+and must not be presented as Rust results.
 
-## Reproducible checks
+## Checks actually run
 
-From an installed checkout using the README virtual environment:
-
-```sh
-QT_QPA_PLATFORM=offscreen .venv/bin/python -m unittest discover -s tests -v
-.venv/bin/python -m unittest discover -s tests -p test_gui.py -v
-.venv/bin/python -m ruff check src tests tools
-.venv/bin/python -m ruff format --check src tests tools
-.venv/bin/python tools/check_repository.py
-.venv/bin/python -m build
-.venv/bin/python tools/check_wheel.py
-```
-
-The second command uses the native platform plugin and needs a desktop session.
-GUI tests send Qt keyboard/input events to the real editor and use controlled
-dialog return values. They do not establish a complete manual native-dialog,
-OS-input-method, clipboard-provider or screen-reader review. Offscreen tests run
-without a desktop. The isolated-wheel check installs only the wheel and its core
-dependency into a fresh temporary environment outside this repository and exercises
-the generated executable, Unicode/native roundtrip and packaged artwork without Qt.
-
-| Local check | Result |
+| Local check | Observed result |
 | :--- | :--- |
-| Complete unittest suite, offscreen | 24 tests passed |
-| Native macOS Qt editor tests | 8 tests passed, including reopen-current-file after Save |
-| Ruff lint and format | Passed for source, tests and tools |
-| Local documentation/snapshot/artwork | Passed; packaged icon is byte-identical to the approved asset |
-| Workflow YAML | Parsed locally using Ruby YAML |
-| Isolated build | Wheel and sdist built with `python -m build`, pinned setuptools 82.0.1 |
-| Isolated installed-wheel smoke | Passed outside the checkout, with regex only and no Qt/Office |
-| Application preview | Rendered offscreen from `examples/Welcome.bfdoc`; this is actual application code, not a design mockup |
+| `cargo test --locked` | 27 passed: 14 engine/storage/presentation, 3 CLI subprocess and 10 actual egui widget event tests; no skipped tests |
+| `cargo test --locked --no-default-features` | 17 passed; core and CLI build without GUI dependencies |
+| `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
+| `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
+| Copied executable outside checkout | Capabilities/version and malformed-open checks without Office or source files; CLI tests also run from a temporary working directory |
+| Repository references, contract and artwork | `python3 tools/check_repository.py` passed; approved logo embedded directly and archive copy byte-identical |
+| Workflow YAML / whitespace | Ruby YAML parse and `git diff --check` passed |
+| Native rendering | Real native `--new` window launched; `--open` rendered Welcome fixture to the committed [capture](screenshots/rust-home-macos.png) through opt-in eframe capture |
+| Synthetic DPI | Actual widgets at 1/1.25/1.5 scale and 960/1366/1920 physical widths; ribbon/group/workspace/status bounds and collapse assertions passed |
 
-Server-CI results are recorded separately in PROJECT_LOG after publication.
+Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
+and native release build. Its observed run/commit results are recorded in
+PROJECT_LOG after publication, separately from this local evidence.
 
 ## D01–D09 evidence map
 
-| ID | Automated evidence | Limits / remaining review |
+| ID | Rust evidence | Remaining limits |
 | :--- | :--- | :--- |
-| D01 | Core replace/split/merge, selection, cut/paste, deletion and Qt keyboard replacement; model and projected text compared | Short documents only; drag/drop disabled |
-| D02 | Exact English, Ukrainian, Russian, combining accents, non-BMP emoji, ZWJ emoji, flag boundaries, NBSP; scalar/UTF-16 conversion and IME preedit/commit tests | OS IME candidate windows, CJK, RTL, complex-script shaping and all writing systems not certified |
-| D03 | Bold/italic and all alignment values supported by the engine; formatting projected and native roundtrip compared | No styles, lists, fonts, page layout or compatibility adapters |
-| D04 | Exact immutable states compared across text + formatting undo/redo, branching redo, one-step paste, typed-key boundaries and saved checkpoints | 100-operation history; no time coalescing; no persistent undo |
-| D05 | Native save/reopen compares complete model; GUI saves/opens through the same session; isolated installed wheel repeats roundtrip | No migration, autosave or crash recovery |
-| D06 | Shared lifecycle and GUI Save/Discard/Cancel paths, cancelled save picker, failed save retaining current session | Automated tests control dialog choices; manual platform dialog/accessibility review pending |
-| D07 | Partial-write exception, fsync/replace/chmod failures, missing parent; previous bytes, parsed document, temporary cleanup and dirty checkpoint checked | No killed-process/power-loss/network-filesystem guarantee; see NATIVE_FORMAT.md |
-| D08 | Corrupt JSON/UTF-8, foreign type, unknown version/fields, duplicate keys, invalid text/styles, unsupported extension; source bytes unchanged | Bounded parser tests, not a completed fuzzing campaign |
-| D09 | Qt keyboard typing/selection/formatting/undo/save/open/cut/paste tests; native macOS checkpoint tested too | Full manual focus traversal, screen readers and native Windows/Linux input pending |
+| D01 | Core insertion/split/merge/replacement/deletion; actual text-widget paste/type/select/replace and ribbon pointer click | Short documents; drag/drop not implemented |
+| D02 | Exact English/Ukrainian/Russian, combining accents, non-BMP, ZWJ, flag boundaries; Shift+Arrow grapheme selection/deletion; Windows clipboard CRLF normalization; IME preedit/commit/cancel | Synthetic widget IME events are not native OS IME evidence. CJK/RTL/complex shaping and all writing systems not certified; missing emoji glyph visible in capture |
+| D03 | Exact emphasis/alignment snapshots and native roundtrips; styled galley alignment and scalar cursor hit tests; actual Bold ribbon click | Fonts/styles/lists unsupported; no pagination/fidelity claim |
+| D04 | Exact text/format undo/redo, branch redo clearing, pending insertion style, selection restoration, widget shortcut history and one-commit IME transaction | 100 snapshot operations, no persistent history or time-based coalescing |
+| D05 | Complete native roundtrip, every alignment, earlier Welcome v1 fixture, GUI save/reopen through shared session | No migrations, autosave or recovery |
+| D06 | Core Save/Discard/Cancel and failure; pointer events activate all three real modal buttons; failed save keeps dirty session; close approval flag | Actual OS pickers, cancelled picker and native window-manager closing still need manual platform review |
+| D07 | Real partial temporary write, injected errors before sync/replace, real replacement failure and missing parent; previous file bytes and dirty model preserved | No power-loss, directory fsync, concurrent-writer, ACL/extended-attribute or network-filesystem guarantee |
+| D08 | Corrupt JSON/UTF-8, foreign type, unknown version/fields, duplicate keys, invalid styles/text and unsupported extension rejected; source unchanged | Bounded regression tests, not completed fuzzing |
+| D09 | Actual egui keyboard and pointer event loop covers edit/selection, emphasis, undo/redo and save; model compared with projection | Native OS keyboard/dialog/IME and full focus/accessibility review pending |
 
-The full D1 milestone remains open until the outstanding target-platform and
-maintainer reviews are complete. Checkmarks in ROADMAP identify narrow implemented
-and tested tasks, not an adopted stack or completed release gate.
+The native executable was launched and captured on macOS. Computer Use inventory
+was accessible, but it did not expose the unbundled executable; selecting its path
+returned `Invalid app`. Therefore no manual OS keyboard or picker interaction is
+claimed. Word for macOS is not the approved Windows reference and was not used as
+a substitute. Windows itself and Word 2024 for Windows are unavailable here.
 
 ## Integration and independence
 
-`test_integration.py` verifies exact capabilities JSON and installed version, bad
-arguments and relative paths, failed opens, clean stdout, and prohibits Qt/Office
-imports in a headless subprocess running outside the checkout. GUI tests check
-that `--new` and `--open` dispatch the same editor session. The installed console
-launcher is also started natively with `--new` for smoke evaluation.
+`tests/cli.rs` verifies exclusive argument handling, absolute paths, invalid-file
+failure before a window, clean stdout/stderr, exact v1 capability IDs/formats/actions
+and build version. Information commands do not create a graphical context and work
+outside the checkout with display variables absent. Desktop-disabled builds advertise
+no launch actions. Core tests compile without eframe, GUI adapters or Office.
 
-Office contracts/ADR are unavailable at the inspected upstream commit. The
-[local v1 baseline](../contracts/v1/BASELINE.md) records that limitation. No actual
-Office launcher has been tested. The build/test graph requires no Office, Sheets
-or Slides repository, runtime service or account.
+The [pinned owner baseline](../contracts/v1/BASELINE.md) still applies: a fresh Office
+main tree read returned cfaaf419e84d9981acd421d130113ca2265061fd with no contracts/ADR.
+Upstream contract reconciliation and an actual Office launcher remain unverified.
+No build downloads another application's main branch or starts a service.
 
-## Known limits and next gate
+## Next small gate
 
-- Python wheel/console launcher only, no bundled executable runtime, installer,
-  file association, signing, updater, merge or release.
-- Windows/Linux native input and desktop-dialog claims require their own results.
-  CI uses Python 3.12 on three OSes. The first implementation commit passed all
-  three server jobs, but the initial Linux job skipped 8 GUI cases because its Qt
-  runtime import failed. Windows/macOS ran all 24. The workflow now installs Linux
-  runtime libraries and requires working Qt imports; import failures cannot silently
-  skip desktop tests. Exact later outcomes are recorded in PROJECT_LOG. Offscreen
-  CI does not establish native platform support.
-- Native save is write-then-replace with tested pre-replacement failures, without
-  concurrent-writer protection, recovery, directory fsync or ACL preservation.
-- No DOCX, PDF, printing, collaboration, macros, cloud services or AI.
-- Model/history/projection are designed for short documents with explicit limits;
-  long-document performance and pagination remain unmeasured.
-- Computer Use permissions were unavailable during this session; no manual
-  accessibility-tree or native file-dialog interaction through that tool is claimed.
-
-Next small gate: review ADR/dependency licensing, run the same installed-wheel and
-native keyboard/dialog workflow on Windows, and record IME/focus findings before
-adding another document feature. Keep the engine/native regression fixtures stable.
+Run this native binary on Windows, capture the named Word 2024 reference at matched
+conditions and complete the keyboard/IME/dialog, clipping, fallback and native DPI
+matrix in [UI_SPEC](UI_SPEC.md). Review the GUI toolkit against those results before
+adding document features. Keep exact Rust native-format/history regressions intact.
+No DOCX/PDF/print/cloud/collaboration/macros/AI, installer, signing, merge or release
+is included. Limits remain 100,000 scalars / 16 MiB and unmeasured long-document costs.

@@ -1,0 +1,14 @@
+//! Independent document engine. Desktop dependencies are feature gated.
+pub mod commands;
+#[cfg(feature = "desktop")]
+pub mod gui;
+pub mod integration;
+#[cfg(feature = "desktop")]
+pub mod layout;
+pub mod model;
+pub mod presentation;
+pub mod session;
+pub mod storage;
+
+pub type Result<T> = std::result::Result<T, String>;
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");

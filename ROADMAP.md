@@ -1,6 +1,6 @@
 # BreakFree Docs — Development roadmap
 
-**Stage: working D1 prototype · Next gate: D0 architecture review and platform validation**
+**Stage: Rust D1 loop and native Home ribbon · Next gate: native Windows input/visual validation**
 **Reviewed: 2026-10-16.** The first standalone writing loop is implemented as a
 reversible experiment. D0 adoption, license, accessibility and cross-platform gates
 remain open. The detailed long-term plan is preserved below. Milestone names are
@@ -15,23 +15,24 @@ Build a local-first word processor that grows from everyday writing into structu
 | Dimension | Current evidence | Required evidence later |
 | :--- | :--- | :--- |
 | Feature coverage and depth | Basic D1 prototype; [acceptance evidence](docs/VALIDATION.md) | Versioned feature inventory and expanded workflow tests |
-| Layout and typography | Qt wrapping/alignment assertions; no pagination/fidelity measurements | Semantic assertions and controlled visual fixtures |
+| Layout and typography | Rust galley wrapping/alignment and hit-test assertions; no pagination/fidelity measurements | Semantic assertions and controlled visual fixtures |
 | DOCX fidelity | Not implemented | Separate import, edit, export and reopen reports |
 | File safety and recovery | Write-then-replace and fault-injection tests; no crash recovery | Interrupted-process, power-loss and recovery tests |
 | Performance | No baseline | Published hardware, corpus, versions and timings |
-| Accessibility and localization | Qt keyboard tests; assistive technology and localization pending | Native platform, assistive-technology and language reviews |
-| Platforms and distribution | Python wheel prototype; local macOS checks | Installation and workflow evidence per OS/architecture |
+| Accessibility and localization | Rust widget event tests; assistive technology and localization pending | Native platform, assistive-technology and language reviews |
+| Platforms and distribution | Rust native executable; local macOS build/render checks | Installation and workflow evidence per OS/architecture |
 | Automation | Process launch/capability adapter v1, provisional Office baseline | Published Office contract reconciliation and launcher tests |
 
 Readiness will be assessed separately for short everyday documents, long structured reports and review-heavy professional work. Do not publish a single percentage until the feature inventory, weighting and measurements exist.
 
 ## 2. Proposed architecture
 
-**Proposal for D0 review, not a selected stack:** a Rust core organized into focused packages, with a replaceable desktop UI. Evaluate the toolkit against text input, layout, accessibility, clipboard and printing requirements before adopting it. A browser build is a later investigation, not a reason to weaken the desktop editor.
-
-**Current reversible experiment:** [ADR 0001](docs/adr/0001-reversible-desktop-prototype.md)
-implements the initial loop in Python/Qt with the boundaries below. This does not
-approve or replace the long-term Rust proposal. Owner review remains a D0 gate.
+**Approved language:** Rust for model, editing, storage, integration and GUI. No
+further language approval is needed. The owner selected desktop Word 2024 for
+Windows as the visual reference. The native eframe/egui ribbon is a replaceable
+implementation under [ADR 0002](docs/adr/0002-rust-native-ribbon.md); toolkit,
+accessibility, licensing and platform gates remain open. The superseded Python
+experiment is retained in `prototypes/python/` as historical evidence.
 
 | Boundary | Responsibility |
 | :--- | :--- |
@@ -70,11 +71,13 @@ is implemented. All wider coverage remains planned. Track read/write separately.
 
 ### D0 — Decide and prove the foundation
 
-- [ ] Record architecture decisions: license approval, first target OS, language, toolkit and native format.
+- [x] Record the owner-approved Rust language and Word 2024 Windows visual target (ADR 0002).
+- [ ] Review license, first supported target OS, toolkit and native format adoption.
 - [ ] Prototype caret movement, input methods, clipboard, font fallback and accessibility on the first target.
-- [x] Define prototype invariants, command parameters, undo boundaries and the tested failure model for saves (ADR 0001 and NATIVE_FORMAT.md).
+- [x] Define prototype invariants, command parameters, undo boundaries and the tested failure model for saves (ADR 0002 and NATIVE_FORMAT.md).
 - [x] Create a minimal standalone shell, headless test runner and reproducible build instructions (README and local validation).
-- [ ] Add baseline formatting/linting, dependency review and layer checks to real CI.
+- [x] Configure Rust formatting, Clippy, core/widget/CLI tests and binary build in CI.
+- [ ] Review exact dependency licenses and enforce architectural boundaries beyond feature separation.
 
 **Exit:** an owner-reviewed decision record and a shell another contributor can build. A toolkit demo alone does not pass the text-input investigation. No build commands are advertised before validation.
 
@@ -90,6 +93,22 @@ The last gate remains open: automated cases cover the initial loop, but complete
 native dialog/IME, accessibility and target-platform reviews are outstanding.
 
 **Exit:** create → edit → save → reopen → continue preserves supported content, and every initial acceptance scenario has evidence. This is the first implementation milestone, not a DOCX milestone.
+
+### R1 — Rust ribbon and native-platform proof (depends on D1 data-safety tests)
+
+- [x] Migrate all runtime layers to Rust; reopen the native v1 fixture unchanged.
+- [x] Implement custom title/search, File, Home groups, white continuous canvas,
+  real statistics, navigation, formatting pane and adaptive ribbon overflow.
+- [x] Cover shared editing, format/history, lifecycle, transient IME and synthetic
+  100/125/150% geometry with actual Rust widget events.
+- [ ] Capture Word 2024 Windows and Docs at matched build/language/theme/window,
+  document zoom and Windows 100/125/150%; record measured deltas in UI_SPEC.
+- [ ] Verify native Windows keyboard, IME, dialogs, font fallback, clipping and focus.
+- [ ] Review context tabs when document objects exist; full KeyTips and vertical ruler.
+
+**Exit:** matched screenshots with recorded measurements, no Home/workspace overlap,
+all active commands change real state, native D01–D09 reviewed, no fake pagination.
+Rust selection is complete; this gate evaluates GUI behavior and visual fidelity.
 
 ### D2 — Everyday document structure
 
@@ -169,7 +188,7 @@ Critical path: **D0 → D1 → D2 → D3 → D4**. Review features, accessibilit
 
 | Step | Depends on | Completion criterion / current evidence |
 | :--- | :--- | :--- |
-| I0: independent executable | D0 shell | `breakfree-docs` installs from this repo; headless commands work with Qt and Office unavailable; tested by subprocess and isolated wheel check |
+| I0: independent executable | D0 shell | `breakfree-docs` installs from this repo; headless commands work with the GUI and Office unavailable; tested by Rust subprocesses outside the checkout |
 | I1: process contract v1 | I0, owner baseline | `--new`, absolute `--open`, `--capabilities`, `--version`; exact JSON/version, invalid args and failed-open tests; [pinned local snapshot](contracts/v1/BASELINE.md) |
 | I2: Office reconciliation | Published Office `contracts/v1/` and ADR | Pin its source commit/version, compare every field/command and record differences; **pending**, no published contract found at inspected revision |
 | I3: Office launcher smoke | I2, actual Office launcher, D1 editor | Office starts this same executable with new/open; standalone launch still passes with all sibling repositories absent; **pending** |
@@ -185,9 +204,10 @@ Turn checklist items into small issues with a user outcome, dependencies, fixtur
 
 ## 7. Specification inputs and revision log
 
-Use public specifications and original test cases, not copied application code. Useful starting points: [ECMA-376 / OOXML](https://ecma-international.org/publications-and-standards/standards/ecma-376/) and, if the Rust proposal is adopted, [Cargo workspaces](https://doc.rust-lang.org/cargo/reference/workspaces.html). Pin editions and relevant clauses in implementation decisions.
+Use public specifications and original test cases, not copied application code. Useful starting points: [ECMA-376 / OOXML](https://ecma-international.org/publications-and-standards/standards/ecma-376/) and [Cargo workspaces](https://doc.rust-lang.org/cargo/reference/workspaces.html). Pin editions and relevant clauses in implementation decisions.
 
 | Date | Change | Implementation impact |
 | :--- | :--- | :--- |
 | 2026-10-16 | Expanded the independent roadmap, quality gates and app identity | Documentation only; no feature completion claimed |
 | 2026-10-16 | Added a reversible standalone D1 editor experiment, local evidence and optional Office I0–I3 dependencies | Narrow implemented subset checked above; D0 adoption, full D1 review and Office reconciliation remain open |
+| 2026-10-16 | Owner approved Rust and Word 2024 Windows reference; replaced runtime with Rust and added R1 ribbon proof gate | Native v1/CLI preserved; toolkit adoption and matched Windows visual/DPI evidence pending |

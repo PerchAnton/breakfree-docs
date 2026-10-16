@@ -23,7 +23,7 @@ Run text is nonempty; emphasis fields are booleans. Alignment is `left`, `center
 `right` or `justify`. Paragraph text cannot contain LF; document paragraphs are
 joined with LF for edit indices. Adjacent equal styles are compacted on write.
 The model retains supported text exactly, without Unicode normalization. See
-[ADR 0001](adr/0001-reversible-desktop-prototype.md) for Unicode boundaries and controls.
+[ADR 0002](adr/0002-rust-native-ribbon.md) for Unicode boundaries and controls.
 
 Reject unknown top-level, paragraph and run fields, duplicate JSON keys, foreign
 format IDs, unsupported versions, invalid UTF-8, invalid styles and resource-limit
@@ -36,16 +36,17 @@ write the source file or replace the current GUI session.
 1. Validate extension and serialize the model completely in memory.
 2. Reject symbolic-link destinations. Create a uniquely named temporary file in
    the destination directory; never open/truncate the old destination for writing.
-3. Write all bytes, verify the write count, flush and fsync the temporary file.
-4. Close it, preserve the existing destination's permission mode where available,
-   then call `os.replace` once. Only after success update the session's path and
+3. Write all bytes with Rust `write_all`, flush and `sync_all` the temporary file.
+4. Preserve the existing destination's permissions where available, then call
+   `NamedTempFile::persist` to replace the destination. Only after success update the session's path and
    clean checkpoint.
 5. On pre-replacement failure, report the error and remove the temporary file when
    possible. The old destination and in-memory edited document remain available.
 
-Tests inject a partial-write exception and failures in fsync, permission handling
-and replacement; each checks the previous bytes and dirty checkpoint. A missing
-parent directory is tested too. This implements write-then-replace, **not a claim
+Rust tests inject a failure after a partial temporary write and before file sync
+and replacement; they check previous bytes and dirty checkpoints. Real replacement
+failure (destination directory) and missing parent directories are also tested.
+Permission-setting errors propagate; Rust has no injected permission-failure case. This implements write-then-replace, **not a claim
 of power-loss recovery or universal filesystem atomicity**. There is no directory
 fsync, backup, journal, concurrent-writer protection, locking or autosave. A killed
 process can leave an orphan temporary file; cleanup of those is not implemented.
