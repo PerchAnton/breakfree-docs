@@ -1,7 +1,10 @@
 # BreakFree Docs — Development roadmap
 
-**Stage: planning · Next gate: D0 — architecture and a buildable shell**  
-**Reviewed: 2026-10-16.** This is an original implementation plan. Documentation and branding exist; application features do not. Milestone names below are planning identifiers, not published releases. No dates, delivery estimates or readiness percentages have been measured.
+**Stage: working D1 prototype · Next gate: D0 architecture review and platform validation**
+**Reviewed: 2026-10-16.** The first standalone writing loop is implemented as a
+reversible experiment. D0 adoption, license, accessibility and cross-platform gates
+remain open. The detailed long-term plan is preserved below. Milestone names are
+planning identifiers, not published releases; no readiness percentage is claimed.
 
 [Overview](README.md) · [Initial acceptance scenarios](docs/REQUIREMENTS.md) · [Suite plan](https://github.com/PerchAnton/breakfree-office/blob/main/ROADMAP.md) · [Evidence rules](https://github.com/PerchAnton/breakfree-office/blob/main/docs/DEVELOPMENT_STANDARD.md)
 
@@ -11,20 +14,24 @@ Build a local-first word processor that grows from everyday writing into structu
 
 | Dimension | Current evidence | Required evidence later |
 | :--- | :--- | :--- |
-| Feature coverage and depth | No implementation | Versioned feature inventory and workflow tests |
-| Layout and typography | Not measured | Semantic assertions and controlled visual fixtures |
+| Feature coverage and depth | Basic D1 prototype; [acceptance evidence](docs/VALIDATION.md) | Versioned feature inventory and expanded workflow tests |
+| Layout and typography | Qt wrapping/alignment assertions; no pagination/fidelity measurements | Semantic assertions and controlled visual fixtures |
 | DOCX fidelity | Not implemented | Separate import, edit, export and reopen reports |
-| File safety and recovery | Design requirements only | Fault-injection and recovery tests |
+| File safety and recovery | Write-then-replace and fault-injection tests; no crash recovery | Interrupted-process, power-loss and recovery tests |
 | Performance | No baseline | Published hardware, corpus, versions and timings |
-| Accessibility and localization | Requirements only | Keyboard, assistive-technology and language reviews |
-| Platforms and distribution | No builds | Installation and workflow evidence per OS/architecture |
-| Automation | Proposed | The same documented commands exercised through each client |
+| Accessibility and localization | Qt keyboard tests; assistive technology and localization pending | Native platform, assistive-technology and language reviews |
+| Platforms and distribution | Python wheel prototype; local macOS checks | Installation and workflow evidence per OS/architecture |
+| Automation | Process launch/capability adapter v1, provisional Office baseline | Published Office contract reconciliation and launcher tests |
 
 Readiness will be assessed separately for short everyday documents, long structured reports and review-heavy professional work. Do not publish a single percentage until the feature inventory, weighting and measurements exist.
 
 ## 2. Proposed architecture
 
 **Proposal for D0 review, not a selected stack:** a Rust core organized into focused packages, with a replaceable desktop UI. Evaluate the toolkit against text input, layout, accessibility, clipboard and printing requirements before adopting it. A browser build is a later investigation, not a reason to weaken the desktop editor.
+
+**Current reversible experiment:** [ADR 0001](docs/adr/0001-reversible-desktop-prototype.md)
+implements the initial loop in Python/Qt with the boundaries below. This does not
+approve or replace the long-term Rust proposal. Owner review remains a D0 gate.
 
 | Boundary | Responsibility |
 | :--- | :--- |
@@ -41,7 +48,8 @@ Keep unsupported imported data separate from editable content. Preserve it only 
 
 ## 3. Feature map
 
-Every row is **planned**, not implemented. Read and write coverage must be tracked separately.
+Rows describe intended coverage; only the narrow D1 subset in the evidence report
+is implemented. All wider coverage remains planned. Track read/write separately.
 
 | Area | Intended coverage | First phase |
 | :--- | :--- | :--- |
@@ -64,19 +72,22 @@ Every row is **planned**, not implemented. Read and write coverage must be track
 
 - [ ] Record architecture decisions: license approval, first target OS, language, toolkit and native format.
 - [ ] Prototype caret movement, input methods, clipboard, font fallback and accessibility on the first target.
-- [ ] Define document invariants, command parameters, undo boundaries and the failure model for saves.
-- [ ] Create a minimal shell, headless test runner and reproducible build instructions.
+- [x] Define prototype invariants, command parameters, undo boundaries and the tested failure model for saves (ADR 0001 and NATIVE_FORMAT.md).
+- [x] Create a minimal standalone shell, headless test runner and reproducible build instructions (README and local validation).
 - [ ] Add baseline formatting/linting, dependency review and layer checks to real CI.
 
 **Exit:** an owner-reviewed decision record and a shell another contributor can build. A toolkit demo alone does not pass the text-input investigation. No build commands are advertised before validation.
 
 ### D1 — A reliable writing loop
 
-- [ ] Implement paragraphs, selections, typing, deletion and basic formatting.
-- [ ] Route edits through validated commands; expose a minimal headless command path for tests.
-- [ ] Add undo/redo, explicit save/discard/cancel choices and versioned local save/reopen.
-- [ ] Handle failed writes, malformed files and keyboard-only operation.
+- [x] Implement prototype paragraphs, selections, typing, deletion, bold/italic and paragraph alignment.
+- [x] Route edits through validated commands; expose the same engine to headless tests.
+- [x] Add undo/redo, explicit save/discard/cancel choices and versioned local save/reopen, covered by local tests.
+- [x] Handle tested write failures, malformed files and the tested keyboard workflow on the evaluation host.
 - [ ] Run all D01–D09 scenarios in [REQUIREMENTS.md](docs/REQUIREMENTS.md).
+
+The last gate remains open: automated cases cover the initial loop, but complete
+native dialog/IME, accessibility and target-platform reviews are outstanding.
 
 **Exit:** create → edit → save → reopen → continue preserves supported content, and every initial acceptance scenario has evidence. This is the first implementation milestone, not a DOCX milestone.
 
@@ -154,6 +165,22 @@ Proposed benchmark fixtures: a short letter; a 100-page report; a 500-page stres
 
 Critical path: **D0 → D1 → D2 → D3 → D4**. Review features, accessibility and automation can progress in parallel once their model boundaries stabilize. A milestone is complete only with linked tests, fixtures, platform results and maintainer review. Name an accountable owner before starting each milestone; none is assigned by this plan.
 
+### Optional Office integration and concrete dependencies
+
+| Step | Depends on | Completion criterion / current evidence |
+| :--- | :--- | :--- |
+| I0: independent executable | D0 shell | `breakfree-docs` installs from this repo; headless commands work with Qt and Office unavailable; tested by subprocess and isolated wheel check |
+| I1: process contract v1 | I0, owner baseline | `--new`, absolute `--open`, `--capabilities`, `--version`; exact JSON/version, invalid args and failed-open tests; [pinned local snapshot](contracts/v1/BASELINE.md) |
+| I2: Office reconciliation | Published Office `contracts/v1/` and ADR | Pin its source commit/version, compare every field/command and record differences; **pending**, no published contract found at inspected revision |
+| I3: Office launcher smoke | I2, actual Office launcher, D1 editor | Office starts this same executable with new/open; standalone launch still passes with all sibling repositories absent; **pending** |
+| D1 review gate | D0 owner review, data-safety tests, platform input/dialog evidence | D01–D09 evidence reviewed, limitations accepted, no known blocking data-loss bug; **pending** |
+| D2 next increment | D1 review, stable command/native fixtures | Choose one small feature; retain exact undo and native round-trip tests rather than starting several adapters |
+
+I2/I3 never block development or standalone builds. Office is an optional launcher,
+not the host of the Docs engine. No shared document engine is planned without
+demonstrated need in multiple applications. Build inputs must never track another
+repository's live main branch.
+
 Turn checklist items into small issues with a user outcome, dependencies, fixture, acceptance test and risk. Prioritize data loss, unsafe input handling and broken core workflows before feature breadth. Do not invent effort estimates from another project's pace; calibrate ranges from completed BreakFree work.
 
 ## 7. Specification inputs and revision log
@@ -163,3 +190,4 @@ Use public specifications and original test cases, not copied application code. 
 | Date | Change | Implementation impact |
 | :--- | :--- | :--- |
 | 2026-10-16 | Expanded the independent roadmap, quality gates and app identity | Documentation only; no feature completion claimed |
+| 2026-10-16 | Added a reversible standalone D1 editor experiment, local evidence and optional Office I0–I3 dependencies | Narrow implemented subset checked above; D0 adoption, full D1 review and Office reconciliation remain open |

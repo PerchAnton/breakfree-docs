@@ -1,0 +1,22 @@
+{
+  "format": "breakfree.docs.native",
+  "content_version": 1,
+  "paragraphs": [
+    {
+      "alignment": "center",
+      "runs": [{"text": "BreakFree Docs", "bold": true, "italic": false}]
+    },
+    {
+      "alignment": "center",
+      "runs": [{"text": "Your words. Your freedom.", "bold": false, "italic": true}]
+    },
+    {
+      "alignment": "left",
+      "runs": [{"text": "Write locally. Select text, apply emphasis, and save this document.", "bold": false, "italic": false}]
+    },
+    {
+      "alignment": "left",
+      "runs": [{"text": "English · Українська · Русский · é · 🙂", "bold": false, "italic": false}]
+    }
+  ]
+}

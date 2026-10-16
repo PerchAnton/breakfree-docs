@@ -15,3 +15,13 @@ Desktop.ini
 *.swp
 *.swo
 *~
+
+# Python builds and local environments
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.ruff_cache/
+artifacts/

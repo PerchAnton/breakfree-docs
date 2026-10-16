@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools==82.0.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "breakfree-docs"
+version = "0.1.0.dev1"
+description = "Standalone local document editor prototype for BreakFree Office"
+readme = "README.md"
+requires-python = ">=3.11"
+license-files = ["docs/THIRD_PARTY_NOTICES.md"]
+dependencies = ["regex==2026.9.29"]
+
+[project.optional-dependencies]
+desktop = ["PySide6-Essentials==6.11.1"]
+dev = ["build==1.3.0", "ruff==0.14.0"]
+
+[project.scripts]
+breakfree-docs = "breakfree_docs.integration:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+breakfree_docs = ["assets/*.webp"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

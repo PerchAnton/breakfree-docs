@@ -1,6 +1,8 @@
 # First milestone — a reliable writing loop
 
-**Proposed requirements; no implementation is present yet.** This document defines a small first milestone rather than all of Microsoft Word.
+**Acceptance requirements for the first prototype.** Implementation and local test
+evidence now exist in [VALIDATION.md](VALIDATION.md); complete milestone approval
+and target-platform reviews remain open. The scenario IDs below are preserved.
 
 ## User story
 
@@ -8,7 +10,10 @@ A person creates a short document, types several paragraphs, applies basic forma
 
 ## In scope
 
-A single document window, plain paragraphs, text selection, basic emphasis, paragraph alignment, undo/redo, local persistence and unsaved-change handling. Language/toolkit, native file format and first operating system remain architecture decisions.
+A single document window, paragraphs, text selection, basic emphasis, paragraph
+alignment, undo/redo, local persistence and unsaved-change handling. The reversible
+Python/Qt experiment and native content v1 are documented in [ADR 0001](adr/0001-reversible-desktop-prototype.md).
+Architecture adoption, licensing and supported-platform decisions remain open.
 
 ## Acceptance scenarios
 
