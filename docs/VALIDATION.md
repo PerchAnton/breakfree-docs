@@ -75,9 +75,11 @@ or Slides repository, runtime service or account.
 
 - Python wheel/console launcher only, no bundled executable runtime, installer,
   file association, signing, updater, merge or release.
-- Windows/Linux build and native input claims require their own results. The CI
-  workflow is configured for Python 3.12 on three OSes; configuration is not a
-  successful server run. Record actual server outcomes separately in PROJECT_LOG.
+- Windows/Linux native input and desktop-dialog claims require their own results.
+  CI uses Python 3.12 on three OSes. The first implementation commit passed all
+  three server jobs (build, tests and isolated wheel); exact revisions and later
+  outcomes are recorded separately in PROJECT_LOG. Offscreen CI does not establish
+  native platform support.
 - Native save is write-then-replace with tested pre-replacement failures, without
   concurrent-writer protection, recovery, directory fsync or ACL preservation.
 - No DOCX, PDF, printing, collaboration, macros, cloud services or AI.
