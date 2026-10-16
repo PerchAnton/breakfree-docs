@@ -1,0 +1,28 @@
+name: Feature or workflow proposal
+description: Suggest a writing workflow or technical improvement.
+title: "[Proposal] "
+body:
+  - type: markdown
+    attributes:
+      value: "BreakFree Docs is at the planning stage. Describe the user problem and use synthetic examples. Do not attach private documents."
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem
+      description: What writing task should become easier?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Smallest useful outcome
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: How could we verify it?
+  - type: textarea
+    id: context
+    attributes:
+      label: Alternatives and context
