@@ -17,7 +17,7 @@ original scope; this iteration does not establish native Windows behavior.
 | `cargo test --locked --no-default-features` | 24 passed; core and CLI build without GUI dependencies |
 | `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
 | `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
-| Copied executable outside checkout | Release capabilities/malformed-open checks; capture-feature GUI also rendered `--new` and answered `--version` from an empty temporary directory without Office/source files |
+| Copied executable outside checkout | Alpha.4 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
 | Repository references, contract and artwork | `python3 tools/check_repository.py` passed; approved logo embedded directly and archive copy byte-identical |
 | Workflow YAML / whitespace | Ruby YAML parse and `git diff --check` passed |
 | Native rendering | Alpha.4 Formatting fixture and Home inspected at [1366 × 900 DIP](screenshots/rust-home-alpha4-macos.png), [960 × 700](screenshots/rust-home-alpha4-compact-macos.png) and [640 × 700](screenshots/rust-home-alpha4-narrow-macos.png), backing scale 2. Earlier captures retain their version context |
