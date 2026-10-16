@@ -280,7 +280,10 @@ pub fn control(
             ui.spacing_mut().button_padding = vec2(0., 0.);
             ui.put(
                 rect,
-                egui::Button::new("")
+                // The visible contents and accessible name are supplied below.
+                // An empty default label still reserves the platform font's line
+                // height (e.g. Segoe UI at 125%), enlarging small icon controls.
+                egui::Button::new(egui::RichText::new("").size(1.0))
                     .frame_when_inactive(selected)
                     .selected(selected)
                     .corner_radius(3),

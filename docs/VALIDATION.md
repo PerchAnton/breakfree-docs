@@ -10,7 +10,7 @@ and must not be presented as Rust results.
 
 | Local check | Observed result |
 | :--- | :--- |
-| `cargo test --locked` | 29 passed: 14 engine/storage/presentation, 3 CLI subprocess and 12 actual egui widget event tests; no skipped tests |
+| `cargo test --locked` | 30 passed: 14 engine/storage/presentation, 3 CLI subprocess and 13 actual egui widget event tests; no skipped tests |
 | `cargo test --locked --no-default-features` | 17 passed; core and CLI build without GUI dependencies |
 | `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
 | `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
@@ -28,6 +28,12 @@ The design refinement also checks actual pointer activation of italic/alignment,
 selection preservation, quick Undo/Redo, disabled underline/style controls leaving
 the model unchanged, zoom ±/reset, File Home/Options/Back and dirty New/Cancel.
 The reference theme image was inspected, but no controlled Word comparison was run.
+The first design CI on Windows exposed Segoe UI line-height expansion of an empty
+15 × 16 DIP icon button at 125%. Icon controls now reserve a minimal empty label
+and paint their contents separately. A font-metric regression with a 36-DIP button
+font fails on the previous implementation and passes with the fix at 1/1.25/1.5.
+The existing strict geometry assertions are retained; server rerun results are
+recorded separately in the journal.
 
 ## D01–D09 evidence map
 

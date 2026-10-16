@@ -566,3 +566,28 @@ fn revised_shell_controls_preserve_selection_and_real_document_state() {
             .all(|p| p.alignment == Alignment::Left)
     );
 }
+
+#[test]
+fn icon_control_size_does_not_depend_on_platform_font_height() {
+    for dpi in [1., 1.25, 1.5] {
+        let ctx = egui::Context::default();
+        let _app = DocsApp::new(Session::default(), &ctx);
+        ctx.set_pixels_per_point(dpi);
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                // Exaggerate the metric variation that exposed the Windows failure.
+                ui.style_mut()
+                    .text_styles
+                    .insert(egui::TextStyle::Button, FontId::proportional(36.));
+                let rect = Rect::from_min_size(pos2(100., 80.), vec2(15., 16.));
+                let response =
+                    chrome::control(ui, rect, Icon::Launch, "", "Formatting pane", true, false);
+                assert!(
+                    rect.expand(0.1).contains_rect(response.rect),
+                    "{dpi}: {:?}",
+                    response.rect
+                );
+            });
+        });
+    }
+}

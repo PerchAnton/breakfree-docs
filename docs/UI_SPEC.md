@@ -134,6 +134,7 @@ Local widget tests exercise synthetic scales 1/1.25/1.5 at 960/1366/1920 physica
 widths, verify group bounds and nonoverlap with workspace/status, and collapsed
 ribbon. Added 27 width/scale cases at 640/720/899/900/916/1195/1196/1366/1920 DIP and
 1/1.25/1.5 verify each Home control stays in its group, controls do not overlap, and
-title/search/window controls remain separate. Pointer tests cover disabled commands,
+title/search/window controls remain separate. A separate test exaggerates UI font
+metrics to prevent the Windows 125% launcher-height regression. Pointer tests cover disabled commands,
 selection across formatting/history, zoom/reset and File navigation/dirty New. These
 are CPU layout tests, not native Windows scaling or visual validation.
