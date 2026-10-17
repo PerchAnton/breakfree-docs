@@ -96,3 +96,20 @@ The separate `view_ribbon` module supplies compact native controls. Width fittin
 is a GUI view mode calculated from the actual workspace; manual zoom exits it.
 It is excluded from document history and native serialization. Continuous-canvas
 wording remains explicit until a real pagination layer is implemented.
+
+## Alpha.14 navigation refinement
+
+Extract literal matching into GUI-independent `search`, returning scalar ranges
+that start and end at complete grapheme boundaries. Use the same results for the
+count, result rows, previous/next selection and the existing Replace action. Keep
+case sensitivity, nonoverlapping matches and exact input bytes; do not normalize
+or silently expand partial matches. This narrows the old GUI substring search,
+which counted partial clusters and then expanded their selection.
+
+`gui::navigation` owns only widgets and view focus/scroll state. The document and
+history remain in the shared engine. Finding is read-only; selecting a result sets
+its range and insertion style, while Replace uses the existing validated command
+and one undo operation. Bounded context excerpts are presentation only. Virtual
+rows expose every match without retaining the old first-40 cap. No schema or
+GUI dependency is added to the engine. Case folding, word boundaries, replace-all
+and richer search options remain separately scoped work.

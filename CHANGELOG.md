@@ -3,7 +3,30 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
-## 0.1.0-alpha.13 — Unreleased; submitted for owner approval
+## 0.1.0-alpha.14 — Unreleased; submitted for owner approval
+
+Prepared 2026-10-17. The owner approved alpha.13 in the project chat. Its palette
+and original vector icons are retained; approval does not authorize publication.
+
+- Refine the existing Navigation pane with previous/next controls, an active
+  result counter, highlighted excerpts and a virtualized list of all matches.
+  Remove the silent 40-row limit and scroll the document to the selected result.
+- Keep search focus on Enter/Down and Shift+Enter/Up; wrap at either end. Clear
+  retains search focus; Escape closes the pane and returns to the document.
+- Share one GUI-independent literal matcher between the count, selection and
+  replacement. Reject partial combining/emoji graphemes instead of expanding a
+  match into different text. Search is explicitly case sensitive, without
+  normalization, wildcards or whole-word options.
+- Verify two native captures and macOS keyboard search/replace, Undo/Redo and
+  system Save/Open; document the OS-reserved Command+H limitation.
+- Add Unicode, dense-result, excerpt, replacement/history/native-roundtrip and
+  actual-widget regressions, including nine size/scale combinations and an IME
+  confirmation guard. Preserve the shared editing and persistence commands.
+
+No dependency, schema, license, merge, tag or release changes. Native Windows
+input/scaling and matched Word 2024 comparison remain acceptance gates.
+
+## 0.1.0-alpha.13 — Unreleased; version approved 2026-10-17
 
 Prepared 2026-10-17. This focused visual update follows the owner's supplied
 macOS reference captures. Alpha.12 version approval has not been received.

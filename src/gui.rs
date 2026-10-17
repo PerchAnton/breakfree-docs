@@ -36,6 +36,8 @@ use zoom_dialog::{ZoomDialog, ZoomOutcome};
 mod quick_order;
 use quick_order::{OrderOutcome, QuickOrderDialog};
 
+#[path = "navigation.rs"]
+mod navigation;
 #[path = "quick_access.rs"]
 mod quick_access;
 #[path = "view_ribbon.rs"]
@@ -214,6 +216,9 @@ pub struct DocsApp {
     palette: bool,
     find: String,
     replacement: String,
+    find_scroll: Option<usize>,
+    find_composing: bool,
+    scroll_to_selection: bool,
     replace_mode: bool,
     body_font: String,
     icon: Option<egui::TextureHandle>,
@@ -314,6 +319,9 @@ impl DocsApp {
             palette: false,
             find: String::new(),
             replacement: String::new(),
+            find_scroll: None,
+            find_composing: false,
+            scroll_to_selection: false,
             replace_mode: false,
             body_font: font,
             icon,
@@ -569,6 +577,7 @@ impl DocsApp {
                 self.navigation = true;
                 self.replace_mode = action == Action::Replace;
                 self.focus_find = true;
+                self.focus_document = false;
             }
             Action::Ribbon => {
                 self.ribbon_collapsed = !self.ribbon_collapsed;
@@ -1838,7 +1847,18 @@ impl DocsApp {
                 }
             }
         }
-        if ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Escape)) {
+        let find_focus = self.navigation
+            && ctx.memory(|m| {
+                m.has_focus(Id::new("find-text")) || m.had_focus_last_frame(Id::new("find-text"))
+            });
+        let find_ime = find_focus
+            && (self.find_composing
+                || ctx.input(|i| i.events.iter().any(|e| matches!(e, egui::Event::Ime(_)))));
+        if !find_ime && ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Escape)) {
+            if find_focus {
+                self.navigation = false;
+                self.focus_document = true;
+            }
             if ctx.memory(|m| {
                 m.has_focus(Id::new(FONT_SIZE_ID)) || m.had_focus_last_frame(Id::new(FONT_SIZE_ID))
             }) {
@@ -1894,128 +1914,6 @@ impl DocsApp {
                 });
             });
         self.record("status", panel.response.rect);
-    }
-
-    fn find_next(&mut self) {
-        if self.find.is_empty() {
-            return;
-        }
-        let text = self.session.editor.document.text();
-        let end = self.session.editor.selection.1;
-        let matches: Vec<_> = text
-            .match_indices(&self.find)
-            .map(|(byte, word)| (text[..byte].chars().count(), word.chars().count()))
-            .collect();
-        if let Some(&(start, len)) = matches
-            .iter()
-            .find(|(a, _)| *a >= end)
-            .or_else(|| matches.first())
-        {
-            self.session.editor.selection = snap(&text, start, start + len);
-            self.sync_view();
-        }
-    }
-
-    fn navigation_panel(&mut self, ctx: &egui::Context) {
-        if !self.navigation || self.backstage {
-            return;
-        }
-        let panel = egui::SidePanel::left("navigation")
-            .default_width(240.)
-            .min_width(195.)
-            .max_width(320.)
-            .show(ctx, |ui| {
-                ui.horizontal(|ui| {
-                    ui.heading("Navigation");
-                    if ui.button("×").on_hover_text("Close navigation").clicked() {
-                        self.navigation = false;
-                    }
-                });
-                let response = ui.add(
-                    egui::TextEdit::singleline(&mut self.find)
-                        .id(Id::new("find-text"))
-                        .hint_text("Search document"),
-                );
-                if self.focus_find {
-                    response.request_focus();
-                    self.focus_find = false;
-                }
-                let results = if self.find.is_empty() {
-                    0
-                } else {
-                    self.session
-                        .editor
-                        .document
-                        .text()
-                        .match_indices(&self.find)
-                        .count()
-                };
-                ui.label(format!("{results} matches"));
-                if ui
-                    .add_enabled(results > 0, Button::new("Next result"))
-                    .clicked()
-                    || response.lost_focus() && ui.input(|i| i.key_pressed(Key::Enter))
-                {
-                    self.find_next();
-                }
-                if self.replace_mode {
-                    ui.add(
-                        egui::TextEdit::singleline(&mut self.replacement).hint_text("Replace with"),
-                    );
-                    if ui
-                        .add_enabled(
-                            results > 0 && !self.composing,
-                            Button::new("Replace selection / next"),
-                        )
-                        .clicked()
-                    {
-                        if selected_text(
-                            &self.session.editor.document,
-                            self.session.editor.selection,
-                        ) == self.find
-                        {
-                            let (a, b) = self.session.editor.selection;
-                            let result = self.session.editor.replace(
-                                a,
-                                b,
-                                &self.replacement,
-                                "Replace match",
-                            );
-                            self.fail(result);
-                            self.sync_view();
-                        } else {
-                            self.find_next();
-                        }
-                    }
-                }
-                ui.separator();
-                ui.horizontal(|ui| {
-                    ui.label(RichText::new("Results").strong());
-                    Self::disabled(
-                        ui,
-                        "Pages",
-                        vec2(58., 23.),
-                        "Pages require pagination, which is not implemented.",
-                    );
-                });
-                let text = self.session.editor.document.text();
-                if !self.find.is_empty() {
-                    for (byte, _) in text.match_indices(&self.find.clone()).take(40) {
-                        let start = text[..byte].chars().count();
-                        let end = start + self.find.chars().count();
-                        let snippet: String = text
-                            .chars()
-                            .skip(start.saturating_sub(12))
-                            .take(35)
-                            .collect();
-                        if ui.selectable_label(false, snippet).clicked() {
-                            self.session.editor.selection = snap(&text, start, end);
-                            self.sync_view();
-                        }
-                    }
-                }
-            });
-        self.record("navigation", panel.response.rect);
     }
 
     fn formatting_panel(&mut self, ctx: &egui::Context) {
@@ -2144,7 +2042,18 @@ impl DocsApp {
                                 let focused=ui.memory(|m|m.has_focus(id));
                                 let mut commit=false;let mut cancel=false;
                                 if focused {for event in &events {if let egui::Event::Ime(ime)=event {match ime {egui::ImeEvent::Enabled|egui::ImeEvent::Preedit(_)=>self.composing=true,egui::ImeEvent::Commit(text)=>{self.composing=false;if text.is_empty()||text=="\n"||text=="\r"{cancel=true;}else{commit=true;}},egui::ImeEvent::Disabled=>{if self.composing{cancel=true;}self.composing=false;}}}}}
-                                let mut layouter=|ui:&Ui,text:&dyn egui::TextBuffer,wrap:f32|layout::galley(ui.ctx(),&model,text.as_str(),typing,wrap,font_size);
+                                let search_range = if self.navigation && !self.composing && !self.find_composing
+                                    && crate::search::Results::new(&self.buffer, &self.find).active(self.session.editor.selection).is_some() {
+                                    let (a,b)=self.session.editor.selection;
+                                    Some(CCursorRange::two(CCursor::new(b),CCursor::new(a)))
+                                } else {None};
+                                let mut layouter=|ui:&Ui,text:&dyn egui::TextBuffer,wrap:f32| {
+                                    let mut galley=layout::galley(ui.ctx(),&model,text.as_str(),typing,wrap,font_size);
+                                    if !ui.memory(|m|m.has_focus(id)) && let Some(range)=search_range {
+                                        egui::text_selection::visuals::paint_text_selection(&mut galley,ui.visuals(),&range,None);
+                                    }
+                                    galley
+                                };
                                 let mut output=egui::TextEdit::multiline(&mut self.buffer).id(id).frame(false).margin(0).desired_width(text_width).desired_rows(1).font(FontId::new(font_size,egui::FontFamily::Name("body".into()))).layouter(&mut layouter).show(ui);
                                 if self.focus_document {
                                     if !output.response.has_focus() {output.response.request_focus();}
@@ -2161,6 +2070,11 @@ impl DocsApp {
                                 }
                                 output.state.clear_undoer();output.state.store(ui.ctx(),id);
                                 output.response.context_menu(|ui|{for action in [Action::Cut,Action::Copy,Action::Paste,Action::SelectAll]{self.command(ui,action.label(),action,vec2(150.,26.));}});
+                                if self.scroll_to_selection {
+                                    let caret = output.galley.pos_from_cursor(CCursor::new(self.session.editor.selection.0)).translate(output.galley_pos.to_vec2());
+                                    ui.scroll_to_rect(caret,Some(Align::Center));
+                                    self.scroll_to_selection=false;
+                                }
                                 self.record("document-text",output.response.rect);
                             });
                         });

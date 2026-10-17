@@ -137,6 +137,11 @@ native dialog/IME, accessibility and target-platform reviews are outstanding.
   8-DIP gaps and divider/control separation pass 54 width/scale/state cases;
   four native macOS captures and normal-binary pointer/keyboard checks inspected.
   Matched Windows/reference acceptance remains separate.
+- [x] Alpha.14: refine the existing Navigation pane with one grapheme-safe matcher,
+  active result count, previous/next keyboard routing, virtual rows beyond 40,
+  bounded highlighted excerpts and document scrolling. Preserve alpha.13 palette
+  and icons; [validation](docs/VALIDATION.md#alpha14-navigation-validation) records
+  local evidence. This improves the R1 prototype, not the full D1/D2 exit gates.
 - [ ] Verify native bare Alt/AltGr and rapid modifier taps, contextual/future command
   hints, and compare all mappings against the named Windows reference build. Depends on the native Windows/Word environment; no full parity claimed.
 - [ ] Capture Word 2024 Windows and Docs at matched build/language/theme/window,
@@ -228,7 +233,7 @@ Proposed benchmark fixtures: a short letter; a 100-page report; a 500-page stres
 - [x] Alpha.9: window-local command visibility, above/below placement, dynamic numeric hints, keyboard focus and reset; real View 100%/width fitting. Local event/native evidence: [validation](docs/VALIDATION.md#alpha9-toolbar-and-view-validation).
 - [x] Alpha.10: persist ordered toolbar commands and placement in a versioned user profile; confirmed reset/backup, unknown-version preservation and failed-write/stale-window handling. Alpha.9 approved; restart/roundtrip, failure, unchanged-document tests and native macOS checks passed. [ADR 0004](docs/adr/0004-local-toolbar-preferences.md), [validation](docs/VALIDATION.md#alpha10-preferences-validation).
 - [x] Alpha.12: explicit command reordering through More Commands, keyboard-accessible move controls, draft OK/Cancel, unique ordered commands, hint remapping and stable focus after moves. Uses the alpha.10 settings boundary; five widget regressions, 18 geometry cases and native macOS restart evidence: [validation](docs/VALIDATION.md#alpha12-toolbar-order-validation). Alpha.11 approved; alpha.12 awaits version/review approval.
-- [x] Alpha.13: refine icon color roles and light surfaces using owner-supplied macOS visual evidence, retaining original vector artwork, disabled command semantics, geometry and editing. Three native captures and the existing 95/36 tests verified; [palette evidence](docs/UI_SPEC.md#alpha13-icon-palette). This does not complete the Windows comparison gate.
+- [x] Alpha.13: refine icon color roles and light surfaces using owner-supplied macOS visual evidence, retaining original vector artwork, disabled command semantics, geometry and editing. Alpha.13 version approved in chat. Three native captures and the existing 95/36 tests verified; [palette evidence](docs/UI_SPEC.md#alpha13-icon-palette). This does not complete the Windows comparison gate.
 - [ ] Compare both toolbar positions and View against a named Word 2024 Windows build at matched sizes/theme/language and native 100/125/150%; attach paired captures and measured differences. Depends on an available reference environment; no similarity percentage.
 
 ## 6. Work order, evidence and ownership

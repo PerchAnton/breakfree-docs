@@ -19,7 +19,8 @@ struct Capture {
 impl eframe::App for Capture {
     fn raw_input_hook(&mut self, _ctx: &egui::Context, input: &mut egui::RawInput) {
         // Deterministic render fixture, including focus; this does not prove OS input.
-        if self.mode.starts_with("keytips") || self.mode == "temporary" {
+        if self.mode.starts_with("keytips") || self.mode == "temporary" || self.mode == "navigation"
+        {
             input.focused = true;
         }
         if self.frames == 2 && self.mode.starts_with("keytips") {
@@ -48,6 +49,9 @@ impl eframe::App for Capture {
                     });
                 }
             }
+        }
+        if self.frames == 2 && self.mode == "navigation" {
+            input.events.push(egui::Event::Text("BreakFree".into()));
         }
         if self.mode == "keytips-qat-below" {
             let key = match self.frames {
@@ -228,7 +232,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
                 "file" => app.execute(Action::File, &cc.egui_ctx),
-                "navigation" => app.navigation = true,
+                "navigation" => app.execute(Action::Find, &cc.egui_ctx),
                 "collapsed" | "keytips-root" | "keytips-home" | "keytips-prefix" => {
                     app.ribbon_collapsed = true
                 }

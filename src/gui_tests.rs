@@ -305,7 +305,9 @@ fn search_selects_real_model_ranges_and_failed_open_keeps_edits() {
         .replace(0, 0, "Hello Україна Hello", "Input")
         .unwrap();
     app.find = "Україна".into();
-    app.find_next();
+    app.sync_view();
+    app.execute(Action::Find, &ctx);
+    click_region(&ctx, &mut app, "find-next");
     assert_eq!(
         selected_text(&app.session.editor.document, app.session.editor.selection),
         "Україна"
@@ -314,6 +316,202 @@ fn search_selects_real_model_ranges_and_failed_open_keeps_edits() {
     app.finish(Pending::Open(PathBuf::from("/missing.bfdoc")), &ctx);
     assert_eq!(app.session.editor.document, before);
     assert!(app.error.is_some());
+}
+
+#[test]
+fn navigation_search_keeps_focus_wraps_past_forty_and_never_edits() {
+    let (ctx, mut app) = setup();
+    let text = "Україна e\u{301}\n".repeat(65);
+    app.session.editor.replace(0, 0, &text, "Input").unwrap();
+    app.sync_view();
+    let before = app.session.editor.document.clone();
+    let history = app.session.editor.undo_stack.len();
+    app.execute(Action::Find, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("Україна".into())],
+        [1366., 900.],
+        1.,
+    );
+    assert_eq!(app.session.editor.selection, (0, 7));
+    for _ in 0..50 {
+        frame(
+            &ctx,
+            &mut app,
+            vec![key(Key::Enter, false)],
+            [1366., 900.],
+            1.,
+        );
+        assert!(ctx.memory(|m| m.has_focus(Id::new("find-text"))));
+    }
+    assert_eq!(app.session.editor.selection, (550, 557));
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    assert!(app.regions.iter().any(|r| r.name == "find-result-50"));
+    let previous = egui::Event::Key {
+        key: Key::Enter,
+        physical_key: None,
+        pressed: true,
+        repeat: false,
+        modifiers: Modifiers::SHIFT,
+    };
+    frame(&ctx, &mut app, vec![previous], [1366., 900.], 1.);
+    assert_eq!(app.session.editor.selection, (539, 546));
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::ArrowDown, false)],
+        [1366., 900.],
+        1.,
+    );
+    assert_eq!(app.session.editor.selection, (550, 557));
+    assert_eq!(app.session.editor.document, before);
+    assert_eq!(app.session.editor.undo_stack.len(), history);
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Escape, false)],
+        [1366., 900.],
+        1.,
+    );
+    assert!(!app.navigation);
+    assert!(ctx.memory(|m| m.has_focus(Id::new(EDIT_ID))));
+    assert_eq!(app.session.editor.document, before);
+}
+
+#[test]
+fn navigation_replace_rejects_partial_graphemes_and_refreshes_after_history() {
+    let (ctx, mut app) = setup();
+    app.session
+        .editor
+        .replace(0, 0, "e\u{301} e\u{301}", "Input")
+        .unwrap();
+    app.session.editor.emphasize(0, 2, true, true).unwrap();
+    app.sync_view();
+    let before = app.session.editor.document.clone();
+    let history = app.session.editor.undo_stack.len();
+    app.execute(Action::Replace, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("e".into())],
+        [1366., 900.],
+        1.,
+    );
+    app.replacement = "ї".into();
+    click_region(&ctx, &mut app, "find-replace");
+    assert_eq!(app.session.editor.document, before);
+    assert_eq!(app.session.editor.undo_stack.len(), history);
+    click_region(&ctx, &mut app, "find-clear");
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("e\u{301}".into())],
+        [1366., 900.],
+        1.,
+    );
+    assert_eq!(app.session.editor.selection, (0, 2));
+    click_region(&ctx, &mut app, "find-replace");
+    assert_eq!(app.session.editor.document.text(), "ї e\u{301}");
+    assert!(app.session.editor.document.paragraphs[0].styles[0].bold);
+    assert_eq!(app.session.editor.undo_stack.len(), history + 1);
+    let changed = app.session.editor.document.clone();
+    app.execute(Action::Undo, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    assert_eq!(app.session.editor.document, before);
+    assert!(app.regions.iter().any(|r| r.name == "find-result-1"));
+    app.execute(Action::Redo, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    assert_eq!(app.session.editor.document, changed);
+    assert!(!app.regions.iter().any(|r| r.name == "find-result-1"));
+}
+
+#[test]
+fn search_ime_confirmation_is_not_a_next_result_command() {
+    let (ctx, mut app) = setup();
+    app.session.editor.replace(0, 0, "ї ї", "Input").unwrap();
+    app.sync_view();
+    app.execute(Action::Find, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![
+            egui::Event::Ime(egui::ImeEvent::Enabled),
+            egui::Event::Ime(egui::ImeEvent::Preedit("ї".into())),
+        ],
+        [1366., 900.],
+        1.,
+    );
+    let selection = app.session.editor.selection;
+    frame(
+        &ctx,
+        &mut app,
+        vec![
+            egui::Event::Ime(egui::ImeEvent::Commit("ї".into())),
+            key(Key::Enter, false),
+        ],
+        [1366., 900.],
+        1.,
+    );
+    assert_eq!(app.session.editor.selection, selection);
+    assert_eq!(app.session.editor.document.text(), "ї ї");
+    assert_eq!(app.session.editor.undo_stack.len(), 1);
+}
+
+#[test]
+fn navigation_controls_fit_narrow_and_scaled_windows() {
+    for dpi in [1., 1.25, 1.5] {
+        for size in [[640., 480.], [1024., 768.], [1366., 900.]] {
+            let (ctx, mut app) = setup();
+            app.session
+                .editor
+                .replace(0, 0, &"Русский Україна e\u{301}\n".repeat(80), "Input")
+                .unwrap();
+            app.sync_view();
+            app.find = "Україна".into();
+            app.execute(Action::Replace, &ctx);
+            for _ in 0..4 {
+                frame(&ctx, &mut app, vec![], size, dpi);
+            }
+            let pane = app
+                .regions
+                .iter()
+                .find(|r| r.name == "navigation")
+                .unwrap()
+                .rect;
+            let workspace = app
+                .regions
+                .iter()
+                .find(|r| r.name == "workspace")
+                .unwrap()
+                .rect;
+            assert!(pane.right() <= workspace.left());
+            for name in [
+                "find-input",
+                "find-clear",
+                "find-close",
+                "find-next",
+                "find-previous",
+                "find-replace",
+            ] {
+                let rect = app.regions.iter().find(|r| r.name == name).unwrap().rect;
+                assert!(
+                    pane.expand(1.).contains_rect(rect),
+                    "{name} {size:?} {dpi}: {pane:?} {rect:?}"
+                );
+            }
+            assert!(
+                app.regions
+                    .iter()
+                    .filter(|r| r.name.starts_with("find-result-"))
+                    .count()
+                    < 80
+            );
+        }
+    }
 }
 
 fn click_region(ctx: &egui::Context, app: &mut DocsApp, name: &str) {

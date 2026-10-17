@@ -8,20 +8,20 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.13**. Earlier capture/CI evidence retains its
+Current local checkpoint: **0.1.0-alpha.14**. Earlier capture/CI evidence retains its
 original scope; this iteration does not establish native Windows behavior.
 
 | Local check | Observed result |
 | :--- | :--- |
-| `cargo test --locked` | 95 passed: 23 engine/storage/presentation, 9 preferences, 4 CLI subprocess and 59 actual egui widget event tests; no skipped tests |
-| `cargo test --locked --no-default-features` | 36 passed; preferences, core and CLI build without GUI dependencies |
+| `cargo test --locked` | 103 passed: 23 engine/storage/presentation, 4 search, 9 preferences, 4 CLI subprocess and 63 actual egui widget event tests; no skipped tests |
+| `cargo test --locked --no-default-features` | 40 passed; preferences, core/search and CLI build without GUI dependencies |
 | `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
 | `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
-| Copied executable outside checkout | Alpha.13 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
+| Copied executable outside checkout | Alpha.14 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
 | Repository references, contract and artwork | `python3 tools/check_repository.py` passed; approved logo embedded directly and archive copy byte-identical |
 | Workflow YAML / whitespace | Ruby YAML parse and `git diff --check` passed |
-| Native rendering | Alpha.13 Home at 1366 × 900 / 640 × 480 DIP and File at 1366 × 900 inspected at backing scale 2; [captures](UI_SPEC.md#alpha13-native-captures). Earlier evidence retains its version context |
-| Native macOS interaction | Alpha.13 normal binary: Unicode paste/selection, pointer Bold, Undo/Redo, F10 File/Options, pointer Home/Back, F10 Home/Escape and Discard passed. Active Cut/Copy, selected and disabled cues inspected. Prior native Save/Open/settings restart evidence retains its version context; Windows/AltGr/IME remains unverified |
+| Native rendering | Alpha.14 Navigation at 1366 × 900 / 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha14-native-captures). Earlier evidence retains its version context |
+| Native macOS interaction | Alpha.14: 55-result wrapped search with retained focus and canvas scrolling; Home Replace, keyboard field traversal/activation, Undo/Redo, system Save/Open and exact Unicode/bold readback passed. Escape and clean close passed. Command+H is OS-reserved; Home Replace is the supported route. Earlier evidence retains its version context |
 | Synthetic DPI | Actual widgets at 1/1.25/1.5 scale and 960/1366/1920 physical widths; ribbon/group/workspace/status bounds and collapse assertions passed; 27 additional width/scale combinations check individual Home control containment/nonoverlap and title/search/window bounds |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
@@ -56,6 +56,41 @@ widget tests cover wide/minimum-width Grow/Shrink, composition disablement,
 Paste/Find/Select menus, Escape cancellation and working overflow. Strict geometry
 checks now include menu triggers and the More button. The initial 640-DIP budget
 failure was resolved by narrowing the overflow Font group, keeping the assertions.
+
+## Alpha.14 navigation validation
+
+Four new headless tests cover English/Ukrainian/Russian, combining and joined
+emoji boundaries, exact case/non-normalization, cross-paragraph matches, empty
+queries, nonoverlap, 50,000 matches at the model limit, forward/backward wrapping,
+bounded grapheme excerpts and replacement with formatting, undo/redo and v2
+save/reopen. Four new actual-widget tests cover retained search focus through 50
+successive Enter actions, Shift+Enter/Up/Down, rows beyond 40, Escape, partial-
+cluster refusal, clear/replace/history refresh, IME confirmation and nine physical
+size/synthetic-scale combinations. All 103 tests pass, plus 40 without desktop.
+
+The focused-field regression also caught a pending document-focus request
+stealing focus on Find entry; Find/Replace now clears that request. The existing
+Escape router closes search after recognizing focus from the preceding frame,
+while leaving active IME confirmation to the input widget. No earlier geometry
+or data-safety assertions were weakened. Fmt, normal/capture Clippy with warnings
+denied, release builds and isolated information-only CLI checks pass.
+
+Normal-binary macOS input used an isolated profile and synthetic 58-paragraph
+English/Ukrainian/Russian/combining-text content. Command+F, query paste,
+Shift+Enter from first to 55th result, Enter wrapping to first, scroll/focus and
+visible range highlighting passed. Command+H was intercepted by macOS; Home
+Replace is the documented route there. This does not establish native Windows
+keyboard/DPI, physical non-ASCII typing, OS IME or screen-reader acceptance.
+Two native captures check the wide/minimum pane, result cues and preserved Home
+palette. A second normal-binary run pasted a three-paragraph Unicode document,
+applied Bold, opened Home Replace, traversed with Tab into the replacement field
+and activated Replace with Enter. Undo/Redo restored the expected states. Native
+system Save/Open passed; independent JSON decoding confirmed exact text, all bold
+runs and content v2. Search/Enter/Escape after reopening and clean close passed.
+Accessibility activation did not focus the replacement field in this driver;
+keyboard Tab did. This is not full assistive-technology acceptance. No user profile
+or existing document was changed. The final singular-result label correction was
+verified by the subsequent build/tests; native behavior is otherwise unchanged.
 
 ## Alpha.13 palette validation
 

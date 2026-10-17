@@ -107,6 +107,47 @@ L/E/R/J are implemented. Ctrl/Command+D or Shift+F opens the Font dialog.
 Home/File KeyTips and Alt entry, plus quick-access/tab/View extensions, are described below. Contextual KeyTips,
 native assistive technology and multilingual OS IME remain unverified/incomplete.
 
+## Alpha.14 navigation results
+
+The existing Home Find/Replace and View Navigation entry points now share the
+same literal matcher. The Windows composition reference includes search results
+and previous/next arrows ([Microsoft navigation documentation](https://support.microsoft.com/en-gb/word/use-the-navigation-pane-in-word?nochrome=true), inspected 2026-10-17; applies to Word 2024 Windows).
+This source supports the workflow, not measured pixel equivalence or every shortcut.
+
+| Component | Implemented measurement / behavior |
+| :--- | :--- |
+| Navigation pane | 260 DIP default, resizable 220–320 DIP; neutral `SURFACE`; consumes workspace width |
+| Search field | 26 DIP height, adjacent Clear; focus retained during result traversal |
+| Results header | Current result / total from model ranges; 24 × 24 DIP original vector chevrons |
+| Result list | Virtual 64-DIP rows plus 3-DIP spacing, all matches available; real paragraph number and bounded context |
+| Match cues | Bold excerpt text, existing violet selection; selected document range remains visible while search owns focus |
+| Keyboard | Enter/Down next, Shift+Enter/Up previous while in search; wraps, Escape closes pane and restores document focus |
+| Unsupported modes | Headings and Pages disabled with style/pagination explanations |
+
+Exact case-sensitive, nonoverlapping matching rejects partial grapheme clusters;
+no normalization, case folding, wildcard/whole-word options or replace-all. A
+result selection changes no document/history; replacement uses the existing shared
+command and the matched run's insertion style. Search updates after edits/undo.
+Excerpts limit preceding/matched/following context to 18/32/24 graphemes, with an
+ellipsis when shortened. Paragraph/tab separators use display-only separators;
+source text is never rewritten. Long matches are selected in full in the document.
+
+### Alpha.14 native captures
+
+Captured on macOS, English/light theme, 100% document zoom, backing scale 2:
+
+- [Navigation, 1366 × 900 DIP](screenshots/rust-navigation-alpha14-macos.png).
+- [Navigation, 640 × 480 DIP](screenshots/rust-navigation-alpha14-macos-narrow.png).
+
+The harness searches the actual Welcome fixture. Alpha.13 colors/icons and Home
+gutters are retained. Native long-document input separately checks wrapped
+navigation through 55 matches. Initial inspection caught missing font glyphs in
+arrow labels and context: chevrons now use the existing vectors, excerpts the
+same body-font families as the document. Remaining complex-script/font fallback
+limits still apply. At 640 DIP the continuous canvas scrolls horizontally; it
+is not repaginated. Native Windows 100/125/150%, a matched reference build and
+full accessibility/IME remain unverified. No similarity score is assigned.
+
 ## Alpha.13 icon palette
 
 On 2026-10-17 the owner supplied two local reference images showing a macOS

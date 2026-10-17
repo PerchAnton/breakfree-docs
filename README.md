@@ -147,6 +147,14 @@ sizes show an empty field. Grow/Shrink Font steps each selected run independentl
 through common presets, with one undo operation. At a caret it changes pending
 insertion size. Native paste is plain text; the Paste menu explains this scope.
 Find opens navigation directly; its arrow and Select expose command menus.
+Navigation shows the active result number and highlighted context for all exact,
+case-sensitive matches. Previous/Next buttons or Enter/Down and Shift+Enter/Up in
+the search field wrap through the matches without leaving that field. Clear resets
+the query; Escape closes the pane and returns to the document. Selecting a result
+scrolls the continuous canvas to it. Search respects complete combining/emoji
+clusters; it does not normalize text or support whole-word/wildcard options.
+Replace uses the same matches and existing one-operation undo boundary.
+[Navigation details and evidence](docs/UI_SPEC.md#alpha14-navigation-results).
 The Font launcher opens a dialog for style, size and underline with a preview.
 Only OK applies the draft, together in one undo operation; Cancel/Escape discards
 it. Mixed properties stay unchanged unless edited. Unimplemented font-family,
@@ -171,7 +179,8 @@ Ctrl (Command on macOS) + N/O/S, Shift+S, B/I/U, Z/Y or Shift+Z handle file, emp
 and history actions. Ctrl/Command+Shift+P focuses and selects the size field.
 Ctrl/Command+D or Ctrl/Command+Shift+F opens the Font dialog.
 Ctrl/Command+Shift+> / < grows/shrinks the selected text (period/comma keys).
-Ctrl/Command + L/E/R/J aligns paragraphs; F/H opens Find/Replace.
+Ctrl/Command + L/E/R/J aligns paragraphs; F opens Find. Ctrl+H opens Replace
+on Windows/Linux. On macOS use Home → Replace: Command+H is reserved by the OS.
 Ctrl+F1 switches pinned/tabs-only ribbon mode; double-click a tab or use its context
 menu for the same choice. A collapsed tab opens temporarily over the canvas and
 closes after a command, outside click or Escape. Alt+F opens File; Alt+H enters Home;
