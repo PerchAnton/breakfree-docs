@@ -106,7 +106,7 @@ impl DocsApp {
     }
 
     pub(super) fn ribbon_keys(&mut self, ctx: &egui::Context) {
-        if self.pending.is_some() || self.error.is_some() {
+        if self.pending.is_some() || self.error.is_some() || self.zoom_dialog.is_some() {
             return;
         }
         if !self.focus_font_size && ctx.memory(|m| m.has_focus(Id::new(EDIT_ID))) {
@@ -361,6 +361,7 @@ impl DocsApp {
     pub(super) fn finish_ribbon_focus(&mut self, ctx: &egui::Context) {
         if self.backstage
             || self.font_dialog.is_some()
+            || self.zoom_dialog.is_some()
             || self.pending.is_some()
             || self.error.is_some()
         {
@@ -389,7 +390,7 @@ impl DocsApp {
         .cloned();
         if let Some(target) = target {
             self.select_target(&target, ctx);
-        } else if self.tab != 0 && self.ribbon_focus == Some(RibbonFocus::First) {
+        } else if !matches!(self.tab, 0 | 8) && self.ribbon_focus == Some(RibbonFocus::First) {
             self.ribbon_focus = Some(RibbonFocus::Tab);
         }
     }

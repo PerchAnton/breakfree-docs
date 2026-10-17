@@ -104,8 +104,54 @@ F6/Shift+F6 cycles the document, visible navigation/formatting panes, status and
 ribbon; Alt+Q searches real commands. Standard
 Ctrl/Command N/O/S/Shift+S, B/I/U, Shift+P (focus/select size), Z/Y/Shift+Z, F/H and
 L/E/R/J are implemented. Ctrl/Command+D or Shift+F opens the Font dialog.
-Home/File KeyTips and Alt entry are described below. Complete non-Home KeyTips,
+Home/File KeyTips and Alt entry, plus quick-access/tab/View extensions, are described below. Contextual KeyTips,
 native assistive technology and multilingual OS IME remain unverified/incomplete.
+
+## Alpha.8 quick-access and tab KeyTips
+
+This extends alpha.7's input state machine without moving editing into the GUI.
+The [official QAT keyboard guide](https://support.microsoft.com/en-us/accessibility/office-accessibility/use-a-keyboard-to-customize-the-quick-access-toolbar)
+describes position-based numbers; numbers depend on toolbar order, not a universal
+Word default. The [official Word navigation guide](https://support.microsoft.com/en-us/accessibility/word/use-a-screen-reader-to-explore-and-navigate-word)
+documents Alt+W,K for navigation and Alt+W,Q for Zoom. Inspected 2026-10-17.
+No controlled Word 2024 Windows instance is available. **JI Draw, Y1 Help and
+W,R ruler are provisional Docs assignments** pending that comparison; do not
+present them as verified mappings for a named Word 2024 build.
+
+| Level | Implemented behavior |
+| :--- | :--- |
+| Quick Access Toolbar | Root 1 Save, 2 Undo, 3 Redo; also direct Alt+1/2/3. Fixed positions never renumber when history is empty. Unavailable actions show gray hints and do nothing; enabled actions use the same command/history/save path as the buttons |
+| Tabs | H Home, N Insert, JI Draw, G Design, P Layout, S References, M Mailings, R Review, W View, Y1 Help. Multi-key prefixes filter hints and support Backspace. Direct Alt+first-key starts a sequence; later keys may retain Alt |
+| Narrow tab overflow | Root T opens the actual More tabs menu; hidden rows show their tab codes at the right. T is Docs-specific. Direct hidden-tab sequences work without opening the menu. Escape closes this menu and returns to root; expanding the window past overflow returns to root without a stranded popup |
+| Unimplemented tabs / Help | Retain their own scope, suppress invalid access-key text, explain unavailable commands or informational Help, and return to root with Escape. No action hints are invented for placeholder groups |
+| View | K toggles Navigation Pane, R toggles canvas rulers, Q opens Zoom. Active toggle state is visible. Arrows/Tab hand off to the same enabled-control focus registry; Ctrl+Left/Right moves between Show and Zoom |
+| Zoom | Modal 280-DIP content width, selected percent field, 75/100/150/200% presets, bounded whole-number 50–200% input, OK/Enter and Cancel/Escape. Invalid values retain the draft. Background shortcuts and window close cannot bypass it. Acceptance changes view scale only, with no document-history entry |
+
+QAT badges use dedicated title anchors rather than File/other Save button bounds.
+Existing badge geometry remains 17 DIP high, 12-DIP text; disabled badges use
+#e0e0e0 with #7d7d7d text. View uses a 110-DIP Views column, 145-DIP Show buttons
+and an 88-DIP Zoom button, with 30-DIP control heights inside the existing ribbon.
+These are measured implementation dimensions, not reference-app measurements.
+The continuous canvas, 50–200% zoom range and lack of pagination remain explicit.
+Toolbar customization, contextual object commands and advanced tabs are not added.
+
+### Alpha.8 native captures
+
+![Quick-access and all-tab hints, alpha.8, macOS](screenshots/rust-keytips-root-alpha8-macos.png)
+
+[View hints](screenshots/rust-keytips-view-alpha8-macos.png) ·
+[More tabs at 640 × 480 DIP](screenshots/rust-keytips-tabs-alpha8-macos-narrow.png) ·
+[Zoom at 640 × 480 DIP](screenshots/rust-zoom-alpha8-macos-narrow.png).
+
+Captured and inspected on 2026-10-17: English/light, Welcome fixture, 100% document
+zoom, backing scale 2; wide captures 1366 × 900 DIP. Root uses tabs-only mode.
+The native capture fixture waits for both measurement frames and popup animation;
+it injects deterministic events and does not prove OS key delivery. Native macOS
+interaction is recorded separately in VALIDATION. The inherited missing emoji
+glyph remains visible. Brand differences remain the original logo/name and violet
+accents. Remaining reference differences include simplified View controls/Zoom,
+fixed quick-access order, continuous canvas and unimplemented advanced tabs. No
+matched Word 2024 Windows capture or similarity percentage is available.
 
 ## Alpha.7 KeyTips and Alt entry
 
@@ -150,8 +196,8 @@ Bare Alt observes egui modifier-state transitions; a very short tap coalesced
 entirely between frames may be invisible to this adapter. F10 remains available.
 The macOS automation tool rejects modifier-only presses, so bare Alt has event-test
 evidence only. Native AltGr, layout switching, IME and Windows 100/125/150% still
-need real-device acceptance. Quick-access, Draw/Help and non-Home command hints are
-not complete; no full reference-app keyboard equivalence is claimed.
+need real-device acceptance. The alpha.8 section records subsequent quick-access,
+tab and View coverage; no full reference-app keyboard equivalence is claimed.
 
 ### Alpha.7 native captures
 
@@ -317,7 +363,7 @@ accepted in place of `home`. This development example adds no production CLI fla
 
 ## Remaining differences and reproducible comparison gate
 
-Current gaps include print pagination and page rulers, vertical ruler, font-family/color controls, lists/styles, contextual object tabs, complete non-Home KeyTips,
+Current gaps include print pagination and page rulers, vertical ruler, font-family/color controls, lists/styles, contextual object tabs, KeyTips for future commands,
 view-mode buttons, additional File operations and complete native window/accessibility
 behavior. Metrics are provisional until measured against the named reference.
 
@@ -341,7 +387,8 @@ Select menus, Escape cancellation, narrow overflow, zoom/reset and File navigati
 dirty New. All supported font sizes are tested for bounded step behavior. These
 are CPU layout tests, not native Windows scaling or visual validation.
 
-The capture helper also accepts `keytips-root`, `keytips-home` and `keytips-prefix`:
+The capture helper also accepts `keytips-root`, `keytips-home`, `keytips-prefix`,
+`keytips-tabs`, `keytips-view` and `keytips-zoom`:
 
 ```sh
 BREAKFREE_CAPTURE_TO="$PWD/docs/screenshots/keytips-review.png" \

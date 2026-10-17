@@ -1837,3 +1837,318 @@ fn keytips_restore_search_focus_and_ignore_altgr_command_flags() {
     assert_eq!(app.session.editor.document.text(), "ł");
     assert_eq!(app.session.editor.undo_stack.len(), 1);
 }
+
+#[test]
+fn qat_keytips_keep_fixed_numbers_and_use_shared_history_and_save() {
+    use keytips::Level;
+    let (ctx, mut app) = setup();
+    tip_sequence(
+        &ctx,
+        &mut app,
+        &[Key::F10, Key::Num2, Key::Num3],
+        [1366., 900.],
+    );
+    assert_eq!(app.keytips.level, Some(Level::Root));
+    for code in ["1", "2", "3"] {
+        assert!(
+            app.regions
+                .iter()
+                .any(|r| r.name == format!("keytip-{code}"))
+        );
+    }
+    assert!(app.session.editor.document.text().is_empty());
+    tip_sequence(&ctx, &mut app, &[Key::Escape], [1366., 900.]);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Paste(
+            "English e\u{301}\nУкраїнська\nРусский 🙂".into(),
+        )],
+        [1366., 900.],
+        1.,
+    );
+    app.execute(Action::SelectAll, &ctx);
+    let original = app.session.editor.document.clone();
+    tip_sequence(
+        &ctx,
+        &mut app,
+        &[Key::F10, Key::H, Key::Num1],
+        [1366., 900.],
+    );
+    let bold = app.session.editor.document.clone();
+    app.ribbon_collapsed = true;
+    tip_sequence(&ctx, &mut app, &[Key::F10, Key::Num2], [1366., 900.]);
+    assert_eq!(app.session.editor.document, original);
+    ribbon_key(&ctx, &mut app, Key::Num3, Modifiers::ALT, [1366., 900.]);
+    assert_eq!(app.session.editor.document, bold);
+    assert!(app.ribbon_collapsed && !app.ribbon_temporary);
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("Quick access.bfdoc");
+    app.session.path = Some(path.clone());
+    ribbon_key(&ctx, &mut app, Key::Num1, Modifiers::ALT, [1366., 900.]);
+    assert_eq!(storage::load(&path).unwrap(), bold);
+    assert!(!app.session.dirty());
+    assert!(ctx.memory(|m| m.has_focus(Id::new(EDIT_ID))));
+}
+
+#[test]
+fn all_tab_keytips_keep_a_scope_and_escape_without_inserting_text() {
+    use keytips::Level;
+    let (ctx, mut app) = setup();
+    app.ribbon_collapsed = true;
+    for (keys, index) in [
+        (vec![Key::N], 1),
+        (vec![Key::J, Key::I], 2),
+        (vec![Key::G], 3),
+        (vec![Key::P], 4),
+        (vec![Key::S], 5),
+        (vec![Key::M], 6),
+        (vec![Key::R], 7),
+        (vec![Key::W], 8),
+        (vec![Key::Y, Key::Num1], 9),
+    ] {
+        tip_sequence(&ctx, &mut app, &[Key::F10], [640., 480.]);
+        tip_sequence(&ctx, &mut app, &keys, [640., 480.]);
+        assert_eq!(app.tab, index);
+        assert_eq!(app.keytips.level, Some(Level::Tab(index)));
+        assert!(app.ribbon_temporary);
+        tip_sequence(&ctx, &mut app, &[Key::Z], [640., 480.]);
+        assert!(app.session.editor.document.text().is_empty());
+        tip_sequence(&ctx, &mut app, &[Key::Escape], [640., 480.]);
+        assert_eq!(app.keytips.level, Some(Level::Root));
+        assert!(!app.ribbon_temporary);
+        tip_sequence(&ctx, &mut app, &[Key::Escape], [640., 480.]);
+        assert!(ctx.memory(|m| m.has_focus(Id::new(EDIT_ID))));
+    }
+    assert!(app.session.editor.undo_stack.is_empty());
+    ribbon_key(&ctx, &mut app, Key::J, Modifiers::ALT, [1366., 900.]);
+    assert_eq!(app.keytips.prefix, "J");
+    ribbon_key(&ctx, &mut app, Key::I, Modifiers::ALT, [1366., 900.]);
+    assert_eq!(app.tab, 2);
+    assert_eq!(app.keytips.level, Some(Level::Tab(2)));
+}
+
+#[test]
+fn more_tabs_hints_show_hidden_routes_and_recover_after_resize() {
+    use keytips::Level;
+    let (ctx, mut app) = setup();
+    tip_sequence(&ctx, &mut app, &[Key::F10, Key::T], [640., 480.]);
+    assert_eq!(app.keytips.level, Some(Level::Tabs));
+    assert!(egui::Popup::is_any_open(&ctx));
+    for code in ["M", "R", "W", "Y1"] {
+        assert!(
+            app.regions
+                .iter()
+                .any(|r| r.name == format!("keytip-{code}"))
+        );
+    }
+    tip_sequence(&ctx, &mut app, &[Key::Escape], [640., 480.]);
+    assert_eq!(app.keytips.level, Some(Level::Root));
+    assert!(!egui::Popup::is_any_open(&ctx));
+    tip_sequence(&ctx, &mut app, &[Key::T, Key::Y, Key::Num1], [640., 480.]);
+    assert_eq!(app.tab, 9);
+    assert!(!egui::Popup::is_any_open(&ctx));
+    tip_sequence(&ctx, &mut app, &[Key::Escape, Key::T], [640., 480.]);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    assert_eq!(app.keytips.level, Some(Level::Root));
+    assert!(!egui::Popup::is_any_open(&ctx));
+    assert!(app.regions.iter().any(|r| r.name == "keytip-Y1"));
+    assert!(app.session.editor.document.text().is_empty());
+}
+
+#[test]
+fn view_keytips_toggle_real_state_and_zoom_draft_preserves_document() {
+    let (ctx, mut app) = setup();
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Paste("Українська e\u{301}".into())],
+        [1366., 900.],
+        1.,
+    );
+    app.execute(Action::SelectAll, &ctx);
+    let document = app.session.editor.document.clone();
+    let selection = app.session.editor.selection;
+    let history = app.session.editor.undo_stack.len();
+    let rulers = app.rulers;
+    tip_sequence(&ctx, &mut app, &[Key::F10, Key::W, Key::K], [1366., 900.]);
+    assert!(app.navigation && app.checked(Action::Navigation));
+    tip_sequence(&ctx, &mut app, &[Key::F10, Key::W, Key::R], [1366., 900.]);
+    assert_eq!(app.rulers, !rulers);
+    tip_sequence(&ctx, &mut app, &[Key::F10, Key::W, Key::Q], [1366., 900.]);
+    assert!(app.zoom_dialog.is_some());
+    assert!(ctx.memory(|m| m.has_focus(Id::new("zoom-percent"))));
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("125".into())],
+        [1366., 900.],
+        1.,
+    );
+    ribbon_key(&ctx, &mut app, Key::Escape, Modifiers::NONE, [1366., 900.]);
+    assert_eq!(app.zoom, 100.);
+    tip_sequence(&ctx, &mut app, &[Key::F10, Key::W, Key::Q], [1366., 900.]);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("201".into())],
+        [1366., 900.],
+        1.,
+    );
+    ribbon_key(&ctx, &mut app, Key::Enter, Modifiers::NONE, [1366., 900.]);
+    assert!(app.zoom_dialog.is_some());
+    assert_eq!(app.zoom, 100.);
+    // Modal shortcuts and KeyTips cannot reach the document behind the draft.
+    tip_sequence(&ctx, &mut app, &[Key::F10], [1366., 900.]);
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::N, true), key(Key::B, true)],
+        [1366., 900.],
+        1.,
+    );
+    assert!(app.pending.is_none() && app.keytips.level.is_none());
+    frame(&ctx, &mut app, vec![key(Key::A, true)], [1366., 900.], 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("125".into())],
+        [1366., 900.],
+        1.,
+    );
+    ribbon_key(&ctx, &mut app, Key::Enter, Modifiers::NONE, [1366., 900.]);
+    assert!(app.zoom_dialog.is_none());
+    assert_eq!(app.zoom, 125.);
+    assert_eq!(app.session.editor.document, document);
+    assert_eq!(app.session.editor.selection, selection);
+    assert_eq!(app.session.editor.undo_stack.len(), history);
+    assert!(ctx.memory(|m| m.has_focus(Id::new(EDIT_ID))));
+}
+
+#[test]
+fn view_keytips_handoff_to_directional_navigation_and_collapsed_mode() {
+    let (ctx, mut app) = setup();
+    app.ribbon_collapsed = true;
+    tip_sequence(&ctx, &mut app, &[Key::F10, Key::W], [640., 480.]);
+    ribbon_key(
+        &ctx,
+        &mut app,
+        Key::ArrowRight,
+        Modifiers::NONE,
+        [640., 480.],
+    );
+    assert!(app.keytips.level.is_none());
+    ribbon_key(
+        &ctx,
+        &mut app,
+        Key::ArrowRight,
+        Modifiers::CTRL,
+        [640., 480.],
+    );
+    assert_eq!(
+        app.ribbon_focus,
+        Some(RibbonFocus::Control("command-Zoom".into()))
+    );
+    ribbon_key(&ctx, &mut app, Key::Enter, Modifiers::NONE, [640., 480.]);
+    assert!(app.zoom_dialog.is_some());
+    assert!(app.ribbon_collapsed && !app.ribbon_temporary);
+    ribbon_key(&ctx, &mut app, Key::Escape, Modifiers::NONE, [640., 480.]);
+    assert!(ctx.memory(|m| m.has_focus(Id::new(EDIT_ID))));
+}
+
+#[test]
+fn qat_tab_view_and_overflow_badges_fit_three_widths_and_scales() {
+    for width in [640., 900., 1366.] {
+        for dpi in [1., 1.25, 1.5] {
+            for sequence in [
+                vec![Key::F10],
+                vec![Key::F10, Key::W],
+                vec![Key::F10, Key::T],
+            ] {
+                let (ctx, mut app) = setup();
+                frame(
+                    &ctx,
+                    &mut app,
+                    tip_events(&sequence),
+                    [width * dpi, 900. * dpi],
+                    dpi,
+                );
+                for _ in 0..4 {
+                    frame(&ctx, &mut app, vec![], [width * dpi, 900. * dpi], dpi);
+                }
+                let tips: Vec<_> = app
+                    .regions
+                    .iter()
+                    .filter(|r| r.name.starts_with("keytip-"))
+                    .collect();
+                assert!(!tips.is_empty());
+                let screen = Rect::from_min_size(Pos2::ZERO, vec2(width, 900.));
+                for (index, tip) in tips.iter().enumerate() {
+                    assert!(
+                        screen.contains_rect(tip.rect),
+                        "{} {:?}",
+                        tip.name,
+                        tip.rect
+                    );
+                    for other in &tips[index + 1..] {
+                        assert!(
+                            !tip.rect.intersects(other.rect),
+                            "{width} {dpi}: {} overlaps {}",
+                            tip.name,
+                            other.name
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn zoom_dialog_bounds_cancel_and_close_guard_at_synthetic_scales() {
+    for dpi in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        frame(
+            &ctx,
+            &mut app,
+            tip_events(&[Key::F10, Key::W, Key::Q]),
+            [640. * dpi, 480. * dpi],
+            dpi,
+        );
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![], [640. * dpi, 480. * dpi], dpi);
+        }
+        let modal = app
+            .regions
+            .iter()
+            .find(|r| r.name == "zoom-dialog")
+            .unwrap();
+        let screen = Rect::from_min_size(Pos2::ZERO, vec2(640., 480.));
+        assert!(screen.contains_rect(modal.rect));
+        for control in app.regions.iter().filter(|r| {
+            r.name.starts_with("zoom-preset-")
+                || matches!(r.name.as_str(), "zoom-percent" | "zoom-ok" | "zoom-cancel")
+        }) {
+            assert!(modal.rect.contains_rect(control.rect));
+        }
+        let mut input = egui::RawInput::default();
+        input
+            .viewports
+            .get_mut(&egui::ViewportId::ROOT)
+            .unwrap()
+            .events
+            .push(egui::ViewportEvent::Close);
+        let output = ctx.run(input, |ctx| app.update_ui(ctx));
+        assert!(
+            output.viewport_output[&egui::ViewportId::ROOT]
+                .commands
+                .iter()
+                .any(|c| matches!(c, ViewportCommand::CancelClose))
+        );
+        assert!(app.zoom_dialog.is_some());
+        assert!(!app.allow_close);
+        ribbon_key(&ctx, &mut app, Key::Escape, Modifiers::NONE, [640., 480.]);
+        assert_eq!(app.zoom, 100.);
+        assert!(!app.session.dirty());
+    }
+}

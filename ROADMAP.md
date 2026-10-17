@@ -128,9 +128,13 @@ native dialog/IME, accessibility and target-platform reviews are outstanding.
   prefix/Escape/focus handling and responsive More routes. Alpha.7: 61 full / 26
   core-only tests, nine badge scale cases, four inspected native render captures
   and macOS F10/Alt+H/menu/size/Save/Open smoke. Bare Alt has event-test evidence only.
-- [ ] Verify native bare Alt/AltGr and rapid modifier taps, complete non-Home,
-  Draw/Help/quick-access hints, and compare all mappings against the named Windows
-  reference build. Depends on the native Windows/Word environment; no full parity claimed.
+- [x] Extend KeyTips to the fixed Quick Access Toolbar, all tab entries, narrow
+  More tabs and real View commands; add a validated view-only Zoom draft.
+  Alpha.8: 68 full / 26 core-only tests, 27 badge width/scale and three modal-scale
+  cases, four inspected captures; native macOS QAT/history, View/Zoom, Draw/Help
+  and Unicode Save/Open passed. Reference mappings remain provisional.
+- [ ] Verify native bare Alt/AltGr and rapid modifier taps, contextual/future command
+  hints, and compare all mappings against the named Windows reference build. Depends on the native Windows/Word environment; no full parity claimed.
 - [ ] Capture Word 2024 Windows and Docs at matched build/language/theme/window,
   document zoom and Windows 100/125/150%; record measured deltas in UI_SPEC.
 - [ ] Verify native Windows keyboard, IME, dialogs, font fallback, clipping and focus.
@@ -251,3 +255,4 @@ Use public specifications and original test cases, not copied application code. 
 | 2026-10-16 | Owner approved alpha.4; alpha.5 adds transactional Font dialog and split Find | 48 full / 26 core-only local tests; native macOS dialog/history/save/reopen and four inspected captures; Windows/Word/IME gates remain open |
 | 2026-10-17 | Owner approved alpha.5; alpha.6 adds temporary ribbon and Home keyboard navigation | 54 full / 26 core-only local tests; native macOS focus/menu/undo/save checks and three captures; Windows/Word/IME and full KeyTips gates remain open |
 | 2026-10-17 | Owner approved alpha.6; alpha.7 adds Alt/F10 and Home/File KeyTips | 61 full / 26 core-only local tests, native macOS sequence/Save/Open smoke and four captures; native bare Alt/AltGr, Windows/Word and remaining KeyTips gates stay open |
+| 2026-10-17 | Owner approved alpha.7; alpha.8 extends QAT/all-tab/View KeyTips and adds a view-only Zoom draft | 68 full / 26 core-only local tests, four captures, native macOS keyboard/Unicode Save/Open; Windows/Word/AltGr/IME and exact mapping review remain open |

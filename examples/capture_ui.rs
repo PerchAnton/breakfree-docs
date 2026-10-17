@@ -11,6 +11,8 @@ struct Capture {
     path: String,
     frames: usize,
     mode: String,
+    started: Option<f64>,
+    requested: bool,
 }
 
 impl eframe::App for Capture {
@@ -21,11 +23,13 @@ impl eframe::App for Capture {
         }
         if self.frames == 2 && self.mode.starts_with("keytips") {
             let mut keys = vec![egui::Key::F10];
-            if self.mode != "keytips-root" {
-                keys.push(egui::Key::H);
-            }
-            if self.mode == "keytips-prefix" {
-                keys.push(egui::Key::F);
+            match self.mode.as_str() {
+                "keytips-home" => keys.push(egui::Key::H),
+                "keytips-prefix" => keys.extend([egui::Key::H, egui::Key::F]),
+                "keytips-tabs" => keys.push(egui::Key::T),
+                "keytips-view" => keys.push(egui::Key::W),
+                "keytips-zoom" => keys.extend([egui::Key::W, egui::Key::Q]),
+                _ => {}
             }
             for key in keys {
                 for pressed in [true, false] {
@@ -59,12 +63,16 @@ impl eframe::App for Capture {
                 std::process::exit(0);
             }
         }
-        // Native areas have initial measurement passes; capture a settled frame.
+        // Allow both measurement passes and popup fade-in to settle. Frame count
+        // alone can race the animation on a fast native renderer.
         self.frames += 1;
-        if self.frames == 8 {
+        let now = ctx.input(|i| i.time);
+        let started = *self.started.get_or_insert(now);
+        if self.frames >= 8 && now - started >= 0.4 && !self.requested {
             ctx.send_viewport_cmd(egui::ViewportCommand::Screenshot(Default::default()));
+            self.requested = true;
         }
-        if self.frames <= 8 {
+        if !self.requested {
             ctx.request_repaint();
         }
     }
@@ -84,10 +92,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "keytips-root",
             "keytips-home",
             "keytips-prefix",
+            "keytips-tabs",
+            "keytips-view",
+            "keytips-zoom",
         ]
         .contains(&args[2].as_str())
     {
-        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|file|navigation|formatting|font|collapsed|temporary|keytips-root|keytips-home|keytips-prefix>; set BREAKFREE_CAPTURE_TO".into());
+        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|file|navigation|formatting|font|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
     }
     let path = std::env::var("BREAKFREE_CAPTURE_TO")
         .map_err(|_| "Set BREAKFREE_CAPTURE_TO to an output PNG path")?;
@@ -142,6 +153,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 app,
                 path,
                 frames: 0,
+                started: None,
+                requested: false,
                 mode,
             }))
         }),

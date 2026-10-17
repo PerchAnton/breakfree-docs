@@ -176,16 +176,22 @@ Alt+Q focuses command search. Tap Alt (release it without another key) or F10 to
 show KeyTips. Then press H for Home: 1/2/3 toggles bold/italic/underline, F then S
 focuses size, F then N opens Font, and A then L/C/R/J aligns. File uses F, then
 N/O/S/A/T for New/Open/Save/Save As/Options. H → E opens narrow-window More.
+Top-level 1/2/3 invokes Save/Undo/Redo on the fixed Quick Access Toolbar (also
+Alt+1/2/3); disabled actions keep their numbers. N/JI/G/P/S/M/R/W/Y1 selects the
+other tabs. T opens More tabs when the row overflows. View W → K/R toggles
+Navigation Pane/Canvas Rulers; W → Q opens Zoom with a validated 50–200% draft.
+Unimplemented tabs explain their limits and retain Escape navigation.
 Backspace removes a prefix; Escape clears it, backs up a level, then restores
 previous focus. Invalid/repeated hint keys cannot enter document text.
 Tab/Shift+Tab and
-arrows navigate enabled Home controls, Ctrl+Left/Right changes groups, Down or
+arrows navigate enabled Home/View controls, Ctrl+Left/Right changes groups, Down or
 Alt+Down opens dropdowns, Enter/Space activates. Escape closes menu, ribbon and
 focus levels in order. F6/Shift+F6 cycles document, visible panes, status and ribbon. Input events delivered in one widget update form one text undo operation;
 explicit paste and formatting commands have separate boundaries. See the
-[implemented KeyTips and limits](docs/UI_SPEC.md#alpha7-keytips-and-alt-entry).
-Bare Alt is implemented and event-tested; native Windows Alt/AltGr, complete
-non-Home KeyTips and assistive-technology behavior remain review gates.
+[implemented KeyTips and limits](docs/UI_SPEC.md#alpha8-quick-access-and-tab-keytips).
+Bare Alt is implemented and event-tested; native Windows Alt/AltGr, exact Word 2024 mappings and assistive-technology behavior
+remain review gates. Draw/Help/ruler assignments are provisional; quick-access
+customization and unsupported-tab commands remain roadmap work.
 
 ## Check
 

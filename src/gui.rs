@@ -28,6 +28,10 @@ use ribbon_navigation::{RibbonFocus, RibbonTarget, TargetKind};
 mod keytips;
 use keytips::KeyTips;
 
+#[path = "zoom_dialog.rs"]
+mod zoom_dialog;
+use zoom_dialog::{ZoomDialog, ZoomOutcome};
+
 const INK: Color32 = Color32::from_rgb(35, 35, 35);
 const ACCENT: Color32 = Color32::from_rgb(112, 71, 174);
 const CHROME: Color32 = Color32::from_rgb(243, 243, 243);
@@ -65,6 +69,7 @@ pub enum Action {
     Ribbon,
     Navigation,
     Rulers,
+    Zoom,
     Formatting,
 }
 impl Action {
@@ -97,6 +102,7 @@ impl Action {
             Self::Ribbon => "Collapse or expand ribbon",
             Self::Navigation => "Navigation pane",
             Self::Rulers => "Canvas rulers",
+            Self::Zoom => "Zoom",
             Self::Formatting => "Formatting pane",
         }
     }
@@ -129,6 +135,7 @@ const COMMANDS: &[Action] = &[
     Action::Ribbon,
     Action::Navigation,
     Action::Rulers,
+    Action::Zoom,
     Action::Formatting,
 ];
 
@@ -150,6 +157,8 @@ pub struct DocsApp {
     pub ribbon_temporary: bool,
     ribbon_focus: Option<RibbonFocus>,
     keytips: KeyTips,
+    more_tabs_id: Option<Id>,
+    zoom_dialog: Option<ZoomDialog>,
     ribbon_targets: Vec<RibbonTarget>,
     ribbon_menu_targets: Vec<RibbonTarget>,
     ribbon_menu_index: Option<usize>,
@@ -238,6 +247,8 @@ impl DocsApp {
             ribbon_temporary: false,
             ribbon_focus: None,
             keytips: KeyTips::default(),
+            more_tabs_id: None,
+            zoom_dialog: None,
             ribbon_targets: Vec::new(),
             ribbon_menu_targets: Vec::new(),
             ribbon_menu_index: None,
@@ -283,10 +294,12 @@ impl DocsApp {
         });
     }
     fn enabled(&self, action: Action) -> bool {
-        if self.font_dialog.is_some() {
+        if self.font_dialog.is_some() || self.zoom_dialog.is_some() {
             return false;
         }
-        if action == Action::FontDialog && (self.pending.is_some() || self.error.is_some()) {
+        if matches!(action, Action::FontDialog | Action::Zoom)
+            && (self.pending.is_some() || self.error.is_some())
+        {
             return false;
         }
         if self.composing {
@@ -303,6 +316,8 @@ impl DocsApp {
     }
     fn checked(&self, action: Action) -> bool {
         match action {
+            Action::Navigation => self.navigation,
+            Action::Rulers => self.rulers,
             Action::Bold => self.session.editor.emphasis_selected(true),
             Action::Italic => self.session.editor.emphasis_selected(false),
             Action::Underline => self.session.editor.underline_selected(),
@@ -522,6 +537,16 @@ impl DocsApp {
                 self.focus_document = true;
                 egui::Popup::close_all(ctx);
             }
+            Action::Zoom => {
+                self.zoom_dialog = Some(ZoomDialog::new(self.zoom));
+                self.focus_document = false;
+                self.palette = false;
+                ctx.memory_mut(|m| {
+                    if let Some(id) = m.focused() {
+                        m.surrender_focus(id);
+                    }
+                });
+            }
             Action::Navigation => self.navigation = !self.navigation,
             Action::Rulers => self.rulers = !self.rulers,
             Action::Formatting => self.formatting = !self.formatting,
@@ -533,7 +558,7 @@ impl DocsApp {
             egui::Popup::close_all(ctx);
             if !matches!(
                 action,
-                Action::Find | Action::Replace | Action::FontDialog | Action::File
+                Action::Find | Action::Replace | Action::FontDialog | Action::Zoom | Action::File
             ) {
                 self.focus_document = true;
             }
@@ -566,7 +591,7 @@ impl DocsApp {
         if action == Action::Bold && !self.collecting_menu {
             self.formatting_focus = Some(response.id);
         }
-        if self.collecting_menu {
+        if self.ribbon_group.is_some() {
             self.track_ribbon(
                 &response,
                 &format!("command-{action:?}"),
@@ -675,16 +700,12 @@ impl DocsApp {
                 .into_iter()
                 .enumerate()
                 {
-                    self.ribbon_control(
-                        ui,
-                        Rect::from_min_size(
-                            rect.min + vec2(43. + i as f32 * 30., 8.),
-                            vec2(28., 28.),
-                        ),
-                        icon,
-                        "",
-                        action,
+                    let qat_rect = Rect::from_min_size(
+                        rect.min + vec2(43. + i as f32 * 30., 8.),
+                        vec2(28., 28.),
                     );
+                    self.record(&format!("qat-{action:?}"), qat_rect);
+                    self.ribbon_control(ui, qat_rect, icon, "", action);
                 }
                 let search_w = (w * 0.25).clamp(155., 350.);
                 let search_x = (w * 0.56 - search_w / 2.).max(285.);
@@ -846,7 +867,9 @@ impl DocsApp {
                     if visible < TABS.len() {
                         let more = ui.menu_button("More tabs", |ui| {
                             for (index, label) in TABS.iter().enumerate().skip(visible) {
-                                if ui.button(*label).clicked() {
+                                let response = ui.add_sized([150., 26.], Button::new(*label));
+                                self.record(&format!("overflow-tab-{label}"), response.rect);
+                                if response.clicked() {
                                     self.tab = index;
                                     self.backstage = false;
                                     self.ribbon_temporary = self.ribbon_collapsed;
@@ -856,8 +879,16 @@ impl DocsApp {
                                 }
                             }
                         });
+                        self.more_tabs_id = Some(more.response.id);
+                        self.record("more-tabs", more.response.rect);
                         if self.tab >= visible && self.ribbon_focus == Some(RibbonFocus::Tab) {
                             more.response.request_focus();
+                        }
+                    } else {
+                        self.more_tabs_id = None;
+                        if self.keytips.level == Some(keytips::Level::Tabs) {
+                            egui::Popup::close_all(ctx);
+                            self.keytips.level = Some(keytips::Level::Root);
                         }
                     }
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
@@ -1556,30 +1587,45 @@ impl DocsApp {
                 }
             });
         } else if self.tab == 8 {
+            self.ribbon_group = Some(0);
             ui.horizontal(|ui| {
-                self.command(ui, "Navigation Pane", Action::Navigation, vec2(135., 35.));
-                self.command(ui, "Canvas Rulers", Action::Rulers, vec2(120., 35.));
-                Self::disabled(
-                    ui,
-                    "Print Layout",
-                    vec2(110., 35.),
-                    "Pagination is not implemented. The document uses a continuous canvas.",
-                );
-                Self::disabled(
-                    ui,
-                    "Read Mode",
-                    vec2(95., 35.),
-                    "Read Mode is not implemented.",
-                );
+                ui.vertical(|ui| {
+                    Self::disabled(
+                        ui,
+                        "Print Layout",
+                        vec2(110., 30.),
+                        "Pagination is not implemented. The document uses a continuous canvas.",
+                    );
+                    Self::disabled(
+                        ui,
+                        "Read Mode",
+                        vec2(110., 30.),
+                        "Read Mode is not implemented.",
+                    );
+                    ui.small("Views");
+                });
+                ui.separator();
+                ui.vertical(|ui| {
+                    self.command(ui, "Navigation Pane", Action::Navigation, vec2(145., 30.));
+                    self.command(ui, "Canvas Rulers", Action::Rulers, vec2(145., 30.));
+                    ui.small("Show");
+                });
+                ui.separator();
+                self.ribbon_group = Some(1);
+                ui.vertical(|ui| {
+                    self.command(ui, "Zoom…", Action::Zoom, vec2(88., 30.));
+                    ui.label(format!("{:.0}%", self.zoom));
+                    ui.small("Zoom");
+                });
             });
-            ui.horizontal(|ui| {
-                ui.label("Zoom");
-                ui.add(egui::Slider::new(&mut self.zoom, 50.0..=200.0).suffix("%"));
-            });
+            self.ribbon_group = None;
         } else if self.tab == 9 {
             ui.label(format!("BreakFree Docs {VERSION}"));
             ui.label("Local .bfdoc documents · no pagination yet");
             ui.label("Ctrl+N/O/S · Ctrl+B/I/U · Ctrl+Shift+P · Ctrl+Z/Y · Ctrl+F");
+            if self.keytips.level == Some(keytips::Level::Tab(9)) {
+                ui.small("Help is informational. Esc returns to tab KeyTips.");
+            }
         } else {
             let groups = placeholder_groups(self.tab);
             let width = ((ui.available_width() - 24.) / groups.len() as f32).min(130.);
@@ -1596,7 +1642,13 @@ impl DocsApp {
                     });
                 }
             });
-            ui.small("Commands in this tab are not implemented yet.");
+            ui.small(
+                if self.keytips.level == Some(keytips::Level::Tab(self.tab)) {
+                    "Commands in this tab are not implemented yet. Esc returns to tab KeyTips."
+                } else {
+                    "Commands in this tab are not implemented yet."
+                },
+            );
         }
     }
 
@@ -1646,7 +1698,7 @@ impl DocsApp {
 
     fn shortcuts(&mut self, ctx: &egui::Context) {
         // Modal drafts must never dispatch edits, Save or New into the background.
-        if self.font_dialog.is_some() {
+        if self.font_dialog.is_some() || self.zoom_dialog.is_some() {
             return;
         }
         self.ribbon_keys(ctx);
@@ -2302,6 +2354,16 @@ impl DocsApp {
     }
 
     fn dialogs(&mut self, ctx: &egui::Context) {
+        if let Some(mut dialog) = self.zoom_dialog.take() {
+            match dialog.show(ctx, &mut self.regions) {
+                ZoomOutcome::Open => self.zoom_dialog = Some(dialog),
+                ZoomOutcome::Cancel => self.focus_document = true,
+                ZoomOutcome::Apply(value) => {
+                    self.zoom = value;
+                    self.focus_document = true;
+                }
+            }
+        }
         if let Some(mut dialog) = self.font_dialog.take() {
             match dialog.show(ctx, &self.body_font, &mut self.regions) {
                 FontDialogOutcome::Open => self.font_dialog = Some(dialog),
@@ -2392,7 +2454,7 @@ impl DocsApp {
 
     pub fn update_ui(&mut self, ctx: &egui::Context) {
         let mut close_requested = ctx.input(|i| i.viewport().close_requested());
-        if close_requested && self.font_dialog.is_some() {
+        if close_requested && (self.font_dialog.is_some() || self.zoom_dialog.is_some()) {
             ctx.send_viewport_cmd(ViewportCommand::CancelClose);
             close_requested = false;
         }

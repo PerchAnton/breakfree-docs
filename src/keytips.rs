@@ -5,6 +5,8 @@ use super::*;
 pub(super) enum Level {
     Root,
     Home,
+    Tab(usize),
+    Tabs,
     File,
     Paste,
     Select,
@@ -27,6 +29,7 @@ enum Destination {
     Search,
     File,
     Options,
+    Tabs,
     Menu(&'static str, Level),
 }
 struct Tip {
@@ -61,25 +64,51 @@ impl DocsApp {
             return Vec::new();
         };
         let mut tips = match level {
-            Level::Root => {
+            Level::Root | Level::Tabs => {
                 let mut tips = vec![
                     Tip::new("F", "tab-File", File),
                     Tip::new("Q", SEARCH_ID, Search),
                 ];
+                for (code, action) in [
+                    ("1", Action::Save),
+                    ("2", Action::Undo),
+                    ("3", Action::Redo),
+                ] {
+                    tips.push(Tip::new(
+                        code,
+                        &format!("qat-{action:?}"),
+                        Destination::Action(action),
+                    ));
+                }
+                tips.push(Tip::new("T", "more-tabs", Destination::Tabs));
                 for (code, index) in [
                     ("H", 0),
                     ("N", 1),
+                    ("JI", 2),
                     ("G", 3),
                     ("P", 4),
                     ("S", 5),
                     ("M", 6),
                     ("R", 7),
                     ("W", 8),
+                    ("Y1", 9),
                 ] {
                     tips.push(Tip::new(code, &format!("tab-{}", TABS[index]), Tab(index)));
                 }
+                if level == Level::Tabs {
+                    tips.retain(|tip| matches!(tip.destination, Tab(_)));
+                    for tip in &mut tips {
+                        tip.anchor = format!("overflow-{}", tip.anchor);
+                    }
+                }
                 tips
             }
+            Level::Tab(8) => vec![
+                Tip::action("K", Action::Navigation),
+                Tip::action("R", Action::Rulers),
+                Tip::action("Q", Action::Zoom),
+            ],
+            Level::Tab(_) => Vec::new(),
             Level::Home => vec![
                 Tip::new(
                     "V",
@@ -126,7 +155,7 @@ impl DocsApp {
             ],
         };
         tips.retain(|tip| match tip.destination {
-            Destination::Action(action) => self.enabled(action),
+            Destination::Action(action) => tip.anchor.starts_with("qat-") || self.enabled(action),
             _ => true,
         });
         tips
@@ -171,7 +200,9 @@ impl DocsApp {
                 self.ribbon_menu_index = None;
                 self.keytips.level = Some(Level::Home);
             }
-            Some(Level::Home | Level::File) => {
+            Some(Level::Home | Level::File | Level::Tab(_) | Level::Tabs) => {
+                egui::Popup::close_all(ctx);
+                self.ribbon_menu_index = None;
                 self.backstage = false;
                 self.ribbon_temporary = false;
                 self.focus_ribbon(ctx, false);
@@ -190,7 +221,16 @@ impl DocsApp {
                 Destination::Tab(index) => {
                     self.tab = index;
                     self.focus_ribbon(ctx, true);
-                    self.keytips.level = (index == 0).then_some(Level::Home);
+                    egui::Popup::close_all(ctx);
+                    self.keytips.level = Some(if index == 0 {
+                        Level::Home
+                    } else {
+                        Level::Tab(index)
+                    });
+                }
+                Destination::Tabs => {
+                    self.keytips.level = Some(Level::Tabs);
+                    self.prepare_keytip_menu(ctx);
                 }
                 Destination::File => {
                     self.leave_ribbon(ctx);
@@ -209,6 +249,9 @@ impl DocsApp {
                     self.settings = true;
                 }
                 Destination::Action(action) => {
+                    if !self.enabled(action) {
+                        return;
+                    }
                     self.stop_keytips(ctx, false);
                     self.execute(action, ctx);
                 }
@@ -229,6 +272,7 @@ impl DocsApp {
         let blocked = !focused
             || self.composing
             || self.font_dialog.is_some()
+            || self.zoom_dialog.is_some()
             || self.pending.is_some()
             || self.error.is_some()
             || events.iter().any(|e| matches!(e, egui::Event::Ime(_)));
@@ -300,7 +344,28 @@ impl DocsApp {
                             }
                         }
                         consumed = true;
-                    } else if plain_alt(*modifiers) && matches!(key, Key::H | Key::F | Key::Q) {
+                    } else if plain_alt(*modifiers)
+                        && self.keytips.level.is_none()
+                        && matches!(
+                            key,
+                            Key::H
+                                | Key::F
+                                | Key::Q
+                                | Key::N
+                                | Key::J
+                                | Key::G
+                                | Key::P
+                                | Key::S
+                                | Key::M
+                                | Key::R
+                                | Key::W
+                                | Key::Y
+                                | Key::T
+                                | Key::Num1
+                                | Key::Num2
+                                | Key::Num3
+                        )
+                    {
                         if !repeat {
                             if self.keytips.level.is_none() {
                                 self.start_keytips(ctx);
@@ -404,6 +469,12 @@ impl DocsApp {
         if egui::Popup::is_any_open(ctx) {
             return;
         }
+        if self.keytips.level == Some(Level::Tabs) {
+            if let Some(id) = self.more_tabs_id {
+                egui::Popup::open_id(ctx, id.with("popup"));
+            }
+            return;
+        }
         let name = match self.keytips.level {
             Some(Level::Paste) => "home-menu-Paste",
             Some(Level::Select) => "home-menu-Select",
@@ -414,7 +485,11 @@ impl DocsApp {
     }
 
     pub(super) fn paint_keytips(&mut self, ctx: &egui::Context) {
-        if self.font_dialog.is_some() || self.pending.is_some() || self.error.is_some() {
+        if self.font_dialog.is_some()
+            || self.zoom_dialog.is_some()
+            || self.pending.is_some()
+            || self.error.is_some()
+        {
             return;
         }
         let painter =
@@ -434,7 +509,7 @@ impl DocsApp {
             };
             let menu = matches!(
                 self.keytips.level,
-                Some(Level::Paste | Level::Select | Level::Editing | Level::File)
+                Some(Level::Paste | Level::Select | Level::Editing | Level::File | Level::Tabs)
             );
             let center = if menu {
                 pos2(anchor.right() - 16., anchor.center().y)
@@ -443,13 +518,29 @@ impl DocsApp {
             };
             let size = vec2(10. + 7. * tip.code.len() as f32, 17.);
             let rect = Rect::from_center_size(center, size);
-            painter.rect_filled(rect, 2., Color32::from_rgb(55, 55, 55));
+            let enabled = match tip.destination {
+                Destination::Action(action) => self.enabled(action),
+                _ => true,
+            };
+            painter.rect_filled(
+                rect,
+                2.,
+                if enabled {
+                    Color32::from_rgb(55, 55, 55)
+                } else {
+                    Color32::from_gray(224)
+                },
+            );
             painter.text(
                 center,
                 Align2::CENTER_CENTER,
                 tip.code,
                 FontId::proportional(12.),
-                Color32::WHITE,
+                if enabled {
+                    Color32::WHITE
+                } else {
+                    Color32::from_gray(125)
+                },
             );
             self.record(&format!("keytip-{}", tip.code), rect);
         }

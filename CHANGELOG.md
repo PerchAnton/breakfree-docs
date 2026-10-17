@@ -3,7 +3,33 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
-## 0.1.0-alpha.7 — Unreleased; submitted for owner approval
+## 0.1.0-alpha.8 — Unreleased; submitted for owner approval
+
+Prepared 2026-10-17. The owner approved alpha.7 in the project chat; that approval
+covers its version number, not a merge, tag or release.
+
+- Add Quick Access Toolbar KeyTips: fixed 1 Save, 2 Undo, 3 Redo, including direct
+  Alt+number entry. Disabled history actions keep dimmed hints without renumbering.
+- Give every tab an entry and retained KeyTip level, including Draw JI and Help
+  Y1. Add a More tabs hint/menu at narrow widths; Escape and resizing restore the
+  root level. Unimplemented commands remain disabled and Help is informational.
+- Add View K Navigation Pane, R Canvas Rulers and Q Zoom routes. Group the real
+  View controls, expose selected toggle states, and retain arrow/group navigation
+  when leaving hints, including the temporary collapsed ribbon.
+- Add a native Zoom draft dialog with percent entry, presets, validation and
+  OK/Cancel. Zoom changes only the view; it cannot change document history or
+  dispatch background commands while the dialog is open.
+- Add regression coverage for quick-access history/save, all tabs, overflow,
+  View state, modal focus and control bounds at synthetic scales. Extend the
+  capture fixture with tab-overflow, View and Zoom states.
+
+Native content v2 and process protocol v1 stay unchanged. Draw/Help/ruler mappings
+are provisional pending a named Word 2024 Windows comparison. Quick-access order
+is fixed in this build; toolbar customization is not implemented. Native Windows
+Alt/AltGr/IME/DPI and exact reference matching remain open. No merge, release,
+dependency or license change is included.
+
+## 0.1.0-alpha.7 — Unreleased; version approved by owner on 2026-10-17
 
 Prepared 2026-10-17. The owner approved alpha.6 in the project chat; that approval
 covers its version number, not a merge, tag or release.

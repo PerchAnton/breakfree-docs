@@ -75,3 +75,11 @@ fallback retains its upstream notices. Full script shaping, color emoji, screen
 readers, native Windows IME and 100/125/150% scaling require explicit evidence.
 If the toolkit fails those gates, replace the GUI/layout while keeping engine,
 native fixtures and protocol tests. Do not reopen the approved Rust decision.
+
+## Alpha.8 view and access-key extension
+
+Quick-access and tab/View KeyTips extend the existing GUI-only routing module.
+Dedicated QAT anchors prevent collisions with File actions. The separate Rust
+`zoom_dialog` module owns only a temporary view-scale draft; acceptance does not
+change the document model or command history. View controls register with the
+same ribbon focus policy as Home. No dependency or engine-format change is needed.
