@@ -158,7 +158,14 @@ clusters. Ignoring case uses Unicode simple folding; Whole words uses Unicode
 word boundaries, including internal apostrophes. Search does not normalize text,
 expand ß to SS, or apply locale-specific casing. Wildcards are not supported.
 Queries above 4,096 UTF-8 bytes show an error without truncation.
-Replace uses the same matches and existing one-operation undo boundary.
+Replace uses the same matches and existing one-operation undo boundary. Replace
+All… opens a read-only preview with match/change counts and before/after excerpts.
+Cancel or Escape leaves the document unchanged; Tab from the initially focused
+Cancel button to Apply, then Enter, applies one transaction. One Undo restores all
+text, formatting and the prior selection. Equal-text matches are skipped without
+changing their mixed formatting. Inserted text takes each match's first character
+style. Over-limit results and stale previews are rejected before editing.
+[Batch replacement semantics](docs/adr/0005-replace-all-preview.md).
 [Navigation details and evidence](docs/UI_SPEC.md#alpha15-search-options).
 The Font launcher opens a dialog for style, size and underline with a preview.
 Only OK applies the draft, together in one undo operation; Cancel/Escape discards

@@ -1,6 +1,10 @@
 //! Shared validated commands: desktop input and tests never implement separate edits.
 use crate::{Result, model::*};
 
+#[path = "replace_all.rs"]
+mod replace_all;
+pub use replace_all::ReplacementPlan;
+
 /// A partial character-format change. Unspecified properties keep each run's value.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct FontPatch {

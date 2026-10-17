@@ -107,6 +107,46 @@ L/E/R/J are implemented. Ctrl/Command+D or Shift+F opens the Font dialog.
 Home/File KeyTips and Alt entry, plus quick-access/tab/View extensions, are described below. Contextual KeyTips,
 native assistive technology and multilingual OS IME remain unverified/incomplete.
 
+## Alpha.16 Replace All preview
+
+Home Replace adds a real Replace All… button below the single-match action. It
+prepares the same case/whole-word results without changing the document. The modal
+shows exact match/change counts, find/replacement summaries, current options,
+original paragraph/context and replacement excerpts. Excerpts are bounded and
+marked with ellipses; the full text is used when applying. Empty replacement is
+explicitly labelled as deletion, and equal-text matches are labelled unchanged.
+
+| Component | Implemented dimensions / behavior |
+| :--- | :--- |
+| Preview | Content width up to 560 DIP, bounded to viewport width minus 48 DIP |
+| Result list | Virtual 66-DIP rows; height 40–260 DIP according to viewport height, all matches accessible |
+| Cancel | 80 × 27 DIP, initially focused; Enter here cancels without edits |
+| Apply | At least 128 × 27 DIP; label contains actual change count; disabled for no-op plans |
+| Keyboard/lifecycle | Tab/Enter activates the focused button; Escape cancels; background commands and native close wait until preview is resolved |
+| Styling | Existing neutral surfaces, body font and violet accent; alpha.13 palette/icons and Home gutters retained |
+
+Inserted text uses each match's first character formatting. Unaffected runs keep
+their styles; unchanged text retains mixed formatting. One Undo restores all
+changes and the prior selection; one Redo restores the complete result. A stale
+preview or invalid/oversized result cannot partially edit the live document.
+[ADR 0005](adr/0005-replace-all-preview.md) specifies paragraph/caret semantics.
+This confirmation preview is a deliberate data-safety design, not a claim of
+pixel-identical Word dialog behavior.
+
+### Alpha.16 native captures
+
+English/light theme, 100% document zoom, macOS backing scale 2:
+
+- [Replace All, 1366 × 900 DIP](screenshots/rust-replace-all-alpha16-macos.png).
+- [Replace All, 640 × 480 DIP](screenshots/rust-replace-all-alpha16-macos-narrow.png).
+
+The harness constructs an original three-paragraph fixture through the shared
+engine and opens preview through real widget keyboard events. All three matches
+and their actual paragraph numbers are shown; no replacement has been applied.
+The row allocation was corrected to the virtual list's declared height. Windows
+100/125/150%, native OS IME/full accessibility and matched Word Windows captures
+remain unverified; no similarity score is assigned.
+
 ## Alpha.15 search options
 
 Preserve the alpha.13 palette/icons and existing Home dimensions. Add two real

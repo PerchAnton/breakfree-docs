@@ -147,6 +147,12 @@ native dialog/IME, accessibility and target-platform reviews are outstanding.
   regressions. Preserve palette/icons; [validation](docs/VALIDATION.md#alpha15-search-options-validation)
   records 110/44 local tests, two captures and native macOS Save/Open evidence.
   This depends on alpha.14 Navigation; full linguistic search/D2 remains open.
+- [x] Alpha.16: add a read-only Replace All preview and one shared-engine undo
+  transaction using alpha.15 query options and original ranges. Validate Unicode,
+  mixed formatting, no-op/stale/oversized plans and keyboard cancellation/apply.
+  [Validation](docs/VALIDATION.md#alpha16-replace-all-validation) records 121/51
+  local tests, two native captures and macOS Save/Open; [ADR 0005](docs/adr/0005-replace-all-preview.md)
+  defines style/paragraph rules. Native Windows acceptance and full D2 remain open.
 - [ ] Verify native bare Alt/AltGr and rapid modifier taps, contextual/future command
   hints, and compare all mappings against the named Windows reference build. Depends on the native Windows/Word environment; no full parity claimed.
 - [ ] Capture Word 2024 Windows and Docs at matched build/language/theme/window,

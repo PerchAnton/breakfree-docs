@@ -21,6 +21,7 @@ impl eframe::App for Capture {
         // Deterministic render fixture, including focus; this does not prove OS input.
         if self.mode.starts_with("keytips")
             || self.mode == "temporary"
+            || self.mode == "replace-all"
             || self.mode.starts_with("navigation")
         {
             input.focused = true;
@@ -61,6 +62,30 @@ impl eframe::App for Capture {
                 }
                 .into(),
             ));
+        }
+        if self.mode == "replace-all" {
+            if self.frames == 2 {
+                input.events.push(egui::Event::Text("BreakFree".into()));
+            }
+            if self.frames == 10 {
+                input.events.push(egui::Event::Text("Local".into()));
+            }
+            let key = match self.frames {
+                4..=9 | 11 | 12 => Some(egui::Key::Tab),
+                13 => Some(egui::Key::Enter),
+                _ => None,
+            };
+            if let Some(key) = key {
+                for pressed in [true, false] {
+                    input.events.push(egui::Event::Key {
+                        key,
+                        physical_key: None,
+                        pressed,
+                        repeat: false,
+                        modifiers: egui::Modifiers::NONE,
+                    });
+                }
+            }
         }
         if self.mode == "navigation-options" {
             let key = match self.frames {
@@ -161,6 +186,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "file",
             "navigation",
             "navigation-options",
+            "replace-all",
             "formatting",
             "font",
             "collapsed",
@@ -182,7 +208,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ]
         .contains(&args[2].as_str())
     {
-        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|formatting|font|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
+        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|formatting|font|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
     }
     let path = std::env::var("BREAKFREE_CAPTURE_TO")
         .map_err(|_| "Set BREAKFREE_CAPTURE_TO to an output PNG path")?;
@@ -201,7 +227,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "examples/Welcome.bfdoc"
         },
     );
-    let session = if args[2] == "file" {
+    let session = if args[2] == "replace-all" {
+        let mut session = Session::default();
+        session.editor.replace(0, 0, "BreakFree Docs\nBreakFree writes locally.\nBreakFree preserves Unicode: Україна Русский e\u{301}.", "Fixture")?;
+        session.editor.emphasize(0, 9, true, true)?;
+        session
+    } else if args[2] == "file" {
         Session::default()
     } else {
         Session::new(storage::load(&fixture)?, Some(fixture))
@@ -259,6 +290,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         app.execute(Action::ZoomWidth, &cc.egui_ctx);
                     }
                 }
+                "replace-all" => app.execute(Action::Replace, &cc.egui_ctx),
                 "file" => app.execute(Action::File, &cc.egui_ctx),
                 "navigation" | "navigation-options" => app.execute(Action::Find, &cc.egui_ctx),
                 "collapsed" | "keytips-root" | "keytips-home" | "keytips-prefix" => {

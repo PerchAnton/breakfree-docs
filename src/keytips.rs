@@ -278,6 +278,7 @@ impl DocsApp {
             ctx.input(|i| (i.modifiers, i.focused, i.events.clone()));
         let blocked = !focused
             || self.composing
+            || self.replace_all_dialog.is_some()
             || self.font_dialog.is_some()
             || self.zoom_dialog.is_some()
             || self.quick_reset
@@ -497,7 +498,8 @@ impl DocsApp {
     }
 
     pub(super) fn paint_keytips(&mut self, ctx: &egui::Context) {
-        if self.font_dialog.is_some()
+        if self.replace_all_dialog.is_some()
+            || self.font_dialog.is_some()
             || self.zoom_dialog.is_some()
             || self.quick_reset
             || self.quick_order.is_some()

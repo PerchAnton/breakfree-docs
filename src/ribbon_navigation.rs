@@ -146,7 +146,8 @@ impl DocsApp {
     }
 
     pub(super) fn ribbon_keys(&mut self, ctx: &egui::Context) {
-        if self.pending.is_some()
+        if self.replace_all_dialog.is_some()
+            || self.pending.is_some()
             || self.error.is_some()
             || self.zoom_dialog.is_some()
             || self.quick_reset
@@ -444,6 +445,7 @@ impl DocsApp {
 
     pub(super) fn finish_ribbon_focus(&mut self, ctx: &egui::Context) {
         if self.backstage
+            || self.replace_all_dialog.is_some()
             || self.font_dialog.is_some()
             || self.zoom_dialog.is_some()
             || self.quick_reset

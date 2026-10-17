@@ -137,3 +137,10 @@ inventory record upstream licenses. No implementation source is vendored and no
 project license is selected. Full distribution review remains open. Search options
 are neither document content nor saved preferences; replace-all, locale tailoring,
 normalization and cross-launch search settings remain separate work.
+
+## Alpha.16 batch replacement
+
+[ADR 0005](0005-replace-all-preview.md) adds an immutable prepared replacement
+transaction to `commands`. `gui::replace_all_dialog` only displays context and
+collects confirmation. Document state, validation and the single history boundary
+remain in the same engine used by tests. Palette/icons and schemas are unchanged.

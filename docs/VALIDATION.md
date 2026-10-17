@@ -8,20 +8,20 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.15**. Earlier capture/CI evidence retains its
+Current local checkpoint: **0.1.0-alpha.16**. Earlier capture/CI evidence retains its
 original scope; this iteration does not establish native Windows behavior.
 
 | Local check | Observed result |
 | :--- | :--- |
-| `cargo test --locked` | 110 passed: 23 engine/storage/presentation, 8 search, 9 preferences, 4 CLI subprocess and 66 actual egui widget event tests; no skipped tests |
-| `cargo test --locked --no-default-features` | 44 passed; preferences, core/search and CLI build without GUI dependencies |
+| `cargo test --locked` | 121 passed: 23 engine/storage/presentation, 8 search, 7 batch replacement, 9 preferences, 4 CLI subprocess and 70 actual egui widget event tests; no skipped tests |
+| `cargo test --locked --no-default-features` | 51 passed; preferences, core/search/batch replacement and CLI build without GUI dependencies |
 | `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
 | `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
-| Copied executable outside checkout | Alpha.15 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
+| Copied executable outside checkout | Alpha.16 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
 | Repository references, contract and artwork | `python3 tools/check_repository.py` passed; approved logo embedded directly and archive copy byte-identical |
 | Workflow YAML / whitespace | Ruby YAML parse and `git diff --check` passed |
-| Native rendering | Alpha.15 search options at 1366 × 900 / 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha15-native-captures). Earlier evidence retains its version context |
-| Native macOS interaction | Alpha.15: keyboard Match case/Whole words, Escape, Home Replace, Undo/Redo, system Save/Open and exact Unicode/bold v2 readback passed in an isolated profile; clean close passed. Earlier evidence retains its version context |
+| Native rendering | Alpha.16 Replace All preview at 1366 × 900 / 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha16-native-captures). Earlier evidence retains its version context |
+| Native macOS interaction | Alpha.16: keyboard preview/Cancel/Apply, one-step Undo/Redo, system Save/Open and exact Unicode/bold v2 readback passed in an isolated profile; clean close passed. Earlier evidence retains its version context |
 | Synthetic DPI | Actual widgets at 1/1.25/1.5 scale and 960/1366/1920 physical widths; ribbon/group/workspace/status bounds and collapse assertions passed; 27 additional width/scale combinations check individual Home control containment/nonoverlap and title/search/window bounds |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
@@ -56,6 +56,42 @@ widget tests cover wide/minimum-width Grow/Shrink, composition disablement,
 Paste/Find/Select menus, Escape cancellation and working overflow. Strict geometry
 checks now include menu triggers and the More button. The initial 640-DIP budget
 failure was resolved by narrowing the overflow Font group, keeping the assertions.
+
+## Alpha.16 Replace All validation
+
+All 121 full tests pass (79 library, 4 CLI, 23 engine, 8 search, 7 batch
+replacement); 51 pass without desktop. Seven new core tests cover read-only
+preparation, exact mixed styles/selection/typing through one undo/redo, native v2
+roundtrip, deletion and paragraph alignment, equal-text no-ops retaining redo,
+invalid/overlapping/grapheme-splitting ranges, rejected controls/oversized output,
+stale text or formatting, 50,000 matches, nonrecursive growing replacements and
+combining-character output carets. Four added actual-widget tests cover initial
+Cancel focus, Enter/Escape cancellation, Tab/Enter Apply, background shortcut and
+close guards, stale/oversized previews, no-op disablement and replacement-field
+IME confirmation. Nine physical size/scale cases check modal/button bounds and
+virtual-row height. Completion notices clear after subsequent editor actions.
+
+Two native macOS captures inspect the preview at 1366 × 900 and 640 × 480 DIP,
+backing scale 2. Visual inspection found and corrected a virtual-row height
+mismatch; assertions now check the actual 66-DIP row allocation. Palette, original
+icons and Home spacing are unchanged. Fmt, normal/capture Clippy with warnings
+denied, locked normal release builds, repository checks and isolated information
+CLI checks pass. No dependency or document/protocol/settings schema changed.
+
+A normal release app in an isolated profile pasted Ukrainian, Russian, English and
+combining text in two paragraphs, applied Bold, and used keyboard Match case off /
+Whole words on. Replace All preview showed three original matches and three
+changes without changing the document. Initial Enter cancelled; reopening and
+Tab/Enter applied all three. One QAT Undo restored the original, and Redo restored
+all replacements. System Save/Open and separate JSON assertions confirmed exact
+text, bold runs and native v2; reopen reset undo/redo and clean close passed. The
+subsequent completion-notice cleanup is covered by the widget regression and the
+rebuilt binary. No user profile or document was changed.
+
+This is bounded plain-text context, not a full rich-text diff or per-match choice.
+Native Windows 100/125/150%, physical non-ASCII typing, OS IME, full accessibility
+and paired Word 2024 comparison remain unverified. Synthetic scales and CI do not
+substitute for those gates.
 
 ## Alpha.15 search options validation
 

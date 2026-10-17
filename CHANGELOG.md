@@ -3,7 +3,32 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
-## 0.1.0-alpha.15 — Unreleased; submitted for owner approval
+## 0.1.0-alpha.16 — Unreleased; submitted for owner approval
+
+Prepared 2026-10-17. The owner approved alpha.15 in the project chat. Preserve the
+approved palette, original vector icons and Home spacing.
+
+- Add Replace All from Home Replace with a modal preview of real match/change
+  counts, paragraph context and replacement text. Cancel/Escape leaves content
+  untouched; initial focus is Cancel. Apply commits exactly the prepared result.
+- Build the validated result in the GUI-independent command engine, using original
+  match ranges and each match's first-character style. Keep unaffected formatting;
+  equal-text matches preserve mixed formatting and consume no history.
+- Record all changes as one undo/redo operation. Reject stale previews, invalid
+  ranges, unsupported control characters and oversized results before editing.
+  Do not rescan inserted text or create per-match history entries.
+- Block background commands/close while preview is open and guard replacement IME
+  confirmation. Virtual preview rows and bounded controls adapt to window size.
+- Add core and widget regressions for Unicode, mixed styles, paragraph operations,
+  cancellation, keyboard Apply, stale/failed/no-op transactions and dense matches.
+- Clear the completion notice after later editor actions. Validate 121 full / 51
+  core-only tests, two native preview captures and macOS keyboard/Save/Open.
+
+No dependency, document/protocol/settings schema or project-license change.
+Native Windows/IME and matched Word comparison remain separate acceptance gates.
+Version approval does not authorize a merge, tag or release.
+
+## 0.1.0-alpha.15 — Unreleased; version approved 2026-10-17
 
 Prepared 2026-10-17. The owner approved alpha.14 in the project chat. Preserve
 alpha.13 colors, original vector icons and the Home group spacing.

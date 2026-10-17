@@ -54,7 +54,16 @@ impl DocsApp {
                 } else {
                     self.find_composing = false;
                 }
-                let ready = !self.composing && !self.find_composing && !ime_event;
+                if ui.memory(|m| m.has_focus(Id::new("replace-text"))) {
+                    ui.input(|i| for event in &i.events {
+                        match event {
+                            egui::Event::Ime(egui::ImeEvent::Enabled | egui::ImeEvent::Preedit(_)) => self.replace_composing = true,
+                            egui::Event::Ime(egui::ImeEvent::Commit(_) | egui::ImeEvent::Disabled) => self.replace_composing = false,
+                            _ => {}
+                        }
+                    });
+                } else { self.replace_composing = false; }
+                let ready = !self.composing && !self.find_composing && !self.replace_composing && !ime_event && self.replace_all_dialog.is_none();
                 let mut direction = None;
                 if focused && ready {
                     ui.input_mut(|i| {
@@ -104,6 +113,7 @@ impl DocsApp {
                 }
                 let mut text = self.session.editor.document.text();
                 let mut results = self.find_query.search(&text);
+                if changed { self.replace_all_notice = None; }
                 if changed && ready {
                     self.find_scroll = None;
                     if !results.matches.is_empty() {
@@ -159,6 +169,16 @@ impl DocsApp {
                             self.select_find_result(&results, index);
                         }
                     }
+                    let preview = ui.add_enabled(ready && !results.matches.is_empty(), Button::new("Replace All…"))
+                        .on_hover_text("Preview all replacements before applying one undoable change.");
+                    self.record("find-replace-all", preview.rect);
+                    if preview.clicked() {
+                        match ReplaceAllDialog::new(&self.session.editor, &self.find, &self.replacement, self.find_options) {
+                            Ok(dialog) => { self.replace_all_dialog = Some(dialog); self.replace_all_notice = None; self.focus_document = false; }
+                            Err(error) => self.error = Some(error),
+                        }
+                    }
+                    if let Some(notice) = &self.replace_all_notice { ui.small(notice); }
                 }
                 ui.add_space(4.);
                 ui.small(if self.find_options.match_case { "Literal text · case sensitive" } else { "Literal text · ignore case" });

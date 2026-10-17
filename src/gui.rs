@@ -18,7 +18,10 @@ use std::path::PathBuf;
 
 #[path = "font_dialog.rs"]
 mod font_dialog;
+#[path = "replace_all_dialog.rs"]
+mod replace_all_dialog;
 use font_dialog::{FontDialog, FontDialogOutcome};
+use replace_all_dialog::{ReplaceAllDialog, ReplaceAllOutcome};
 
 #[path = "ribbon_navigation.rs"]
 mod ribbon_navigation;
@@ -223,6 +226,9 @@ pub struct DocsApp {
     find_composing: bool,
     scroll_to_selection: bool,
     replace_mode: bool,
+    replace_composing: bool,
+    replace_all_dialog: Option<ReplaceAllDialog>,
+    replace_all_notice: Option<String>,
     body_font: String,
     icon: Option<egui::TextureHandle>,
     focus_zone: usize,
@@ -329,6 +335,9 @@ impl DocsApp {
             find_composing: false,
             scroll_to_selection: false,
             replace_mode: false,
+            replace_composing: false,
+            replace_all_dialog: None,
+            replace_all_notice: None,
             body_font: font,
             icon,
             focus_zone: 0,
@@ -343,7 +352,8 @@ impl DocsApp {
         });
     }
     fn enabled(&self, action: Action) -> bool {
-        if self.font_dialog.is_some()
+        if self.replace_all_dialog.is_some()
+            || self.font_dialog.is_some()
             || self.zoom_dialog.is_some()
             || self.quick_reset
             || self.quick_order.is_some()
@@ -395,6 +405,7 @@ impl DocsApp {
         }
     }
     fn sync_view(&mut self) {
+        self.replace_all_notice = None;
         self.buffer = self.session.editor.document.text();
         let (a, b) = self.session.editor.selection;
         self.cursor_override = Some(CCursorRange::two(CCursor::new(b), CCursor::new(a)));
@@ -1731,7 +1742,8 @@ impl DocsApp {
 
     fn shortcuts(&mut self, ctx: &egui::Context) {
         // Modal drafts must never dispatch edits, Save or New into the background.
-        if self.font_dialog.is_some()
+        if self.replace_all_dialog.is_some()
+            || self.font_dialog.is_some()
             || self.zoom_dialog.is_some()
             || self.quick_reset
             || self.quick_order.is_some()
@@ -2348,6 +2360,32 @@ impl DocsApp {
                 }
             }
         }
+        if let Some(mut dialog) = self.replace_all_dialog.take() {
+            match dialog.show(ctx, &mut self.regions) {
+                ReplaceAllOutcome::Open => self.replace_all_dialog = Some(dialog),
+                ReplaceAllOutcome::Cancel => {
+                    self.focus_document = false;
+                    self.focus_find = true;
+                }
+                ReplaceAllOutcome::Apply => {
+                    let result = self.session.editor.apply_replace_all(dialog.plan);
+                    self.sync_view();
+                    match result {
+                        Ok(count) => {
+                            self.replace_all_notice = Some(format!(
+                                "Replaced {count} match{}.",
+                                if count == 1 { "" } else { "es" }
+                            ))
+                        }
+                        Err(error) => self.error = Some(error),
+                    }
+                    self.scroll_to_selection = true;
+                    self.focus_document = false;
+                    self.focus_find = true;
+                    self.find_scroll = None;
+                }
+            }
+        }
         if self.pending.is_some() {
             egui::Modal::new(Id::new("unsaved-changes")).show(ctx, |ui| {
                 ui.set_width(380.);
@@ -2430,7 +2468,8 @@ impl DocsApp {
     pub fn update_ui(&mut self, ctx: &egui::Context) {
         let mut close_requested = ctx.input(|i| i.viewport().close_requested());
         if close_requested
-            && (self.font_dialog.is_some()
+            && (self.replace_all_dialog.is_some()
+                || self.font_dialog.is_some()
                 || self.zoom_dialog.is_some()
                 || self.quick_reset
                 || self.quick_order.is_some())

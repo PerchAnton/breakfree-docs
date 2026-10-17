@@ -498,6 +498,7 @@ fn navigation_controls_fit_narrow_and_scaled_windows() {
                 "find-next",
                 "find-previous",
                 "find-replace",
+                "find-replace-all",
             ] {
                 let rect = app.regions.iter().find(|r| r.name == name).unwrap().rect;
                 assert!(
@@ -3266,6 +3267,228 @@ fn oversized_search_is_reported_without_replacing_or_truncating_input() {
     assert!(app.find_query.error().is_some());
     assert_eq!(app.find.len(), 4098);
     click_region(&ctx, &mut app, "find-replace");
+    assert_eq!(app.session.editor.document, before);
+    assert_eq!(app.session.editor.undo_stack.len(), 1);
+}
+
+#[test]
+fn replace_all_preview_cancel_keyboard_apply_and_single_undo_are_real() {
+    let (ctx, mut app) = setup();
+    app.session
+        .editor
+        .replace(0, 0, "cat CAT cats\nУкраїна e\u{301}", "Input")
+        .unwrap();
+    app.session.editor.emphasize(0, 3, true, true).unwrap();
+    app.sync_view();
+    app.execute(Action::Replace, &ctx);
+    app.find = "cat".into();
+    app.replacement = "ї".into();
+    app.find_options = crate::search::Options {
+        match_case: false,
+        whole_words: true,
+    };
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    let original = app.session.editor.document.clone();
+    let selection = app.session.editor.selection;
+    let history = app.session.editor.undo_stack.len();
+    click_region(&ctx, &mut app, "find-replace-all");
+    assert_eq!(
+        app.replace_all_dialog.as_ref().unwrap().plan.change_count(),
+        2
+    );
+    assert_eq!(app.session.editor.document, original);
+    assert_eq!(app.session.editor.selection, selection);
+    // Initial focus is Cancel: Enter must not accidentally replace the document.
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Enter, false)],
+        [1366., 900.],
+        1.,
+    );
+    assert!(app.replace_all_dialog.is_none());
+    assert_eq!(app.session.editor.document, original);
+    click_region(&ctx, &mut app, "find-replace-all");
+    for command in [Key::B, Key::Z, Key::N, Key::S] {
+        frame(&ctx, &mut app, vec![key(command, true)], [1366., 900.], 1.);
+    }
+    assert_eq!(app.session.editor.document, original);
+    assert_eq!(app.session.editor.undo_stack.len(), history);
+    assert!(app.pending.is_none());
+    assert!(app.session.path.is_none());
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Escape, false)],
+        [1366., 900.],
+        1.,
+    );
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    assert!(app.replace_all_dialog.is_none());
+    assert!(ctx.memory(|m| m.has_focus(Id::new("find-text"))));
+    click_region(&ctx, &mut app, "find-replace-all");
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Tab, false)],
+        [1366., 900.],
+        1.,
+    );
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Enter, false)],
+        [1366., 900.],
+        1.,
+    );
+    assert!(app.replace_all_dialog.is_none());
+    let after = app.session.editor.document.clone();
+    assert_eq!(after.text(), "ї ї cats\nУкраїна e\u{301}");
+    assert!(after.paragraphs[0].styles[0].bold);
+    assert_eq!(app.session.editor.undo_stack.len(), history + 1);
+    assert_eq!(
+        app.replace_all_notice.as_deref(),
+        Some("Replaced 2 matches.")
+    );
+    app.execute(Action::Undo, &ctx);
+    assert!(app.replace_all_notice.is_none());
+    assert_eq!(app.session.editor.document, original);
+    app.execute(Action::Redo, &ctx);
+    assert_eq!(app.session.editor.document, after);
+}
+
+#[test]
+fn replace_all_preview_stale_and_size_errors_preserve_current_document() {
+    let (ctx, mut app) = setup();
+    app.session.editor.replace(0, 0, "a a", "Input").unwrap();
+    app.sync_view();
+    app.execute(Action::Replace, &ctx);
+    app.find = "a".into();
+    app.replacement = "b".into();
+    click_region(&ctx, &mut app, "find-replace-all");
+    app.session.editor.emphasize(0, 1, true, true).unwrap();
+    let current = app.session.editor.document.clone();
+    let count = app.session.editor.undo_stack.len();
+    click_region(&ctx, &mut app, "replace-all-apply");
+    assert!(app.error.as_ref().unwrap().contains("document changed"));
+    assert_eq!(app.session.editor.document, current);
+    assert_eq!(app.session.editor.undo_stack.len(), count);
+    click_region(&ctx, &mut app, "error-ok");
+    app.replacement = "x".repeat(crate::model::MAX_CHARACTERS);
+    click_region(&ctx, &mut app, "find-replace-all");
+    assert!(app.error.as_ref().unwrap().contains("limit"));
+    assert!(app.replace_all_dialog.is_none());
+    assert_eq!(app.session.editor.document, current);
+    assert_eq!(app.session.editor.undo_stack.len(), count);
+}
+
+#[test]
+fn replace_all_preview_bounds_virtual_rows_noops_and_close_guard() {
+    for dpi in [1., 1.25, 1.5] {
+        for size in [[640., 480.], [1024., 768.], [1366., 900.]] {
+            let (ctx, mut app) = setup();
+            app.session
+                .editor
+                .replace(0, 0, &"Україна e\u{301}\n".repeat(80), "Input")
+                .unwrap();
+            app.sync_view();
+            app.replace_all_dialog = Some(
+                ReplaceAllDialog::new(
+                    &app.session.editor,
+                    "Україна",
+                    "Україна",
+                    Default::default(),
+                )
+                .unwrap(),
+            );
+            for _ in 0..4 {
+                frame(&ctx, &mut app, vec![], size, dpi);
+            }
+            let modal = app
+                .regions
+                .iter()
+                .find(|r| r.name == "replace-all-preview")
+                .unwrap()
+                .rect;
+            assert!(
+                Rect::from_min_size(Pos2::ZERO, vec2(size[0] / dpi, size[1] / dpi))
+                    .expand(1.)
+                    .contains_rect(modal),
+                "{size:?}/{dpi}: {modal:?}"
+            );
+            for name in ["replace-all-cancel", "replace-all-apply"] {
+                assert!(
+                    modal.contains_rect(app.regions.iter().find(|r| r.name == name).unwrap().rect)
+                );
+            }
+            assert!(
+                app.regions
+                    .iter()
+                    .filter(|r| r.name.starts_with("replace-all-row-"))
+                    .count()
+                    < 80
+            );
+            assert_eq!(
+                app.replace_all_dialog.as_ref().unwrap().plan.change_count(),
+                0
+            );
+            let mut input = egui::RawInput {
+                screen_rect: Some(Rect::from_min_size(
+                    Pos2::ZERO,
+                    vec2(size[0] / dpi, size[1] / dpi),
+                )),
+                ..Default::default()
+            };
+            input
+                .viewports
+                .get_mut(&egui::ViewportId::ROOT)
+                .unwrap()
+                .events
+                .push(egui::ViewportEvent::Close);
+            let output = ctx.run(input, |ctx| app.update_ui(ctx));
+            assert!(
+                output.viewport_output[&egui::ViewportId::ROOT]
+                    .commands
+                    .contains(&ViewportCommand::CancelClose)
+            );
+            assert!(app.replace_all_dialog.is_some());
+            assert_eq!(app.session.editor.undo_stack.len(), 1);
+        }
+    }
+}
+
+#[test]
+fn replacement_ime_cannot_open_replace_all_during_confirmation() {
+    let (ctx, mut app) = setup();
+    app.session.editor.replace(0, 0, "a a", "Input").unwrap();
+    app.sync_view();
+    app.execute(Action::Replace, &ctx);
+    app.find = "a".into();
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    ctx.memory_mut(|m| m.request_focus(Id::new("replace-text")));
+    frame(
+        &ctx,
+        &mut app,
+        vec![
+            egui::Event::Ime(egui::ImeEvent::Enabled),
+            egui::Event::Ime(egui::ImeEvent::Preedit("ї".into())),
+        ],
+        [1366., 900.],
+        1.,
+    );
+    assert!(app.replace_composing);
+    let before = app.session.editor.document.clone();
+    frame(
+        &ctx,
+        &mut app,
+        vec![
+            egui::Event::Ime(egui::ImeEvent::Commit("ї".into())),
+            key(Key::Enter, false),
+        ],
+        [1366., 900.],
+        1.,
+    );
+    assert!(app.replace_all_dialog.is_none());
     assert_eq!(app.session.editor.document, before);
     assert_eq!(app.session.editor.undo_stack.len(), 1);
 }
