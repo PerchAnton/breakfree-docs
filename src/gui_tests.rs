@@ -2571,3 +2571,43 @@ fn toolbar_save_failure_is_visible_and_retry_persists_without_changing_document(
     let (_, reopened) = setup_preferences(&path);
     assert_eq!(app.quick_access, reopened.quick_access);
 }
+
+#[test]
+fn failed_reset_retry_keeps_backup_requirement_and_current_toolbar_draft() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("settings.json");
+    let lock = dir.path().join(".toolbar-settings.lock");
+    let (ctx, mut app) = setup_preferences(&path);
+    click_region(&ctx, &mut app, "qat-options");
+    click_region(&ctx, &mut app, "qat-toggle-Open");
+    let original = std::fs::read(&path).unwrap();
+    std::fs::write(&lock, b"busy").unwrap();
+    click_region(&ctx, &mut app, "qat-options");
+    click_region(&ctx, &mut app, "qat-reset");
+    click_region(&ctx, &mut app, "qat-reset-confirm");
+    assert!(app.preferences_reset_pending);
+    assert!(app.error.is_some());
+    assert_eq!(std::fs::read(&path).unwrap(), original);
+    click_region(&ctx, &mut app, "error-ok");
+    // A further toolbar change must not turn a failed reset into a normal save.
+    click_region(&ctx, &mut app, "qat-options");
+    click_region(&ctx, &mut app, "qat-toggle-New");
+    assert!(app.error.is_some());
+    assert!(app.preferences_reset_pending);
+    click_region(&ctx, &mut app, "error-ok");
+    std::fs::remove_file(lock).unwrap();
+    click_region(&ctx, &mut app, "qat-options");
+    click_region(&ctx, &mut app, "qat-retry");
+    assert!(app.error.is_none());
+    assert!(!app.preferences_reset_pending);
+    assert_eq!(
+        std::fs::read(app.preferences_backup.as_ref().unwrap()).unwrap(),
+        original
+    );
+    let (_, reopened) = setup_preferences(&path);
+    assert_eq!(
+        reopened.quick_access,
+        [Action::Save, Action::Undo, Action::Redo, Action::New]
+    );
+    assert!(!app.session.dirty());
+}

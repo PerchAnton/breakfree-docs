@@ -67,7 +67,8 @@ Reset restores Save/Undo/Redo above the ribbon and first keeps any readable orig
 bytes in a unique sibling `toolbar-settings-backup-*.json`, including invalid or
 future input. The backup is flushed and retained before replacement. It is not
 automatically deleted. If backup or replacement fails, show the error and retain
-the previous file; defaults apply only to this window. Oversized/unreadable files,
+the previous file; defaults apply only to this window. Retry Saving (or a subsequent
+customization) retains the confirmed reset's backup requirement until a write succeeds. Oversized/unreadable files,
 directories and symbolic links are refused even on reset. Move them aside manually
 with Docs closed if necessary. This is preferences backup, not document recovery.
 

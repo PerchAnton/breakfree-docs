@@ -13,7 +13,7 @@ original scope; this iteration does not establish native Windows behavior.
 
 | Local check | Observed result |
 | :--- | :--- |
-| `cargo test --locked` | 88 passed: 23 engine/storage/presentation, 9 preferences, 4 CLI subprocess and 52 actual egui widget event tests; no skipped tests |
+| `cargo test --locked` | 89 passed: 23 engine/storage/presentation, 9 preferences, 4 CLI subprocess and 53 actual egui widget event tests; no skipped tests |
 | `cargo test --locked --no-default-features` | 36 passed; preferences, core and CLI build without GUI dependencies |
 | `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
 | `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
@@ -66,11 +66,13 @@ cooperating-writer lock/stale-window conflict, and failures after partial write,
 before sync/replacement and before backup. Originals remain byte-identical; normal
 failure cleanup allows retry. Reset retains exact original bytes before replacement.
 
-Four added widget tests drive the actual customization/retry/reset controls and a
+Five added widget tests drive the actual customization/retry/reset controls and a
 fresh `DocsApp` reading the saved profile. They assert order/placement/numeric hints,
 unchanged Unicode document/selection/history, explicit reset cancellation and
 confirmation, blocked background commands, corrupted-load warning/recovery and
 reset-button containment at 640 × 480 DIP with synthetic 1/1.25/1.5 scales. The
+reset-retry regression preserves the backup obligation even after further failed
+customization, then saves the current draft and exact original backup. The
 additional subprocess test proves information/rejected arguments neither create
 missing preferences nor modify/read-error a corrupt profile. Windows CI omits the
 Unix-specific symlink case; native Windows link behavior is not asserted.
@@ -88,6 +90,7 @@ a temporary review app bundle with an isolated `BREAKFREE_DOCS_CONFIG_DIR`:
 | Make isolated settings read-only; enable New | Visible reason/path, warning and Retry Saving; original default settings unchanged |
 | Restore write permission; Retry Saving | Warning clears; current toolbar saved with appended New |
 | Restart with damaged settings; dismiss error; Reset, Tab, Enter | Defaults usable, original damaged bytes retained exactly in backup; settings valid again |
+| Final binary: confirmed Reset with injected busy lock; dismiss error, remove test lock, Retry Saving | Original bytes preserved on failure; retry creates exact original backup before saving defaults, and menu reports Settings backup kept |
 
 Independent decoding confirmed settings and backup contents and all document runs.
 Document SHA-256:

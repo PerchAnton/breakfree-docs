@@ -14,9 +14,11 @@ covers its version number, not a merge, tag or release.
 - Add confirmed Reset with a retained original-file backup, visible load/save
   errors, a menu warning and Retry Saving. Preserve corrupt/future files and
   tested failed writes; reject stale edits from another window under a shared lock.
+  A retry after failed reset retains the backup requirement, including after further
+  current-window customization.
 - Retain the compact native toolbar geometry, ordered numeric hints and keyboard
   menu focus. Add a keyboard-accessible reset confirmation with Escape cancellation.
-- Add nine settings tests, four actual-widget regressions and a CLI no-side-effects
+- Add nine settings tests, five actual-widget regressions and a CLI no-side-effects
   test. Verify native macOS restart, failure/retry/reset/backup and Unicode editing,
   undo, Save/Open; inspect three native captures. Document schema and Windows paths.
 

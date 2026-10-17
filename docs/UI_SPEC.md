@@ -121,7 +121,7 @@ This multi-version guidance is not a measured Word 2024 Windows baseline.
 | Customize menu | Minimum width 230; existing checkbox order and 24-high action targets retained. Saved order drives toolbar numeric hints after restart |
 | Reset confirmation | 370-wide content; exact default commands/placement and backup explanation. Tab focuses Reset; Enter/Space activates the focused button; Escape cancels. Background editing/commands and close are blocked until resolved |
 | Error feedback | 430-wide content with reason/path and OK. Menu retains “Not saved · this window only” and Retry Saving; successful retry clears warning |
-| Backup feedback | Menu shows “Defaults restored · backup kept”; tooltip gives the actual backup path |
+| Backup feedback | Menu shows “Settings backup kept”; tooltip gives the actual backup path |
 | Unchanged geometry | 28 × 28 toolbar commands on 30 pitch; 24 × 28 arrow; 32-high below-ribbon strip; same compact Home layout |
 
 [ADR 0004](adr/0004-local-toolbar-preferences.md) defines strict settings v1 and

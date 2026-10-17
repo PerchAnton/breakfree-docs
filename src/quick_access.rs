@@ -70,8 +70,19 @@ impl DocsApp {
     pub(super) fn save_quick_preferences(&mut self) {
         let toolbar = self.toolbar_preferences();
         if let Some(store) = &mut self.preferences {
-            match store.save(&toolbar) {
-                Ok(()) => self.preferences_warning = None,
+            let result = if self.preferences_reset_pending {
+                store.replace_with_backup(&toolbar)
+            } else {
+                store.save(&toolbar).map(|_| None)
+            };
+            match result {
+                Ok(backup) => {
+                    if self.preferences_reset_pending {
+                        self.preferences_backup = backup;
+                        self.preferences_reset_pending = false;
+                    }
+                    self.preferences_warning = None;
+                }
                 Err(e) => self.preferences_failed(e),
             }
         }
@@ -109,15 +120,8 @@ impl DocsApp {
             self.quick_access = DEFAULT.to_vec();
             self.quick_access_below = false;
             self.finish_quick_option(ctx);
-            if let Some(store) = &mut self.preferences {
-                match store.reset() {
-                    Ok(backup) => {
-                        self.preferences_backup = backup;
-                        self.preferences_warning = None;
-                    }
-                    Err(e) => self.preferences_failed(e),
-                }
-            }
+            self.preferences_reset_pending = self.preferences.is_some();
+            self.save_quick_preferences();
         }
     }
 
@@ -247,7 +251,7 @@ impl DocsApp {
             } else if self.preferences.is_some() {
                 ui.small("Applies to all documents");
                 if let Some(path) = &self.preferences_backup {
-                    ui.small("Defaults restored · backup kept")
+                    ui.small("Settings backup kept")
                         .on_hover_text(path.display().to_string());
                 }
             } else {

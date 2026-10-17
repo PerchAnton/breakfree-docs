@@ -193,7 +193,13 @@ impl Store {
     }
     /// Explicit reset preserves any readable original in a unique sibling backup first.
     pub fn reset(&mut self) -> Result<Option<PathBuf>> {
-        self.write(&Toolbar::default(), true, |_| Ok(()))
+        self.replace_with_backup(&Toolbar::default())
+    }
+
+    /// Retrying a confirmed reset must retain its backup requirement, even if the
+    /// user customizes the current-window toolbar after the initial failure.
+    pub fn replace_with_backup(&mut self, toolbar: &Toolbar) -> Result<Option<PathBuf>> {
+        self.write(toolbar, true, |_| Ok(()))
     }
 
     fn write(
