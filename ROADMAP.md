@@ -219,6 +219,13 @@ Test pure model invariants, command/undo round trips, native persistence, malfor
 
 Proposed benchmark fixtures: a short letter; a 100-page report; a 500-page stress document; mixed-script paragraphs; large tables and image-rich reports. These are **test designs, not supported capacity claims**. Establish reference hardware and baseline measurements in D0–D2 before adopting numeric performance budgets. Record cold/warm startup, typing latency, repagination, open/save time and peak memory.
 
+### Next small toolbar increment
+
+- [x] Alpha.9: window-local command visibility, above/below placement, dynamic numeric hints, keyboard focus and reset; real View 100%/width fitting. Local event/native evidence: [validation](docs/VALIDATION.md#alpha9-toolbar-and-view-validation).
+- [ ] Persist toolbar preferences after designing a versioned settings file with safe failed-write handling, reset and unknown-version behavior. Depends on alpha.9 owner review; completion requires restart/roundtrip and failure tests without document changes.
+- [ ] Add explicit command reordering with keyboard-accessible move controls; completion requires unique ordered commands, hint remapping and focus after moves.
+- [ ] Compare both toolbar positions and View against a named Word 2024 Windows build at matched sizes/theme/language and native 100/125/150%; attach paired captures and measured differences. Depends on an available reference environment; no similarity percentage.
+
 ## 6. Work order, evidence and ownership
 
 Critical path: **D0 → D1 → D2 → D3 → D4**. Review features, accessibility and automation can progress in parallel once their model boundaries stabilize. A milestone is complete only with linked tests, fixtures, platform results and maintainer review. Name an accountable owner before starting each milestone; none is assigned by this plan.
@@ -256,3 +263,5 @@ Use public specifications and original test cases, not copied application code. 
 | 2026-10-17 | Owner approved alpha.5; alpha.6 adds temporary ribbon and Home keyboard navigation | 54 full / 26 core-only local tests; native macOS focus/menu/undo/save checks and three captures; Windows/Word/IME and full KeyTips gates remain open |
 | 2026-10-17 | Owner approved alpha.6; alpha.7 adds Alt/F10 and Home/File KeyTips | 61 full / 26 core-only local tests, native macOS sequence/Save/Open smoke and four captures; native bare Alt/AltGr, Windows/Word and remaining KeyTips gates stay open |
 | 2026-10-17 | Owner approved alpha.7; alpha.8 extends QAT/all-tab/View KeyTips and adds a view-only Zoom draft | 68 full / 26 core-only local tests, four captures, native macOS keyboard/Unicode Save/Open; Windows/Word/AltGr/IME and exact mapping review remain open |
+
+| 2026-10-17 | Owner approved alpha.8; alpha.9 adds window-local QAT customization/keyboard focus and compact View with 100%/Canvas Width | 74 full / 26 core-only local tests, four native captures and macOS keyboard/Unicode Save/Open; toolbar persistence/reordering and Windows/Word acceptance remain open |

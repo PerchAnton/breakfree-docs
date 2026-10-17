@@ -24,6 +24,7 @@ impl eframe::App for Capture {
         if self.frames == 2 && self.mode.starts_with("keytips") {
             let mut keys = vec![egui::Key::F10];
             match self.mode.as_str() {
+                "keytips-qat" | "keytips-qat-below" => keys.push(egui::Key::Num0),
                 "keytips-home" => keys.push(egui::Key::H),
                 "keytips-prefix" => keys.extend([egui::Key::H, egui::Key::F]),
                 "keytips-tabs" => keys.push(egui::Key::T),
@@ -32,6 +33,24 @@ impl eframe::App for Capture {
                 _ => {}
             }
             for key in keys {
+                for pressed in [true, false] {
+                    input.events.push(egui::Event::Key {
+                        key,
+                        physical_key: None,
+                        pressed,
+                        repeat: false,
+                        modifiers: egui::Modifiers::NONE,
+                    });
+                }
+            }
+        }
+        if self.mode == "keytips-qat-below" {
+            let key = match self.frames {
+                4..=8 => Some(egui::Key::ArrowDown),
+                10 => Some(egui::Key::Enter),
+                _ => None,
+            };
+            if let Some(key) = key {
                 for pressed in [true, false] {
                     input.events.push(egui::Event::Key {
                         key,
@@ -68,7 +87,7 @@ impl eframe::App for Capture {
         self.frames += 1;
         let now = ctx.input(|i| i.time);
         let started = *self.started.get_or_insert(now);
-        if self.frames >= 8 && now - started >= 0.4 && !self.requested {
+        if self.frames >= 16 && now - started >= 0.4 && !self.requested {
             ctx.send_viewport_cmd(egui::ViewportCommand::Screenshot(Default::default()));
             self.requested = true;
         }
@@ -89,6 +108,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "font",
             "collapsed",
             "temporary",
+            "view",
+            "view-fit",
+            "keytips-qat",
+            "keytips-qat-below",
             "keytips-root",
             "keytips-home",
             "keytips-prefix",
@@ -98,7 +121,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ]
         .contains(&args[2].as_str())
     {
-        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|file|navigation|formatting|font|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
+        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|formatting|font|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
     }
     let path = std::env::var("BREAKFREE_CAPTURE_TO")
         .map_err(|_| "Set BREAKFREE_CAPTURE_TO to an output PNG path")?;
@@ -134,6 +157,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Box::new(move |cc| {
             let mut app = DocsApp::new(session, &cc.egui_ctx);
             match mode.as_str() {
+                "view" | "view-fit" | "keytips-qat-below" => {
+                    app.tab = 8;
+                    if mode == "view-fit" {
+                        app.execute(Action::ZoomWidth, &cc.egui_ctx);
+                    }
+                }
                 "file" => app.execute(Action::File, &cc.egui_ctx),
                 "navigation" => app.navigation = true,
                 "collapsed" | "keytips-root" | "keytips-home" | "keytips-prefix" => {

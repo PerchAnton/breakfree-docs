@@ -83,3 +83,16 @@ Dedicated QAT anchors prevent collisions with File actions. The separate Rust
 `zoom_dialog` module owns only a temporary view-scale draft; acceptance does not
 change the document model or command history. View controls register with the
 same ribbon focus policy as Home. No dependency or engine-format change is needed.
+
+## Alpha.9 toolbar preferences and View layout
+
+The Rust `quick_access` module owns only window-local visibility/order/placement
+and delegates actions to the existing router. Its focus targets share the ribbon
+navigation machinery; dynamic numeric hints reflect the visible order. No settings
+file, new dependency or document schema is introduced. Persistence and an arbitrary
+reordering editor are deferred until their settings lifecycle is designed.
+
+The separate `view_ribbon` module supplies compact native controls. Width fitting
+is a GUI view mode calculated from the actual workspace; manual zoom exits it.
+It is excluded from document history and native serialization. Continuous-canvas
+wording remains explicit until a real pagination layer is implemented.

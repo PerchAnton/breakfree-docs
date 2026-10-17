@@ -3,7 +3,32 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
-## 0.1.0-alpha.8 — Unreleased; submitted for owner approval
+## 0.1.0-alpha.9 — Unreleased; submitted for owner approval
+
+Prepared 2026-10-17. The owner approved alpha.8 in the project chat; that approval
+covers its version number, not a merge, tag or release.
+
+- Add a Quick Access Toolbar menu for New/Open/Save/Undo/Redo visibility, placement
+  above/below the ribbon and reset. Preferences apply to the current window;
+  adding a command appends it. KeyTips follow visible order, including disabled
+  history commands; Alt+0 opens customization.
+- Add keyboard toolbar entry from the tab row, Left/Right navigation that skips
+  unavailable actions, menu navigation and layered Escape. Keep the toolbar
+  accessible when the collapsed ribbon opens temporarily.
+- Rebuild View with compact Views/Show/Zoom groups, aligned checkboxes and original
+  vector controls. Add 100% and a real Canvas Width fit that follows window/pane
+  changes within 50–200%. Manual zoom leaves fit mode; status percentage opens Zoom.
+- Preserve document selection, shared undo/save, native content v2 and protocol v1.
+  Unsupported pagination/view modes remain disabled with explanations.
+- Add six actual-widget regressions, including 18 toolbar/View width/scale cases,
+  and four native captures. Validate the normal macOS binary through keyboard,
+  system Save/Open and independently decoded Unicode/style results.
+
+No toolbar persistence/reordering editor, pagination, Windows visual equivalence,
+new dependency or license change is claimed. Alt+0 and View C are Docs-specific;
+View J and exact reference mappings require Word 2024 Windows acceptance.
+
+## 0.1.0-alpha.8 — Unreleased; version approved by owner on 2026-10-17
 
 Prepared 2026-10-17. The owner approved alpha.7 in the project chat; that approval
 covers its version number, not a merge, tag or release.

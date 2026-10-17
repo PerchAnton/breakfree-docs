@@ -29,6 +29,7 @@ enum Destination {
     Search,
     File,
     Options,
+    QuickOptions,
     Tabs,
     Menu(&'static str, Level),
 }
@@ -69,17 +70,17 @@ impl DocsApp {
                     Tip::new("F", "tab-File", File),
                     Tip::new("Q", SEARCH_ID, Search),
                 ];
-                for (code, action) in [
-                    ("1", Action::Save),
-                    ("2", Action::Undo),
-                    ("3", Action::Redo),
-                ] {
+                for (code, action) in ["1", "2", "3", "4", "5"]
+                    .into_iter()
+                    .zip(self.quick_access.iter().copied())
+                {
                     tips.push(Tip::new(
                         code,
                         &format!("qat-{action:?}"),
                         Destination::Action(action),
                     ));
                 }
+                tips.push(Tip::new("0", "qat-options", Destination::QuickOptions));
                 tips.push(Tip::new("T", "more-tabs", Destination::Tabs));
                 for (code, index) in [
                     ("H", 0),
@@ -107,6 +108,8 @@ impl DocsApp {
                 Tip::action("K", Action::Navigation),
                 Tip::action("R", Action::Rulers),
                 Tip::action("Q", Action::Zoom),
+                Tip::action("J", Action::Zoom100),
+                Tip::action("C", Action::ZoomWidth),
             ],
             Level::Tab(_) => Vec::new(),
             Level::Home => vec![
@@ -244,6 +247,10 @@ impl DocsApp {
                     self.focus_document = false;
                     self.focus_search = true;
                 }
+                Destination::QuickOptions => {
+                    self.stop_keytips(ctx, false);
+                    self.open_quick_options(ctx);
+                }
                 Destination::Options => {
                     self.stop_keytips(ctx, false);
                     self.settings = true;
@@ -361,6 +368,9 @@ impl DocsApp {
                                 | Key::W
                                 | Key::Y
                                 | Key::T
+                                | Key::Num0
+                                | Key::Num4
+                                | Key::Num5
                                 | Key::Num1
                                 | Key::Num2
                                 | Key::Num3

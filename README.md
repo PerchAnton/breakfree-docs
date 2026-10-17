@@ -161,7 +161,9 @@ The white canvas is continuous; pagination, page numbers and print layout are ab
 Status reports real word/paragraph counts and zoom. The ribbon uses compact vector controls, two-row Font/Paragraph groups and
 disabled style previews; it compacts and moves commands into overflow menus as
 the window narrows. File has Home/Options navigation and real document properties.
-The status bar provides zoom out/in and a click-to-reset percentage.
+The status bar provides zoom out/in and a percentage button that opens Zoom.
+View groups real Ruler/Navigation checkboxes, Zoom, 100% and Canvas Width. Width
+fit tracks the window and side panes within 50–200%; manual zoom exits fit mode.
 See [current native screenshots and capture commands](docs/UI_SPEC.md#actual-application-capture).
 
 Ctrl (Command on macOS) + N/O/S, Shift+S, B/I/U, Z/Y or Shift+Z handle file, emphasis
@@ -176,10 +178,16 @@ Alt+Q focuses command search. Tap Alt (release it without another key) or F10 to
 show KeyTips. Then press H for Home: 1/2/3 toggles bold/italic/underline, F then S
 focuses size, F then N opens Font, and A then L/C/R/J aligns. File uses F, then
 N/O/S/A/T for New/Open/Save/Save As/Options. H → E opens narrow-window More.
-Top-level 1/2/3 invokes Save/Undo/Redo on the fixed Quick Access Toolbar (also
-Alt+1/2/3); disabled actions keep their numbers. N/JI/G/P/S/M/R/W/Y1 selects the
+Top-level 1/2/3 invokes Save/Undo/Redo on the default Quick Access Toolbar (also
+Alt+1/2/3). Alt, 0 opens customization: show/hide New/Open/Save/Undo/Redo, move
+the toolbar above/below the ribbon, or reset. New entries append; hints 1–5 follow
+visible order, and disabled actions keep their place. Preferences last for this
+window only. From focused tabs, Up enters the toolbar (Down also works below the
+ribbon); Left/Right skips unavailable actions, Down opens options, Tab returns to
+tabs and Escape backs out. N/JI/G/P/S/M/R/W/Y1 selects the
 other tabs. T opens More tabs when the row overflows. View W → K/R toggles
 Navigation Pane/Canvas Rulers; W → Q opens Zoom with a validated 50–200% draft.
+W → J restores 100%; W → C fits the continuous canvas width.
 Unimplemented tabs explain their limits and retain Escape navigation.
 Backspace removes a prefix; Escape clears it, backs up a level, then restores
 previous focus. Invalid/repeated hint keys cannot enter document text.
@@ -188,10 +196,10 @@ arrows navigate enabled Home/View controls, Ctrl+Left/Right changes groups, Down
 Alt+Down opens dropdowns, Enter/Space activates. Escape closes menu, ribbon and
 focus levels in order. F6/Shift+F6 cycles document, visible panes, status and ribbon. Input events delivered in one widget update form one text undo operation;
 explicit paste and formatting commands have separate boundaries. See the
-[implemented KeyTips and limits](docs/UI_SPEC.md#alpha8-quick-access-and-tab-keytips).
+[implemented KeyTips and limits](docs/UI_SPEC.md#alpha9-quick-access-and-view).
 Bare Alt is implemented and event-tested; native Windows Alt/AltGr, exact Word 2024 mappings and assistive-technology behavior
-remain review gates. Draw/Help/ruler assignments are provisional; quick-access
-customization and unsupported-tab commands remain roadmap work.
+remain review gates. Draw/Help/ruler/100% assignments are provisional; toolbar
+persistence/reordering and unsupported-tab commands remain roadmap work.
 
 ## Check
 

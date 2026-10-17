@@ -4,6 +4,7 @@ use super::*;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) enum RibbonFocus {
     Tab,
+    QuickAccess(String),
     First,
     Control(String),
 }
@@ -14,15 +15,18 @@ pub(super) enum TargetKind {
     Menu,
     Text,
     Preset(FontSize),
+    QuickToggle(Action),
+    QuickPosition,
+    QuickReset,
 }
 
 #[derive(Clone)]
 pub(super) struct RibbonTarget {
     pub(super) name: String,
-    id: Id,
+    pub(super) id: Id,
     pub(super) rect: Rect,
-    group: usize,
-    kind: TargetKind,
+    pub(super) group: usize,
+    pub(super) kind: TargetKind,
 }
 
 impl DocsApp {
@@ -102,6 +106,23 @@ impl DocsApp {
                 self.ribbon_menu_index = Some(0);
             }
             TargetKind::Text => self.execute(Action::FontSize, ctx),
+            TargetKind::QuickToggle(action) => {
+                if self.quick_access.contains(&action) {
+                    self.quick_access.retain(|a| *a != action);
+                } else {
+                    self.quick_access.push(action);
+                }
+                self.finish_quick_option(ctx);
+            }
+            TargetKind::QuickPosition => {
+                self.quick_access_below = !self.quick_access_below;
+                self.finish_quick_option(ctx);
+            }
+            TargetKind::QuickReset => {
+                self.quick_access = quick_access::DEFAULT.to_vec();
+                self.quick_access_below = false;
+                self.finish_quick_option(ctx);
+            }
         }
     }
 
@@ -119,14 +140,14 @@ impl DocsApp {
                 .then(|| i.pointer.interact_pos())
                 .flatten()
         }) {
-            let inside = self
-                .regions
+            let inside = self.regions.iter().any(|r| {
+                (matches!(r.name.as_str(), "ribbon" | "tabs" | "quick-access-menu")
+                    || r.name.starts_with("qat-"))
+                    && r.rect.contains(pos)
+            }) || self
+                .ribbon_menu_targets
                 .iter()
-                .any(|r| matches!(r.name.as_str(), "ribbon" | "tabs") && r.rect.contains(pos))
-                || self
-                    .ribbon_menu_targets
-                    .iter()
-                    .any(|r| r.rect.contains(pos));
+                .any(|r| r.rect.contains(pos));
             if !inside {
                 if self.ribbon_temporary {
                     self.commit_font_size_input();
@@ -249,7 +270,46 @@ impl DocsApp {
             }
             return;
         }
+        if let RibbonFocus::QuickAccess(name) = &focus {
+            let targets = self.quick_access_targets.clone();
+            let index = targets.iter().position(|t| t.name == *name).unwrap_or(0);
+            for (key, forward) in [(Key::ArrowLeft, false), (Key::ArrowRight, true)] {
+                if !targets.is_empty() && ctx.input_mut(|i| i.consume_key(Modifiers::NONE, key)) {
+                    let next =
+                        (index + if forward { 1 } else { targets.len() - 1 }) % targets.len();
+                    self.ribbon_focus = Some(RibbonFocus::QuickAccess(targets[next].name.clone()));
+                    return;
+                }
+            }
+            if ctx.input_mut(|i| {
+                i.consume_key(Modifiers::NONE, Key::Tab)
+                    || i.consume_key(Modifiers::SHIFT, Key::Tab)
+            }) {
+                self.ribbon_focus = Some(RibbonFocus::Tab);
+            } else if ctx.input_mut(|i| {
+                i.consume_key(Modifiers::NONE, Key::ArrowDown)
+                    || i.consume_key(Modifiers::ALT, Key::ArrowDown)
+            }) {
+                self.open_quick_options(ctx);
+            } else if ctx.input_mut(|i| {
+                i.consume_key(Modifiers::NONE, Key::Enter)
+                    || i.consume_key(Modifiers::NONE, Key::Space)
+            }) && let Some(target) = targets.get(index)
+            {
+                self.activate_target(target, ctx);
+            }
+            return;
+        }
         if focus == RibbonFocus::Tab {
+            if ctx.input_mut(|i| {
+                i.consume_key(Modifiers::NONE, Key::ArrowUp)
+                    || (self.quick_access_below && i.consume_key(Modifiers::NONE, Key::ArrowDown))
+            }) {
+                if let Some(target) = self.quick_access_targets.first() {
+                    self.ribbon_focus = Some(RibbonFocus::QuickAccess(target.name.clone()));
+                }
+                return;
+            }
             for (key, forward) in [(Key::ArrowLeft, false), (Key::ArrowRight, true)] {
                 if ctx.input_mut(|i| i.consume_key(Modifiers::NONE, key)) {
                     self.tab = (self.tab + if forward { 1 } else { TABS.len() - 1 }) % TABS.len();
@@ -375,6 +435,12 @@ impl DocsApp {
         }
         // A resize may move the focused Editing control into More. Keep focus visible.
         let target = match &self.ribbon_focus {
+            Some(RibbonFocus::QuickAccess(name)) => {
+                if let Some(target) = self.quick_access_targets.iter().find(|t| t.name == *name) {
+                    ctx.memory_mut(|m| m.request_focus(target.id));
+                }
+                return;
+            }
             Some(RibbonFocus::First) => self.ribbon_targets.first(),
             Some(RibbonFocus::Control(name)) => self
                 .ribbon_targets

@@ -8,20 +8,20 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.8**. Earlier capture/CI evidence retains its
+Current local checkpoint: **0.1.0-alpha.9**. Earlier capture/CI evidence retains its
 original scope; this iteration does not establish native Windows behavior.
 
 | Local check | Observed result |
 | :--- | :--- |
-| `cargo test --locked` | 68 passed: 23 engine/storage/presentation, 3 CLI subprocess and 42 actual egui widget event tests; no skipped tests |
+| `cargo test --locked` | 74 passed: 23 engine/storage/presentation, 3 CLI subprocess and 48 actual egui widget event tests; no skipped tests |
 | `cargo test --locked --no-default-features` | 26 passed; core and CLI build without GUI dependencies |
 | `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
 | `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
-| Copied executable outside checkout | Alpha.8 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
+| Copied executable outside checkout | Alpha.9 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
 | Repository references, contract and artwork | `python3 tools/check_repository.py` passed; approved logo embedded directly and archive copy byte-identical |
 | Workflow YAML / whitespace | Ruby YAML parse and `git diff --check` passed |
-| Native rendering | Alpha.8 root/QAT and View at 1366 × 900, More tabs and Zoom at 640 × 480 DIP inspected, backing scale 2; [captures](UI_SPEC.md#alpha8-native-captures) use deterministic fixture events. Earlier evidence retains its version context |
-| Native macOS interaction | Alpha.8 Home emphasis, Alt+2/3 history, Alt+W,Q Zoom validation/application, collapsed View navigation, Draw/Help, QAT Save and system New/Open passed through Computer Use; exact Unicode and 11-pt bold runs decoded independently. Native Windows/AltGr/IME remains unverified |
+| Native rendering | Alpha.9 View/QAT menu at 1366 × 900, below-ribbon QAT at 960 × 720, Canvas Width at 640 × 480 DIP inspected, backing scale 2; [captures](UI_SPEC.md#alpha9-native-captures). Earlier evidence retains its version context |
+| Native macOS interaction | Alpha.9 Home formatting/history, keyboard QAT customization, placement/reset, dirty New/Cancel, View width/100%/navigation, status Zoom, collapsed View and QAT Save/system New/Open passed through Computer Use. Exact Unicode/11-pt bold runs independently decoded. Native Windows/AltGr/IME remains unverified |
 | Synthetic DPI | Actual widgets at 1/1.25/1.5 scale and 960/1366/1920 physical widths; ribbon/group/workspace/status bounds and collapse assertions passed; 27 additional width/scale combinations check individual Home control containment/nonoverlap and title/search/window bounds |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
@@ -30,7 +30,7 @@ PROJECT_LOG after publication, separately from this local evidence.
 
 The design refinement also checks actual pointer activation of italic/alignment,
 selection preservation, quick Undo/Redo, disabled strikethrough/style controls leaving
-the model unchanged, zoom ±/reset, File Home/Options/Back and dirty New/Cancel.
+the model unchanged, zoom ±/dialog/100%, File Home/Options/Back and dirty New/Cancel.
 The reference theme image was inspected, but no controlled Word comparison was run.
 The first design CI on Windows exposed Segoe UI line-height expansion of an empty
 15 × 16 DIP icon button at 125%. Icon controls now reserve a minimal empty label
@@ -56,6 +56,42 @@ widget tests cover wide/minimum-width Grow/Shrink, composition disablement,
 Paste/Find/Select menus, Escape cancellation and working overflow. Strict geometry
 checks now include menu triggers and the More button. The initial 640-DIP budget
 failure was resolved by narrowing the overflow Font group, keeping the assertions.
+
+## Alpha.9 toolbar and View validation
+
+Six added actual-widget regressions cover customization/reset, visible-order
+numeric hints, disabled history slots, keyboard focus/menu return, empty/below
+placement, temporary-ribbon nonoverlap, direct Alt+4 with dirty New/Cancel, width
+fit after window/pane changes, manual zoom/cancel behavior and exact model,
+selection, history and save/reopen preservation. Eighteen geometry cases combine
+640/960/1366 DIP, 1/1.25/1.5 synthetic scale and two toolbar positions with all five
+commands. They check screen/workspace/title separation, target nonoverlap and
+checkbox alignment. All previous 42 widget tests and 26 engine/CLI tests pass.
+
+Native macOS verification used the normal alpha.9 release executable copied to
+a temporary app bundle outside the checkout:
+
+| Action | Observed evidence |
+| :--- | :--- |
+| Unicode paste, Select All, F10 H 1, Alt+2/3 | English/Ukrainian/Russian/combining text retained, Bold restored through shared history |
+| F10 0, Space on New; reopen menu, Show Below | New appended as fourth command; toolbar moved below ribbon; accessible menu check state matched visibility |
+| Alt+4, Cancel | Dirty-document Save/Discard/Cancel appeared; Cancel retained text and formatting |
+| F10 W C, F10 W K | Canvas Width selected; displayed zoom changed from 162% to 132% when Navigation Pane reduced actual workspace |
+| F10 W J, status percent, Escape | 100% exited fit; status opened Zoom with selected 100; Cancel retained scale |
+| Ctrl+F1, F10 W | Temporary View and its hints stayed below the visible toolbar; no toolbar/control overlap |
+| Escape, 1, system Save; New/Open | QAT Save wrote the fixture; reopening showed the same three paragraphs, four words and Saved locally |
+| Reset Toolbar, F10 Up Right | Default toolbar returned above the ribbon; empty Undo/Redo were skipped and focus reached customization |
+
+Decoded native v2 output contains exactly `English e\u{301}\nУкраїнська\nРусский`,
+three left-aligned paragraphs, bold runs at 22 half-points, italic/underline false.
+SHA-256: `1e76d97a48bb7358a50a77a8b2d046523f317d6cd75e6047c6552582f401ca27`.
+Toolbar/view settings are absent from the document. Copied-binary information
+commands report alpha.9 and protocol v1 from a temporary directory.
+
+Four native renderer captures were inspected after correcting Show checkbox
+alignment. Native Windows 100/125/150%, Word 2024 matched screenshots, physical
+AltGr/non-ASCII input, real IME and full assistive-technology traversal remain
+unverified. Unicode paste and synthetic event tests do not establish those gates.
 
 ## Alpha.8 quick-access, tabs and View validation
 

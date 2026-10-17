@@ -39,6 +39,7 @@ pub enum Icon {
     Minimize,
     Maximize(bool),
     Close,
+    CanvasWidth,
     Document,
     Open,
     Text(&'static str),
@@ -61,6 +62,15 @@ pub fn paint(ui: &Ui, icon: Icon, center: Pos2, size: f32, color: Color32) {
         );
     };
     match icon {
+        Icon::CanvasWidth => {
+            line((-8., -7.), (-8., 7.));
+            line((8., -7.), (8., 7.));
+            line((-5., 0.), (5., 0.));
+            line((-5., 0.), (-2., -3.));
+            line((-5., 0.), (-2., 3.));
+            line((5., 0.), (2., -3.));
+            line((5., 0.), (2., 3.));
+        }
         Icon::Back => {
             line((-7., 0.), (7., 0.));
             line((-7., 0.), (-1., -6.));

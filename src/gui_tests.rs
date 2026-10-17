@@ -534,7 +534,7 @@ fn revised_shell_controls_preserve_selection_and_real_document_state() {
     click_region(&ctx, &mut app, "unavailable-Strikethrough");
     click_region(&ctx, &mut app, "style-Heading 1");
     assert_eq!(app.session.editor.document, styled);
-    click_region(&ctx, &mut app, "command-Undo");
+    click_region(&ctx, &mut app, "qat-Undo");
     assert!(
         app.session
             .editor
@@ -543,14 +543,17 @@ fn revised_shell_controls_preserve_selection_and_real_document_state() {
             .iter()
             .all(|p| p.alignment == Alignment::Left)
     );
-    click_region(&ctx, &mut app, "command-Redo");
+    click_region(&ctx, &mut app, "qat-Redo");
     assert_eq!(app.session.editor.document, styled);
     click_region(&ctx, &mut app, "zoom-in");
     assert_eq!(app.zoom, 110.);
     click_region(&ctx, &mut app, "zoom-out");
     assert_eq!(app.zoom, 100.);
     app.zoom = 150.;
-    click_region(&ctx, &mut app, "zoom-reset");
+    click_region(&ctx, &mut app, "zoom-status");
+    assert!(app.zoom_dialog.is_some());
+    click_region(&ctx, &mut app, "zoom-preset-100");
+    click_region(&ctx, &mut app, "zoom-ok");
     assert_eq!(app.zoom, 100.);
     app.backstage = true;
     click_region(&ctx, &mut app, "file-options");
@@ -2151,4 +2154,268 @@ fn zoom_dialog_bounds_cancel_and_close_guard_at_synthetic_scales() {
         assert_eq!(app.zoom, 100.);
         assert!(!app.session.dirty());
     }
+}
+
+#[test]
+fn customizable_quick_access_numbers_follow_visible_order_and_reset() {
+    let (ctx, mut app) = setup();
+    let before = app.session.editor.document.clone();
+    click_region(&ctx, &mut app, "qat-options");
+    click_region(&ctx, &mut app, "qat-toggle-New");
+    assert_eq!(
+        app.quick_access,
+        [Action::Save, Action::Undo, Action::Redo, Action::New]
+    );
+    click_region(&ctx, &mut app, "qat-options");
+    click_region(&ctx, &mut app, "qat-toggle-Save");
+    assert_eq!(app.quick_access, [Action::Undo, Action::Redo, Action::New]);
+    tip_sequence(&ctx, &mut app, &[Key::F10], [1366., 900.]);
+    let tip = app.regions.iter().find(|r| r.name == "keytip-1").unwrap();
+    let undo = app.regions.iter().find(|r| r.name == "qat-Undo").unwrap();
+    assert!((tip.rect.center().x - undo.rect.center().x).abs() < 1.);
+    tip_sequence(&ctx, &mut app, &[Key::Num1], [1366., 900.]);
+    assert!(app.keytips.level.is_some()); // Disabled Undo keeps its number.
+    tip_sequence(&ctx, &mut app, &[Key::Num0], [1366., 900.]);
+    assert!(egui::Popup::is_any_open(&ctx));
+    click_region(&ctx, &mut app, "qat-reset");
+    assert_eq!(app.quick_access, quick_access::DEFAULT);
+    assert!(!app.quick_access_below);
+    assert_eq!(app.session.editor.document, before);
+    assert!(app.session.editor.undo_stack.is_empty());
+}
+
+#[test]
+fn quick_access_keyboard_skips_disabled_and_menu_returns_to_toolbar() {
+    let (ctx, mut app) = setup();
+    tip_sequence(&ctx, &mut app, &[Key::F10, Key::ArrowUp], [1366., 900.]);
+    assert_eq!(
+        app.ribbon_focus,
+        Some(RibbonFocus::QuickAccess("qat-Save".into()))
+    );
+    ribbon_key(
+        &ctx,
+        &mut app,
+        Key::ArrowRight,
+        Modifiers::NONE,
+        [1366., 900.],
+    );
+    assert_eq!(
+        app.ribbon_focus,
+        Some(RibbonFocus::QuickAccess("qat-options".into()))
+    );
+    ribbon_key(
+        &ctx,
+        &mut app,
+        Key::ArrowDown,
+        Modifiers::NONE,
+        [1366., 900.],
+    );
+    ribbon_key(&ctx, &mut app, Key::Space, Modifiers::NONE, [1366., 900.]);
+    assert!(app.quick_access.contains(&Action::New));
+    assert!(!egui::Popup::is_any_open(&ctx));
+    ribbon_key(&ctx, &mut app, Key::Escape, Modifiers::NONE, [1366., 900.]);
+    assert_eq!(app.ribbon_focus, Some(RibbonFocus::Tab));
+    ribbon_key(&ctx, &mut app, Key::Escape, Modifiers::NONE, [1366., 900.]);
+    assert!(ctx.memory(|m| m.has_focus(Id::new(EDIT_ID))));
+    assert!(app.session.editor.document.text().is_empty());
+}
+
+#[test]
+fn quick_access_below_ribbon_preserves_canvas_and_supports_empty_toolbar() {
+    let (ctx, mut app) = setup();
+    click_region(&ctx, &mut app, "qat-options");
+    click_region(&ctx, &mut app, "qat-position");
+    for _ in 0..3 {
+        frame(&ctx, &mut app, vec![], [640., 480.], 1.);
+    }
+    assert!(app.quick_access_below);
+    let qat = app
+        .regions
+        .iter()
+        .find(|r| r.name == "qat-Save")
+        .unwrap()
+        .rect;
+    let ribbon = app
+        .regions
+        .iter()
+        .find(|r| r.name == "ribbon")
+        .unwrap()
+        .rect;
+    let workspace = app
+        .regions
+        .iter()
+        .find(|r| r.name == "workspace")
+        .unwrap()
+        .rect;
+    assert!(qat.top() >= ribbon.bottom() && qat.bottom() <= workspace.top());
+    app.quick_access.clear();
+    app.ribbon_collapsed = true;
+    for _ in 0..3 {
+        frame(&ctx, &mut app, vec![], [640., 480.], 1.);
+    }
+    tip_sequence(&ctx, &mut app, &[Key::F10, Key::Num0], [640., 480.]);
+    assert!(egui::Popup::is_any_open(&ctx));
+    click_region_at(&ctx, &mut app, "qat-reset", [640., 480.]);
+    assert_eq!(app.quick_access, quick_access::DEFAULT);
+    assert!(!app.quick_access_below);
+}
+
+#[test]
+fn canvas_width_tracks_workspace_and_manual_zoom_leaves_fit_without_history() {
+    let (ctx, mut app) = setup();
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Paste(
+            "English e\u{301}\nУкраїнська\nРусский".into(),
+        )],
+        [1366., 900.],
+        1.,
+    );
+    app.execute(Action::SelectAll, &ctx);
+    app.execute(Action::Bold, &ctx);
+    let before = app.session.editor.document.clone();
+    let history = app.session.editor.undo_stack.len();
+    let selection = app.session.editor.selection;
+    tip_sequence(&ctx, &mut app, &[Key::F10, Key::W, Key::C], [1366., 900.]);
+    assert!(app.zoom_width);
+    let wide = app.zoom;
+    for _ in 0..3 {
+        frame(&ctx, &mut app, vec![], [960., 720.], 1.);
+    }
+    assert!(app.zoom < wide);
+    let narrow = app.zoom;
+    app.execute(Action::Navigation, &ctx);
+    for _ in 0..3 {
+        frame(&ctx, &mut app, vec![], [960., 720.], 1.);
+    }
+    assert!(app.zoom < narrow);
+    app.execute(Action::Zoom, &ctx);
+    ribbon_key(&ctx, &mut app, Key::Escape, Modifiers::NONE, [960., 720.]);
+    assert!(app.zoom_width);
+    tip_sequence(&ctx, &mut app, &[Key::F10, Key::W, Key::J], [960., 720.]);
+    assert_eq!(app.zoom, 100.);
+    assert!(!app.zoom_width);
+    app.execute(Action::ZoomWidth, &ctx);
+    click_region_at(&ctx, &mut app, "zoom-in", [960., 720.]);
+    assert!(!app.zoom_width);
+    assert_eq!(app.session.editor.document, before);
+    assert_eq!(app.session.editor.undo_stack.len(), history);
+    assert_eq!(app.session.editor.selection, selection);
+    let dir = tempfile::tempdir().unwrap();
+    app.session.path = Some(dir.path().join("view.bfdoc"));
+    app.execute(Action::Save, &ctx);
+    assert_eq!(
+        storage::load(app.session.path.as_ref().unwrap()).unwrap(),
+        before
+    );
+}
+
+#[test]
+fn view_and_custom_toolbar_bounds_at_synthetic_scales() {
+    for width in [640., 960., 1366.] {
+        for dpi in [1., 1.25, 1.5] {
+            let (ctx, mut app) = setup();
+            app.tab = 8;
+            app.quick_access.extend([Action::New, Action::Open]);
+            for below in [false, true] {
+                app.quick_access_below = below;
+                for _ in 0..4 {
+                    frame(&ctx, &mut app, vec![], [width * dpi, 900. * dpi], dpi);
+                }
+                let screen = Rect::from_min_size(Pos2::ZERO, vec2(width, 900.));
+                let targets: Vec<_> = app
+                    .quick_access_targets
+                    .iter()
+                    .chain(app.ribbon_targets.iter())
+                    .collect();
+                for (i, target) in targets.iter().enumerate() {
+                    assert!(
+                        screen.contains_rect(target.rect),
+                        "{} {:?}",
+                        target.name,
+                        target.rect
+                    );
+                    for other in &targets[i + 1..] {
+                        assert!(
+                            !target.rect.intersects(other.rect),
+                            "{} / {}",
+                            target.name,
+                            other.name
+                        );
+                    }
+                }
+                let ruler = app
+                    .regions
+                    .iter()
+                    .find(|r| r.name == "command-Rulers")
+                    .unwrap()
+                    .rect;
+                let navigation = app
+                    .regions
+                    .iter()
+                    .find(|r| r.name == "command-Navigation")
+                    .unwrap()
+                    .rect;
+                assert!((ruler.left() - navigation.left()).abs() < 0.1);
+                let title = app
+                    .regions
+                    .iter()
+                    .find(|r| r.name == "document-title")
+                    .unwrap()
+                    .rect;
+                for target in &app.quick_access_targets {
+                    assert!(!title.intersects(target.rect));
+                }
+                let work = app
+                    .regions
+                    .iter()
+                    .find(|r| r.name == "workspace")
+                    .unwrap()
+                    .rect;
+                for target in targets {
+                    assert!(!work.intersects(target.rect));
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn below_toolbar_stays_accessible_with_temporary_ribbon_and_direct_number_entry() {
+    let (ctx, mut app) = setup();
+    app.quick_access_below = true;
+    app.quick_access.push(Action::New);
+    app.ribbon_collapsed = true;
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Paste("Keep this text".into())],
+        [1366., 900.],
+        1.,
+    );
+    tip_sequence(&ctx, &mut app, &[Key::F10, Key::H], [1366., 900.]);
+    let ribbon = app
+        .regions
+        .iter()
+        .find(|r| r.name == "ribbon")
+        .unwrap()
+        .rect;
+    for target in &app.quick_access_targets {
+        assert!(!ribbon.intersects(target.rect));
+    }
+    tip_sequence(
+        &ctx,
+        &mut app,
+        &[Key::Escape, Key::ArrowDown],
+        [1366., 900.],
+    );
+    assert_eq!(
+        app.ribbon_focus,
+        Some(RibbonFocus::QuickAccess("qat-Save".into()))
+    );
+    ribbon_key(&ctx, &mut app, Key::Num4, Modifiers::ALT, [1366., 900.]);
+    assert!(app.pending.is_some());
+    click_region(&ctx, &mut app, "unsaved-cancel");
+    assert_eq!(app.session.editor.document.text(), "Keep this text");
 }

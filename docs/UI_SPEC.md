@@ -107,7 +107,60 @@ L/E/R/J are implemented. Ctrl/Command+D or Shift+F opens the Font dialog.
 Home/File KeyTips and Alt entry, plus quick-access/tab/View extensions, are described below. Contextual KeyTips,
 native assistive technology and multilingual OS IME remain unverified/incomplete.
 
+## Alpha.9 quick-access and View
+
+Inspected 2026-10-17: Microsoft's [toolbar customization](https://support.microsoft.com/en-us/office/customize-the-quick-access-toolbar),
+[keyboard toolbar guidance](https://support.microsoft.com/en-us/accessibility/office-accessibility/use-a-keyboard-to-customize-the-quick-access-toolbar)
+and [View zoom guidance](https://support.microsoft.com/en-us/excel/zoom-in-or-out-of-a-document-presentation-or-worksheet).
+These support above/below placement, command visibility, horizontal keyboard
+navigation and separate Zoom/100%/width controls. The pages cover multiple Office
+versions; they are not a measured Word 2024 Windows screenshot baseline.
+
+| Component | Implemented behavior / dimensions in DIP |
+| :--- | :--- |
+| Quick Access Toolbar | Default Save/Undo/Redo; optional New/Open. Commands are 28 × 28 on a 30 pitch; customization trigger 24 × 28. Above: x=43, y=8 in the 44-high title. Below: x=8, y=2 in a separate 32-high strip |
+| Customize menu | Minimum width 230; visibility checkboxes, Show Above/Below, Reset. Window-local only, newly enabled commands append. Defaults restore order and above-ribbon placement; no file/model/history change |
+| Keyboard | Root hints 1–5 follow visible order, including disabled history slots. Alt+0 opens customization. Up from focused tabs enters the toolbar; Down also enters when below. Left/Right skips unavailable commands; Enter/Space activates, Down opens options, Tab returns to tabs. Menu Up/Down/Tab, Enter/Space and layered Escape use the shared focus policy |
+| Collapsed mode | A below-ribbon toolbar remains visible. The temporary ribbon starts after its 32-high strip and does not cover its controls. Opening the temporary ribbon still leaves the canvas position unchanged |
+| View | Views/Show/Zoom widths 120/156/264, 8-DIP gaps, 88-high inner groups in the existing 104-high ribbon. View-mode tiles 58 × 66, Zoom/100% tiles 52 × 66, Show rows 23 high on 24 pitch, zoom side commands 144 × 23. Checkbox left edges align |
+| Zoom | 100% exits fit mode. Canvas Width recomputes `(workspace width - 48) / 816 * 100`, clamped to 50–200%, after window or pane changes. Slider/plus/minus/dialog acceptance exit fit; cancelling the dialog preserves it. Status percent opens the dialog |
+| Limits | Ruler is a canvas ruler. Read Mode, Print Layout, Gridlines, One Page and Multiple Pages are disabled with explanations. Fit can reach its 50% minimum before a very narrow workspace fits; no pagination is implied |
+
+View keeps K/R/Q and adds J for 100% (provisional), C for Canvas Width (Docs-specific).
+Alt+0 is also Docs-specific. The menu currently covers five file/history commands;
+arbitrary reordering, context-menu customization, persisted settings, complete
+Word keyboard equivalence and native screen-reader acceptance remain open.
+
+### Alpha.9 native captures
+
+Actual Rust native rendering on macOS, Light theme, English UI, backing scale 2.
+Four captures inspected: View and QAT menu at 1366 × 900 DIP, below-ribbon toolbar
+at 960 × 720, Canvas Width at 640 × 480 (displayed 73%). The first layout inspection
+caught centered rather than aligned Show checkboxes; the corrected geometry is
+regression-tested. No supported label clips in these captures. The existing
+fixture emoji still has a missing glyph; this is not a full-script rendering claim.
+
+![View groups, alpha.9, macOS](screenshots/rust-view-alpha9-macos.png)
+
+[QAT menu](screenshots/rust-qat-menu-alpha9-macos.png) ·
+[QAT below the ribbon](screenshots/rust-qat-below-alpha9-macos.png) ·
+[narrow Canvas Width](screenshots/rust-view-fit-alpha9-macos-narrow.png).
+
+```sh
+BREAKFREE_CAPTURE_TO="$PWD/docs/screenshots/view-review.png" \
+  cargo run --locked --release --features capture --example capture_ui -- 1366 900 view
+```
+
+Other new capture modes: `view-fit`, `keytips-qat`, `keytips-qat-below` (the last
+uses staged fixture key events to move the toolbar). Windows PowerShell uses
+`$env:BREAKFREE_CAPTURE_TO` as in the existing capture instructions below.
+These captures validate rendering; native keyboard evidence is recorded separately
+in VALIDATION.md. No Word installation or matched Windows 100/125/150% comparison
+was available. Intentional brand differences and the comparison gate below remain.
+
 ## Alpha.8 quick-access and tab KeyTips
+
+Historical checkpoint; alpha.9 above supersedes fixed toolbar order and View geometry.
 
 This extends alpha.7's input state machine without moving editing into the GUI.
 The [official QAT keyboard guide](https://support.microsoft.com/en-us/accessibility/office-accessibility/use-a-keyboard-to-customize-the-quick-access-toolbar)

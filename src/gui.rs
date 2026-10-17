@@ -32,6 +32,11 @@ use keytips::KeyTips;
 mod zoom_dialog;
 use zoom_dialog::{ZoomDialog, ZoomOutcome};
 
+#[path = "quick_access.rs"]
+mod quick_access;
+#[path = "view_ribbon.rs"]
+mod view_ribbon;
+
 const INK: Color32 = Color32::from_rgb(35, 35, 35);
 const ACCENT: Color32 = Color32::from_rgb(112, 71, 174);
 const CHROME: Color32 = Color32::from_rgb(243, 243, 243);
@@ -70,6 +75,8 @@ pub enum Action {
     Navigation,
     Rulers,
     Zoom,
+    Zoom100,
+    ZoomWidth,
     Formatting,
 }
 impl Action {
@@ -103,6 +110,8 @@ impl Action {
             Self::Navigation => "Navigation pane",
             Self::Rulers => "Canvas rulers",
             Self::Zoom => "Zoom",
+            Self::Zoom100 => "100%",
+            Self::ZoomWidth => "Canvas Width",
             Self::Formatting => "Formatting pane",
         }
     }
@@ -136,6 +145,8 @@ const COMMANDS: &[Action] = &[
     Action::Navigation,
     Action::Rulers,
     Action::Zoom,
+    Action::Zoom100,
+    Action::ZoomWidth,
     Action::Formatting,
 ];
 
@@ -159,6 +170,10 @@ pub struct DocsApp {
     keytips: KeyTips,
     more_tabs_id: Option<Id>,
     zoom_dialog: Option<ZoomDialog>,
+    quick_access: Vec<Action>,
+    quick_access_below: bool,
+    quick_access_targets: Vec<RibbonTarget>,
+    zoom_width: bool,
     ribbon_targets: Vec<RibbonTarget>,
     ribbon_menu_targets: Vec<RibbonTarget>,
     ribbon_menu_index: Option<usize>,
@@ -249,6 +264,10 @@ impl DocsApp {
             keytips: KeyTips::default(),
             more_tabs_id: None,
             zoom_dialog: None,
+            quick_access: quick_access::DEFAULT.to_vec(),
+            quick_access_below: false,
+            quick_access_targets: Vec::new(),
+            zoom_width: false,
             ribbon_targets: Vec::new(),
             ribbon_menu_targets: Vec::new(),
             ribbon_menu_index: None,
@@ -318,6 +337,7 @@ impl DocsApp {
         match action {
             Action::Navigation => self.navigation,
             Action::Rulers => self.rulers,
+            Action::ZoomWidth => self.zoom_width,
             Action::Bold => self.session.editor.emphasis_selected(true),
             Action::Italic => self.session.editor.emphasis_selected(false),
             Action::Underline => self.session.editor.underline_selected(),
@@ -547,6 +567,11 @@ impl DocsApp {
                     }
                 });
             }
+            Action::Zoom100 => {
+                self.zoom = 100.;
+                self.zoom_width = false;
+            }
+            Action::ZoomWidth => self.zoom_width = true,
             Action::Navigation => self.navigation = !self.navigation,
             Action::Rulers => self.rulers = !self.rulers,
             Action::Formatting => self.formatting = !self.formatting,
@@ -692,21 +717,12 @@ impl DocsApp {
                         egui::Image::new(icon).fit_to_exact_size(vec2(24., 24.)),
                     );
                 }
-                for (i, (icon, action)) in [
-                    (Icon::Save, Action::Save),
-                    (Icon::Undo, Action::Undo),
-                    (Icon::Redo, Action::Redo),
-                ]
-                .into_iter()
-                .enumerate()
-                {
-                    let qat_rect = Rect::from_min_size(
-                        rect.min + vec2(43. + i as f32 * 30., 8.),
-                        vec2(28., 28.),
-                    );
-                    self.record(&format!("qat-{action:?}"), qat_rect);
-                    self.ribbon_control(ui, qat_rect, icon, "", action);
-                }
+                let title_left = if self.quick_access_below || self.backstage {
+                    43.
+                } else {
+                    self.quick_access_bar(ui, rect.min + vec2(43., 8.));
+                    43. + (self.quick_access.len() + 1) as f32 * 30. + 8.
+                };
                 let search_w = (w * 0.25).clamp(155., 350.);
                 let search_x = (w * 0.56 - search_w / 2.).max(285.);
                 let name = self
@@ -722,7 +738,7 @@ impl DocsApp {
                     if self.session.dirty() { " *" } else { "" }
                 );
                 let title_rect = Rect::from_min_max(
-                    rect.min + vec2(147., 8.),
+                    rect.min + vec2(title_left, 8.),
                     pos2(search_x - 16., rect.top() + 36.),
                 );
                 ui.put(title_rect, egui::Label::new(&title).truncate())
@@ -1587,38 +1603,7 @@ impl DocsApp {
                 }
             });
         } else if self.tab == 8 {
-            self.ribbon_group = Some(0);
-            ui.horizontal(|ui| {
-                ui.vertical(|ui| {
-                    Self::disabled(
-                        ui,
-                        "Print Layout",
-                        vec2(110., 30.),
-                        "Pagination is not implemented. The document uses a continuous canvas.",
-                    );
-                    Self::disabled(
-                        ui,
-                        "Read Mode",
-                        vec2(110., 30.),
-                        "Read Mode is not implemented.",
-                    );
-                    ui.small("Views");
-                });
-                ui.separator();
-                ui.vertical(|ui| {
-                    self.command(ui, "Navigation Pane", Action::Navigation, vec2(145., 30.));
-                    self.command(ui, "Canvas Rulers", Action::Rulers, vec2(145., 30.));
-                    ui.small("Show");
-                });
-                ui.separator();
-                self.ribbon_group = Some(1);
-                ui.vertical(|ui| {
-                    self.command(ui, "Zoom…", Action::Zoom, vec2(88., 30.));
-                    ui.label(format!("{:.0}%", self.zoom));
-                    ui.small("Zoom");
-                });
-            });
-            self.ribbon_group = None;
+            self.view_ribbon(ui);
         } else if self.tab == 9 {
             ui.label(format!("BreakFree Docs {VERSION}"));
             ui.label("Local .bfdoc documents · no pagination yet");
@@ -1674,7 +1659,10 @@ impl DocsApp {
         let width = ctx.content_rect().width();
         let area = egui::Area::new(Id::new("temporary-ribbon"))
             .order(egui::Order::Foreground)
-            .fixed_pos(pos2(ctx.content_rect().left(), TITLE_HEIGHT + TABS_HEIGHT))
+            .fixed_pos(pos2(
+                ctx.content_rect().left(),
+                TITLE_HEIGHT + TABS_HEIGHT + if self.quick_access_below { 32. } else { 0. },
+            ))
             .fade_in(false)
             .movable(false)
             .show(ctx, |ui| {
@@ -1859,14 +1847,14 @@ impl DocsApp {
                     if ui.available_width()>520. {ui.add_space(10.);ui.small(self.save_status());}
                     ui.with_layout(Layout::right_to_left(Align::Center),|ui| {
                         let percent=ui.add_sized([42.,20.],Button::new(format!("{:.0}%",self.zoom)).frame_when_inactive(false));
-                        self.record("zoom-reset",percent.rect);self.status_focus=Some(percent.id);if percent.clicked(){percent.request_focus();}
-                        if percent.on_hover_text("Reset document zoom to 100%").clicked(){self.zoom=100.;}
+                        self.record("zoom-status",percent.rect);self.status_focus=Some(percent.id);if percent.clicked(){percent.request_focus();}
+                        if percent.on_hover_text("Open Zoom dialog").clicked(){self.execute(Action::Zoom,ctx);}
                         let plus=ui.add_sized([22.,20.],Button::new("+").frame_when_inactive(false));self.record("zoom-in",plus.rect);if plus.clicked(){plus.request_focus();}
-                        if plus.on_hover_text("Zoom in").clicked(){self.zoom=(self.zoom+10.).min(200.);}
+                        if plus.on_hover_text("Zoom in").clicked(){self.zoom=(self.zoom+10.).min(200.);self.zoom_width=false;}
                         ui.spacing_mut().slider_width=110.;
-                        let slider=ui.add(egui::Slider::new(&mut self.zoom,50.0..=200.0).show_value(false).clamping(egui::SliderClamping::Always));self.record("zoom-slider",slider.rect);
+                        let slider=ui.add(egui::Slider::new(&mut self.zoom,50.0..=200.0).show_value(false).clamping(egui::SliderClamping::Always));self.record("zoom-slider",slider.rect);if slider.changed(){self.zoom_width=false;}
                         let minus=ui.add_sized([22.,20.],Button::new("−").frame_when_inactive(false));self.record("zoom-out",minus.rect);if minus.clicked(){minus.request_focus();}
-                        if minus.on_hover_text("Zoom out").clicked(){self.zoom=(self.zoom-10.).max(50.);}
+                        if minus.on_hover_text("Zoom out").clicked(){self.zoom=(self.zoom-10.).max(50.);self.zoom_width=false;}
                         if ui.available_width()>195. {ui.separator();ui.small("Continuous layout").on_hover_text("Pagination and Print Layout are not implemented. This canvas has no computed page count.");}
                     });
                 });
@@ -2072,6 +2060,13 @@ impl DocsApp {
     }
 
     fn document(&mut self, ui: &mut Ui) {
+        if self.zoom_width {
+            let fit = ((ui.available_width() - 48.) / CANVAS_WIDTH * 100.).clamp(50., 200.);
+            if (self.zoom - fit).abs() > 0.01 {
+                ui.ctx().request_repaint();
+            }
+            self.zoom = fit;
+        }
         let zoom = self.zoom / 100.;
         let width = CANVAS_WIDTH * zoom;
         let margin = CANVAS_MARGIN * zoom;
@@ -2255,7 +2250,12 @@ impl DocsApp {
 
                     ui.label("Document zoom");
 
-                    ui.add(egui::Slider::new(&mut self.zoom, 50.0..=200.0).suffix("%"));
+                    if ui
+                        .add(egui::Slider::new(&mut self.zoom, 50.0..=200.0).suffix("%"))
+                        .changed()
+                    {
+                        self.zoom_width = false;
+                    }
 
                     ui.add_space(20.);
 
@@ -2360,6 +2360,7 @@ impl DocsApp {
                 ZoomOutcome::Cancel => self.focus_document = true,
                 ZoomOutcome::Apply(value) => {
                     self.zoom = value;
+                    self.zoom_width = false;
                     self.focus_document = true;
                 }
             }
@@ -2471,12 +2472,14 @@ impl DocsApp {
         self.shortcuts(ctx);
         self.regions.clear();
         self.ribbon_targets.clear();
+        self.quick_access_targets.clear();
         self.ribbon_menu_targets.clear();
         self.title(ctx);
         if !self.backstage {
             self.tabs(ctx);
         }
         self.ribbon(ctx);
+        self.quick_access_panel(ctx);
         self.status(ctx);
         self.navigation_panel(ctx);
         self.formatting_panel(ctx);
