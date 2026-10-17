@@ -1,4 +1,4 @@
-//! Literal, case-sensitive search over complete graphemes; no normalization.
+//! Literal search over original graphemes, with optional Unicode case/word matching.
 use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -13,35 +13,121 @@ pub struct Results<'a> {
     pub matches: Vec<Match>,
 }
 
-impl<'a> Results<'a> {
-    pub fn new(text: &'a str, query: &str) -> Self {
-        let mut matches = Vec::new();
-        if !query.is_empty() {
-            let edges: Vec<_> = text
-                .grapheme_indices(true)
-                .map(|(byte, _)| byte)
-                .chain(std::iter::once(text.len()))
-                .collect();
-            let (mut previous, mut scalar, mut paragraph) = (0, 0, 1);
-            let length = query.chars().count();
-            for (byte, found) in text.match_indices(query) {
-                // Walk each prefix only once, including rejected partial matches.
-                for ch in text[previous..byte].chars() {
-                    scalar += 1;
-                    paragraph += usize::from(ch == '\n');
-                }
-                previous = byte;
-                let end = byte + found.len();
-                if edges.binary_search(&byte).is_ok() && edges.binary_search(&end).is_ok() {
-                    matches.push(Match {
-                        range: (scalar, scalar + length),
-                        paragraph,
-                        bytes: byte..end,
-                    });
-                }
+/// A compiled literal query, reusable until the text or options change.
+/// Case-insensitive matching uses Unicode simple folding, never normalization.
+pub struct Query {
+    text: String,
+    options: Options,
+    folded: Option<regex::Regex>,
+    error: Option<&'static str>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Options {
+    pub match_case: bool,
+    pub whole_words: bool,
+}
+
+impl Default for Options {
+    fn default() -> Self {
+        Self {
+            match_case: true,
+            whole_words: false,
+        }
+    }
+}
+
+impl Query {
+    pub fn new(text: &str, options: Options) -> Self {
+        let mut query = Self {
+            text: text.into(),
+            options,
+            folded: None,
+            error: None,
+        };
+        if text.len() > 4096 {
+            query.error = Some("Search text is too long. Use a shorter query.");
+        } else if !text.is_empty() && !options.match_case {
+            match regex::RegexBuilder::new(&regex::escape(text))
+                .case_insensitive(true)
+                .build()
+            {
+                Ok(pattern) => query.folded = Some(pattern),
+                Err(_) => query.error = Some("Search could not be prepared. Use a shorter query."),
             }
         }
-        Self { text, matches }
+        query
+    }
+
+    pub fn is_current(&self, text: &str, options: Options) -> bool {
+        self.text == text && self.options == options
+    }
+
+    pub fn error(&self) -> Option<&'static str> {
+        self.error
+    }
+
+    pub fn search<'a>(&self, text: &'a str) -> Results<'a> {
+        let mut matches = Vec::new();
+        if self.text.is_empty() || self.error.is_some() {
+            return Results { text, matches };
+        }
+        let edges: Vec<_> = text
+            .grapheme_indices(true)
+            .map(|(byte, _)| byte)
+            .chain(std::iter::once(text.len()))
+            .collect();
+        let words: Vec<_> = if self.options.whole_words {
+            text.unicode_word_indices()
+                .map(|(start, word)| (start, start + word.len()))
+                .collect()
+        } else {
+            Vec::new()
+        };
+        let (mut offset, mut previous, mut scalar, mut paragraph) = (0, 0, 0, 1);
+        while offset < text.len() {
+            let candidate = if let Some(pattern) = &self.folded {
+                pattern.find_at(text, offset).map(|m| m.range())
+            } else {
+                text[offset..].find(&self.text).map(|byte| {
+                    let start = offset + byte;
+                    start..start + self.text.len()
+                })
+            };
+            let Some(bytes) = candidate else {
+                break;
+            };
+            // Walk each prefix once, retaining original scalar/paragraph positions.
+            for ch in text[previous..bytes.start].chars() {
+                scalar += 1;
+                paragraph += usize::from(ch == '\n');
+            }
+            previous = bytes.start;
+            let complete = edges.binary_search(&bytes.start).is_ok()
+                && edges.binary_search(&bytes.end).is_ok();
+            let whole = !self.options.whole_words
+                || (words.binary_search_by_key(&bytes.start, |w| w.0).is_ok()
+                    && words.binary_search_by_key(&bytes.end, |w| w.1).is_ok());
+            if complete && whole {
+                offset = bytes.end;
+                let length = text[bytes.clone()].chars().count();
+                matches.push(Match {
+                    range: (scalar, scalar + length),
+                    paragraph,
+                    bytes,
+                });
+            } else {
+                // A rejected partial match must not hide a later overlapping valid one.
+                offset = edges[edges.partition_point(|&edge| edge <= bytes.start)];
+            }
+        }
+        Results { text, matches }
+    }
+}
+
+impl<'a> Results<'a> {
+    pub fn new(text: &'a str, query: &str) -> Self {
+        Query::new(query, Options::default()).search(text)
     }
 
     pub fn active(&self, selection: (usize, usize)) -> Option<usize> {

@@ -142,6 +142,11 @@ native dialog/IME, accessibility and target-platform reviews are outstanding.
   bounded highlighted excerpts and document scrolling. Preserve alpha.13 palette
   and icons; [validation](docs/VALIDATION.md#alpha14-navigation-validation) records
   local evidence. This improves the R1 prototype, not the full D1/D2 exit gates.
+- [x] Alpha.15: add Match case/Whole words to the shared literal query, with original
+  Unicode ranges, keyboard toggles/Escape, bounded errors and replacement/history
+  regressions. Preserve palette/icons; [validation](docs/VALIDATION.md#alpha15-search-options-validation)
+  records 110/44 local tests, two captures and native macOS Save/Open evidence.
+  This depends on alpha.14 Navigation; full linguistic search/D2 remains open.
 - [ ] Verify native bare Alt/AltGr and rapid modifier taps, contextual/future command
   hints, and compare all mappings against the named Windows reference build. Depends on the native Windows/Word environment; no full parity claimed.
 - [ ] Capture Word 2024 Windows and Docs at matched build/language/theme/window,

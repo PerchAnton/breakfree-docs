@@ -492,6 +492,8 @@ fn navigation_controls_fit_narrow_and_scaled_windows() {
             for name in [
                 "find-input",
                 "find-clear",
+                "find-case",
+                "find-words",
                 "find-close",
                 "find-next",
                 "find-previous",
@@ -3134,4 +3136,136 @@ fn toolbar_order_cancel_and_unchanged_ok_preserve_existing_profile_bytes() {
     click_region(&ctx, &mut app, "qat-order-ok");
     assert!(app.error.is_none() && app.preferences_warning.is_none());
     assert_eq!(std::fs::read(&path).unwrap(), original);
+}
+
+#[test]
+fn search_options_keyboard_recompute_without_editing_and_escape_returns_to_document() {
+    let (ctx, mut app) = setup();
+    app.session
+        .editor
+        .replace(0, 0, "cat CAT cats", "Input")
+        .unwrap();
+    app.sync_view();
+    let before = app.session.editor.document.clone();
+    let history = app.session.editor.undo_stack.len();
+    app.execute(Action::Find, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("cat".into())],
+        [1366., 900.],
+        1.,
+    );
+    assert_eq!(app.find_query.search(&app.buffer).matches.len(), 2);
+    for _ in 0..2 {
+        frame(
+            &ctx,
+            &mut app,
+            vec![key(Key::Tab, false)],
+            [1366., 900.],
+            1.,
+        );
+    }
+    assert!(ctx.memory(|m| m.has_focus(app.find_option_ids[0].unwrap())));
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Space, false)],
+        [1366., 900.],
+        1.,
+    );
+    assert!(!app.find_options.match_case);
+    assert_eq!(app.find_query.search(&app.buffer).matches.len(), 3);
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Tab, false)],
+        [1366., 900.],
+        1.,
+    );
+    assert!(ctx.memory(|m| m.has_focus(app.find_option_ids[1].unwrap())));
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Space, false)],
+        [1366., 900.],
+        1.,
+    );
+    assert!(app.find_options.whole_words);
+    assert_eq!(app.find_query.search(&app.buffer).matches.len(), 2);
+    assert_eq!(app.session.editor.document, before);
+    assert_eq!(app.session.editor.undo_stack.len(), history);
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Escape, false)],
+        [1366., 900.],
+        1.,
+    );
+    assert!(!app.navigation);
+    assert!(ctx.memory(|m| m.has_focus(Id::new(EDIT_ID))));
+    app.execute(Action::Find, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    click_region(&ctx, &mut app, "find-clear");
+    assert!(!app.find_options.match_case && app.find_options.whole_words);
+    assert!(app.find_query.search(&app.buffer).matches.is_empty());
+    assert_eq!(app.session.editor.document, before);
+}
+
+#[test]
+fn search_options_replacement_uses_original_ranges_and_history_refresh() {
+    let (ctx, mut app) = setup();
+    app.session.editor.replace(0, 0, "K Kx k", "Input").unwrap();
+    app.session.editor.emphasize(0, 1, true, true).unwrap();
+    app.sync_view();
+    let before = app.session.editor.document.clone();
+    let history = app.session.editor.undo_stack.len();
+    app.execute(Action::Replace, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("k".into())],
+        [1366., 900.],
+        1.,
+    );
+    click_region(&ctx, &mut app, "find-case");
+    click_region(&ctx, &mut app, "find-words");
+    assert_eq!(app.session.editor.selection, (0, 1));
+    assert_eq!(app.find_query.search(&app.buffer).matches.len(), 2);
+    app.replacement = "e\u{301}".into();
+    click_region(&ctx, &mut app, "find-replace");
+    let after = app.session.editor.document.clone();
+    assert_eq!(after.text(), "e\u{301} Kx k");
+    assert!(after.paragraphs[0].styles[0].bold);
+    assert_eq!(app.session.editor.undo_stack.len(), history + 1);
+    app.execute(Action::Undo, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    assert_eq!(app.session.editor.document, before);
+    assert_eq!(app.find_query.search(&app.buffer).matches.len(), 2);
+    app.execute(Action::Redo, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    assert_eq!(app.session.editor.document, after);
+    assert_eq!(app.find_query.search(&app.buffer).matches.len(), 1);
+}
+
+#[test]
+fn oversized_search_is_reported_without_replacing_or_truncating_input() {
+    let (ctx, mut app) = setup();
+    app.session
+        .editor
+        .replace(0, 0, "Україна", "Input")
+        .unwrap();
+    app.sync_view();
+    let before = app.session.editor.document.clone();
+    app.execute(Action::Replace, &ctx);
+    app.find = "ї".repeat(2049);
+    app.replacement = "wrong".into();
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    assert!(app.find_query.error().is_some());
+    assert_eq!(app.find.len(), 4098);
+    click_region(&ctx, &mut app, "find-replace");
+    assert_eq!(app.session.editor.document, before);
+    assert_eq!(app.session.editor.undo_stack.len(), 1);
 }

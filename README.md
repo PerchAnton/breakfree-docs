@@ -147,14 +147,19 @@ sizes show an empty field. Grow/Shrink Font steps each selected run independentl
 through common presets, with one undo operation. At a caret it changes pending
 insertion size. Native paste is plain text; the Paste menu explains this scope.
 Find opens navigation directly; its arrow and Select expose command menus.
-Navigation shows the active result number and highlighted context for all exact,
-case-sensitive matches. Previous/Next buttons or Enter/Down and Shift+Enter/Up in
+Navigation shows the active result number and highlighted context for all literal
+matches. Match case starts enabled; Whole words starts disabled. Tab/Space changes
+these window-local search options without changing the document. Previous/Next
+buttons or Enter/Down and Shift+Enter/Up in
 the search field wrap through the matches without leaving that field. Clear resets
 the query; Escape closes the pane and returns to the document. Selecting a result
 scrolls the continuous canvas to it. Search respects complete combining/emoji
-clusters; it does not normalize text or support whole-word/wildcard options.
+clusters. Ignoring case uses Unicode simple folding; Whole words uses Unicode
+word boundaries, including internal apostrophes. Search does not normalize text,
+expand ß to SS, or apply locale-specific casing. Wildcards are not supported.
+Queries above 4,096 UTF-8 bytes show an error without truncation.
 Replace uses the same matches and existing one-operation undo boundary.
-[Navigation details and evidence](docs/UI_SPEC.md#alpha14-navigation-results).
+[Navigation details and evidence](docs/UI_SPEC.md#alpha15-search-options).
 The Font launcher opens a dialog for style, size and underline with a preview.
 Only OK applies the draft, together in one undo operation; Cancel/Escape discards
 it. Mixed properties stay unchanged unless edited. Unimplemented font-family,

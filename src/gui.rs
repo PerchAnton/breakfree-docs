@@ -215,6 +215,9 @@ pub struct DocsApp {
     command_search: String,
     palette: bool,
     find: String,
+    find_options: crate::search::Options,
+    find_option_ids: [Option<Id>; 2],
+    find_query: crate::search::Query,
     replacement: String,
     find_scroll: Option<usize>,
     find_composing: bool,
@@ -318,6 +321,9 @@ impl DocsApp {
             command_search: String::new(),
             palette: false,
             find: String::new(),
+            find_options: crate::search::Options::default(),
+            find_option_ids: [None, None],
+            find_query: crate::search::Query::new("", crate::search::Options::default()),
             replacement: String::new(),
             find_scroll: None,
             find_composing: false,
@@ -1849,7 +1855,13 @@ impl DocsApp {
         }
         let find_focus = self.navigation
             && ctx.memory(|m| {
-                m.has_focus(Id::new("find-text")) || m.had_focus_last_frame(Id::new("find-text"))
+                m.has_focus(Id::new("find-text"))
+                    || m.had_focus_last_frame(Id::new("find-text"))
+                    || self
+                        .find_option_ids
+                        .iter()
+                        .flatten()
+                        .any(|id| m.has_focus(*id) || m.had_focus_last_frame(*id))
             });
         let find_ime = find_focus
             && (self.find_composing
@@ -2043,7 +2055,7 @@ impl DocsApp {
                                 let mut commit=false;let mut cancel=false;
                                 if focused {for event in &events {if let egui::Event::Ime(ime)=event {match ime {egui::ImeEvent::Enabled|egui::ImeEvent::Preedit(_)=>self.composing=true,egui::ImeEvent::Commit(text)=>{self.composing=false;if text.is_empty()||text=="\n"||text=="\r"{cancel=true;}else{commit=true;}},egui::ImeEvent::Disabled=>{if self.composing{cancel=true;}self.composing=false;}}}}}
                                 let search_range = if self.navigation && !self.composing && !self.find_composing
-                                    && crate::search::Results::new(&self.buffer, &self.find).active(self.session.editor.selection).is_some() {
+                                    && self.find_query.search(&self.buffer).active(self.session.editor.selection).is_some() {
                                     let (a,b)=self.session.editor.selection;
                                     Some(CCursorRange::two(CCursor::new(b),CCursor::new(a)))
                                 } else {None};

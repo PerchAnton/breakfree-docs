@@ -3,7 +3,31 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
-## 0.1.0-alpha.14 — Unreleased; submitted for owner approval
+## 0.1.0-alpha.15 — Unreleased; submitted for owner approval
+
+Prepared 2026-10-17. The owner approved alpha.14 in the project chat. Preserve
+alpha.13 colors, original vector icons and the Home group spacing.
+
+- Add Match case and Whole words controls to Navigation, with keyboard Tab/Space
+  and Escape back to the document. Options persist only in the current window.
+- Share a cached literal query between counts, results, highlighting and replacement.
+  Ignoring case uses Unicode simple folding; whole words use Unicode word boundaries
+  including internal apostrophes. Preserve original ranges and complete graphemes.
+- Keep replacement on the shared command/history path. Query/options changes are
+  read-only; overlong queries produce an explicit error, without truncation.
+- Add the small Rust regex dependency for Unicode case tables and bounded literal
+  matching, with locked versions and updated dependency notices/inventory. User
+  patterns are escaped; no wildcard/regular-expression search is exposed.
+- Extend core and actual-widget regressions for multilingual case/word boundaries,
+  literal punctuation, keyboard focus, formatting, undo/redo, persistence and bounds.
+  All 110 full / 44 core-only tests pass; two native captures and macOS keyboard,
+  replacement/history and system Save/Open checks passed.
+
+No document/protocol/settings schema or project-license change. Native Windows,
+IME, matched Word comparison and full release acceptance remain open. No merge,
+tag or release is authorized by version approval.
+
+## 0.1.0-alpha.14 — Unreleased; version approved 2026-10-17
 
 Prepared 2026-10-17. The owner approved alpha.13 in the project chat. Its palette
 and original vector icons are retained; approval does not authorize publication.

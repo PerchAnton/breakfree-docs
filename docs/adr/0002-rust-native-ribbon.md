@@ -113,3 +113,27 @@ and one undo operation. Bounded context excerpts are presentation only. Virtual
 rows expose every match without retaining the old first-40 cap. No schema or
 GUI dependency is added to the engine. Case folding, word boundaries, replace-all
 and richer search options remain separately scoped work.
+
+## Alpha.15 search options
+
+Extend `search::Query` with window-local Match case (default on) and Whole words
+(default off). Cache the prepared query until input/options change. `regex` supplies
+[Unicode simple case folding](https://docs.rs/regex/1.13.1/regex/struct.RegexBuilder.html#method.unicode)
+for escaped literal input; existing `unicode-segmentation` supplies word/grapheme
+boundaries. Keep original byte/scalar positions, including matches whose UTF-8
+length differs from the query. Do not normalize, expand multi-character folds
+(such as ß/SS), use locale-specific casing, or expose a pattern language.
+
+A whole-word match starts at a Unicode word start and ends at a word end; phrases
+may span words/paragraphs, but punctuation-only input has no whole-word matches.
+Internal apostrophes, digits and underscores remain part of their Unicode words.
+Rejected partial matches must not consume a later overlapping valid match.
+Accepted matches remain nonoverlapping. Queries over 4,096 UTF-8 bytes or failed
+preparation show an error and disable match actions; input is retained verbatim.
+
+This small library addition does not change the GUI toolkit or document engine
+architecture. Cargo.lock pins the dependency graph; notices and the macOS metadata
+inventory record upstream licenses. No implementation source is vendored and no
+project license is selected. Full distribution review remains open. Search options
+are neither document content nor saved preferences; replace-all, locale tailoring,
+normalization and cross-launch search settings remain separate work.

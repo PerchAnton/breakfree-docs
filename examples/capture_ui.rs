@@ -19,7 +19,9 @@ struct Capture {
 impl eframe::App for Capture {
     fn raw_input_hook(&mut self, _ctx: &egui::Context, input: &mut egui::RawInput) {
         // Deterministic render fixture, including focus; this does not prove OS input.
-        if self.mode.starts_with("keytips") || self.mode == "temporary" || self.mode == "navigation"
+        if self.mode.starts_with("keytips")
+            || self.mode == "temporary"
+            || self.mode.starts_with("navigation")
         {
             input.focused = true;
         }
@@ -50,8 +52,33 @@ impl eframe::App for Capture {
                 }
             }
         }
-        if self.frames == 2 && self.mode == "navigation" {
-            input.events.push(egui::Event::Text("BreakFree".into()));
+        if self.frames == 2 && self.mode.starts_with("navigation") {
+            input.events.push(egui::Event::Text(
+                if self.mode == "navigation-options" {
+                    "breakfree"
+                } else {
+                    "BreakFree"
+                }
+                .into(),
+            ));
+        }
+        if self.mode == "navigation-options" {
+            let key = match self.frames {
+                4 | 5 | 7 => Some(egui::Key::Tab),
+                6 | 8 => Some(egui::Key::Space),
+                _ => None,
+            };
+            if let Some(key) = key {
+                for pressed in [true, false] {
+                    input.events.push(egui::Event::Key {
+                        key,
+                        physical_key: None,
+                        pressed,
+                        repeat: false,
+                        modifiers: egui::Modifiers::NONE,
+                    });
+                }
+            }
         }
         if self.mode == "keytips-qat-below" {
             let key = match self.frames {
@@ -133,6 +160,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "home",
             "file",
             "navigation",
+            "navigation-options",
             "formatting",
             "font",
             "collapsed",
@@ -154,7 +182,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ]
         .contains(&args[2].as_str())
     {
-        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|formatting|font|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
+        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|formatting|font|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
     }
     let path = std::env::var("BREAKFREE_CAPTURE_TO")
         .map_err(|_| "Set BREAKFREE_CAPTURE_TO to an output PNG path")?;
@@ -232,7 +260,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
                 "file" => app.execute(Action::File, &cc.egui_ctx),
-                "navigation" => app.execute(Action::Find, &cc.egui_ctx),
+                "navigation" | "navigation-options" => app.execute(Action::Find, &cc.egui_ctx),
                 "collapsed" | "keytips-root" | "keytips-home" | "keytips-prefix" => {
                     app.ribbon_collapsed = true
                 }

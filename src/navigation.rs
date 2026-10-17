@@ -70,7 +70,7 @@ impl DocsApp {
                     let response = ui.add_sized(
                         [ui.available_width() - 28., 26.],
                         egui::TextEdit::singleline(&mut self.find).id(id).hint_text("Search document"),
-                    ).on_hover_text("Literal, case-sensitive search. Enter / Down: next; Shift+Enter / Up: previous.");
+                    ).on_hover_text("Find literal text. Enter / Down: next; Shift+Enter / Up: previous.");
                     self.record("find-input", response.rect);
                     changed = response.changed();
                     if self.focus_find {
@@ -85,8 +85,25 @@ impl DocsApp {
                         response.request_focus();
                     }
                 });
+                ui.add_enabled_ui(ready, |ui| {
+                    ui.horizontal_wrapped(|ui| {
+                        let case = ui.checkbox(&mut self.find_options.match_case, "Match case")
+                            .on_hover_text("When off, match upper/lowercase using Unicode simple case folding. Text is not normalized.");
+                        self.record("find-case", case.rect);
+                        self.find_option_ids[0] = Some(case.id);
+                        changed |= case.changed();
+                        let words = ui.checkbox(&mut self.find_options.whole_words, "Whole words")
+                            .on_hover_text("Match complete Unicode words or phrases. Apostrophes within words are preserved.");
+                        self.record("find-words", words.rect);
+                        self.find_option_ids[1] = Some(words.id);
+                        changed |= words.changed();
+                    });
+                });
+                if !self.find_query.is_current(&self.find, self.find_options) {
+                    self.find_query = crate::search::Query::new(&self.find, self.find_options);
+                }
                 let mut text = self.session.editor.document.text();
-                let mut results = Results::new(&text, &self.find);
+                let mut results = self.find_query.search(&text);
                 if changed && ready {
                     self.find_scroll = None;
                     if !results.matches.is_empty() {
@@ -136,7 +153,7 @@ impl DocsApp {
                             self.sync_view();
                             self.focus_document = false;
                             text = self.session.editor.document.text();
-                            results = Results::new(&text, &self.find);
+                            results = self.find_query.search(&text);
                             self.find_scroll = None;
                         } else if let Some(index) = results.adjacent(self.session.editor.selection, false) {
                             self.select_find_result(&results, index);
@@ -144,11 +161,13 @@ impl DocsApp {
                     }
                 }
                 ui.add_space(4.);
-                ui.small("Exact text · case sensitive");
-                if self.find.is_empty() {
+                ui.small(if self.find_options.match_case { "Literal text · case sensitive" } else { "Literal text · ignore case" });
+                if let Some(error) = self.find_query.error() {
+                    ui.colored_label(ui.visuals().error_fg_color, error);
+                } else if self.find.is_empty() {
                     ui.label("Type to find text in this document.");
                 } else if results.matches.is_empty() {
-                    ui.label("No results. Check spelling and case. Only complete characters match.");
+                    ui.label("No results. Check spelling and search options. Only complete characters match.");
                 }
                 let row_step = ROW_HEIGHT + ui.spacing().item_spacing.y;
                 let mut scroll = egui::ScrollArea::vertical().id_salt("find-results").auto_shrink([false, false]);

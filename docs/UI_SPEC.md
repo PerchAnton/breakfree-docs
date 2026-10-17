@@ -107,6 +107,45 @@ L/E/R/J are implemented. Ctrl/Command+D or Shift+F opens the Font dialog.
 Home/File KeyTips and Alt entry, plus quick-access/tab/View extensions, are described below. Contextual KeyTips,
 native assistive technology and multilingual OS IME remain unverified/incomplete.
 
+## Alpha.15 search options
+
+Preserve the alpha.13 palette/icons and existing Home dimensions. Add two real
+checkboxes below the 26-DIP search field, inside the 260-DIP Navigation pane
+(220–320 DIP resizable). The row wraps within the pane's available width rather
+than extending over the document. Match case starts on; Whole words starts off.
+Tab traverses Clear, Match case, Whole words and the result arrows; Space toggles
+the focused option. Escape from either option returns focus to the document.
+Options survive clearing/reopening the pane in the same window, but are not saved
+across launches. Disabled states protect active input composition.
+
+Changing a query/option selects the first valid result without an edit/history
+operation. The counter, excerpts, document highlight and single-match replacement use the
+same prepared query. Replacement remains one shared command and one undo operation.
+Whole words requires a Unicode word start and end; apostrophes inside words are
+retained, digits/underscores remain word constituents and phrases may span words.
+A punctuation-only query has no whole-word results. Case-insensitive matching uses
+Unicode simple folding, with original scalar positions; it does not normalize
+accented text, expand ß to SS or apply Turkish/other locale-specific rules. Queries
+above 4,096 UTF-8 bytes show an error with no truncation or replacement. Wildcards,
+replace-all and broader linguistic search remain deferred.
+
+### Alpha.15 native captures
+
+English/light theme, 100% document zoom, macOS backing scale 2:
+
+- [Search options, 1366 × 900 DIP](screenshots/rust-search-options-alpha15-macos.png).
+- [Search options, 640 × 480 DIP](screenshots/rust-search-options-alpha15-macos-narrow.png).
+
+The native harness enters lowercase `breakfree` and toggles both options with
+Tab/Space, selecting the actual Welcome title. Inspection confirms contained
+controls and retained palette/Home gutters. At minimum width the continuous
+canvas scrolls horizontally; no pagination is claimed. The fixture's existing
+emoji fallback limitation remains visible. Normal-binary keyboard verification
+separately covers the options, replacement, history and Save/Open. Native Windows
+100/125/150%, OS IME, complete accessibility and matched Word Windows screenshots
+remain unverified; no similarity percentage is assigned. These inline options
+are a scoped prototype convenience, not a claim to match Word's options dialog.
+
 ## Alpha.14 navigation results
 
 The existing Home Find/Replace and View Navigation entry points now share the
