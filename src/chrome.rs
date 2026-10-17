@@ -6,6 +6,32 @@ use eframe::egui::{
 pub const INK: Color32 = Color32::from_rgb(50, 49, 48);
 pub const ACCENT: Color32 = Color32::from_rgb(112, 71, 174);
 pub const LINE: Color32 = Color32::from_rgb(213, 213, 213);
+pub const CHROME: Color32 = Color32::from_rgb(243, 244, 245);
+pub const SURFACE: Color32 = Color32::from_rgb(250, 250, 250);
+pub const WORKSPACE: Color32 = Color32::from_rgb(235, 235, 235);
+pub const FILE_RAIL: Color32 = Color32::from_rgb(235, 237, 239);
+pub const HOVER: Color32 = Color32::from_rgb(231, 234, 238);
+pub const PRESSED: Color32 = Color32::from_rgb(220, 224, 229);
+pub const SELECTION: Color32 = Color32::from_rgb(232, 224, 242);
+
+// Small semantic accents, independent of the brand's focus/selection color.
+const BLUE: Color32 = Color32::from_rgb(58, 125, 181);
+const PALE_BLUE: Color32 = Color32::from_rgb(227, 239, 249);
+const GOLD: Color32 = Color32::from_rgb(176, 137, 62);
+const PALE_GOLD: Color32 = Color32::from_rgb(255, 245, 214);
+const YELLOW: Color32 = Color32::from_rgb(244, 210, 62);
+const RED: Color32 = Color32::from_rgb(202, 65, 76);
+const ERASER: Color32 = Color32::from_rgb(183, 113, 167);
+
+fn tint(color: Color32, enabled: bool) -> Color32 {
+    if enabled {
+        color
+    } else {
+        // Muted color remains recognizable without suggesting availability.
+        let channel = |c: u8| ((u16::from(c) + 2 * 232) / 3) as u8;
+        Color32::from_rgb(channel(color.r()), channel(color.g()), channel(color.b()))
+    }
+}
 
 #[derive(Clone, Copy)]
 pub enum Icon {
@@ -42,14 +68,30 @@ pub enum Icon {
     CanvasWidth,
     Document,
     Open,
+    Home,
+    Settings,
+    Print,
     Text(&'static str),
 }
 
-pub fn paint(ui: &Ui, icon: Icon, center: Pos2, size: f32, color: Color32) {
+pub fn paint(ui: &Ui, icon: Icon, center: Pos2, size: f32, color: Color32, enabled: bool) {
     let painter = ui.painter();
     let scale = size / 20.;
     let p = |x: f32, y: f32| center + vec2(x, y) * scale;
     let stroke = Stroke::new(1.15_f32, color);
+    let accent = |c| tint(c, enabled);
+    let colored_line = |a: (f32, f32), b: (f32, f32), c| {
+        painter.line_segment([p(a.0, a.1), p(b.0, b.1)], Stroke::new(1.15_f32, accent(c)));
+    };
+    let panel = |a: (f32, f32), b: (f32, f32), fill, edge| {
+        painter.rect(
+            Rect::from_min_max(p(a.0, a.1), p(b.0, b.1)),
+            1.,
+            accent(fill),
+            Stroke::new(1.0_f32, accent(edge)),
+            egui::StrokeKind::Inside,
+        );
+    };
     let line = |a: (f32, f32), b: (f32, f32)| {
         painter.line_segment([p(a.0, a.1), p(b.0, b.1)], stroke);
     };
@@ -77,9 +119,9 @@ pub fn paint(ui: &Ui, icon: Icon, center: Pos2, size: f32, color: Color32) {
             line((-7., 0.), (-1., 6.));
         }
         Icon::Save => {
-            rect((-7., -8.), (7., 8.));
+            panel((-7., -8.), (7., 8.), PALE_BLUE, BLUE);
             rect((-4., -8.), (4., -1.));
-            rect((-4., 2.), (4., 8.));
+            panel((-4., 2.), (4., 8.), Color32::WHITE, BLUE);
             line((2., -6.), (2., -3.));
         }
         Icon::Undo | Icon::Redo => {
@@ -97,47 +139,49 @@ pub fn paint(ui: &Ui, icon: Icon, center: Pos2, size: f32, color: Color32) {
             line((-3. * d, 0.), (-7. * d, -4.));
         }
         Icon::Paste => {
-            rect((-7., -6.), (6., 8.));
-            rect((-3., -9.), (3., -4.));
-            painter.rect_filled(
-                Rect::from_min_max(p(-1., -1.), p(9., 10.)),
-                1.,
-                Color32::WHITE,
-            );
-            rect((-1., -1.), (9., 10.));
+            panel((-7., -6.), (6., 8.), PALE_GOLD, GOLD);
+            panel((-3., -9.), (3., -4.), SURFACE, GOLD);
+            panel((-1., -1.), (9., 10.), Color32::WHITE, BLUE);
             line((2., 3.), (6., 3.));
             line((2., 6.), (6., 6.));
         }
         Icon::Cut => {
-            painter.circle_stroke(p(-5., 5.), 3. * scale, stroke);
-            painter.circle_stroke(p(5., 5.), 3. * scale, stroke);
+            let handles = Stroke::new(1.3_f32, accent(BLUE));
+            painter.circle_stroke(p(-5., 5.), 3. * scale, handles);
+            painter.circle_stroke(p(5., 5.), 3. * scale, handles);
             line((-4., 3.), (6., -8.));
             line((4., 3.), (-6., -8.));
         }
         Icon::Copy => {
-            rect((-7., -8.), (3., 5.));
-            painter.rect_filled(
-                Rect::from_min_max(p(-2., -4.), p(8., 9.)),
-                1.,
-                Color32::WHITE,
-            );
-            rect((-2., -4.), (8., 9.));
+            panel((-7., -8.), (3., 5.), PALE_BLUE, BLUE);
+            panel((-2., -4.), (8., 9.), Color32::WHITE, BLUE);
+            for y in [0., 3., 6.] {
+                line((1., y), (5., y));
+            }
         }
         Icon::Brush => {
-            rect((-8., -8.), (8., -3.));
-            line((5., -3.), (5., 0.));
-            line((5., 0.), (0., 0.));
-            rect((-2., 0.), (2., 9.));
+            painter.add(egui::Shape::convex_polygon(
+                vec![p(4., -8.), p(8., -4.), p(0., 4.), p(-4., 0.)],
+                accent(PALE_GOLD),
+                Stroke::new(1.0_f32, accent(GOLD)),
+            ));
+            painter.add(egui::Shape::convex_polygon(
+                vec![p(-4., 0.), p(0., 4.), p(-5., 9.), p(-9., 5.)],
+                accent(PALE_GOLD),
+                stroke,
+            ));
+            line((-6., 2.), (-2., 6.));
+            colored_line((-8., 5.), (-5., 8.), GOLD);
         }
         Icon::Search => {
             painter.circle_stroke(p(-2., -2.), 5.5 * scale, stroke);
             line((2., 2.), (8., 8.));
         }
         Icon::Replace => {
-            line((-7., -5.), (7., -5.));
-            line((7., -5.), (3., -8.));
-            line((7., 5.), (-7., 5.));
-            line((-7., 5.), (-3., 8.));
+            colored_line((-7., -5.), (7., -5.), BLUE);
+            colored_line((7., -5.), (3., -8.), BLUE);
+            colored_line((7., 5.), (-7., 5.), BLUE);
+            colored_line((-7., 5.), (-3., 8.), BLUE);
             painter.text(
                 center,
                 Align2::CENTER_CENTER,
@@ -168,14 +212,14 @@ pub fn paint(ui: &Ui, icon: Icon, center: Pos2, size: f32, color: Color32) {
                 let y = -6. + i as f32 * 6.;
                 line((-2., y), (8., y));
                 if matches!(icon, Icon::Bullets) {
-                    painter.circle_filled(p(-6., y), 1.2 * scale, color);
+                    painter.circle_filled(p(-6., y), 1.2 * scale, accent(BLUE));
                 } else {
                     painter.text(
                         p(-6., y),
                         Align2::CENTER_CENTER,
                         (i + 1).to_string(),
                         FontId::proportional(6. * scale),
-                        color,
+                        accent(BLUE),
                     );
                 }
             }
@@ -188,8 +232,8 @@ pub fn paint(ui: &Ui, icon: Icon, center: Pos2, size: f32, color: Color32) {
                 line((0., y), (8., y));
             }
             let d = if increase { 1. } else { -1. };
-            line((-5. - 2. * d, -3.), (-5. + 2. * d, 0.));
-            line((-5. + 2. * d, 0.), (-5. - 2. * d, 3.));
+            colored_line((-5. - 2. * d, -3.), (-5. + 2. * d, 0.), BLUE);
+            colored_line((-5. + 2. * d, 0.), (-5. - 2. * d, 3.), BLUE);
         }
         Icon::Multilevel => {
             for (i, label) in ["1", "a", "i"].into_iter().enumerate() {
@@ -234,7 +278,7 @@ pub fn paint(ui: &Ui, icon: Icon, center: Pos2, size: f32, color: Color32) {
                     p(10., -5. - 2. * d),
                     p(7., -5. + 2. * d),
                 ],
-                color,
+                accent(BLUE),
                 Stroke::NONE,
             ));
         }
@@ -248,7 +292,7 @@ pub fn paint(ui: &Ui, icon: Icon, center: Pos2, size: f32, color: Color32) {
             );
             painter.add(egui::Shape::convex_polygon(
                 vec![p(2., 1.), p(8., 5.), p(5., 9.), p(-1., 5.)],
-                Color32::WHITE,
+                accent(ERASER),
                 stroke,
             ));
             line((2., 7.), (5., 3.));
@@ -260,7 +304,10 @@ pub fn paint(ui: &Ui, icon: Icon, center: Pos2, size: f32, color: Color32) {
             ));
             line((-5., 1.), (-7., 6.));
             line((-7., 6.), (-2., 4.));
-            painter.line_segment([p(-8., 9.), p(8., 9.)], Stroke::new(2.0_f32, color));
+            painter.line_segment(
+                [p(-8., 9.), p(8., 9.)],
+                Stroke::new(3.0_f32, accent(YELLOW)),
+            );
         }
         Icon::FontColor | Icon::TextEffects => {
             painter.text(
@@ -268,22 +315,26 @@ pub fn paint(ui: &Ui, icon: Icon, center: Pos2, size: f32, color: Color32) {
                 Align2::CENTER_CENTER,
                 "A",
                 FontId::proportional(18. * scale),
-                color,
+                if matches!(icon, Icon::TextEffects) {
+                    accent(BLUE)
+                } else {
+                    color
+                },
             );
             if matches!(icon, Icon::FontColor) {
-                painter.line_segment([p(-8., 9.), p(8., 9.)], Stroke::new(2.0_f32, color));
+                painter.line_segment([p(-8., 9.), p(8., 9.)], Stroke::new(3.0_f32, accent(RED)));
             } else {
-                line((-6., 8.), (-2., -6.));
+                colored_line((-6., 8.), (-2., -6.), BLUE);
             }
         }
         Icon::Spacing => {
             for y in [-6., 0., 6.] {
                 line((0., y), (8., y));
             }
-            line((-5., -8.), (-5., 8.));
+            colored_line((-5., -8.), (-5., 8.), BLUE);
             for d in [-1., 1.] {
-                line((-8., 5. * d), (-5., 8. * d));
-                line((-2., 5. * d), (-5., 8. * d));
+                colored_line((-8., 5. * d), (-5., 8. * d), BLUE);
+                colored_line((-2., 5. * d), (-5., 8. * d), BLUE);
             }
         }
         Icon::Border => {
@@ -322,16 +373,41 @@ pub fn paint(ui: &Ui, icon: Icon, center: Pos2, size: f32, color: Color32) {
             line((5., -5.), (-5., 5.));
         }
         Icon::Document => {
-            rect((-7., -9.), (7., 9.));
+            panel((-7., -9.), (7., 9.), Color32::WHITE, BLUE);
             for y in [-4., 0., 4.] {
                 line((-4., y), (4., y));
             }
         }
         Icon::Open => {
-            rect((-8., -4.), (8., 7.));
-            line((-8., -4.), (-8., -7.));
-            line((-8., -7.), (-2., -7.));
-            line((-2., -7.), (1., -4.));
+            panel((-8., -4.), (8., 7.), PALE_GOLD, GOLD);
+            colored_line((-8., -4.), (-8., -7.), GOLD);
+            colored_line((-8., -7.), (-2., -7.), GOLD);
+            colored_line((-2., -7.), (1., -4.), GOLD);
+        }
+        Icon::Home => {
+            painter.add(egui::Shape::closed_line(
+                vec![p(-9., -1.), p(0., -9.), p(9., -1.)],
+                Stroke::new(1.4_f32, accent(ACCENT)),
+            ));
+            panel((-6., -1.), (6., 9.), SELECTION, ACCENT);
+            panel((-2., 3.), (2., 9.), Color32::WHITE, ACCENT);
+        }
+        Icon::Settings => {
+            let points = (0..32)
+                .map(|i| {
+                    let angle = i as f32 * std::f32::consts::TAU / 32.;
+                    let radius = if i % 4 < 2 { 8.5 } else { 6.5 };
+                    p(angle.cos() * radius, angle.sin() * radius)
+                })
+                .collect();
+            painter.add(egui::Shape::closed_line(points, stroke));
+            painter.circle_stroke(center, 3. * scale, stroke);
+        }
+        Icon::Print => {
+            rect((-5., -9.), (5., -3.));
+            rect((-8., -3.), (8., 5.));
+            panel((-5., 2.), (5., 9.), Color32::WHITE, color);
+            painter.circle_filled(p(5., 0.), scale, accent(BLUE));
         }
         Icon::Text(text) => {
             let font = FontId::new(
@@ -385,6 +461,7 @@ pub fn control(
             pos2(rect.center().x, rect.top() + 22.),
             28.,
             color,
+            enabled,
         );
         ui.painter().text(
             pos2(rect.center().x, rect.bottom() - 17.),
@@ -394,7 +471,7 @@ pub fn control(
             color,
         );
     } else if label.is_empty() {
-        paint(ui, icon, rect.center(), 16., color);
+        paint(ui, icon, rect.center(), 16., color, enabled);
     } else {
         paint(
             ui,
@@ -402,6 +479,7 @@ pub fn control(
             pos2(rect.left() + 12., rect.center().y),
             16.,
             color,
+            enabled,
         );
         ui.painter()
             .with_clip_rect(rect.shrink2(vec2(2., 0.)))
@@ -442,6 +520,7 @@ pub fn dropdown(
         },
         16.,
         color,
+        enabled,
     );
     if !label.is_empty() {
         ui.painter()
@@ -460,6 +539,7 @@ pub fn dropdown(
         rect.right_center() - vec2(5., 0.),
         8.,
         color,
+        enabled,
     );
     response
 }
@@ -523,6 +603,7 @@ pub fn field(ui: &mut Ui, rect: Rect, label: &str, explanation: &str) -> Respons
         rect.right_center() - vec2(9., 0.),
         12.,
         Color32::from_gray(150),
+        false,
     );
     ui.allocate_rect(rect, Sense::hover())
         .on_hover_text(explanation)

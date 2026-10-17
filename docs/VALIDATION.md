@@ -8,7 +8,7 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.12**. Earlier capture/CI evidence retains its
+Current local checkpoint: **0.1.0-alpha.13**. Earlier capture/CI evidence retains its
 original scope; this iteration does not establish native Windows behavior.
 
 | Local check | Observed result |
@@ -17,11 +17,11 @@ original scope; this iteration does not establish native Windows behavior.
 | `cargo test --locked --no-default-features` | 36 passed; preferences, core and CLI build without GUI dependencies |
 | `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
 | `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
-| Copied executable outside checkout | Alpha.12 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
+| Copied executable outside checkout | Alpha.13 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
 | Repository references, contract and artwork | `python3 tools/check_repository.py` passed; approved logo embedded directly and archive copy byte-identical |
 | Workflow YAML / whitespace | Ruby YAML parse and `git diff --check` passed |
-| Native rendering | Alpha.12 ordering dialog at 1366 × 900 and 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha12-native-captures). Earlier evidence retains its version context |
-| Native macOS interaction | Alpha.12 normal binary: Unicode paste/selection/Bold, F10/0 ordering entry, Alt+arrow focus, Escape cancellation, OK, renumbered Undo/Redo and restart restored the saved order. Earlier native Save/Open and Home geometry evidence retains its version context; Windows/AltGr/IME remains unverified |
+| Native rendering | Alpha.13 Home at 1366 × 900 / 640 × 480 DIP and File at 1366 × 900 inspected at backing scale 2; [captures](UI_SPEC.md#alpha13-native-captures). Earlier evidence retains its version context |
+| Native macOS interaction | Alpha.13 normal binary: Unicode paste/selection, pointer Bold, Undo/Redo, F10 File/Options, pointer Home/Back, F10 Home/Escape and Discard passed. Active Cut/Copy, selected and disabled cues inspected. Prior native Save/Open/settings restart evidence retains its version context; Windows/AltGr/IME remains unverified |
 | Synthetic DPI | Actual widgets at 1/1.25/1.5 scale and 960/1366/1920 physical widths; ribbon/group/workspace/status bounds and collapse assertions passed; 27 additional width/scale combinations check individual Home control containment/nonoverlap and title/search/window bounds |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
@@ -56,6 +56,31 @@ widget tests cover wide/minimum-width Grow/Shrink, composition disablement,
 Paste/Find/Select menus, Escape cancellation and working overflow. Strict geometry
 checks now include menu triggers and the More button. The initial 640-DIP budget
 failure was resolved by narrowing the overflow Font group, keeping the assertions.
+
+## Alpha.13 palette validation
+
+The change is confined to native chrome/vector painting and existing File controls.
+All 95 existing tests pass, including strict Home gutter/control geometry,
+keyboard/KeyTips, toolbar ordering/preferences, Unicode/history and save/reopen.
+The 36 core-only tests, normal/capture-inclusive Clippy, fmt, normal release build,
+repository/artwork and YAML/whitespace checks also passed. No snapshot of color
+constants is presented as evidence of visual fidelity.
+
+Three native captures were inspected at wide/minimum Home sizes and wide File.
+The supplied macOS images were visually consulted for color roles; their exact
+build, color profile and effective UI scale are unknown. No raw source images or
+desktop content were copied into the project. Icon color availability, labels,
+gutters, selection/focus and neutral backgrounds were checked in the running app.
+
+The normal release binary ran outside the checkout with an isolated profile.
+Native paste of English/Ukrainian/Russian/combining text, Select All, pointer Bold,
+Undo and Redo retained the three paragraphs and selection. Cut/Copy became visibly
+active while unsupported color/highlight/brush controls remained disabled. F10 F T
+opened File Options; pointer Home and Back returned to the same document. F10 H
+and Escape preserved ribbon navigation; closing used Discard on the synthetic
+document. Native system Save/Open and settings restart were not repeated in this
+visual-only iteration; existing automated roundtrips passed. Native Windows,
+physical AltGr/IME and matched Word 2024 screenshots remain acceptance gates.
 
 ## Alpha.12 toolbar order validation
 

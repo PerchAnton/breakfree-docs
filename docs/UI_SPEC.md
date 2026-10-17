@@ -34,13 +34,13 @@ measurements taken from Word**. Source constants are in `src/presentation.rs`; o
 | Default window / minimum | 1366 × 900 / 640 × 480 DIP; native custom title controls |
 | Title | 44 DIP high; 24 × 24 approved transparent icon, 28 × 28 Save/Undo/Redo icons; actual filename and dirty marker; 28-DIP search field; 46-DIP-wide vector window controls |
 | Tabs | 32 DIP; File, Home, Insert, Draw, Design, Layout, References, Mailings, Review, View, Help; narrow windows use More tabs |
-| Ribbon | 104 DIP expanded; white rounded inset (8 DIP horizontally / 4 vertically), 88-DIP groups with bottom captions; collapsible via button, double-click tab or Ctrl+F1 |
+| Ribbon | 104 DIP expanded; near-white rounded inset (8 DIP horizontally / 4 vertically), 88-DIP groups with bottom captions; collapsible via button, double-click tab or Ctrl+F1 |
 | Home groups, full | Clipboard 86, Font 304, Paragraph 246, Styles 350, Editing 116 DIP; 8-DIP group gaps and separators |
 | Home groups, compact | Below 1180 DIP available ribbon width: 82/246/218/140/104 DIP; compact Clipboard and one style preview |
 | Home overflow | Below 900 DIP available ribbon width: 82/232/206 DIP; Styles/Editing move into More menu; the pinned ribbon reserves workspace; temporary mode overlays it |
 | Controls | Small buttons 24–32 × 24–26 DIP; Paste 46 × 69 split into a 37-DIP icon action and 32-DIP options menu; two rows in Font/Paragraph, three in Clipboard/Editing; 13-DIP UI text, 11-DIP captions; 15 × 16 group launchers |
 | Font size | 64 × 25 DIP unified outline: 46-DIP editable field and 18-DIP preset arrow; font-family field is 112/64/50 DIP in full/compact/overflow density |
-| Workspace | Neutral #e8e8e8; white continuous canvas, border #c5c5c5; soft canvas shadow; 10-DIP workspace top gap; centered when space allows; horizontal/vertical scrolling when required |
+| Workspace | Neutral #ebebeb; white continuous canvas, border #c5c5c5; soft canvas shadow; 10-DIP workspace top gap; centered when space allows; horizontal/vertical scrolling when required |
 | Canvas | 816 DIP wide at 100% document zoom, 96-DIP side/top margins, content-driven height; **no page segmentation** |
 | Text | Host Arial/DejaVu or embedded fallback; default 11 pt (14.667 DIP), per-run 1–400 pt in half-points and underline; 1.25 line height, default-size 0.5-em paragraph gap; model styles/alignment projected into hit-testable text |
 | Ruler | 22-DIP-high horizontal canvas ruler with shaded margins, 96 DIP per inch, eighth-inch ticks; zoom scales with document; no draggable margins or vertical/page ruler yet |
@@ -106,6 +106,57 @@ Ctrl/Command N/O/S/Shift+S, B/I/U, Shift+P (focus/select size), Z/Y/Shift+Z, F/H
 L/E/R/J are implemented. Ctrl/Command+D or Shift+F opens the Font dialog.
 Home/File KeyTips and Alt entry, plus quick-access/tab/View extensions, are described below. Contextual KeyTips,
 native assistive technology and multilingual OS IME remain unverified/incomplete.
+
+## Alpha.13 icon palette
+
+On 2026-10-17 the owner supplied two local reference images showing a macOS
+editing window and start screen in Russian. They support the requested color
+roles: light neutral surfaces, dark glyphs, restrained blue details, a gold
+clipboard, yellow highlighting and a red text-color indicator. They do not
+identify the application's exact version/build or a Windows configuration.
+Source images and desktop/file-list content are not included in this repository.
+The approved Windows composition target remains; these are supplemental palette
+references, not a controlled same-size/theme/language/zoom comparison.
+
+| Role | Docs sRGB value / use |
+| :--- | :--- |
+| Window chrome | `#f3f4f5` title/tabs/status |
+| Ribbon and File surface | `#fafafa`; white document/field interiors |
+| Workspace / File rail | `#ebebeb` / `#ebedef`, replacing the tinted File rail |
+| Text / boundaries | `#323130` / `#d5d5d5` |
+| Hover / pressed | `#e7eaee` / `#dce0e5` |
+| Brand focus / selection | `#7047ae` / `#e8e0f2` |
+| Blue / pale blue | `#3a7db5` / `#e3eff9`: Save/New/Copy, scissors handles, arrows and text-effect glyph |
+| Gold / pale gold | `#b0893e` / `#fff5d6`: Clipboard, Open and brush details |
+| Yellow / red / eraser | `#f4d23e` / `#ca414c` / `#b771a7`: small highlight/color/eraser cues |
+
+These are chosen Docs values, not sampled or certified reference colors. Original
+Rust vector geometry uses dark outlines and small colored parts. Disabled icon
+accents blend one part semantic color with two parts neutral `#e8e8e8`; labels
+remain disabled gray. Unsupported highlighting, text color, effects and Format
+Painter still do nothing and explain why. Their swatches are icon cues, not
+claims about the current document's formatting. Hover, pressed, selected and
+focus states retain the native button interaction. File Home, Options and Print
+now share the same icon/text alignment as the existing file actions; Print stays
+disabled. Home group widths, 8-DIP gaps, hit regions and overflow rules are unchanged.
+
+### Alpha.13 native captures
+
+Captured and visually inspected on macOS on 2026-10-17, English UI, light theme,
+100% document zoom and backing scale 2:
+
+- [Home, 1366 × 900 DIP](screenshots/rust-palette-alpha13-macos.png).
+- [Home, 640 × 480 DIP](screenshots/rust-palette-alpha13-macos-narrow.png).
+- [File Home, 1366 × 900 DIP](screenshots/rust-palette-alpha13-macos-file.png).
+
+Home uses the real Formatting fixture (21 words/four paragraphs); File starts
+with an empty document. Icon/label separation, Clipboard/Font gutter, disabled
+cues and File selection were inspected. Normal-binary input also checked active
+Cut/Copy appearance, Bold/history, File Options/Home/Back and F10 Home navigation.
+Intentional differences are the approved Docs logo, violet focus/selection and
+original icon geometry. Reference typography, precise spacing, saturated enabled
+advanced commands, start-screen templates/recents and native platform chrome
+still differ. No numerical similarity score or Windows scaling pass is inferred.
 
 ## Alpha.12 toolbar ordering
 

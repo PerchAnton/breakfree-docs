@@ -41,10 +41,10 @@ mod quick_access;
 #[path = "view_ribbon.rs"]
 mod view_ribbon;
 
-const INK: Color32 = Color32::from_rgb(35, 35, 35);
-const ACCENT: Color32 = Color32::from_rgb(112, 71, 174);
-const CHROME: Color32 = Color32::from_rgb(243, 243, 243);
-const WORKSPACE: Color32 = Color32::from_rgb(232, 232, 232);
+const INK: Color32 = chrome::INK;
+const ACCENT: Color32 = chrome::ACCENT;
+const CHROME: Color32 = chrome::CHROME;
+const WORKSPACE: Color32 = chrome::WORKSPACE;
 const EDIT_ID: &str = "document-text";
 const SEARCH_ID: &str = "command-search";
 const FONT_SIZE_ID: &str = "font-size-input";
@@ -238,10 +238,10 @@ impl DocsApp {
             s.visuals.widgets.hovered.corner_radius = 3.into();
             s.visuals.widgets.active.corner_radius = 3.into();
             s.visuals.override_text_color = Some(INK);
-            s.visuals.selection.bg_fill = Color32::from_rgb(222, 210, 239);
+            s.visuals.selection.bg_fill = chrome::SELECTION;
             s.visuals.selection.stroke = Stroke::new(1.0_f32, ACCENT);
-            s.visuals.widgets.hovered.bg_fill = Color32::from_rgb(231, 231, 231);
-            s.visuals.widgets.active.bg_fill = Color32::from_rgb(215, 215, 215);
+            s.visuals.widgets.hovered.bg_fill = chrome::HOVER;
+            s.visuals.widgets.active.bg_fill = chrome::PRESSED;
             s.text_styles
                 .insert(egui::TextStyle::Body, FontId::proportional(13.));
             s.text_styles
@@ -782,6 +782,7 @@ impl DocsApp {
                     search_rect.left_center() + vec2(14., 0.),
                     15.,
                     Color32::from_gray(95),
+                    true,
                 );
                 let response = ui.put(
                     Rect::from_min_max(
@@ -1199,7 +1200,7 @@ impl DocsApp {
             "command-Paste",
             TargetKind::Action(Action::Paste),
         );
-        chrome::paint(ui, Icon::Paste, top.center(), 28., color);
+        chrome::paint(ui, Icon::Paste, top.center(), 28., color, enabled);
         if response
             .on_hover_text("Paste plain text · Ctrl/Command+V")
             .on_disabled_hover_text("Finish text composition first.")
@@ -1225,6 +1226,7 @@ impl DocsApp {
             bottom.center_bottom() - vec2(0., 6.),
             9.,
             color,
+            enabled,
         );
         egui::Popup::menu(&menu).show(|ui| {
             self.collecting_menu = true;
@@ -1582,7 +1584,7 @@ impl DocsApp {
     }
     fn ribbon_contents(&mut self, ui: &mut Ui) {
         let shell = ui.max_rect();
-        ui.painter().rect_filled(shell, 6., Color32::WHITE);
+        ui.painter().rect_filled(shell, 6., chrome::SURFACE);
         ui.painter().rect_stroke(
             shell,
             6.,
@@ -2174,8 +2176,7 @@ impl DocsApp {
 
         let rail = Rect::from_min_max(full.min, pos2(full.left() + 180., full.bottom()));
 
-        ui.painter()
-            .rect_filled(rail, 0., Color32::from_rgb(242, 239, 247));
+        ui.painter().rect_filled(rail, 0., chrome::FILE_RAIL);
 
         ui.painter().line_segment(
             [rail.right_top(), rail.right_bottom()],
@@ -2207,12 +2208,9 @@ impl DocsApp {
                 }
                 ui.add_space(20.);
 
-                let home = ui.add_sized(
-                    [156., 34.],
-                    Button::new("Home")
-                        .selected(!self.settings)
-                        .frame_when_inactive(!self.settings),
-                );
+                let (rect, _) = ui.allocate_exact_size(vec2(156., 34.), Sense::hover());
+                let home =
+                    chrome::control(ui, rect, Icon::Home, "Home", "Home", true, !self.settings);
 
                 self.record("file-home", home.rect);
 
@@ -2235,20 +2233,21 @@ impl DocsApp {
 
                 ui.separator();
 
-                Self::disabled(
-                    ui,
-                    "Print",
-                    vec2(156., 34.),
-                    "Printing requires pagination, planned for D3.",
-                );
+                let (rect, _) = ui.allocate_exact_size(vec2(156., 34.), Sense::hover());
+                chrome::control(ui, rect, Icon::Print, "Print", "Print", false, false)
+                    .on_disabled_hover_text("Printing requires pagination, planned for D3.");
 
                 ui.add_space(8.);
 
-                let options = ui.add_sized(
-                    [156., 34.],
-                    Button::new("Options")
-                        .selected(self.settings)
-                        .frame_when_inactive(self.settings),
+                let (rect, _) = ui.allocate_exact_size(vec2(156., 34.), Sense::hover());
+                let options = chrome::control(
+                    ui,
+                    rect,
+                    Icon::Settings,
+                    "Options",
+                    "Options",
+                    true,
+                    self.settings,
                 );
 
                 self.record("file-options", options.rect);
@@ -2541,7 +2540,7 @@ impl DocsApp {
             .frame(
                 egui::Frame::new()
                     .fill(if self.backstage {
-                        Color32::WHITE
+                        chrome::SURFACE
                     } else {
                         WORKSPACE
                     })

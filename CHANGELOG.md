@@ -3,6 +3,27 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.13 — Unreleased; submitted for owner approval
+
+Prepared 2026-10-17. This focused visual update follows the owner's supplied
+macOS reference captures. Alpha.12 version approval has not been received.
+
+- Give original vector icons small semantic accents: gold Clipboard/Open,
+  blue file/copy/scissors details and arrows, yellow highlight, red font-color
+  indicator and a muted pink eraser. Keep text/alignment/history outlines dark.
+- Add explicit enabled/disabled tint handling; unavailable commands remain muted
+  and disabled with their existing explanations. Color indicators do not add
+  text-color, highlighting or Format Painter functionality.
+- Unify light neutral shell/ribbon/canvas/File colors, soften violet selection,
+  and add original Home/Options/Print icons to the existing File actions.
+- Inspect three native captures and normal macOS input for selection, Bold,
+  undo/redo, File Home/Options and KeyTips. All 95 existing tests and 36 core-only
+  tests pass; no test assertions or layout dimensions were relaxed.
+
+The supplied images inform color roles only: they do not identify a Word build
+or establish Windows/DPI equivalence. No source images, external icon assets,
+new dependencies, schema changes, merge, tag or release.
+
 ## 0.1.0-alpha.12 — Unreleased; submitted for owner approval
 
 Prepared 2026-10-17. The owner approved alpha.11 in the project chat; that approval

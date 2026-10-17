@@ -207,6 +207,16 @@ remain review gates. Draw/Help/ruler/100% assignments are provisional; unsupport
 commands and broader toolbar customization remain roadmap work. See the
 [ordering dialog](docs/UI_SPEC.md#alpha12-toolbar-ordering).
 
+## Interface palette
+
+The native shell uses light neutral surfaces, dark outlines and small colored
+icon details: gold Clipboard/Open, blue file and editing details, and muted
+indicators on unavailable formatting commands. Violet remains the BreakFree
+focus/selection accent. All icons are original Rust vectors; color does not
+indicate a newly implemented command. File keeps working Home/Options actions
+and explained disabled Print. [Palette and captures](docs/UI_SPEC.md#alpha13-icon-palette)
+describe the reference scope and remaining differences.
+
 ## Local toolbar settings
 
 Settings apply to this user/profile across documents. Reset Toolbar asks for
