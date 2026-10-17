@@ -104,8 +104,71 @@ F6/Shift+F6 cycles the document, visible navigation/formatting panes, status and
 ribbon; Alt+Q searches real commands. Standard
 Ctrl/Command N/O/S/Shift+S, B/I/U, Shift+P (focus/select size), Z/Y/Shift+Z, F/H and
 L/E/R/J are implemented. Ctrl/Command+D or Shift+F opens the Font dialog.
-Bare-Alt activation, full sequential ribbon KeyTips, native assistive technology
-and multilingual OS IME behavior remain unverified/incomplete.
+Home/File KeyTips and Alt entry are described below. Complete non-Home KeyTips,
+native assistive technology and multilingual OS IME remain unverified/incomplete.
+
+## Alpha.7 KeyTips and Alt entry
+
+The [official keyboard guide](https://support.microsoft.com/en-us/accessibility/word/keyboard-shortcuts-in-word),
+[official Home KeyTips image](https://support.microsoft.com/en-us/accessibility/media/word-365-ribbon-keytips.png)
+and [text-formatting guide](https://support.microsoft.com/en-gb/accessibility/word/use-a-screen-reader-to-insert-and-change-text-in-word)
+were inspected on 2026-10-17. They support Alt/F10, Home entry, the emphasis,
+size/Font and alignment routes. The image is labeled Word 365, not a controlled
+Word 2024 screenshot. [File keyboard guidance](https://support.microsoft.com/en-us/accessibility/office-accessibility/keyboard-shortcuts-for-the-file-menu-in-microsoft-365-for-windows)
+informs the File routes. Exact mappings and behavior under a named Word 2024 build,
+especially Editing and paste submenus, remain subject to the Windows comparison.
+No reference image is bundled as application artwork.
+
+| Entry / level | Implemented sequence and effect |
+| :--- | :--- |
+| Bare Alt release / F10 | Show top-level hints; repeat to leave and restore prior focus. Alt used in a chord, with Shift/Ctrl/Command, or across focus loss does not arm bare-Alt entry |
+| Top level | F File; H Home; Q search. N/G/P/S/M/R/W select Insert/Design/Layout/References/Mailings/Review/View and hand off to existing focus navigation; hidden-tab routes still work |
+| Home Font | 1 Bold, 2 Italic, 3 Underline; FS editable size, FN Font dialog, FG/FK Grow/Shrink |
+| Home Paragraph | AL/AC/AR/AJ left/center/right/justify |
+| Home Clipboard | X Cut, C Copy; V opens Paste, T inserts plain text. Only enabled commands receive hints |
+| Home Editing | FD Find, R Replace; SL opens Select, A selects all. SL remains a two-step menu route when Editing moves into More |
+| Responsive More | E opens the actual overflow; FD/R/A/P select Find/Replace/Select All/Formatting. E and P here are Docs-specific assignments |
+| File | N New, O Open, S Save, A Save As, T Options. These use Docs' existing local actions/settings, without additional reference-app pages or cloud services |
+| Prefix / cancellation | Show matching full codes after a prefix; Backspace removes one letter, invalid input keeps it unchanged. Escape clears prefix, then menu → Home → top level → prior focus |
+| Navigation / pointer | Tab/arrows/Enter/Space/F6 dismiss hints and continue existing navigation. Pointer press dismisses hints before normal click routing. Commands retain their usual focus destination |
+
+Badges are **Docs design values**, not Word measurements: 17 DIP high, width
+10 + 7 × code length, 12-DIP white text on #373737, 2-DIP corners. They are painted
+on a noninteractive tooltip layer using real control rectangles. Main-control
+centers sit 2 DIP below the lower edge; menu/File hints sit at the right of each
+row. Prefix filtering does not change layout. Disabled features have no active
+hint; Cut/Copy hints appear only with a selection. No imaginary command is added.
+
+`gui::keytips` owns only presentation/input state. It dispatches the same Action
+and menu handlers as pointer/focus navigation. Input processing preserves event
+order, consumes access-key text partners and suppresses held-key repeats until
+release. Size entry immediately resumes native text handling. IME events, active
+composition and modal drafts block entry. Ctrl+Alt key events cannot be mistaken
+for Ctrl-only commands; their committed text is retained (synthetic AltGr case).
+
+Bare Alt observes egui modifier-state transitions; a very short tap coalesced
+entirely between frames may be invisible to this adapter. F10 remains available.
+The macOS automation tool rejects modifier-only presses, so bare Alt has event-test
+evidence only. Native AltGr, layout switching, IME and Windows 100/125/150% still
+need real-device acceptance. Quick-access, Draw/Help and non-Home command hints are
+not complete; no full reference-app keyboard equivalence is claimed.
+
+### Alpha.7 native captures
+
+![Home KeyTips, alpha.7, macOS](screenshots/rust-keytips-home-alpha7-macos.png)
+
+[Top-level hints](screenshots/rust-keytips-root-alpha7-macos.png) ·
+[Prefix F](screenshots/rust-keytips-prefix-alpha7-macos.png) ·
+[Home at 640 × 480 DIP](screenshots/rust-keytips-home-alpha7-macos-narrow.png).
+Captured and inspected on 2026-10-17: English/light theme, Welcome fixture,
+100% document zoom, backing scale 2. Wide views are 1366 × 900 DIP. The capture
+harness injects deterministic focus/key events into the actual native renderer;
+these pictures establish rendering, not OS key delivery. The separate native
+interaction smoke is recorded in VALIDATION. The inherited missing emoji glyph
+and continuous canvas remain visible. Brand differences remain the approved logo,
+name and restrained violet accent; no reference branding is used. A matched Word
+2024 Windows capture is unavailable, so no pixel deltas or similarity percentage
+are supplied.
 
 ## Alpha.6 collapsed ribbon and Home keyboard behavior
 
@@ -132,8 +195,8 @@ pinned Home, with a subtle 3-DIP-offset shadow. Its overlay intentionally covers
 the canvas below the tabs until dismissed; it does not imply pagination. Focus
 and open-menu state live in `src/ribbon_navigation.rs`, separate from document
 commands. The native size input keeps cursor/selection/IME behavior. Live document
-IME preedit blocks ribbon keyboard entry. Bare Alt and full KeyTip sequences are
-not implemented; native screen-reader traversal still requires review.
+IME preedit blocks ribbon keyboard entry. Alpha.7 extends this focus router with
+KeyTips below; native screen-reader traversal still requires review.
 
 ### Alpha.6 native captures
 
@@ -254,7 +317,7 @@ accepted in place of `home`. This development example adds no production CLI fla
 
 ## Remaining differences and reproducible comparison gate
 
-Current gaps include print pagination and page rulers, vertical ruler, font-family/color controls, lists/styles, contextual object tabs, full KeyTips,
+Current gaps include print pagination and page rulers, vertical ruler, font-family/color controls, lists/styles, contextual object tabs, complete non-Home KeyTips,
 view-mode buttons, additional File operations and complete native window/accessibility
 behavior. Metrics are provisional until measured against the named reference.
 
@@ -277,3 +340,12 @@ selection across formatting/history, new font-step buttons/shortcuts, Paste/Find
 Select menus, Escape cancellation, narrow overflow, zoom/reset and File navigation/
 dirty New. All supported font sizes are tested for bounded step behavior. These
 are CPU layout tests, not native Windows scaling or visual validation.
+
+The capture helper also accepts `keytips-root`, `keytips-home` and `keytips-prefix`:
+
+```sh
+BREAKFREE_CAPTURE_TO="$PWD/docs/screenshots/keytips-review.png" \
+  cargo run --locked --release --features capture --example capture_ui -- 1366 900 keytips-home
+```
+
+These modes inject fixture focus/key events; they do not validate native Alt input.

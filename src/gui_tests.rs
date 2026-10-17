@@ -1465,3 +1465,375 @@ fn keyboard_preset_activation_arrows_and_escape_do_not_insert_into_document() {
     ribbon_key(&ctx, &mut app, Key::Escape, Modifiers::NONE, size);
     assert!(ctx.memory(|m| m.has_focus(Id::new(EDIT_ID))));
 }
+
+fn modifier_frame(ctx: &egui::Context, app: &mut DocsApp, modifiers: Modifiers, focused: bool) {
+    let input = egui::RawInput {
+        screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(1366., 900.))),
+        modifiers,
+        focused,
+        ..Default::default()
+    };
+    let _ = ctx.run(input, |ctx| app.update_ui(ctx));
+}
+fn alt_tap(ctx: &egui::Context, app: &mut DocsApp) {
+    modifier_frame(ctx, app, Modifiers::ALT, true);
+    modifier_frame(ctx, app, Modifiers::NONE, true);
+}
+fn tip_events(keys: &[Key]) -> Vec<egui::Event> {
+    keys.iter()
+        .flat_map(|k| {
+            let mut events = vec![key(*k, false)];
+            if k.name().len() == 1 {
+                events.push(egui::Event::Text(k.name().to_lowercase()));
+            }
+            events.push(egui::Event::Key {
+                key: *k,
+                physical_key: None,
+                pressed: false,
+                repeat: false,
+                modifiers: Modifiers::NONE,
+            });
+            events
+        })
+        .collect()
+}
+fn tip_sequence(ctx: &egui::Context, app: &mut DocsApp, keys: &[Key], size: [f32; 2]) {
+    frame(ctx, app, tip_events(keys), size, 1.);
+    // Native areas and their popups each need a measurement pass.
+    for _ in 0..3 {
+        frame(ctx, app, vec![], size, 1.);
+    }
+}
+
+#[test]
+fn keytips_bare_alt_toggle_chords_focus_loss_and_ime_guards() {
+    use keytips::Level;
+    let (ctx, mut app) = setup();
+    alt_tap(&ctx, &mut app);
+    assert_eq!(app.keytips.level, Some(Level::Root));
+    assert!(app.regions.iter().any(|r| r.name == "keytip-H"));
+    alt_tap(&ctx, &mut app);
+    assert_eq!(app.keytips.level, None);
+    assert!(ctx.memory(|m| m.has_focus(Id::new(EDIT_ID))));
+    for mods in [
+        Modifiers::ALT | Modifiers::SHIFT,
+        Modifiers::ALT | Modifiers::CTRL,
+    ] {
+        modifier_frame(&ctx, &mut app, Modifiers::ALT, true);
+        modifier_frame(&ctx, &mut app, mods, true);
+        modifier_frame(&ctx, &mut app, Modifiers::NONE, true);
+        assert_eq!(app.keytips.level, None);
+    }
+    modifier_frame(&ctx, &mut app, Modifiers::ALT, true);
+    modifier_frame(&ctx, &mut app, Modifiers::ALT, false);
+    modifier_frame(&ctx, &mut app, Modifiers::NONE, true);
+    assert_eq!(app.keytips.level, None);
+    ribbon_key(
+        &ctx,
+        &mut app,
+        Key::H,
+        Modifiers::ALT | Modifiers::CTRL,
+        [1366., 900.],
+    );
+    assert_eq!(app.keytips.level, None);
+    assert!(!app.navigation && !app.replace_mode);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("ł".into())],
+        [1366., 900.],
+        1.,
+    );
+    assert_eq!(app.session.editor.document.text(), "ł");
+    frame(
+        &ctx,
+        &mut app,
+        vec![
+            egui::Event::Ime(egui::ImeEvent::Enabled),
+            key(Key::F10, false),
+        ],
+        [1366., 900.],
+        1.,
+    );
+    assert_eq!(app.keytips.level, None);
+    assert!(app.composing);
+    alt_tap(&ctx, &mut app);
+    assert_eq!(app.keytips.level, None);
+}
+
+#[test]
+fn keytips_sequences_preserve_unicode_selection_history_and_roundtrip() {
+    let (ctx, mut app) = setup();
+    let text = "English e\u{301}\nУкраїнська\nРусский 🙂";
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Paste(text.into())],
+        [1366., 900.],
+        1.,
+    );
+    app.execute(Action::SelectAll, &ctx);
+    app.ribbon_collapsed = true;
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    let original = app.session.editor.document.clone();
+    let selection = app.session.editor.selection;
+    let count = app.session.editor.undo_stack.len();
+    // Native integrations may deliver several access keys and paired text in one frame.
+    tip_sequence(
+        &ctx,
+        &mut app,
+        &[Key::F10, Key::H, Key::Num1],
+        [1366., 900.],
+    );
+    let bold = app.session.editor.document.clone();
+    assert_eq!(bold.text(), text);
+    assert!(
+        bold.paragraphs
+            .iter()
+            .flat_map(|p| &p.styles)
+            .all(|s| s.bold)
+    );
+    assert_eq!(app.session.editor.selection, selection);
+    assert_eq!(app.session.editor.undo_stack.len(), count + 1);
+    assert!(app.ribbon_collapsed && !app.ribbon_temporary);
+    assert!(ctx.memory(|m| m.has_focus(Id::new(EDIT_ID))));
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.document, original);
+    app.execute(Action::Redo, &ctx);
+    assert_eq!(app.session.editor.document, bold);
+    tip_sequence(
+        &ctx,
+        &mut app,
+        &[Key::F10, Key::H, Key::A, Key::C],
+        [1366., 900.],
+    );
+    assert!(
+        app.session
+            .editor
+            .document
+            .paragraphs
+            .iter()
+            .all(|p| p.alignment == Alignment::Center)
+    );
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("KeyTips.bfdoc");
+    app.session.path = Some(path.clone());
+    tip_sequence(&ctx, &mut app, &[Key::F10, Key::F, Key::S], [1366., 900.]);
+    assert!(!app.session.dirty());
+    assert_eq!(storage::load(&path).unwrap(), app.session.editor.document);
+}
+
+#[test]
+fn keytips_prefix_backspace_escape_size_entry_and_font_modal() {
+    use keytips::Level;
+    let (ctx, mut app) = setup();
+    app.ribbon_collapsed = true;
+    tip_sequence(
+        &ctx,
+        &mut app,
+        &[Key::F10, Key::H, Key::F, Key::Z],
+        [1366., 900.],
+    );
+    assert_eq!(app.keytips.prefix, "F");
+    assert!(app.ribbon_temporary);
+    assert!(app.regions.iter().any(|r| r.name == "keytip-FS"));
+    assert!(!app.regions.iter().any(|r| r.name == "keytip-1"));
+    tip_sequence(
+        &ctx,
+        &mut app,
+        &[Key::Backspace, Key::F, Key::S],
+        [1366., 900.],
+    );
+    assert_eq!(app.keytips.level, None);
+    assert!(ctx.memory(|m| m.has_focus(Id::new(FONT_SIZE_ID))));
+    edit_size(&ctx, &mut app, "19.5", Key::Enter);
+    assert_eq!(
+        app.session.editor.typing_style.font_size,
+        FontSize::try_from(39).unwrap()
+    );
+    assert!(app.session.editor.document.text().is_empty());
+    tip_sequence(
+        &ctx,
+        &mut app,
+        &[Key::F10, Key::H, Key::F, Key::N],
+        [1366., 900.],
+    );
+    assert!(app.font_dialog.is_some());
+    alt_tap(&ctx, &mut app);
+    assert_eq!(app.keytips.level, None);
+    ribbon_key(&ctx, &mut app, Key::Escape, Modifiers::NONE, [1366., 900.]);
+    assert!(app.font_dialog.is_none());
+    tip_sequence(
+        &ctx,
+        &mut app,
+        &[Key::F10, Key::H, Key::F, Key::Escape],
+        [1366., 900.],
+    );
+    assert_eq!(app.keytips.level, Some(Level::Home));
+    assert!(app.keytips.prefix.is_empty());
+    tip_sequence(&ctx, &mut app, &[Key::Escape], [1366., 900.]);
+    assert_eq!(app.keytips.level, Some(Level::Root));
+    assert!(!app.ribbon_temporary);
+    tip_sequence(&ctx, &mut app, &[Key::Escape], [1366., 900.]);
+    assert_eq!(app.keytips.level, None);
+    assert!(ctx.memory(|m| m.has_focus(Id::new(EDIT_ID))));
+}
+
+#[test]
+fn keytips_menus_narrow_overflow_resize_and_pointer_dismissal() {
+    use keytips::Level;
+    let (ctx, mut app) = setup();
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("Select me".into())],
+        [640., 480.],
+        1.,
+    );
+    app.ribbon_collapsed = true;
+    tip_sequence(
+        &ctx,
+        &mut app,
+        &[Key::F10, Key::H, Key::S, Key::L],
+        [640., 480.],
+    );
+    assert_eq!(app.keytips.level, Some(Level::Select));
+    assert!(egui::Popup::is_any_open(&ctx));
+    frame(&ctx, &mut app, vec![], [640., 480.], 1.);
+    assert!(app.regions.iter().any(|r| r.name == "keytip-A"));
+    tip_sequence(&ctx, &mut app, &[Key::A], [640., 480.]);
+    assert_eq!(app.session.editor.selection, (0, 9));
+    tip_sequence(&ctx, &mut app, &[Key::F10, Key::H, Key::E], [640., 480.]);
+    assert_eq!(app.keytips.level, Some(Level::Editing));
+    tip_sequence(&ctx, &mut app, &[Key::F, Key::D], [640., 480.]);
+    assert!(app.navigation);
+    assert!(ctx.memory(|m| m.has_focus(Id::new("find-text"))));
+    tip_sequence(&ctx, &mut app, &[Key::F10, Key::H, Key::V], [1366., 900.]);
+    assert!(egui::Popup::is_any_open(&ctx));
+    tip_sequence(&ctx, &mut app, &[Key::Escape], [1366., 900.]);
+    assert_eq!(app.keytips.level, Some(Level::Home));
+    assert!(!egui::Popup::is_any_open(&ctx));
+    click_region_at(&ctx, &mut app, "document-text", [1366., 900.]);
+    assert_eq!(app.keytips.level, None);
+    assert!(!app.ribbon_temporary);
+}
+
+#[test]
+fn keytips_repeat_does_not_dispatch_twice_or_insert_paired_text() {
+    let (ctx, mut app) = setup();
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("Words".into())],
+        [1366., 900.],
+        1.,
+    );
+    app.execute(Action::SelectAll, &ctx);
+    tip_sequence(&ctx, &mut app, &[Key::F10, Key::H], [1366., 900.]);
+    let count = app.session.editor.undo_stack.len();
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Num1, false), egui::Event::Text("1".into())],
+        [1366., 900.],
+        1.,
+    );
+    let mut repeat = key(Key::Num1, false);
+    if let egui::Event::Key { repeat: r, .. } = &mut repeat {
+        *r = true;
+    }
+    frame(
+        &ctx,
+        &mut app,
+        vec![repeat, egui::Event::Text("1".into())],
+        [1366., 900.],
+        1.,
+    );
+    assert_eq!(app.session.editor.undo_stack.len(), count + 1);
+    assert_eq!(app.session.editor.document.text(), "Words");
+    ribbon_key(&ctx, &mut app, Key::Num1, Modifiers::NONE, [1366., 900.]);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("Replacement".into())],
+        [1366., 900.],
+        1.,
+    );
+    assert_eq!(app.session.editor.document.text(), "Replacement");
+}
+
+#[test]
+fn keytips_badges_fit_real_controls_at_three_widths_and_scales() {
+    for width in [640., 900., 1366.] {
+        for dpi in [1., 1.25, 1.5] {
+            let (ctx, mut app) = setup();
+            app.ribbon_collapsed = true;
+            frame(
+                &ctx,
+                &mut app,
+                tip_events(&[Key::F10, Key::H]),
+                [width * dpi, 900. * dpi],
+                dpi,
+            );
+            for _ in 0..3 {
+                frame(&ctx, &mut app, vec![], [width * dpi, 900. * dpi], dpi);
+            }
+            let tips: Vec<_> = app
+                .regions
+                .iter()
+                .filter(|r| r.name.starts_with("keytip-"))
+                .collect();
+            assert!(tips.len() >= 13, "{width} {dpi}: {}", tips.len());
+            let screen = Rect::from_min_size(Pos2::ZERO, vec2(width, 900.));
+            for (index, tip) in tips.iter().enumerate() {
+                assert!(
+                    screen.contains_rect(tip.rect),
+                    "{} {:?}",
+                    tip.name,
+                    tip.rect
+                );
+                for other in &tips[index + 1..] {
+                    assert!(
+                        !tip.rect.intersects(other.rect),
+                        "{width} {dpi}: {} overlaps {}",
+                        tip.name,
+                        other.name
+                    );
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn keytips_restore_search_focus_and_ignore_altgr_command_flags() {
+    let (ctx, mut app) = setup();
+    ribbon_key(&ctx, &mut app, Key::Q, Modifiers::ALT, [1366., 900.]);
+    assert!(ctx.memory(|m| m.has_focus(Id::new(SEARCH_ID))));
+    alt_tap(&ctx, &mut app);
+    tip_sequence(&ctx, &mut app, &[Key::Escape], [1366., 900.]);
+    assert!(ctx.memory(|m| m.has_focus(Id::new(SEARCH_ID))));
+    app.focus_document = true;
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    alt_tap(&ctx, &mut app);
+    modifier_frame(&ctx, &mut app, Modifiers::NONE, false);
+    assert!(app.keytips.level.is_none() && app.ribbon_focus.is_none());
+    modifier_frame(&ctx, &mut app, Modifiers::NONE, true);
+    app.focus_document = true;
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    let mut altgr = key(Key::H, true);
+    if let egui::Event::Key { modifiers, .. } = &mut altgr {
+        modifiers.alt = true;
+    }
+    frame(
+        &ctx,
+        &mut app,
+        vec![altgr, egui::Event::Text("ł".into())],
+        [1366., 900.],
+        1.,
+    );
+    assert!(!app.navigation && !app.replace_mode);
+    assert!(app.keytips.level.is_none());
+    assert_eq!(app.session.editor.document.text(), "ł");
+    assert_eq!(app.session.editor.undo_stack.len(), 1);
+}

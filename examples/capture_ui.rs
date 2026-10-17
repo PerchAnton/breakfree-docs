@@ -10,9 +10,37 @@ struct Capture {
     app: DocsApp,
     path: String,
     frames: usize,
+    mode: String,
 }
 
 impl eframe::App for Capture {
+    fn raw_input_hook(&mut self, _ctx: &egui::Context, input: &mut egui::RawInput) {
+        // Deterministic render fixture, including focus; this does not prove OS input.
+        if self.mode.starts_with("keytips") {
+            input.focused = true;
+        }
+        if self.frames == 2 && self.mode.starts_with("keytips") {
+            let mut keys = vec![egui::Key::F10];
+            if self.mode != "keytips-root" {
+                keys.push(egui::Key::H);
+            }
+            if self.mode == "keytips-prefix" {
+                keys.push(egui::Key::F);
+            }
+            for key in keys {
+                for pressed in [true, false] {
+                    input.events.push(egui::Event::Key {
+                        key,
+                        physical_key: None,
+                        pressed,
+                        repeat: false,
+                        modifiers: egui::Modifiers::NONE,
+                    });
+                }
+            }
+        }
+    }
+
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.app.update_ui(ctx);
         for event in ctx.input(|i| i.events.clone()) {
@@ -53,10 +81,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "font",
             "collapsed",
             "temporary",
+            "keytips-root",
+            "keytips-home",
+            "keytips-prefix",
         ]
         .contains(&args[2].as_str())
     {
-        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|file|navigation|formatting|font|collapsed|temporary>; set BREAKFREE_CAPTURE_TO".into());
+        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|file|navigation|formatting|font|collapsed|temporary|keytips-root|keytips-home|keytips-prefix>; set BREAKFREE_CAPTURE_TO".into());
     }
     let path = std::env::var("BREAKFREE_CAPTURE_TO")
         .map_err(|_| "Set BREAKFREE_CAPTURE_TO to an output PNG path")?;
@@ -94,7 +125,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             match mode.as_str() {
                 "file" => app.execute(Action::File, &cc.egui_ctx),
                 "navigation" => app.navigation = true,
-                "collapsed" => app.ribbon_collapsed = true,
+                "collapsed" | "keytips-root" | "keytips-home" | "keytips-prefix" => {
+                    app.ribbon_collapsed = true
+                }
                 "temporary" => {
                     app.ribbon_collapsed = true;
                     app.ribbon_temporary = true;
@@ -109,6 +142,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 app,
                 path,
                 frames: 0,
+                mode,
             }))
         }),
     )?;

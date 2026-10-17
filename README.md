@@ -172,12 +172,20 @@ Ctrl/Command + L/E/R/J aligns paragraphs; F/H opens Find/Replace.
 Ctrl+F1 switches pinned/tabs-only ribbon mode; double-click a tab or use its context
 menu for the same choice. A collapsed tab opens temporarily over the canvas and
 closes after a command, outside click or Escape. Alt+F opens File; Alt+H enters Home;
-Alt+Q focuses command search. F10 focuses the active ribbon tab; Tab/Shift+Tab and
+Alt+Q focuses command search. Tap Alt (release it without another key) or F10 to
+show KeyTips. Then press H for Home: 1/2/3 toggles bold/italic/underline, F then S
+focuses size, F then N opens Font, and A then L/C/R/J aligns. File uses F, then
+N/O/S/A/T for New/Open/Save/Save As/Options. H → E opens narrow-window More.
+Backspace removes a prefix; Escape clears it, backs up a level, then restores
+previous focus. Invalid/repeated hint keys cannot enter document text.
+Tab/Shift+Tab and
 arrows navigate enabled Home controls, Ctrl+Left/Right changes groups, Down or
 Alt+Down opens dropdowns, Enter/Space activates. Escape closes menu, ribbon and
 focus levels in order. F6/Shift+F6 cycles document, visible panes, status and ribbon. Input events delivered in one widget update form one text undo operation;
-explicit paste and formatting commands have separate boundaries. Full
-Word KeyTips and assistive-technology behavior are pending review.
+explicit paste and formatting commands have separate boundaries. See the
+[implemented KeyTips and limits](docs/UI_SPEC.md#alpha7-keytips-and-alt-entry).
+Bare Alt is implemented and event-tested; native Windows Alt/AltGr, complete
+non-Home KeyTips and assistive-technology behavior remain review gates.
 
 ## Check
 

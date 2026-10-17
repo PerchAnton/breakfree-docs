@@ -3,7 +3,31 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
-## 0.1.0-alpha.6 — Unreleased; submitted for owner approval
+## 0.1.0-alpha.7 — Unreleased; submitted for owner approval
+
+Prepared 2026-10-17. The owner approved alpha.6 in the project chat; that approval
+covers its version number, not a merge, tag or release.
+
+- Add bare-Alt release and F10 entry into sequential KeyTips. Home/File/search
+  access keys dispatch existing commands; hints follow real control positions.
+- Add Home emphasis, size/Font dialog, alignment, clipboard and Editing routes,
+  including a narrow-window More level. Preserve collapsed mode and selection.
+- Filter multi-letter prefixes, support Backspace and layered Escape, restore
+  previous focus, and hand arrows/Tab back to ribbon navigation. Consume paired
+  text and repeated access keys so they cannot modify the document accidentally.
+- Guard composition, dialogs, lost window focus and modifier chords. Treat AltGr
+  Ctrl+Alt key events separately from command shortcuts while retaining text input.
+- Add seven widget regressions, nine badge width/scale cases and four native
+  render captures. Verify native macOS F10/Alt+H sequences, size input, menus,
+  Font dialog and Save/Open with independently decoded Unicode/styles.
+
+Native content v2 and process protocol v1 stay unchanged. Bare Alt is covered by
+synthetic modifier transitions; the macOS input tool cannot send a modifier-only
+press. Native Windows Alt/AltGr/IME/DPI and matched Word 2024 checks remain open.
+Non-Home command KeyTips, Draw/Help and quick-access hints remain incomplete.
+No merge, release, dependency or license change is included.
+
+## 0.1.0-alpha.6 — Unreleased; version approved by owner on 2026-10-17
 
 Prepared 2026-10-17. The owner approved alpha.5 in the project chat; that approval
 covers its version number, not a merge, tag or release.

@@ -124,8 +124,13 @@ native dialog/IME, accessibility and target-platform reviews are outstanding.
   keyboard routing and visible-region F6. Alpha.6: 54 full / 26 core-only tests,
   nine additional overlay DPI cases, native macOS keyboard/save smoke and three
   inspected captures. No canvas reflow or lost selection in the covered scenarios.
-- [ ] Add and verify bare-Alt activation and sequential KeyTips, including non-Home
-  tabs and File navigation, against the named Windows reference build.
+- [x] Add Home/File sequential KeyTips, bare-Alt modifier-transition entry, F10,
+  prefix/Escape/focus handling and responsive More routes. Alpha.7: 61 full / 26
+  core-only tests, nine badge scale cases, four inspected native render captures
+  and macOS F10/Alt+H/menu/size/Save/Open smoke. Bare Alt has event-test evidence only.
+- [ ] Verify native bare Alt/AltGr and rapid modifier taps, complete non-Home,
+  Draw/Help/quick-access hints, and compare all mappings against the named Windows
+  reference build. Depends on the native Windows/Word environment; no full parity claimed.
 - [ ] Capture Word 2024 Windows and Docs at matched build/language/theme/window,
   document zoom and Windows 100/125/150%; record measured deltas in UI_SPEC.
 - [ ] Verify native Windows keyboard, IME, dialogs, font fallback, clipping and focus.
@@ -245,3 +250,4 @@ Use public specifications and original test cases, not copied application code. 
 | 2026-10-16 | Owner approved alpha.3; alpha.4 tightens Home geometry/menus/icons and implements shared font-size stepping | 44 full / 24 core-only local tests, three native widths and macOS keyboard/dialog smoke; Windows reference/native DPI and IME gates remain open |
 | 2026-10-16 | Owner approved alpha.4; alpha.5 adds transactional Font dialog and split Find | 48 full / 26 core-only local tests; native macOS dialog/history/save/reopen and four inspected captures; Windows/Word/IME gates remain open |
 | 2026-10-17 | Owner approved alpha.5; alpha.6 adds temporary ribbon and Home keyboard navigation | 54 full / 26 core-only local tests; native macOS focus/menu/undo/save checks and three captures; Windows/Word/IME and full KeyTips gates remain open |
+| 2026-10-17 | Owner approved alpha.6; alpha.7 adds Alt/F10 and Home/File KeyTips | 61 full / 26 core-only local tests, native macOS sequence/Save/Open smoke and four captures; native bare Alt/AltGr, Windows/Word and remaining KeyTips gates stay open |

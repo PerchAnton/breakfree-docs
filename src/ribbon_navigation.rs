@@ -18,7 +18,7 @@ pub(super) enum TargetKind {
 
 #[derive(Clone)]
 pub(super) struct RibbonTarget {
-    name: String,
+    pub(super) name: String,
     id: Id,
     pub(super) rect: Rect,
     group: usize,
@@ -60,7 +60,7 @@ impl DocsApp {
         self.focus_document = true;
     }
 
-    fn focus_ribbon(&mut self, ctx: &egui::Context, enter: bool) {
+    pub(super) fn focus_ribbon(&mut self, ctx: &egui::Context, enter: bool) {
         ctx.memory_mut(|m| {
             if let Some(id) = m.focused() {
                 m.surrender_focus(id);
@@ -90,7 +90,7 @@ impl DocsApp {
         ctx.memory_mut(|m| m.request_focus(target.id));
     }
 
-    fn activate_target(&mut self, target: &RibbonTarget, ctx: &egui::Context) {
+    pub(super) fn activate_target(&mut self, target: &RibbonTarget, ctx: &egui::Context) {
         match target.kind {
             TargetKind::Action(action) => self.execute(action, ctx),
             TargetKind::Preset(size) => {
@@ -144,26 +144,6 @@ impl DocsApp {
         // Do not take focus away from a live IME preedit.
         if self.composing {
             return;
-        }
-        if ctx.input_mut(|i| i.consume_key(Modifiers::ALT, Key::Q)) {
-            self.leave_ribbon(ctx);
-            self.focus_document = false;
-            self.focus_search = true;
-        }
-        if ctx.input_mut(|i| i.consume_key(Modifiers::ALT, Key::F)) {
-            self.leave_ribbon(ctx);
-            self.backstage = !self.backstage;
-        }
-        if ctx.input_mut(|i| i.consume_key(Modifiers::ALT, Key::H)) {
-            self.tab = 0;
-            self.focus_ribbon(ctx, true);
-        }
-        if ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::F10)) {
-            if self.ribbon_focus.is_some() {
-                self.leave_ribbon(ctx);
-            } else {
-                self.focus_ribbon(ctx, false);
-            }
         }
         let reverse = ctx.input_mut(|i| i.consume_key(Modifiers::SHIFT, Key::F6));
         if reverse || ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::F6)) {

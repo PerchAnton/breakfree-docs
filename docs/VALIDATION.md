@@ -8,20 +8,20 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.6**. Earlier capture/CI evidence retains its
+Current local checkpoint: **0.1.0-alpha.7**. Earlier capture/CI evidence retains its
 original scope; this iteration does not establish native Windows behavior.
 
 | Local check | Observed result |
 | :--- | :--- |
-| `cargo test --locked` | 54 passed: 23 engine/storage/presentation, 3 CLI subprocess and 28 actual egui widget event tests; no skipped tests |
+| `cargo test --locked` | 61 passed: 23 engine/storage/presentation, 3 CLI subprocess and 35 actual egui widget event tests; no skipped tests |
 | `cargo test --locked --no-default-features` | 26 passed; core and CLI build without GUI dependencies |
 | `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
 | `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
-| Copied executable outside checkout | Alpha.6 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
+| Copied executable outside checkout | Alpha.7 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
 | Repository references, contract and artwork | `python3 tools/check_repository.py` passed; approved logo embedded directly and archive copy byte-identical |
 | Workflow YAML / whitespace | Ruby YAML parse and `git diff --check` passed |
-| Native rendering | Alpha.6 tabs-only / temporary Home inspected at 1366 × 900, temporary Home also at 640 × 480 DIP, backing scale 2; see [captures](UI_SPEC.md#alpha6-native-captures). Earlier captures retain their version context |
-| Native macOS interaction | Alpha.6 Unicode paste, collapse/F10/Home/group traversal, Bold, undo/redo, dropdown/Escape/size selection, F6/Shift+F6, pinning and system Save/Open passed through Computer Use. Saved v2 text/styles inspected. Earlier lifecycle smoke is preserved below; native non-ASCII typing/IME is not certified |
+| Native rendering | Alpha.7 root/Home/prefix KeyTips at 1366 × 900 and Home at 640 × 480 DIP inspected, backing scale 2; [captures](UI_SPEC.md#alpha7-native-captures) use deterministic fixture events. Earlier captures retain their version context |
+| Native macOS interaction | Alpha.7 F10/Alt+H sequences, Bold/undo/redo, FS size entry, FN Font dialog, Select/Escape and File Save/New/Open passed through Computer Use; Unicode and 19.5-pt bold runs decoded independently. Bare Alt cannot be sent by this tool; native Windows/AltGr/IME remains unverified |
 | Synthetic DPI | Actual widgets at 1/1.25/1.5 scale and 960/1366/1920 physical widths; ribbon/group/workspace/status bounds and collapse assertions passed; 27 additional width/scale combinations check individual Home control containment/nonoverlap and title/search/window bounds |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
@@ -57,6 +57,42 @@ Paste/Find/Select menus, Escape cancellation and working overflow. Strict geomet
 checks now include menu triggers and the More button. The initial 640-DIP budget
 failure was resolved by narrowing the overflow Font group, keeping the assertions.
 
+## Alpha.7 KeyTips validation
+
+Seven new actual-widget tests cover bare Alt down/release/toggle, modifier chords,
+AltGr with Windows command flags, focus loss, same-frame IME entry, prefix filtering,
+invalid keys, Backspace/layered Escape, size entry, Font modal, menu/overflow routes,
+pointer dismissal and restoration of search/document focus. Multiple access keys
+and paired Text events in one frame cannot leak into the document; repeated keys
+cannot create extra history entries. Unicode selection, formatting, undo/redo and
+File-key save/reopen share the existing command engine. Nine combinations of
+640/900/1366 DIP × synthetic 1/1.25/1.5 check badge containment and non-overlap.
+Previous 28 widget and 26 engine/CLI tests remain passing.
+
+Native macOS Computer Use exercised the release binary outside the checkout:
+
+| Action | Observed evidence |
+| :--- | :--- |
+| Paste English/Ukrainian/Russian with combining accent, Command+A, Ctrl+F1, F10 | Exact three paragraphs; top-level hints and Home focus, collapsed preference retained |
+| H then 1; undo then redo | Bold action returns to selected document; one undo/redo operation, no access-key characters inserted |
+| Alt+H, F, S; type 19.5, Enter | Size field selected; 19.5 pt applied and temporary ribbon dismissed |
+| F10, H, F, N | Font dialog shows 19.5 pt; Escape cancels |
+| F10, H, S, L, Escape | Real Select menu, focused Select all; Escape closes menu only; further Escapes return through Home/root/document |
+| F10, F, S; system Save, New, system Open | Local v2 file reopened with exact original Unicode text, bold 19.5 pt and empty history; Saved locally |
+
+Independent JSON assertions checked all three text runs, bold true, italic/underline
+false, `font_size_half_points: 39`. File SHA-256:
+`f36aff0bf20062dd404d8e2550115836002a1f59053e6d2f8c42014b819714e8`.
+The saved native test session was closed.
+
+Bare Alt has synthetic event evidence only: the Computer Use tool rejects
+modifier-only key presses. The egui adapter exposes modifier snapshots, so a very
+short press/release coalesced between frames can be missed. Native Windows Alt,
+AltGr, layout switching, OS IME, assistive technology and 100/125/150% are not
+certified. Four actual-renderer captures are inspected, but no matched Word 2024
+Windows image is available. Non-Home command hints and quick-access/Draw/Help tips
+remain incomplete. No percentage of visual similarity is asserted.
+
 ## Alpha.6 ribbon validation
 
 Six additional actual-widget tests cover temporary expansion with no workspace
@@ -87,7 +123,7 @@ bold with `font_size_half_points: 18`, no italic/underline. SHA-256:
 `9daf859ddb8692b57a88778c45d92a2aedb303f8e024ca86ccdc8ce83561f9fa`.
 The saved test session was closed. Native Windows DPI, Word matching, non-ASCII
 character typing, OS IME and assistive technology remain unverified. F10/Alt+H
-is the supported keyboard entry; bare Alt and full sequential KeyTips are pending.
+was the supported alpha.6 keyboard entry; alpha.7 evidence is recorded above.
 
 ## Alpha.5 Font and Editing validation
 

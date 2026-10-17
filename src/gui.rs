@@ -24,6 +24,10 @@ use font_dialog::{FontDialog, FontDialogOutcome};
 mod ribbon_navigation;
 use ribbon_navigation::{RibbonFocus, RibbonTarget, TargetKind};
 
+#[path = "keytips.rs"]
+mod keytips;
+use keytips::KeyTips;
+
 const INK: Color32 = Color32::from_rgb(35, 35, 35);
 const ACCENT: Color32 = Color32::from_rgb(112, 71, 174);
 const CHROME: Color32 = Color32::from_rgb(243, 243, 243);
@@ -145,6 +149,7 @@ pub struct DocsApp {
     pub ribbon_collapsed: bool,
     pub ribbon_temporary: bool,
     ribbon_focus: Option<RibbonFocus>,
+    keytips: KeyTips,
     ribbon_targets: Vec<RibbonTarget>,
     ribbon_menu_targets: Vec<RibbonTarget>,
     ribbon_menu_index: Option<usize>,
@@ -232,6 +237,7 @@ impl DocsApp {
             ribbon_collapsed: false,
             ribbon_temporary: false,
             ribbon_focus: None,
+            keytips: KeyTips::default(),
             ribbon_targets: Vec::new(),
             ribbon_menu_targets: Vec::new(),
             ribbon_menu_index: None,
@@ -775,23 +781,12 @@ impl DocsApp {
             )
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
-                    if ui
-                        .add_sized(
-                            [44., 26.],
-                            Button::new(RichText::new("File").color(if self.backstage {
-                                Color32::WHITE
-                            } else {
-                                INK
-                            }))
-                            .frame_when_inactive(self.backstage)
-                            .fill(if self.backstage {
-                                ACCENT
-                            } else {
-                                Color32::TRANSPARENT
-                            }),
-                        )
-                        .clicked()
-                    {
+                    let file = ui.add_sized(
+                        [44., 26.],
+                        Button::new(RichText::new("File").color(INK)).frame_when_inactive(false),
+                    );
+                    self.record("tab-File", file.rect);
+                    if file.clicked() {
                         self.backstage = !self.backstage;
                     }
                     let full = ui.available_width() > 770.;
@@ -2409,6 +2404,8 @@ impl DocsApp {
             ctx.send_viewport_cmd(ViewportCommand::CancelClose);
             self.request(Pending::Close, ctx);
         }
+        self.keytip_input(ctx);
+        self.prepare_keytip_menu(ctx);
         self.shortcuts(ctx);
         self.regions.clear();
         self.ribbon_targets.clear();
@@ -2442,6 +2439,7 @@ impl DocsApp {
         self.temporary_ribbon(ctx);
         self.finish_ribbon_focus(ctx);
         self.dialogs(ctx);
+        self.paint_keytips(ctx);
         ctx.send_viewport_cmd(ViewportCommand::Title(format!(
             "{} — BreakFree Docs",
             self.session
