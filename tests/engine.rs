@@ -639,3 +639,101 @@ fn font_steps_are_bounded_and_noops_do_not_consume_history() {
         assert_eq!(e.selected_font_size().unwrap().to_string(), size);
     }
 }
+
+#[test]
+fn clear_character_formatting_preserves_text_paragraphs_and_one_exact_history_step() {
+    let mut e = sample();
+    let end = e.document.character_count() - 1;
+    e.selection = (8, end);
+    let before = e.document.clone();
+    let typing = e.typing_style;
+    let history = e.undo_stack.len();
+    e.clear_character_formatting(8, end).unwrap();
+    let after = e.document.clone();
+    assert_eq!(after.text(), before.text());
+    assert_eq!(after.paragraphs[0], before.paragraphs[0]);
+    for (a, b) in after.paragraphs.iter().zip(&before.paragraphs).skip(1) {
+        assert_eq!(a.alignment, b.alignment);
+        assert!(a.styles.iter().all(|s| *s == Style::default()));
+    }
+    assert_eq!(e.selection, (8, end));
+    assert_eq!(e.typing_style, Style::default());
+    assert_eq!(e.undo_stack.len(), history + 1);
+    assert_eq!(
+        e.undo_stack.last().unwrap().label,
+        "Clear character formatting"
+    );
+    e.undo();
+    assert_eq!(e.document, before);
+    assert_eq!(e.selection, (8, end));
+    assert_eq!(e.typing_style, typing);
+    e.redo();
+    assert_eq!(e.document, after);
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("cleared.bfdoc");
+    storage::save(&e.document, &path).unwrap();
+    assert_eq!(storage::load(&path).unwrap(), after);
+}
+
+#[test]
+fn clear_at_caret_only_resets_pending_style_without_dirtying_or_losing_redo() {
+    let mut e = sample();
+    e.replace(0, 0, "x", "Type").unwrap();
+    e.undo();
+    e.selection = (2, 2);
+    e.typing_style = Style {
+        bold: true,
+        italic: true,
+        underline: true,
+        font_size: "28".parse().unwrap(),
+    };
+    let before = e.document.clone();
+    let history = (e.undo_stack.len(), e.redo_stack.len());
+    e.clear_character_formatting(2, 2).unwrap();
+    assert_eq!(e.document, before);
+    assert_eq!(e.selection, (2, 2));
+    assert_eq!(e.typing_style, Style::default());
+    assert_eq!((e.undo_stack.len(), e.redo_stack.len()), history);
+    e.replace(2, 2, "їe\u{301}", "Type").unwrap();
+    assert!(
+        e.document.paragraphs[0].styles[2..5]
+            .iter()
+            .all(|s| *s == Style::default())
+    );
+    assert!(e.document.paragraphs[0].styles[0].bold);
+    e.undo();
+    assert_eq!(e.document, before);
+    assert_eq!(e.typing_style, Style::default());
+}
+
+#[test]
+fn clear_rejects_partial_clusters_and_plain_or_separator_ranges_keep_history() {
+    let mut e = Editor::default();
+    e.replace(0, 0, "e\u{301} 👩‍💻\nї", "Type").unwrap();
+    e.emphasize(0, 2, true, true).unwrap();
+    e.undo();
+    let before = e.document.clone();
+    let state = (
+        e.selection,
+        e.typing_style,
+        e.undo_stack.len(),
+        e.redo_stack.len(),
+    );
+    for range in [(0, 1), (4, 6), (5, 5), (8, 7), (0, 50)] {
+        assert!(e.clear_character_formatting(range.0, range.1).is_err());
+        assert_eq!(
+            (
+                e.selection,
+                e.typing_style,
+                e.undo_stack.len(),
+                e.redo_stack.len()
+            ),
+            state
+        );
+    }
+    for range in [(0, 2), (6, 7), (0, 8)] {
+        e.clear_character_formatting(range.0, range.1).unwrap();
+        assert_eq!(e.document, before);
+        assert_eq!((e.undo_stack.len(), e.redo_stack.len()), (state.2, state.3));
+    }
+}

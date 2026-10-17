@@ -131,6 +131,14 @@ impl Editor {
         self.format_range(start, end, "Font size", |style| style.font_size = size)
     }
 
+    /// Reset supported direct character properties, preserving paragraph formatting.
+    /// At a caret, reset only the pending insertion style, like other font commands.
+    pub fn clear_character_formatting(&mut self, start: usize, end: usize) -> Result<()> {
+        self.format_range(start, end, "Clear character formatting", |style| {
+            *style = Style::default();
+        })
+    }
+
     /// Apply a dialog's changes together, with one undo boundary and no live edits.
     pub fn set_font(&mut self, start: usize, end: usize, patch: FontPatch) -> Result<()> {
         validate_range(&self.document.text(), start, end)?;

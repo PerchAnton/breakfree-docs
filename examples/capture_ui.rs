@@ -22,6 +22,7 @@ impl eframe::App for Capture {
         if self.mode.starts_with("keytips")
             || self.mode == "temporary"
             || self.mode == "replace-all"
+            || self.mode.starts_with("clear-formatting")
             || self.mode.starts_with("navigation")
         {
             input.focused = true;
@@ -62,6 +63,23 @@ impl eframe::App for Capture {
                 }
                 .into(),
             ));
+        }
+        if self.frames == 2 && self.mode.starts_with("clear-formatting") {
+            let mut keys = vec![egui::Key::F10, egui::Key::H, egui::Key::F];
+            if self.mode == "clear-formatting" {
+                keys.push(egui::Key::C);
+            }
+            for key in keys {
+                for pressed in [true, false] {
+                    input.events.push(egui::Event::Key {
+                        key,
+                        physical_key: None,
+                        pressed,
+                        repeat: false,
+                        modifiers: egui::Modifiers::NONE,
+                    });
+                }
+            }
         }
         if self.mode == "replace-all" {
             if self.frames == 2 {
@@ -187,6 +205,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "navigation",
             "navigation-options",
             "replace-all",
+            "clear-formatting",
+            "clear-formatting-tips",
             "formatting",
             "font",
             "collapsed",
@@ -208,7 +228,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ]
         .contains(&args[2].as_str())
     {
-        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|formatting|font|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
+        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
     }
     let path = std::env::var("BREAKFREE_CAPTURE_TO")
         .map_err(|_| "Set BREAKFREE_CAPTURE_TO to an output PNG path")?;
@@ -232,6 +252,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         session.editor.replace(0, 0, "BreakFree Docs\nBreakFree writes locally.\nBreakFree preserves Unicode: Україна Русский e\u{301}.", "Fixture")?;
         session.editor.emphasize(0, 9, true, true)?;
         session
+    } else if args[2].starts_with("clear-formatting") {
+        Session::new(
+            storage::load(std::path::Path::new("examples/Formatting.bfdoc"))?,
+            None,
+        )
     } else if args[2] == "file" {
         Session::default()
     } else {
@@ -291,6 +316,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
                 "replace-all" => app.execute(Action::Replace, &cc.egui_ctx),
+                "clear-formatting" | "clear-formatting-tips" => {
+                    app.execute(Action::SelectAll, &cc.egui_ctx)
+                }
                 "file" => app.execute(Action::File, &cc.egui_ctx),
                 "navigation" | "navigation-options" => app.execute(Action::Find, &cc.egui_ctx),
                 "collapsed" | "keytips-root" | "keytips-home" | "keytips-prefix" => {

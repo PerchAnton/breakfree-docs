@@ -8,20 +8,20 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.16**. Earlier capture/CI evidence retains its
+Current local checkpoint: **0.1.0-alpha.17**. Earlier capture/CI evidence retains its
 original scope; this iteration does not establish native Windows behavior.
 
 | Local check | Observed result |
 | :--- | :--- |
-| `cargo test --locked` | 121 passed: 23 engine/storage/presentation, 8 search, 7 batch replacement, 9 preferences, 4 CLI subprocess and 70 actual egui widget event tests; no skipped tests |
-| `cargo test --locked --no-default-features` | 51 passed; preferences, core/search/batch replacement and CLI build without GUI dependencies |
+| `cargo test --locked` | 127 passed: 26 engine/storage/presentation, 8 search, 7 batch replacement, 9 preferences, 4 CLI subprocess and 73 actual egui widget event tests; no skipped tests |
+| `cargo test --locked --no-default-features` | 54 passed; preferences, core/search/batch replacement and CLI build without GUI dependencies |
 | `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
 | `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
-| Copied executable outside checkout | Alpha.16 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
+| Copied executable outside checkout | Alpha.17 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
 | Repository references, contract and artwork | `python3 tools/check_repository.py` passed; approved logo embedded directly and archive copy byte-identical |
 | Workflow YAML / whitespace | Ruby YAML parse and `git diff --check` passed |
-| Native rendering | Alpha.16 Replace All preview at 1366 × 900 / 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha16-native-captures). Earlier evidence retains its version context |
-| Native macOS interaction | Alpha.16: keyboard preview/Cancel/Apply, one-step Undo/Redo, system Save/Open and exact Unicode/bold v2 readback passed in an isolated profile; clean close passed. Earlier evidence retains its version context |
+| Native rendering | Alpha.17 clear-format result / compact Font KeyTips at 1366 × 900 / 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha17-native-captures). Earlier evidence retains its version context |
+| Native macOS interaction | Alpha.17: Home clear, F10/H/FC, Alt+Q command search, Undo/Redo, system Save/Open and exact Unicode/regular 11-pt/centered v2 readback passed in an isolated profile; clean close passed. Earlier evidence retains its version context |
 | Synthetic DPI | Actual widgets at 1/1.25/1.5 scale and 960/1366/1920 physical widths; ribbon/group/workspace/status bounds and collapse assertions passed; 27 additional width/scale combinations check individual Home control containment/nonoverlap and title/search/window bounds |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
@@ -56,6 +56,42 @@ widget tests cover wide/minimum-width Grow/Shrink, composition disablement,
 Paste/Find/Select menus, Escape cancellation and working overflow. Strict geometry
 checks now include menu triggers and the More button. The initial 640-DIP budget
 failure was resolved by narrowing the overflow Font group, keeping the assertions.
+
+## Alpha.17 character-format reset validation
+
+All 127 full tests pass (82 library, 4 CLI, 26 engine, 8 search, 7 batch
+replacement); 54 pass without desktop. Three added core tests cover partial and
+cross-paragraph selection, unchanged text/alignment, exact one-step undo/redo,
+pending caret formatting without document changes, no-op redo preservation,
+invalid scalar/grapheme ranges and native v2 save/reopen. The fixture includes
+English, Ukrainian, Russian, combining marks and joined emoji; this is not proof
+of support for every script.
+
+Three added actual-widget tests exercise the eraser at full/compact/overflow
+widths, F10/H/FC in a collapsed ribbon, actual Alt+Q search/Enter, Control-only
+shortcuts for macOS/Windows-style modifier events, rejected AltGr/Shift/Command
+variants, search focus, modal guards, pending input and IME start/commit. Existing
+Home keyboard traversal now explicitly visits Clear before Bold. The existing
+Home control/group/separator and KeyTip geometry matrices pass without relaxed
+bounds. Fmt, normal/capture Clippy, release builds, repository/artwork/YAML and
+isolated version/capabilities checks pass. No dependency or schema changed.
+
+Native macOS captures at 1366 × 900 and 640 × 480 DIP inspect the applied clear
+result and compact Font hints respectively. The original icon/palette and group
+spacing are retained. In an isolated normal release app, synthetic English,
+Ukrainian, Russian and combining text was pasted into two paragraphs, then made
+bold/italic/underlined, centered and 24 pt. The Home eraser reset character
+properties to regular 11 pt while retaining center alignment and selection.
+One Command+Z restored the four properties; redo, F10/H/FC and actual Alt+Q search
+also exercised the action. Native Save/Open passed. Separate JSON assertions
+verified exact Unicode text, centered paragraphs, default styles and native v2;
+reopen reset history and clean close passed. No user document/profile was changed.
+
+Ctrl+Space itself has synthetic event coverage; native input-source interception
+was not tested. Native Windows 100/125/150%, OS IME, physical non-ASCII typing,
+full accessibility and matched Word 2024 captures remain unverified. Character
+reset intentionally does not implement named-style inheritance, paragraph reset
+or implicit word expansion at a caret.
 
 ## Alpha.16 Replace All validation
 

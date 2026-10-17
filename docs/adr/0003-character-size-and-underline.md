@@ -81,3 +81,24 @@ window close until resolved. The preview uses representative defaults for mixed
 properties, disclosed in the dialog, and is clipped at extreme sizes. Font-family
 choice remains disabled. This extends command/UI behavior without changing the
 persisted model, dependencies, native content v2 or process protocol v1.
+
+
+## Alpha.17 direct character reset
+
+`Editor::clear_character_formatting` resets a validated grapheme-aligned range to
+`Style::default()` (regular 11 pt, no bold/italic/underline), using the same
+`format_range`/history boundary as other character commands. Keep text and all
+paragraph alignment unchanged. A collapsed caret changes pending insertion style
+only, without dirtying the document or consuming undo; do not infer a surrounding
+word selection. A plain range preserves redo and adds no history. A selected
+change retains the selection and restores exact styles/typing state with one undo.
+Native v2 and process/settings versions are unchanged.
+
+The Home eraser is explicitly named **Clear character formatting**, rather than
+claiming a full named-style/paragraph reset. Named styles are not yet in the model;
+a future style engine must define the inherited base before extending this rule.
+The same action is available in command search, ribbon keyboard traversal and the
+Docs-specific H → FC KeyTip route (E remains the existing overflow route).
+Ctrl+Space is handled only with document focus, with physical Control on all
+platforms. Do not capture Command+Space, AltGr, Shift variants, repeated keydown or
+IME lifecycle events. Native input-source interception remains OS-dependent.

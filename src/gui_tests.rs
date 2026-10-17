@@ -1538,6 +1538,11 @@ fn home_keyboard_preserves_selection_history_and_roundtrip() {
     }
     assert_eq!(
         app.ribbon_focus,
+        Some(RibbonFocus::Control("command-ClearFormatting".into()))
+    );
+    ribbon_key(&ctx, &mut app, Key::Tab, Modifiers::NONE, size);
+    assert_eq!(
+        app.ribbon_focus,
         Some(RibbonFocus::Control("command-Bold".into()))
     );
     ribbon_key(&ctx, &mut app, Key::Space, Modifiers::NONE, size);
@@ -3491,4 +3496,181 @@ fn replacement_ime_cannot_open_replace_all_during_confirmation() {
     assert!(app.replace_all_dialog.is_none());
     assert_eq!(app.session.editor.document, before);
     assert_eq!(app.session.editor.undo_stack.len(), 1);
+}
+
+#[test]
+fn clear_formatting_pointer_keytips_and_search_share_one_history_operation() {
+    for width in [640., 960., 1366.] {
+        let (ctx, mut app) = setup();
+        app.session
+            .editor
+            .replace(0, 0, "English e\u{301}\nУкраїна Русский", "Type")
+            .unwrap();
+        let end = app.session.editor.document.character_count();
+        app.session.editor.emphasize(0, end, true, true).unwrap();
+        app.session.editor.underline(0, end, true).unwrap();
+        app.session
+            .editor
+            .set_font_size(0, 7, "24".parse().unwrap())
+            .unwrap();
+        app.session.editor.align(0, end, Alignment::Center).unwrap();
+        app.execute(Action::SelectAll, &ctx);
+        let before = app.session.editor.document.clone();
+        let history = app.session.editor.undo_stack.len();
+        click_region_at(&ctx, &mut app, "command-ClearFormatting", [width, 900.]);
+        let after = app.session.editor.document.clone();
+        assert_eq!(before.text(), after.text());
+        assert_eq!(app.session.editor.selection, (0, end));
+        assert_eq!(app.session.editor.undo_stack.len(), history + 1);
+        assert!(
+            after
+                .paragraphs
+                .iter()
+                .all(|p| p.alignment == Alignment::Center
+                    && p.styles.iter().all(|s| *s == Style::default()))
+        );
+        app.execute(Action::Undo, &ctx);
+        assert_eq!(app.session.editor.document, before);
+        app.ribbon_collapsed = true;
+        tip_sequence(
+            &ctx,
+            &mut app,
+            &[Key::F10, Key::H, Key::F, Key::C],
+            [width, 900.],
+        );
+        assert_eq!(app.session.editor.document, after);
+        assert!(!app.ribbon_temporary);
+        app.execute(Action::Undo, &ctx);
+        ribbon_key(&ctx, &mut app, Key::Q, Modifiers::ALT, [width, 900.]);
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::Text("clear character".into())],
+            [width, 900.],
+            1.,
+        );
+        frame(
+            &ctx,
+            &mut app,
+            vec![key(Key::Enter, false)],
+            [width, 900.],
+            1.,
+        );
+        assert_eq!(app.session.editor.document, after);
+        assert!(!app.palette);
+        assert_eq!(app.session.editor.undo_stack.len(), history + 1);
+        app.execute(Action::ClearFormatting, &ctx);
+        assert_eq!(app.session.editor.undo_stack.len(), history + 1);
+    }
+}
+
+#[test]
+fn clear_formatting_control_space_respects_focus_modifiers_and_modal_guards() {
+    for command in [false, true] {
+        let (ctx, mut app) = setup();
+        app.session.editor.replace(0, 0, "Styled", "Type").unwrap();
+        app.session.editor.emphasize(0, 6, true, true).unwrap();
+        app.execute(Action::SelectAll, &ctx);
+        frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+        let before = app.session.editor.document.clone();
+        let ctrl = Modifiers {
+            ctrl: true,
+            command,
+            ..Modifiers::NONE
+        };
+        ribbon_key(&ctx, &mut app, Key::Space, ctrl, [1366., 900.]);
+        assert_eq!(
+            app.session.editor.selected_font(),
+            crate::commands::FontPatch {
+                bold: Some(false),
+                italic: Some(false),
+                underline: Some(false),
+                font_size: Some(FontSize::default())
+            }
+        );
+        assert_eq!(app.session.editor.document.text(), "Styled");
+        app.execute(Action::Undo, &ctx);
+        for mods in [
+            Modifiers { alt: true, ..ctrl },
+            Modifiers {
+                shift: true,
+                ..ctrl
+            },
+            Modifiers {
+                mac_cmd: true,
+                command: true,
+                ..Modifiers::NONE
+            },
+        ] {
+            frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+            ribbon_key(&ctx, &mut app, Key::Space, mods, [1366., 900.]);
+            assert_eq!(app.session.editor.document, before);
+        }
+        app.execute(Action::Find, &ctx);
+        frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+        ribbon_key(&ctx, &mut app, Key::Space, ctrl, [1366., 900.]);
+        assert_eq!(app.session.editor.document, before);
+        app.execute(Action::FontDialog, &ctx);
+        ribbon_key(&ctx, &mut app, Key::Space, ctrl, [1366., 900.]);
+        app.execute(Action::ClearFormatting, &ctx);
+        assert_eq!(app.session.editor.document, before);
+        assert!(app.font_dialog.is_some());
+    }
+}
+
+#[test]
+fn clear_formatting_caret_and_composition_keep_pending_input_and_clean_document() {
+    let (ctx, mut app) = setup();
+    app.execute(Action::Bold, &ctx);
+    assert!(app.session.editor.typing_style.bold);
+    click_region(&ctx, &mut app, "command-ClearFormatting");
+    assert_eq!(app.session.editor.typing_style, Style::default());
+    assert!(!app.session.dirty());
+    assert!(app.session.editor.undo_stack.is_empty());
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("ї e\u{301}".into())],
+        [1366., 900.],
+        1.,
+    );
+    assert!(
+        app.session.editor.document.paragraphs[0]
+            .styles
+            .iter()
+            .all(|s| *s == Style::default())
+    );
+    app.execute(Action::Bold, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    let mut clear = key(Key::Space, false);
+    if let egui::Event::Key { modifiers, .. } = &mut clear {
+        modifiers.ctrl = true;
+    }
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Ime(egui::ImeEvent::Enabled), clear.clone()],
+        [1366., 900.],
+        1.,
+    );
+    assert!(app.composing);
+    assert!(app.session.editor.typing_style.bold);
+    click_region(&ctx, &mut app, "command-ClearFormatting");
+    assert!(app.session.editor.typing_style.bold);
+    app.focus_document = true;
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Ime(egui::ImeEvent::Commit("字".into())), clear],
+        [1366., 900.],
+        1.,
+    );
+    assert!(
+        app.session.editor.document.paragraphs[0]
+            .styles
+            .last()
+            .unwrap()
+            .bold
+    );
 }

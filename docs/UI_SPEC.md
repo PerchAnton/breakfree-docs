@@ -51,7 +51,7 @@ measurements taken from Word**. Source constants are in `src/presentation.rs`; o
 ## Commands and interaction
 
 Active Home commands are plain-text clipboard, bold/italic/underline, font size,
-Grow/Shrink Font, four alignments, Find, Replace selected/next match and Select All. Emphasis controls show selected state and set
+Grow/Shrink Font, Clear character formatting, four alignments, Find, Replace selected/next match, previewed Replace All and Select All. Emphasis controls show selected state and set
 pending insertion style at an empty selection. Original vector strokes draw clipboard, file, history, search, paragraph, window and
 launcher controls. Button names are exposed to the toolkit accessibility tree.
 Selected formatting has a pale violet fill even without hover; focus uses an outline.
@@ -106,6 +106,43 @@ Ctrl/Command N/O/S/Shift+S, B/I/U, Shift+P (focus/select size), Z/Y/Shift+Z, F/H
 L/E/R/J are implemented. Ctrl/Command+D or Shift+F opens the Font dialog.
 Home/File KeyTips and Alt entry, plus quick-access/tab/View extensions, are described below. Contextual KeyTips,
 native assistive technology and multilingual OS IME remain unverified/incomplete.
+
+## Alpha.17 clear character formatting
+
+The existing original eraser icon is active as **Clear character formatting**.
+Its 25 × 25 DIP control stays in the upper Font row. Full density retains Change
+case before it; compact/overflow density uses the disabled Change case position
+for the working eraser, keeping the existing Font widths and 8-DIP group gaps.
+Artwork, semantic icon colors, violet selected states and neutral surfaces are
+unchanged. The tooltip explains all four supported reset properties and the
+preserved paragraph alignment; the accessible name matches the actual scope.
+
+One command resets selected bold/italic/underline/size to regular 11 pt. At a
+caret it resets pending input only. Undo/redo preserves exact prior/result styles,
+selection and typing state; no-op content adds no history. Native v2 is unchanged.
+Tab includes the newly active control; Home KeyTips H → FC and command search
+invoke it at every ribbon density. FC is a Docs-specific mapping pending the
+named Windows reference review; the existing E overflow mapping remains intact.
+
+[Microsoft's text-formatting instructions](https://support.microsoft.com/en-us/powerpoint/clear-all-text-formatting)
+place the eraser in Home/Font. Its [keyboard reference](https://support.microsoft.com/en-us/accessibility/word/keyboard-shortcuts-in-word)
+identifies Ctrl+Space for manual character-format reset (checked 2026-10-17).
+Docs intentionally exposes its narrower implemented scope: no named-style or
+paragraph reset and no implicit word expansion at a caret. The physical Control
+chord only runs in the document, excluding AltGr/Shift/Command, repeat and IME
+lifecycle events. System shortcuts can intercept it; ribbon/KeyTips/search remain
+available. No exact native shortcut/Word visual equivalence is claimed.
+
+### Alpha.17 native captures
+
+English/light theme, 100% zoom, macOS backing scale 2. The capture harness uses
+`examples/Formatting.bfdoc` and real KeyTips events:
+
+- [Clear applied, 1366 × 900 DIP](screenshots/rust-clear-formatting-alpha17-macos.png).
+- [Font KeyTips before clear, 640 × 480 DIP](screenshots/rust-clear-formatting-alpha17-macos-narrow.png).
+
+Windows 100/125/150%, native OS IME/accessibility and matched Word captures remain
+unverified. Synthetic containment tests are distinct from those acceptance gates.
 
 ## Alpha.16 Replace All preview
 

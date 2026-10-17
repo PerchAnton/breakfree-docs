@@ -123,6 +123,8 @@ impl DocsApp {
                 Tip::action("1", Action::Bold),
                 Tip::action("2", Action::Italic),
                 Tip::action("3", Action::Underline),
+                // Docs-specific while named styles and the full reference command are absent.
+                Tip::action("FC", Action::ClearFormatting),
                 Tip::new("FS", "font-size", Destination::Action(Action::FontSize)),
                 Tip::action("FG", Action::GrowFont),
                 Tip::action("FK", Action::ShrinkFont),

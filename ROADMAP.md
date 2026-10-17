@@ -171,6 +171,11 @@ Rust selection is complete; this gate evaluates GUI behavior and visual fidelity
   [ADR 0003](docs/adr/0003-character-size-and-underline.md) and
   [validation](docs/VALIDATION.md) record the narrow alpha.3 increment; this does not
   complete D2 or the native-platform R1 gate.
+- [x] Alpha.17: add the supported character-format reset before extending named
+  styles. Home, Ctrl+Space, KeyTips and command search use one validated command;
+  text/alignment, pending input, no-op redo and exact history/native roundtrip are
+  preserved. [ADR 0003](docs/adr/0003-character-size-and-underline.md#alpha17-direct-character-reset)
+  defines this narrow rule. This does not complete inherited styles or D2.
 - [ ] Add paragraph/character styles with inheritance and direct-formatting rules.
 - [ ] Add lists, indentation, tabs, spacing, links and Unicode-aware search/replace.
 - [ ] Add table editing and images with explicit sizing and anchoring semantics.

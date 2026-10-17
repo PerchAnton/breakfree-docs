@@ -69,6 +69,7 @@ pub enum Action {
     Bold,
     Italic,
     Underline,
+    ClearFormatting,
     FontSize,
     FontDialog,
     GrowFont,
@@ -104,6 +105,7 @@ impl Action {
             Self::Bold => "Bold",
             Self::Italic => "Italic",
             Self::Underline => "Underline",
+            Self::ClearFormatting => "Clear character formatting",
             Self::FontSize => "Font size",
             Self::FontDialog => "Font dialog",
             Self::GrowFont => "Grow font",
@@ -139,6 +141,7 @@ const COMMANDS: &[Action] = &[
     Action::Bold,
     Action::Italic,
     Action::Underline,
+    Action::ClearFormatting,
     Action::FontSize,
     Action::FontDialog,
     Action::GrowFont,
@@ -486,6 +489,13 @@ impl DocsApp {
         if !self.enabled(action) {
             return;
         }
+        if action == Action::ClearFormatting
+            && (self.pending.is_some()
+                || self.error.is_some()
+                || ctx.input(|i| i.events.iter().any(|e| matches!(e, egui::Event::Ime(_)))))
+        {
+            return;
+        }
         // A keyboard Save may leave the size field focused. Commit it before
         // dispatch, so Save/New/Undo cannot silently operate on an older model.
         if action != Action::FontSize && !self.commit_font_size_input() {
@@ -549,6 +559,11 @@ impl DocsApp {
                     .session
                     .editor
                     .underline(start, end, !self.checked(action));
+                self.fail(result);
+                self.sync_view();
+            }
+            Action::ClearFormatting => {
+                let result = self.session.editor.clear_character_formatting(start, end);
                 self.fail(result);
                 self.sync_view();
             }
@@ -993,6 +1008,7 @@ impl DocsApp {
             Action::Bold => "Ctrl+B",
             Action::Italic => "Ctrl+I",
             Action::Underline => "Ctrl+U",
+            Action::ClearFormatting => "Ctrl+Space",
             Action::FontSize => "Ctrl+Shift+P",
             Action::FontDialog => "Ctrl+D",
             Action::GrowFont => "Ctrl+Shift+>",
@@ -1006,17 +1022,20 @@ impl DocsApp {
             Action::Justify => "Ctrl+J",
             _ => "",
         };
-        let shortcut = if cfg!(target_os = "macos") {
+        let shortcut = if cfg!(target_os = "macos") && action != Action::ClearFormatting {
             shortcut.replace("Ctrl", "Command")
         } else {
             shortcut.to_owned()
         };
-        let tip = format!(
+        let mut tip = format!(
             "{}{}{}",
             action.label(),
             if shortcut.is_empty() { "" } else { " · " },
             shortcut
         );
+        if action == Action::ClearFormatting {
+            tip.push_str("\nReset bold, italic, underline and size to regular 11 pt. Paragraph alignment stays unchanged. At a caret, reset the next text you type.");
+        }
         if response
             .on_hover_text(&tip)
             .on_disabled_hover_text(if self.composing {
@@ -1364,23 +1383,22 @@ impl DocsApp {
                     "",
                     Action::ShrinkFont,
                 );
-                self.unavailable_menu(
-                    ui,
-                    r(x + 56., 5., 32., 25.),
-                    Icon::Text("Aa"),
-                    "Change case",
-                    "Changing letter case is planned.",
-                );
                 if full {
-                    self.unavailable(
+                    self.unavailable_menu(
                         ui,
-                        r(x + 92., 5., 25., 25.),
-                        Icon::ClearFormatting,
-                        "",
-                        "Clear formatting",
-                        "Clearing all formatting is planned.",
+                        r(x + 56., 5., 32., 25.),
+                        Icon::Text("Aa"),
+                        "Change case",
+                        "Changing letter case is planned.",
                     );
                 }
+                self.ribbon_control(
+                    ui,
+                    r(x + if full { 92. } else { 56. }, 5., 25., 25.),
+                    Icon::ClearFormatting,
+                    "",
+                    Action::ClearFormatting,
+                );
                 self.ribbon_control(ui, r(0., 34., 24., 25.), Icon::Text("B"), "", Action::Bold);
                 self.ribbon_control(
                     ui,
@@ -1775,6 +1793,41 @@ impl DocsApp {
                 }
             }
             if document_focus {
+                // Ctrl+Space is a physical Control chord on every platform. Do not
+                // take Command+Space, AltGr, shifted chords or IME confirmation.
+                let clear = self.pending.is_none()
+                    && self.error.is_none()
+                    && !self.backstage
+                    && !self.palette
+                    && ctx.input_mut(|i| {
+                        if i.events.iter().any(|e| matches!(e, egui::Event::Ime(_))) {
+                            return false;
+                        }
+                        let mut activate = false;
+                        i.events.retain(|event| {
+                            if let egui::Event::Key {
+                                key: Key::Space,
+                                pressed: true,
+                                repeat,
+                                modifiers,
+                                ..
+                            } = event
+                                && modifiers.ctrl
+                                && !modifiers.alt
+                                && !modifiers.shift
+                                && !modifiers.mac_cmd
+                            {
+                                activate |= !repeat;
+                                false
+                            } else {
+                                true
+                            }
+                        });
+                        activate
+                    });
+                if clear {
+                    self.execute(Action::ClearFormatting, ctx);
+                }
                 for (key, shift, action) in [
                     (Key::Z, true, Action::Redo),
                     (Key::Z, false, Action::Undo),

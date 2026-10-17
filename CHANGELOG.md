@@ -3,7 +3,28 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
-## 0.1.0-alpha.16 — Unreleased; submitted for owner approval
+## 0.1.0-alpha.17 — Unreleased; submitted for owner approval
+
+Prepared 2026-10-17. The owner approved alpha.16 in the project chat.
+
+- Activate the original Home eraser icon as Clear character formatting in full,
+  compact and overflow ribbon densities. Preserve the palette, icon artwork and
+  group spacing; compact layouts prioritize this working control over disabled
+  Change case.
+- Reset selected bold, italic, underline and size to regular 11 pt through one
+  shared-engine transaction. Preserve text and paragraph alignment. At a caret,
+  reset pending input only; unchanged content adds no undo and retains redo.
+- Add document-only Ctrl+Space, Home KeyTips H → FC and command search. Keep
+  Control distinct from Command on macOS; ignore modified chords, repeat and
+  IME confirmation, and block modal background edits.
+- Add range/history/Unicode/native-roundtrip and widget regression coverage;
+  retain the existing keyboard and Home containment checks.
+
+No dependency, document/protocol/settings schema or license change. Named styles,
+paragraph-format reset, native Windows/IME and matched Word comparison remain
+separate gates. Version approval does not authorize merge, tag or release.
+
+## 0.1.0-alpha.16 — Unreleased; version approved 2026-10-17
 
 Prepared 2026-10-17. The owner approved alpha.15 in the project chat. Preserve the
 approved palette, original vector icons and Home spacing.

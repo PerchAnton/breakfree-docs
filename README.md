@@ -166,6 +166,13 @@ text, formatting and the prior selection. Equal-text matches are skipped without
 changing their mixed formatting. Inserted text takes each match's first character
 style. Over-limit results and stale previews are rejected before editing.
 [Batch replacement semantics](docs/adr/0005-replace-all-preview.md).
+Clear character formatting (the Home eraser, Ctrl+Space in the document, or
+KeyTips H → FC) resets bold/italic/underline and size to regular 11 pt in one Undo
+operation. Text and paragraph alignment remain unchanged. At a caret it resets
+only future input; it does not expand to the surrounding word. This is the
+currently supported character-only reset, without named-style inheritance.
+Control remains Control on macOS; system input-source shortcuts may intercept it.
+The ribbon and command search provide the same action without that chord.
 [Navigation details and evidence](docs/UI_SPEC.md#alpha15-search-options).
 The Font launcher opens a dialog for style, size and underline with a preview.
 Only OK applies the draft, together in one undo operation; Cancel/Escape discards
