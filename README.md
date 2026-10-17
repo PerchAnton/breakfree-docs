@@ -164,7 +164,8 @@ the window narrows. File has Home/Options navigation and real document propertie
 The status bar provides zoom out/in and a percentage button that opens Zoom.
 View groups real Ruler/Navigation checkboxes, Zoom, 100% and Canvas Width. Width
 fit tracks the window and side panes within 50–200%; manual zoom exits fit mode.
-See [current native screenshots and capture commands](docs/UI_SPEC.md#actual-application-capture).
+See [current Home layout captures](docs/UI_SPEC.md#alpha11-native-captures) and
+[reproducible capture commands](docs/UI_SPEC.md#actual-application-capture).
 
 Ctrl (Command on macOS) + N/O/S, Shift+S, B/I/U, Z/Y or Shift+Z handle file, emphasis
 and history actions. Ctrl/Command+Shift+P focuses and selects the size field.

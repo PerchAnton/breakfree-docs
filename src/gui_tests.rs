@@ -512,6 +512,71 @@ fn dense_controls_fit_each_group_and_window_at_breakpoints() {
 }
 
 #[test]
+fn home_group_gutters_separate_controls_at_every_density_and_scale() {
+    for dpi in [1., 1.25, 1.5] {
+        for width in [640., 720., 899., 900., 916., 1195., 1196., 1366., 1920.] {
+            for temporary in [false, true] {
+                let (ctx, mut app) = setup();
+                app.ribbon_collapsed = temporary;
+                app.ribbon_temporary = temporary;
+                for _ in 0..3 {
+                    frame(&ctx, &mut app, vec![], [width * dpi, 900. * dpi], dpi);
+                }
+                let groups: Vec<_> = app
+                    .regions
+                    .iter()
+                    .filter(|r| HOME_GROUPS.contains(&r.name.as_str()))
+                    .collect();
+                assert!(groups.len() >= 3);
+                for pair in groups.windows(2) {
+                    let gap = pair[1].rect.left() - pair[0].rect.right();
+                    assert!(
+                        (gap - 8.).abs() < 0.1,
+                        "{} / {} gutter is {gap} at {width}/{dpi}, temporary={temporary}",
+                        pair[0].name,
+                        pair[1].name
+                    );
+                    let separator = app
+                        .regions
+                        .iter()
+                        .find(|r| r.name == format!("home-separator-{}", pair[0].name))
+                        .unwrap()
+                        .rect;
+                    assert!(separator.left() > pair[0].rect.right());
+                    assert!(separator.right() < pair[1].rect.left());
+                    assert!(
+                        (separator.center().x - (pair[0].rect.right() + pair[1].rect.left()) / 2.)
+                            .abs()
+                            < 0.1
+                    );
+                }
+                for separator in app
+                    .regions
+                    .iter()
+                    .filter(|r| r.name.starts_with("home-separator-"))
+                {
+                    for target in app.regions.iter().filter(|r| {
+                        r.name.starts_with("command-")
+                            || r.name.starts_with("unavailable-")
+                            || r.name.starts_with("font-")
+                            || r.name.starts_with("style-")
+                            || r.name.starts_with("home-menu-")
+                            || r.name == "home-overflow"
+                    }) {
+                        assert!(
+                            !separator.rect.intersects(target.rect),
+                            "{} crosses {} at {width}/{dpi}, temporary={temporary}",
+                            separator.name,
+                            target.name
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[test]
 fn revised_shell_controls_preserve_selection_and_real_document_state() {
     let (ctx, mut app) = setup();
     frame(

@@ -107,6 +107,33 @@ L/E/R/J are implemented. Ctrl/Command+D or Shift+F opens the Font dialog.
 Home/File KeyTips and Alt entry, plus quick-access/tab/View extensions, are described below. Contextual KeyTips,
 native assistive technology and multilingual OS IME remain unverified/incomplete.
 
+## Alpha.11 Home separator correction
+
+Each Home group now reserves its complete specified width independently of its
+contents. The 8-DIP gap is retained at every density, with a 1-DIP separator at
+its center (3.5 DIP clear of both neighboring group rectangles). This corrects
+Clipboard's separator crossing Bold and the font-family border. The same fix
+applies to every Home group, including temporary expansion. Existing group sizes,
+light background, captions and control styling remain as specified above.
+
+### Alpha.11 native captures
+
+Captured 2026-10-17 on macOS, English UI, light theme, 100% document zoom and
+backing scale 2. These are actual application renders, not matched Word images:
+
+- [Full Home, 1366 × 900 DIP](screenshots/rust-home-gutters-alpha11-macos.png).
+- [Compact Home, 960 × 700 DIP](screenshots/rust-home-gutters-alpha11-macos-compact.png).
+- [Overflow Home, 640 × 480 DIP](screenshots/rust-home-gutters-alpha11-macos-narrow.png).
+- [Temporary Home, 640 × 480 DIP](screenshots/rust-home-gutters-alpha11-macos-temporary.png).
+
+The first three use `Formatting.bfdoc` (21 words, four paragraphs); temporary mode
+uses `Welcome.bfdoc` (20 words, four paragraphs). Inspect the Clipboard/Font gap,
+font-family outline, emphasis row, adjacent dividers and More button. The known
+Welcome emoji fallback remains visible. The capture helper's temporary fixture
+supplies deterministic focus, as its KeyTips fixtures already do. Native pointer
+Bold, size entry, undo/redo and temporary Home were checked separately in the
+normal executable; see [validation](VALIDATION.md#alpha11-home-separator-validation).
+
 ## Alpha.10 persistent quick-access settings
 
 The alpha.9 geometry and five real commands remain. Visibility/order/placement

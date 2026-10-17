@@ -19,7 +19,7 @@ struct Capture {
 impl eframe::App for Capture {
     fn raw_input_hook(&mut self, _ctx: &egui::Context, input: &mut egui::RawInput) {
         // Deterministic render fixture, including focus; this does not prove OS input.
-        if self.mode.starts_with("keytips") {
+        if self.mode.starts_with("keytips") || self.mode == "temporary" {
             input.focused = true;
         }
         if self.frames == 2 && self.mode.starts_with("keytips") {

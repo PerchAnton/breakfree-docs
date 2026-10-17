@@ -1011,12 +1011,20 @@ impl DocsApp {
         let (bounds, _) = ui.allocate_exact_size(vec2(width, RIBBON_HEIGHT - 16.), Sense::hover());
         self.record(HOME_GROUPS[index], bounds);
         self.ribbon_group = Some(index);
-        ui.scope_builder(egui::UiBuilder::new().max_rect(bounds), |ui| {
-            self.home_contents(ui, index, width, bounds);
-        });
+        // The parent already reserved this group's full width. A scope would
+        // advance it again using only the child content, shrinking the gutter.
+        let mut child = ui.new_child(egui::UiBuilder::new().max_rect(bounds));
+        self.home_contents(&mut child, index, width, bounds);
         self.ribbon_group = None;
         if index < 4 {
-            let x = bounds.right() + 3.;
+            let x = bounds.right() + 4.;
+            self.record(
+                &format!("home-separator-{}", HOME_GROUPS[index]),
+                Rect::from_min_max(
+                    pos2(x - 0.5, bounds.top() + 3.),
+                    pos2(x + 0.5, bounds.bottom() - 3.),
+                ),
+            );
             ui.painter().line_segment(
                 [pos2(x, bounds.top() + 3.), pos2(x, bounds.bottom() - 3.)],
                 Stroke::new(1.0_f32, chrome::LINE),

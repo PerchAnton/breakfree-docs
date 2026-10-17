@@ -3,6 +3,23 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.11 — Unreleased; submitted for owner approval
+
+Prepared 2026-10-17. Alpha.10 approval has not been received. This focused design
+fix follows the owner's report of a Home separator overlapping Font controls.
+
+- Reserve each Home group's full width exactly once, keeping the 8-DIP gap even
+  when its content is narrower. Center separators in the gap so they cannot cross
+  Bold, the font-family outline or adjacent groups.
+- Add a regression for group spacing and separator/control separation across nine
+  window widths, three synthetic scales and pinned/temporary ribbon states.
+- Inspect four native Home captures and verify pointer Bold, font-size entry,
+  undo/redo and temporary Home through native macOS input. Stabilize focus in
+  the temporary-ribbon capture fixture; production focus handling is unchanged.
+
+No dependency, license, document-content or process-protocol change. Matched
+Word 2024 Windows/native DPI acceptance remains open. No merge, tag or release.
+
 ## 0.1.0-alpha.10 — Unreleased; submitted for owner approval
 
 Prepared 2026-10-17. The owner approved alpha.9 in the project chat; that approval

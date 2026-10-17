@@ -8,20 +8,20 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.10**. Earlier capture/CI evidence retains its
+Current local checkpoint: **0.1.0-alpha.11**. Earlier capture/CI evidence retains its
 original scope; this iteration does not establish native Windows behavior.
 
 | Local check | Observed result |
 | :--- | :--- |
-| `cargo test --locked` | 89 passed: 23 engine/storage/presentation, 9 preferences, 4 CLI subprocess and 53 actual egui widget event tests; no skipped tests |
+| `cargo test --locked` | 90 passed: 23 engine/storage/presentation, 9 preferences, 4 CLI subprocess and 54 actual egui widget event tests; no skipped tests |
 | `cargo test --locked --no-default-features` | 36 passed; preferences, core and CLI build without GUI dependencies |
 | `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
 | `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
-| Copied executable outside checkout | Alpha.10 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
+| Copied executable outside checkout | Alpha.11 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
 | Repository references, contract and artwork | `python3 tools/check_repository.py` passed; approved logo embedded directly and archive copy byte-identical |
 | Workflow YAML / whitespace | Ruby YAML parse and `git diff --check` passed |
-| Native rendering | Alpha.10 saved-settings menu at 1366 × 900, reset and damaged-settings dialogs at 640 × 480 DIP inspected, backing scale 2; [captures](UI_SPEC.md#alpha10-native-captures). Earlier evidence retains its version context |
-| Native macOS interaction | Alpha.10 QAT customization/placement/restart, reset Escape/Tab/Enter, read-only failure/retry, corrupt-settings startup/reset/backup and Home history/Unicode Save/Open passed through Computer Use. Exact settings/backup bytes and Unicode/11-pt bold runs independently decoded. Native Windows/AltGr/IME remains unverified |
+| Native rendering | Alpha.11 Home at 1366 × 900, 960 × 700 and 640 × 480 DIP, plus temporary Home at 640 × 480 inspected at backing scale 2; [captures](UI_SPEC.md#alpha11-native-captures). Earlier evidence retains its version context |
+| Native macOS interaction | Alpha.11 normal binary: Unicode paste/selection, pointer Bold, size 14, two-step Undo/Redo, Ctrl+F1, F10 H, Escape and repinning passed; selected-state/separator placement inspected. Earlier alpha.10 settings and native Save/Open evidence remains historical; native Windows/AltGr/IME remains unverified |
 | Synthetic DPI | Actual widgets at 1/1.25/1.5 scale and 960/1366/1920 physical widths; ribbon/group/workspace/status bounds and collapse assertions passed; 27 additional width/scale combinations check individual Home control containment/nonoverlap and title/search/window bounds |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
@@ -56,6 +56,41 @@ widget tests cover wide/minimum-width Grow/Shrink, composition disablement,
 Paste/Find/Select menus, Escape cancellation and working overflow. Strict geometry
 checks now include menu triggers and the More button. The initial 640-DIP budget
 failure was resolved by narrowing the overflow Font group, keeping the assertions.
+
+## Alpha.11 Home separator validation
+
+The reported Clipboard/Font overlap was reproduced in the alpha.10 native render.
+The new actual-widget regression failed before the fix: the Clipboard/Font gutter
+was 2 DIP at 640 DIP width instead of the specified 8. The full-width child content
+could also intrude into the reserved neighboring group. Allocating the parent
+region once, then drawing its child without advancing the parent again, retains
+the complete group width. One-DIP separators now sit at the center of each gutter.
+
+The regression covers 54 combinations: 640/720/899/900/916/1195/1196/1366/1920 DIP,
+synthetic scales 1/1.25/1.5, and pinned/temporary ribbon states. It checks exact
+8-DIP group separation and that separator strokes intersect no recorded Home
+control, including the overflow trigger. Existing strict control containment,
+focus/KeyTips, document/history, persistence and preferences tests remain intact.
+
+Four native captures were inspected for the font-family outline, emphasis states,
+Clipboard/Font/Paragraph/Styles/Editing dividers, captions, launchers, overflow and
+workspace boundary. No further overlap or caption clipping was observed in those
+states. The capture fixture now fixes focus for temporary mode, matching its
+existing KeyTips fixtures; this prevents launch focus loss from closing the
+fixture before capture and does not change production focus handling.
+
+The normal release executable ran outside the checkout with an isolated profile.
+Computer Use pasted `English e\u{301}\nУкраїнська\nРусский`, selected all, clicked
+Bold and entered 14 pt. Two undos restored 11 pt/nonbold; two redos restored
+14 pt/bold with the selection intact. Ctrl+F1 and F10 H displayed temporary Home
+and hints; Escape and repinning restored normal Home. Selected/hovered Bold and
+the neighboring field/divider were visually inspected. The test session closed
+through Discard. Save/reopen and settings restart were covered by automated tests
+in this iteration, not repeated through native dialogs.
+
+Windows native scaling and a matched Word 2024 comparison remain unperformed.
+The known Welcome fixture emoji fallback remains unresolved. No broader visual,
+complex-script or accessibility acceptance is inferred from these checks.
 
 ## Alpha.10 preferences validation
 

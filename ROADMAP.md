@@ -133,6 +133,10 @@ native dialog/IME, accessibility and target-platform reviews are outstanding.
   Alpha.8: 68 full / 26 core-only tests, 27 badge width/scale and three modal-scale
   cases, four inspected captures; native macOS QAT/history, View/Zoom, Draw/Help
   and Unicode Save/Open passed. Reference mappings remain provisional.
+- [x] Correct Home inter-group separator overlap reported by the owner. Alpha.11:
+  8-DIP gaps and divider/control separation pass 54 width/scale/state cases;
+  four native macOS captures and normal-binary pointer/keyboard checks inspected.
+  Matched Windows/reference acceptance remains separate.
 - [ ] Verify native bare Alt/AltGr and rapid modifier taps, contextual/future command
   hints, and compare all mappings against the named Windows reference build. Depends on the native Windows/Word environment; no full parity claimed.
 - [ ] Capture Word 2024 Windows and Docs at matched build/language/theme/window,
@@ -265,3 +269,4 @@ Use public specifications and original test cases, not copied application code. 
 | 2026-10-17 | Owner approved alpha.7; alpha.8 extends QAT/all-tab/View KeyTips and adds a view-only Zoom draft | 68 full / 26 core-only local tests, four captures, native macOS keyboard/Unicode Save/Open; Windows/Word/AltGr/IME and exact mapping review remain open |
 | 2026-10-17 | Owner approved alpha.8; alpha.9 adds window-local QAT customization/keyboard focus and compact View with 100%/Canvas Width | 74 full / 26 core-only local tests, four native captures and macOS keyboard/Unicode Save/Open; toolbar persistence/reordering and Windows/Word acceptance remain open |
 | 2026-10-17 | Owner approved alpha.9; alpha.10 persists QAT settings with reset/backup, conflict detection and retry | 89 full / 36 core-only tests, three native captures and macOS restart/error/Unicode save checks; explicit ordering controls and Windows/Word acceptance remain open |
+| 2026-10-17 | Alpha.11 fixes Home separators overlapping Bold/font-family controls | 90 full / 36 core-only tests, 54 gutter cases and four native captures; native macOS formatting/history/temporary Home passed. Alpha.10 and alpha.11 approvals remain pending |
