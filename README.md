@@ -181,8 +181,8 @@ N/O/S/A/T for New/Open/Save/Save As/Options. H → E opens narrow-window More.
 Top-level 1/2/3 invokes Save/Undo/Redo on the default Quick Access Toolbar (also
 Alt+1/2/3). Alt, 0 opens customization: show/hide New/Open/Save/Undo/Redo, move
 the toolbar above/below the ribbon, or reset. New entries append; hints 1–5 follow
-visible order, and disabled actions keep their place. Preferences last for this
-window only. From focused tabs, Up enters the toolbar (Down also works below the
+visible order, and disabled actions keep their place. Command visibility, order and
+above/below placement are saved immediately and restored on the next launch. From focused tabs, Up enters the toolbar (Down also works below the
 ribbon); Left/Right skips unavailable actions, Down opens options, Tab returns to
 tabs and Escape backs out. N/JI/G/P/S/M/R/W/Y1 selects the
 other tabs. T opens More tabs when the row overflows. View W → K/R toggles
@@ -199,7 +199,34 @@ explicit paste and formatting commands have separate boundaries. See the
 [implemented KeyTips and limits](docs/UI_SPEC.md#alpha9-quick-access-and-view).
 Bare Alt is implemented and event-tested; native Windows Alt/AltGr, exact Word 2024 mappings and assistive-technology behavior
 remain review gates. Draw/Help/ruler/100% assignments are provisional; toolbar
-persistence/reordering and unsupported-tab commands remain roadmap work.
+reordering controls and unsupported-tab commands remain roadmap work.
+
+## Local toolbar settings
+
+Settings apply to this user/profile across documents. Reset Toolbar asks for
+confirmation and keeps the previous settings file as a backup before restoring
+Save/Undo/Redo above the ribbon. Cancel/Escape changes nothing. A failed save shows
+an error and a menu warning; the toolbar remains usable in the current window.
+Use Retry Saving after fixing permissions or another transient cause. Corrupt or
+future settings use defaults with an error and are not automatically overwritten.
+
+Windows stores settings at `%APPDATA%\BreakFree\Docs\settings.json`, macOS at
+`$HOME/Library/Application Support/BreakFree/Docs/settings.json`, and Linux under
+`$XDG_CONFIG_HOME/breakfree-docs/settings.json` (default `$HOME/.config`). For an
+isolated test profile, set an absolute directory before starting:
+
+```powershell
+$env:BREAKFREE_DOCS_CONFIG_DIR = Join-Path $env:TEMP "breakfree-docs-review"
+.\target\release\breakfree-docs.exe --new
+```
+
+On macOS/Linux use `BREAKFREE_DOCS_CONFIG_DIR=/absolute/profile/path` before the
+same executable command. Close and reopen Docs to verify persistence; there is
+no extra launch flag. `--version` and `--capabilities` neither read nor write
+settings. Other windows do not update live; conflicting writes are rejected.
+[ADR 0004](docs/adr/0004-local-toolbar-preferences.md) defines the schema, paths,
+backup/reset behavior and lock/power-loss limits. Document files and history are
+independent of preferences.
 
 ## Check
 

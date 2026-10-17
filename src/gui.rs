@@ -174,6 +174,10 @@ pub struct DocsApp {
     quick_access_below: bool,
     quick_access_targets: Vec<RibbonTarget>,
     zoom_width: bool,
+    preferences: Option<crate::preferences::Store>,
+    preferences_warning: Option<String>,
+    preferences_backup: Option<PathBuf>,
+    quick_reset: bool,
     ribbon_targets: Vec<RibbonTarget>,
     ribbon_menu_targets: Vec<RibbonTarget>,
     ribbon_menu_index: Option<usize>,
@@ -268,6 +272,10 @@ impl DocsApp {
             quick_access_below: false,
             quick_access_targets: Vec::new(),
             zoom_width: false,
+            preferences: None,
+            preferences_warning: None,
+            preferences_backup: None,
+            quick_reset: false,
             ribbon_targets: Vec::new(),
             ribbon_menu_targets: Vec::new(),
             ribbon_menu_index: None,
@@ -313,7 +321,7 @@ impl DocsApp {
         });
     }
     fn enabled(&self, action: Action) -> bool {
-        if self.font_dialog.is_some() || self.zoom_dialog.is_some() {
+        if self.font_dialog.is_some() || self.zoom_dialog.is_some() || self.quick_reset {
             return false;
         }
         if matches!(action, Action::FontDialog | Action::Zoom)
@@ -1686,7 +1694,7 @@ impl DocsApp {
 
     fn shortcuts(&mut self, ctx: &egui::Context) {
         // Modal drafts must never dispatch edits, Save or New into the background.
-        if self.font_dialog.is_some() || self.zoom_dialog.is_some() {
+        if self.font_dialog.is_some() || self.zoom_dialog.is_some() || self.quick_reset {
             return;
         }
         self.ribbon_keys(ctx);
@@ -2354,6 +2362,7 @@ impl DocsApp {
     }
 
     fn dialogs(&mut self, ctx: &egui::Context) {
+        self.quick_reset_dialog(ctx);
         if let Some(mut dialog) = self.zoom_dialog.take() {
             match dialog.show(ctx, &mut self.regions) {
                 ZoomOutcome::Open => self.zoom_dialog = Some(dialog),
@@ -2414,8 +2423,11 @@ impl DocsApp {
                 ui.heading("BreakFree Docs");
                 ui.label(error);
                 ui.add_space(10.);
-                if ui.button("OK").clicked() {
+                let ok = ui.button("OK");
+                self.record("error-ok", ok.rect);
+                if ok.clicked() {
                     self.error = None;
+                    self.focus_document = true;
                 }
             });
         }
@@ -2455,7 +2467,9 @@ impl DocsApp {
 
     pub fn update_ui(&mut self, ctx: &egui::Context) {
         let mut close_requested = ctx.input(|i| i.viewport().close_requested());
-        if close_requested && (self.font_dialog.is_some() || self.zoom_dialog.is_some()) {
+        if close_requested
+            && (self.font_dialog.is_some() || self.zoom_dialog.is_some() || self.quick_reset)
+        {
             ctx.send_viewport_cmd(ViewportCommand::CancelClose);
             close_requested = false;
         }
@@ -2557,7 +2571,13 @@ pub fn run(session: Session) -> Result<()> {
     eframe::run_native(
         "BreakFree Docs",
         options,
-        Box::new(move |cc| Ok(Box::new(DocsApp::new(session, &cc.egui_ctx)))),
+        Box::new(move |cc| {
+            Ok(Box::new(DocsApp::with_preferences(
+                session,
+                &cc.egui_ctx,
+                crate::preferences::default_path(),
+            )))
+        }),
     )
     .map_err(|e| e.to_string())
 }

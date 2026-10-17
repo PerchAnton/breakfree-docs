@@ -2178,6 +2178,7 @@ fn customizable_quick_access_numbers_follow_visible_order_and_reset() {
     tip_sequence(&ctx, &mut app, &[Key::Num0], [1366., 900.]);
     assert!(egui::Popup::is_any_open(&ctx));
     click_region(&ctx, &mut app, "qat-reset");
+    click_region(&ctx, &mut app, "qat-reset-confirm");
     assert_eq!(app.quick_access, quick_access::DEFAULT);
     assert!(!app.quick_access_below);
     assert_eq!(app.session.editor.document, before);
@@ -2256,6 +2257,7 @@ fn quick_access_below_ribbon_preserves_canvas_and_supports_empty_toolbar() {
     tip_sequence(&ctx, &mut app, &[Key::F10, Key::Num0], [640., 480.]);
     assert!(egui::Popup::is_any_open(&ctx));
     click_region_at(&ctx, &mut app, "qat-reset", [640., 480.]);
+    click_region_at(&ctx, &mut app, "qat-reset-confirm", [640., 480.]);
     assert_eq!(app.quick_access, quick_access::DEFAULT);
     assert!(!app.quick_access_below);
 }
@@ -2418,4 +2420,154 @@ fn below_toolbar_stays_accessible_with_temporary_ribbon_and_direct_number_entry(
     assert!(app.pending.is_some());
     click_region(&ctx, &mut app, "unsaved-cancel");
     assert_eq!(app.session.editor.document.text(), "Keep this text");
+}
+
+fn setup_preferences(path: &std::path::Path) -> (egui::Context, DocsApp) {
+    let ctx = egui::Context::default();
+    let mut app = DocsApp::with_preferences(Session::default(), &ctx, Ok(path.to_owned()));
+    for _ in 0..3 {
+        frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    }
+    (ctx, app)
+}
+
+#[test]
+fn toolbar_changes_survive_new_app_with_numbered_hints_and_leave_document_history_untouched() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("settings.json");
+    let (ctx, mut app) = setup_preferences(&path);
+    assert!(!path.exists());
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Paste(
+            "English e\u{301}\nУкраїнська\nРусский".into(),
+        )],
+        [1366., 900.],
+        1.,
+    );
+    app.execute(Action::SelectAll, &ctx);
+    app.execute(Action::Bold, &ctx);
+    let before = app.session.editor.document.clone();
+    let selection = app.session.editor.selection;
+    let history = app.session.editor.undo_stack.len();
+    for target in [
+        "qat-toggle-Save",
+        "qat-toggle-Open",
+        "qat-toggle-Save",
+        "qat-position",
+    ] {
+        click_region(&ctx, &mut app, "qat-options");
+        click_region(&ctx, &mut app, target);
+    }
+    assert!(app.preferences_warning.is_none());
+    assert_eq!(app.session.editor.document, before);
+    assert_eq!(app.session.editor.selection, selection);
+    assert_eq!(app.session.editor.undo_stack.len(), history);
+    let (ctx, mut reopened) = setup_preferences(&path);
+    assert_eq!(
+        reopened.quick_access,
+        [Action::Undo, Action::Redo, Action::Open, Action::Save]
+    );
+    assert!(reopened.quick_access_below);
+    assert!(!reopened.session.dirty());
+    tip_sequence(&ctx, &mut reopened, &[Key::F10], [1366., 900.]);
+    assert!(reopened.regions.iter().any(|r| r.name == "keytip-4"));
+    assert_eq!(app.quick_access, reopened.quick_access);
+}
+
+#[test]
+fn toolbar_reset_confirmation_blocks_editing_cancels_and_restores_persistent_defaults() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("settings.json");
+    let (ctx, mut app) = setup_preferences(&path);
+    click_region(&ctx, &mut app, "qat-options");
+    click_region(&ctx, &mut app, "qat-toggle-New");
+    let original = std::fs::read(&path).unwrap();
+    click_region(&ctx, &mut app, "qat-options");
+    click_region(&ctx, &mut app, "qat-reset");
+    assert!(app.quick_reset);
+    frame(
+        &ctx,
+        &mut app,
+        vec![
+            key(Key::B, true),
+            key(Key::N, true),
+            egui::Event::Text("blocked".into()),
+        ],
+        [1366., 900.],
+        1.,
+    );
+    assert!(app.session.editor.document.text().is_empty());
+    assert!(!app.session.editor.typing_style.bold);
+    assert!(app.quick_reset);
+    ribbon_key(&ctx, &mut app, Key::Escape, Modifiers::NONE, [1366., 900.]);
+    assert!(!app.quick_reset);
+    assert_eq!(std::fs::read(&path).unwrap(), original);
+    click_region(&ctx, &mut app, "qat-options");
+    click_region(&ctx, &mut app, "qat-reset");
+    click_region(&ctx, &mut app, "qat-reset-confirm");
+    assert_eq!(app.quick_access, quick_access::DEFAULT);
+    assert_eq!(
+        std::fs::read(app.preferences_backup.as_ref().unwrap()).unwrap(),
+        original
+    );
+    let (_, reopened) = setup_preferences(&path);
+    assert_eq!(reopened.quick_access, quick_access::DEFAULT);
+    assert!(!reopened.quick_access_below);
+    assert!(!reopened.session.dirty());
+}
+
+#[test]
+fn corrupt_settings_show_error_and_reset_backs_up_original_with_bounded_modal() {
+    for dpi in [1., 1.25, 1.5] {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("settings.json");
+        std::fs::write(&path, b"broken preferences").unwrap();
+        let (ctx, mut app) = setup_preferences(&path);
+        assert!(app.error.is_some());
+        click_region(&ctx, &mut app, "error-ok");
+        assert!(app.preferences_warning.is_some());
+        click_region_at(&ctx, &mut app, "qat-options", [640., 480.]);
+        click_region_at(&ctx, &mut app, "qat-reset", [640., 480.]);
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![], [640. * dpi, 480. * dpi], dpi);
+        }
+        let screen = Rect::from_min_size(Pos2::ZERO, vec2(640., 480.));
+        for name in ["qat-reset-confirm", "qat-reset-cancel"] {
+            assert!(
+                screen.contains_rect(app.regions.iter().find(|r| r.name == name).unwrap().rect)
+            );
+        }
+        click_region_at(&ctx, &mut app, "qat-reset-confirm", [640., 480.]);
+        assert!(app.error.is_none());
+        assert!(app.preferences_warning.is_none());
+        assert_eq!(
+            std::fs::read(app.preferences_backup.as_ref().unwrap()).unwrap(),
+            b"broken preferences"
+        );
+    }
+}
+
+#[test]
+fn toolbar_save_failure_is_visible_and_retry_persists_without_changing_document() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("settings.json");
+    let lock = dir.path().join(".toolbar-settings.lock");
+    let (ctx, mut app) = setup_preferences(&path);
+    std::fs::write(&lock, b"busy").unwrap();
+    click_region(&ctx, &mut app, "qat-options");
+    click_region(&ctx, &mut app, "qat-toggle-Open");
+    assert!(app.error.is_some());
+    assert!(app.quick_access.contains(&Action::Open));
+    assert!(!path.exists());
+    click_region(&ctx, &mut app, "error-ok");
+    std::fs::remove_file(lock).unwrap();
+    click_region(&ctx, &mut app, "qat-options");
+    click_region(&ctx, &mut app, "qat-retry");
+    assert!(app.error.is_none());
+    assert!(app.preferences_warning.is_none());
+    assert!(!app.session.dirty());
+    let (_, reopened) = setup_preferences(&path);
+    assert_eq!(app.quick_access, reopened.quick_access);
 }

@@ -8,6 +8,7 @@ pub mod integration;
 #[cfg(feature = "desktop")]
 pub mod layout;
 pub mod model;
+pub mod preferences;
 pub mod presentation;
 pub mod session;
 pub mod storage;

@@ -3,7 +3,28 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
-## 0.1.0-alpha.9 — Unreleased; submitted for owner approval
+## 0.1.0-alpha.10 — Unreleased; submitted for owner approval
+
+Prepared 2026-10-17. The owner approved alpha.9 in the project chat; that approval
+covers its version number, not a merge, tag or release.
+
+- Persist Quick Access Toolbar command visibility, order and above/below placement
+  in a versioned local user profile, restoring them at desktop startup. Keep
+  settings independent of documents, history and headless information commands.
+- Add confirmed Reset with a retained original-file backup, visible load/save
+  errors, a menu warning and Retry Saving. Preserve corrupt/future files and
+  tested failed writes; reject stale edits from another window under a shared lock.
+- Retain the compact native toolbar geometry, ordered numeric hints and keyboard
+  menu focus. Add a keyboard-accessible reset confirmation with Escape cancellation.
+- Add nine settings tests, four actual-widget regressions and a CLI no-side-effects
+  test. Verify native macOS restart, failure/retry/reset/backup and Unicode editing,
+  undo, Save/Open; inspect three native captures. Document schema and Windows paths.
+
+No new dependency, license, document-content or process-protocol change. Explicit
+reordering controls, live cross-window refresh, crash-lock recovery and matched
+Word 2024 Windows/native DPI acceptance remain open. No merge, tag or release.
+
+## 0.1.0-alpha.9 — Unreleased; version approved by owner on 2026-10-17
 
 Prepared 2026-10-17. The owner approved alpha.8 in the project chat; that approval
 covers its version number, not a merge, tag or release.

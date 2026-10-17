@@ -107,7 +107,50 @@ L/E/R/J are implemented. Ctrl/Command+D or Shift+F opens the Font dialog.
 Home/File KeyTips and Alt entry, plus quick-access/tab/View extensions, are described below. Contextual KeyTips,
 native assistive technology and multilingual OS IME remain unverified/incomplete.
 
+## Alpha.10 persistent quick-access settings
+
+The alpha.9 geometry and five real commands remain. Visibility/order/placement
+now persist per user/profile; the menu says “Applies to all documents.” Existing
+windows retain their own state, and conflicting saves report an error. The
+[official customization guide](https://support.microsoft.com/en-us/office/customize-the-quick-access-toolbar)
+was rechecked on 2026-10-17 for above/below placement, command visibility and reset.
+This multi-version guidance is not a measured Word 2024 Windows baseline.
+
+| Component | Measurable behavior / dimensions in DIP |
+| :--- | :--- |
+| Customize menu | Minimum width 230; existing checkbox order and 24-high action targets retained. Saved order drives toolbar numeric hints after restart |
+| Reset confirmation | 370-wide content; exact default commands/placement and backup explanation. Tab focuses Reset; Enter/Space activates the focused button; Escape cancels. Background editing/commands and close are blocked until resolved |
+| Error feedback | 430-wide content with reason/path and OK. Menu retains “Not saved · this window only” and Retry Saving; successful retry clears warning |
+| Backup feedback | Menu shows “Defaults restored · backup kept”; tooltip gives the actual backup path |
+| Unchanged geometry | 28 × 28 toolbar commands on 30 pitch; 24 × 28 arrow; 32-high below-ribbon strip; same compact Home layout |
+
+[ADR 0004](adr/0004-local-toolbar-preferences.md) defines strict settings v1 and
+failure semantics. Reset backup/retry messaging is an intentional Docs addition.
+Reordering controls, document-specific toolbar profiles, import/export, context
+customization and exact reference keyboard/window behavior remain unimplemented.
+
+### Alpha.10 native captures
+
+Actual Rust rendering on macOS, Light theme, English UI, 100% document zoom,
+backing scale 2. Three inspected captures use an isolated temporary settings profile:
+
+- [1366 × 900 DIP customization after loading saved below-ribbon settings](screenshots/rust-qat-settings-alpha10-macos.png).
+- [640 × 480 DIP reset confirmation](screenshots/rust-qat-reset-alpha10-macos-narrow.png).
+- [640 × 480 DIP damaged-settings error](screenshots/rust-settings-error-alpha10-macos-narrow.png).
+
+All shown controls/text fit their captured windows. Error paths wrap; the original
+fixture's missing emoji glyph remains a font-fallback limitation. These are native
+renderings, not Windows DPI or matched Word screenshots. No similarity score.
+
+Reproduce with the existing `capture_ui` example: modes `keytips-settings`,
+`keytips-settings-reset`, `settings-error`, the sizes above, and
+`BREAKFREE_CAPTURE_TO` set to an absolute PNG path. These modes use isolated fixture
+preferences; staged key events do not establish OS input. The separate ordinary
+binary keyboard/restart checks are recorded in [VALIDATION](VALIDATION.md).
+
 ## Alpha.9 quick-access and View
+
+Historical checkpoint; alpha.10 above supersedes window-local settings and reset.
 
 Inspected 2026-10-17: Microsoft's [toolbar customization](https://support.microsoft.com/en-us/office/customize-the-quick-access-toolbar),
 [keyboard toolbar guidance](https://support.microsoft.com/en-us/accessibility/office-accessibility/use-a-keyboard-to-customize-the-quick-access-toolbar)

@@ -13,6 +13,7 @@ struct Capture {
     mode: String,
     started: Option<f64>,
     requested: bool,
+    _preferences_dir: Option<tempfile::TempDir>,
 }
 
 impl eframe::App for Capture {
@@ -24,7 +25,10 @@ impl eframe::App for Capture {
         if self.frames == 2 && self.mode.starts_with("keytips") {
             let mut keys = vec![egui::Key::F10];
             match self.mode.as_str() {
-                "keytips-qat" | "keytips-qat-below" => keys.push(egui::Key::Num0),
+                "keytips-qat"
+                | "keytips-qat-below"
+                | "keytips-settings"
+                | "keytips-settings-reset" => keys.push(egui::Key::Num0),
                 "keytips-home" => keys.push(egui::Key::H),
                 "keytips-prefix" => keys.extend([egui::Key::H, egui::Key::F]),
                 "keytips-tabs" => keys.push(egui::Key::T),
@@ -48,6 +52,24 @@ impl eframe::App for Capture {
             let key = match self.frames {
                 4..=8 => Some(egui::Key::ArrowDown),
                 10 => Some(egui::Key::Enter),
+                _ => None,
+            };
+            if let Some(key) = key {
+                for pressed in [true, false] {
+                    input.events.push(egui::Event::Key {
+                        key,
+                        physical_key: None,
+                        pressed,
+                        repeat: false,
+                        modifiers: egui::Modifiers::NONE,
+                    });
+                }
+            }
+        }
+        if self.mode == "keytips-settings-reset" {
+            let key = match self.frames {
+                4..=9 => Some(egui::Key::ArrowDown),
+                11 => Some(egui::Key::Enter),
                 _ => None,
             };
             if let Some(key) = key {
@@ -112,6 +134,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "view-fit",
             "keytips-qat",
             "keytips-qat-below",
+            "keytips-settings",
+            "keytips-settings-reset",
+            "settings-error",
             "keytips-root",
             "keytips-home",
             "keytips-prefix",
@@ -155,7 +180,32 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             ..Default::default()
         },
         Box::new(move |cc| {
-            let mut app = DocsApp::new(session, &cc.egui_ctx);
+            let preferences_dir = mode
+                .contains("settings")
+                .then(|| tempfile::tempdir().expect("Isolated capture preferences"));
+            let mut app = if let Some(dir) = &preferences_dir {
+                let path = dir.path().join("settings.json");
+                if mode == "settings-error" {
+                    std::fs::write(&path, b"{broken settings").expect("Error fixture");
+                } else {
+                    use breakfree_docs::preferences::{Placement, QuickCommand, Store, Toolbar};
+                    Store::open(Ok(path.clone()))
+                        .0
+                        .save(&Toolbar {
+                            commands: vec![
+                                QuickCommand::Save,
+                                QuickCommand::Undo,
+                                QuickCommand::Redo,
+                                QuickCommand::Open,
+                            ],
+                            placement: Placement::Below,
+                        })
+                        .expect("Preferences fixture");
+                }
+                DocsApp::with_preferences(session, &cc.egui_ctx, Ok(path))
+            } else {
+                DocsApp::new(session, &cc.egui_ctx)
+            };
             match mode.as_str() {
                 "view" | "view-fit" | "keytips-qat-below" => {
                     app.tab = 8;
@@ -185,6 +235,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 started: None,
                 requested: false,
                 mode,
+                _preferences_dir: preferences_dir,
             }))
         }),
     )?;

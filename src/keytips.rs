@@ -280,6 +280,7 @@ impl DocsApp {
             || self.composing
             || self.font_dialog.is_some()
             || self.zoom_dialog.is_some()
+            || self.quick_reset
             || self.pending.is_some()
             || self.error.is_some()
             || events.iter().any(|e| matches!(e, egui::Event::Ime(_)));
@@ -497,6 +498,7 @@ impl DocsApp {
     pub(super) fn paint_keytips(&mut self, ctx: &egui::Context) {
         if self.font_dialog.is_some()
             || self.zoom_dialog.is_some()
+            || self.quick_reset
             || self.pending.is_some()
             || self.error.is_some()
         {

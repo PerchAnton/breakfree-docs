@@ -8,20 +8,20 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.9**. Earlier capture/CI evidence retains its
+Current local checkpoint: **0.1.0-alpha.10**. Earlier capture/CI evidence retains its
 original scope; this iteration does not establish native Windows behavior.
 
 | Local check | Observed result |
 | :--- | :--- |
-| `cargo test --locked` | 74 passed: 23 engine/storage/presentation, 3 CLI subprocess and 48 actual egui widget event tests; no skipped tests |
-| `cargo test --locked --no-default-features` | 26 passed; core and CLI build without GUI dependencies |
+| `cargo test --locked` | 88 passed: 23 engine/storage/presentation, 9 preferences, 4 CLI subprocess and 52 actual egui widget event tests; no skipped tests |
+| `cargo test --locked --no-default-features` | 36 passed; preferences, core and CLI build without GUI dependencies |
 | `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
 | `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
-| Copied executable outside checkout | Alpha.9 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
+| Copied executable outside checkout | Alpha.10 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
 | Repository references, contract and artwork | `python3 tools/check_repository.py` passed; approved logo embedded directly and archive copy byte-identical |
 | Workflow YAML / whitespace | Ruby YAML parse and `git diff --check` passed |
-| Native rendering | Alpha.9 View/QAT menu at 1366 × 900, below-ribbon QAT at 960 × 720, Canvas Width at 640 × 480 DIP inspected, backing scale 2; [captures](UI_SPEC.md#alpha9-native-captures). Earlier evidence retains its version context |
-| Native macOS interaction | Alpha.9 Home formatting/history, keyboard QAT customization, placement/reset, dirty New/Cancel, View width/100%/navigation, status Zoom, collapsed View and QAT Save/system New/Open passed through Computer Use. Exact Unicode/11-pt bold runs independently decoded. Native Windows/AltGr/IME remains unverified |
+| Native rendering | Alpha.10 saved-settings menu at 1366 × 900, reset and damaged-settings dialogs at 640 × 480 DIP inspected, backing scale 2; [captures](UI_SPEC.md#alpha10-native-captures). Earlier evidence retains its version context |
+| Native macOS interaction | Alpha.10 QAT customization/placement/restart, reset Escape/Tab/Enter, read-only failure/retry, corrupt-settings startup/reset/backup and Home history/Unicode Save/Open passed through Computer Use. Exact settings/backup bytes and Unicode/11-pt bold runs independently decoded. Native Windows/AltGr/IME remains unverified |
 | Synthetic DPI | Actual widgets at 1/1.25/1.5 scale and 960/1366/1920 physical widths; ribbon/group/workspace/status bounds and collapse assertions passed; 27 additional width/scale combinations check individual Home control containment/nonoverlap and title/search/window bounds |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
@@ -56,6 +56,53 @@ widget tests cover wide/minimum-width Grow/Shrink, composition disablement,
 Paste/Find/Select menus, Escape cancellation and working overflow. Strict geometry
 checks now include menu triggers and the More button. The initial 640-DIP budget
 failure was resolved by narrowing the overflow Font group, keeping the assertions.
+
+## Alpha.10 preferences validation
+
+Nine new GUI-independent tests cover absolute profile/override paths, no startup
+writes, ordered/empty toolbar roundtrip, malformed/foreign/future/duplicate/unknown
+settings, bounded input, blocked parents/directories/Unix symlinks, read-only retry,
+cooperating-writer lock/stale-window conflict, and failures after partial write,
+before sync/replacement and before backup. Originals remain byte-identical; normal
+failure cleanup allows retry. Reset retains exact original bytes before replacement.
+
+Four added widget tests drive the actual customization/retry/reset controls and a
+fresh `DocsApp` reading the saved profile. They assert order/placement/numeric hints,
+unchanged Unicode document/selection/history, explicit reset cancellation and
+confirmation, blocked background commands, corrupted-load warning/recovery and
+reset-button containment at 640 × 480 DIP with synthetic 1/1.25/1.5 scales. The
+additional subprocess test proves information/rejected arguments neither create
+missing preferences nor modify/read-error a corrupt profile. Windows CI omits the
+Unix-specific symlink case; native Windows link behavior is not asserted.
+
+Native macOS Computer Use ran the normal alpha.10 binary outside the checkout in
+a temporary review app bundle with an isolated `BREAKFREE_DOCS_CONFIG_DIR`:
+
+| Action | Observed result |
+| :--- | :--- |
+| F10, 0; keyboard enable Open; move below ribbon; close and restart | Save/Undo/Redo/Open restored in order beneath the ribbon; disabled history slots retained |
+| Paste English/Ukrainian/Russian combining text; Command+A/B/Z/Shift+Z; Save | Three paragraphs and bold 11-pt runs retained; Saved locally |
+| New; restored Alt+4; system Open | Exact saved document reopened; history empty, bold/11-pt unchanged |
+| Reset via keyboard menu; Escape | Customized toolbar retained; no settings replacement |
+| Reset; Tab then Enter | Defaults above ribbon; unique backup decodes to prior ordered below-ribbon toolbar |
+| Make isolated settings read-only; enable New | Visible reason/path, warning and Retry Saving; original default settings unchanged |
+| Restore write permission; Retry Saving | Warning clears; current toolbar saved with appended New |
+| Restart with damaged settings; dismiss error; Reset, Tab, Enter | Defaults usable, original damaged bytes retained exactly in backup; settings valid again |
+
+Independent decoding confirmed settings and backup contents and all document runs.
+Document SHA-256:
+`1e76d97a48bb7358a50a77a8b2d046523f317d6cd75e6047c6552582f401ca27`.
+The Save picker initially treated an absolute filename as a literal name; the
+new test fixture was moved to the intended temporary directory, then reopened
+through the system picker. No user document was changed. The session was closed.
+
+Three [native captures](UI_SPEC.md#alpha10-native-captures) were inspected; menu,
+confirmation and long error path fit. The first sandboxed capture could not access
+the desktop; rerunning the same helper with desktop access produced the captures.
+Known fixture emoji fallback remains unresolved. The matched Word 2024 Windows
+comparison, native 100/125/150%, physical Alt/AltGr, non-ASCII typing/OS IME and
+screen-reader acceptance remain unverified. Settings persistence is not document
+recovery; lock-crash/power-loss and external-writer limits are in ADR 0004.
 
 ## Alpha.9 toolbar and View validation
 

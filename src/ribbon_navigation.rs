@@ -18,6 +18,7 @@ pub(super) enum TargetKind {
     QuickToggle(Action),
     QuickPosition,
     QuickReset,
+    QuickRetry,
 }
 
 #[derive(Clone)]
@@ -113,21 +114,30 @@ impl DocsApp {
                     self.quick_access.push(action);
                 }
                 self.finish_quick_option(ctx);
+                self.save_quick_preferences();
             }
             TargetKind::QuickPosition => {
                 self.quick_access_below = !self.quick_access_below;
                 self.finish_quick_option(ctx);
+                self.save_quick_preferences();
             }
             TargetKind::QuickReset => {
-                self.quick_access = quick_access::DEFAULT.to_vec();
-                self.quick_access_below = false;
                 self.finish_quick_option(ctx);
+                self.quick_reset = true;
+            }
+            TargetKind::QuickRetry => {
+                self.finish_quick_option(ctx);
+                self.save_quick_preferences();
             }
         }
     }
 
     pub(super) fn ribbon_keys(&mut self, ctx: &egui::Context) {
-        if self.pending.is_some() || self.error.is_some() || self.zoom_dialog.is_some() {
+        if self.pending.is_some()
+            || self.error.is_some()
+            || self.zoom_dialog.is_some()
+            || self.quick_reset
+        {
             return;
         }
         if !self.focus_font_size && ctx.memory(|m| m.has_focus(Id::new(EDIT_ID))) {
@@ -422,6 +432,7 @@ impl DocsApp {
         if self.backstage
             || self.font_dialog.is_some()
             || self.zoom_dialog.is_some()
+            || self.quick_reset
             || self.pending.is_some()
             || self.error.is_some()
         {

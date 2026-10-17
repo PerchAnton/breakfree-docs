@@ -84,3 +84,45 @@ fn malformed_open_and_bad_arguments_fail_before_a_window() {
         .unwrap();
     assert_eq!(bad.status.code(), Some(2));
 }
+
+#[test]
+fn information_and_rejected_arguments_do_not_read_or_create_preferences() {
+    let dir = tempfile::tempdir().unwrap();
+    let profile = dir.path().join("profile");
+    for exists in [false, true] {
+        if exists {
+            std::fs::create_dir(&profile).unwrap();
+            std::fs::write(profile.join("settings.json"), b"unknown future settings").unwrap();
+        }
+        for args in [
+            vec!["--version"],
+            vec!["--capabilities"],
+            vec!["--new", "--version"],
+            vec!["--open", "relative.bfdoc"],
+        ] {
+            let result = Command::new(env!("CARGO_BIN_EXE_breakfree-docs"))
+                .args(&args)
+                .current_dir(dir.path())
+                .env("BREAKFREE_DOCS_CONFIG_DIR", &profile)
+                .env_remove("DISPLAY")
+                .env_remove("WAYLAND_DISPLAY")
+                .output()
+                .unwrap();
+            if args.len() == 1 {
+                assert!(result.status.success());
+                assert!(result.stderr.is_empty());
+            } else {
+                assert_eq!(result.status.code(), Some(2));
+            }
+            if exists {
+                assert_eq!(
+                    std::fs::read(profile.join("settings.json")).unwrap(),
+                    b"unknown future settings"
+                );
+                assert_eq!(std::fs::read_dir(&profile).unwrap().count(), 1);
+            } else {
+                assert!(!profile.exists());
+            }
+        }
+    }
+}
