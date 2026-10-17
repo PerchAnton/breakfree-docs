@@ -7,7 +7,7 @@ measurable implementation baseline, not a claim of pixel equivalence.
 
 ## Reference evidence and limits
 
-Checked 2026-10-16. [Microsoft navigation documentation](https://support.microsoft.com/en-us/accessibility/word/use-a-screen-reader-to-explore-and-navigate-word)
+Checked 2026-10-17. [Microsoft navigation documentation](https://support.microsoft.com/en-us/accessibility/word/use-a-screen-reader-to-explore-and-navigate-word)
 identifies title/quick actions, ribbon, document, status, navigation and File areas.
 [Microsoft keyboard documentation](https://support.microsoft.com/en-us/accessibility/word/keyboard-shortcuts-in-word)
 supplies the familiar file/edit/alignment, command-search and ribbon-collapse keys.
@@ -37,7 +37,7 @@ measurements taken from Word**. Source constants are in `src/presentation.rs`; o
 | Ribbon | 104 DIP expanded; white rounded inset (8 DIP horizontally / 4 vertically), 88-DIP groups with bottom captions; collapsible via button, double-click tab or Ctrl+F1 |
 | Home groups, full | Clipboard 86, Font 304, Paragraph 246, Styles 350, Editing 116 DIP; 8-DIP group gaps and separators |
 | Home groups, compact | Below 1180 DIP available ribbon width: 82/246/218/140/104 DIP; compact Clipboard and one style preview |
-| Home overflow | Below 900 DIP available ribbon width: 82/232/206 DIP; Styles/Editing move into More menu; document never lies under the ribbon |
+| Home overflow | Below 900 DIP available ribbon width: 82/232/206 DIP; Styles/Editing move into More menu; the pinned ribbon reserves workspace; temporary mode overlays it |
 | Controls | Small buttons 24–32 × 24–26 DIP; Paste 46 × 69 split into a 37-DIP icon action and 32-DIP options menu; two rows in Font/Paragraph, three in Clipboard/Editing; 13-DIP UI text, 11-DIP captions; 15 × 16 group launchers |
 | Font size | 64 × 25 DIP unified outline: 46-DIP editable field and 18-DIP preset arrow; font-family field is 112/64/50 DIP in full/compact/overflow density |
 | Workspace | Neutral #e8e8e8; white continuous canvas, border #c5c5c5; soft canvas shadow; 10-DIP workspace top gap; centered when space allows; horizontal/vertical scrolling when required |
@@ -100,13 +100,54 @@ commit call the same Rust commands as tests. Preedit stays transient. The model
 owns undo; one widget update batches committed text events into one transaction.
 Explicit paste/deletion/formatting commands have separate history boundaries.
 Left/Right and deletion honor extended grapheme boundaries. Tab traverses controls;
-F6 cycles document/command-search/navigation, Alt+Q searches real commands. Standard
+F6/Shift+F6 cycles the document, visible navigation/formatting panes, status and
+ribbon; Alt+Q searches real commands. Standard
 Ctrl/Command N/O/S/Shift+S, B/I/U, Shift+P (focus/select size), Z/Y/Shift+Z, F/H and
 L/E/R/J are implemented. Ctrl/Command+D or Shift+F opens the Font dialog.
-Full sequential ribbon KeyTips, complete Word F6 traversal, native assistive technology
+Bare-Alt activation, full sequential ribbon KeyTips, native assistive technology
 and multilingual OS IME behavior remain unverified/incomplete.
 
-## Actual application capture
+## Alpha.6 collapsed ribbon and Home keyboard behavior
+
+The [official ribbon visibility guidance](https://support.microsoft.com/en-us/office/foundations-experiences/show-or-hide-the-ribbon-in-office)
+and keyboard reference above were checked on 2026-10-17. They cover Word 2024 and
+other Office versions; the implementation below remains a documented subset.
+
+| Trigger | Implemented behavior |
+| :--- | :--- |
+| Ctrl+F1 / double-click tab / tab context menu | Switch pinned ribbon and tabs-only mode; close temporary expansion |
+| Click a collapsed tab | Overlay the same 104-DIP ribbon directly below the 44+32-DIP title/tabs; retain the document's position and collapsed preference |
+| F10 / Alt+H | Focus active tab / open Home and focus its first enabled control |
+| Left/Right on tabs; Tab/Down/Enter/Space | Change the active tab; enter its commands (Home has full command routing) |
+| Tab / Shift+Tab within Home | Traverse enabled controls in group order; return to the active tab at the ends; disabled features are skipped |
+| Arrows / Ctrl+Left or Right | Move spatially within a Home group / focus the next or previous group containing enabled commands |
+| Down / Alt+Down on a menu or size field | Open dropdown and focus its first enabled choice; arrows/Tab navigate, Enter/Space applies |
+| Escape | Close a menu first; then close temporary ribbon and focus its tab; then return to document. In the size field, discard its draft and return directly to document |
+| Command or click outside | Dismiss temporary expansion; preserve model selection for commands. Enter/blur commits size input; Escape cancels |
+| F6 / Shift+F6 | Cycle document → visible navigation → visible formatting → status → ribbon, forwards/backwards; never open a hidden pane |
+| Resize with Editing focused | Redirect focus to the visible More trigger when Editing moves to overflow |
+
+The temporary ribbon uses the same group geometry and responsive breakpoints as
+pinned Home, with a subtle 3-DIP-offset shadow. Its overlay intentionally covers
+the canvas below the tabs until dismissed; it does not imply pagination. Focus
+and open-menu state live in `src/ribbon_navigation.rs`, separate from document
+commands. The native size input keeps cursor/selection/IME behavior. Live document
+IME preedit blocks ribbon keyboard entry. Bare Alt and full KeyTip sequences are
+not implemented; native screen-reader traversal still requires review.
+
+### Alpha.6 native captures
+
+![Temporary Home ribbon, alpha.6, macOS](screenshots/rust-temporary-alpha6-macos.png)
+
+[Tabs-only, 1366 × 900 DIP](screenshots/rust-collapsed-alpha6-macos.png) ·
+[Temporary Home, 640 × 480 DIP](screenshots/rust-temporary-alpha6-macos-narrow.png).
+Captured and inspected on 2026-10-17, macOS, English/light theme, document zoom
+100%, backing scale 2. The same Welcome fixture has unchanged canvas position
+between collapsed and temporary captures. The narrow ribbon fits; More remains
+visible. This fixture still exposes the existing missing emoji glyph/font-fallback
+limitation. These are working program captures, not Word comparisons.
+
+## Actual application capture (alpha.5 history)
 
 ![Alpha.5 Font dialog on macOS](screenshots/rust-font-alpha5-macos.png)
 

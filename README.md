@@ -169,8 +169,13 @@ and history actions. Ctrl/Command+Shift+P focuses and selects the size field.
 Ctrl/Command+D or Ctrl/Command+Shift+F opens the Font dialog.
 Ctrl/Command+Shift+> / < grows/shrinks the selected text (period/comma keys).
 Ctrl/Command + L/E/R/J aligns paragraphs; F/H opens Find/Replace.
-Ctrl+F1 collapses the ribbon; Alt+F/H opens File/Home; Alt+Q focuses command search;
-F6 cycles document/search/navigation focus. Tab traverses controls. Input events delivered in one widget update form one text undo operation;
+Ctrl+F1 switches pinned/tabs-only ribbon mode; double-click a tab or use its context
+menu for the same choice. A collapsed tab opens temporarily over the canvas and
+closes after a command, outside click or Escape. Alt+F opens File; Alt+H enters Home;
+Alt+Q focuses command search. F10 focuses the active ribbon tab; Tab/Shift+Tab and
+arrows navigate enabled Home controls, Ctrl+Left/Right changes groups, Down or
+Alt+Down opens dropdowns, Enter/Space activates. Escape closes menu, ribbon and
+focus levels in order. F6/Shift+F6 cycles document, visible panes, status and ribbon. Input events delivered in one widget update form one text undo operation;
 explicit paste and formatting commands have separate boundaries. Full
 Word KeyTips and assistive-technology behavior are pending review.
 

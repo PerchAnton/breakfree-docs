@@ -3,7 +3,28 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
-## 0.1.0-alpha.5 — Unreleased; submitted for owner approval
+## 0.1.0-alpha.6 — Unreleased; submitted for owner approval
+
+Prepared 2026-10-17. The owner approved alpha.5 in the project chat; that approval
+covers its version number, not a merge, tag or release.
+
+- Open a collapsed ribbon temporarily from a tab or Alt+H, over the canvas without
+  reflow. Commands, outside clicks and Escape dismiss it while retaining tabs-only
+  mode. Ctrl+F1, double-click and the tab context menu switch the pinned mode.
+- Add F10, Tab/Shift+Tab, directional navigation, Ctrl+Left/Right between Home
+  groups, Enter/Space and keyboard dropdowns. Disabled commands are skipped;
+  menus close one level at a time. Resize moves hidden Editing focus into More.
+- Cycle visible document/panes/status/ribbon regions with F6/Shift+F6. Preserve
+  native size-field editing, document selection, undo and Unicode save/reopen.
+- Add six real-widget regressions and nine temporary-ribbon width/scale cases.
+  Inspect three native macOS captures and exercise native keyboard/menu/history,
+  F6, pinning and system Save/Open. Update measured UI behavior and remaining gates.
+
+Native content v2 and process protocol v1 stay unchanged. Bare-Alt activation and
+full sequential KeyTips remain pending, as do native Windows/Word/DPI/IME reviews.
+No merge, release, dependency or license change is included.
+
+## 0.1.0-alpha.5 — Unreleased; version approved by owner on 2026-10-17
 
 Prepared 2026-10-16. The owner approved alpha.4 in the project chat; that approval
 covers its version number, not a merge, tag or release.

@@ -45,9 +45,18 @@ impl eframe::App for Capture {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().skip(1).collect();
     if args.len() != 3
-        || !["home", "file", "navigation", "formatting", "font"].contains(&args[2].as_str())
+        || ![
+            "home",
+            "file",
+            "navigation",
+            "formatting",
+            "font",
+            "collapsed",
+            "temporary",
+        ]
+        .contains(&args[2].as_str())
     {
-        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|file|navigation|formatting|font>; set BREAKFREE_CAPTURE_TO".into());
+        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|file|navigation|formatting|font|collapsed|temporary>; set BREAKFREE_CAPTURE_TO".into());
     }
     let path = std::env::var("BREAKFREE_CAPTURE_TO")
         .map_err(|_| "Set BREAKFREE_CAPTURE_TO to an output PNG path")?;
@@ -85,6 +94,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             match mode.as_str() {
                 "file" => app.execute(Action::File, &cc.egui_ctx),
                 "navigation" => app.navigation = true,
+                "collapsed" => app.ribbon_collapsed = true,
+                "temporary" => {
+                    app.ribbon_collapsed = true;
+                    app.ribbon_temporary = true;
+                }
                 "font" => {
                     app.execute(Action::SelectAll, &cc.egui_ctx);
                     app.execute(Action::FontDialog, &cc.egui_ctx);

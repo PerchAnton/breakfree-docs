@@ -36,6 +36,7 @@ backstage, navigation, formatting pane, rulers and status bar follow
 | layout | Font loading, rich galley projection and hit testing | egui text layout only; no widgets |
 | chrome | Original vector icons and accessible shell controls; no document state | egui only |
 | gui | Native input surface, custom ribbon, dialogs and panes | eframe/egui |
+| gui::ribbon_navigation | Temporary ribbon, focus traversal and menu routing; no document ownership | egui only |
 | integration | OS arguments and protocol JSON; main dispatches this same GUI | None |
 
 The model is authoritative. TextEdit is an input/projection surface: native undo

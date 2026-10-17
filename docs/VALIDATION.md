@@ -1,6 +1,6 @@
 # Rust editor validation and remaining gates
 
-Evaluation: **2026-10-16, Europe/Kyiv**, macOS 27.0.1 arm64, rustc/cargo 1.99.1,
+Evaluation: **2026-10-17, Europe/Kyiv**, macOS 27.0.1 arm64, rustc/cargo 1.99.1,
 eframe 0.33.0 and locked egui/epaint 0.33.3. Rust is owner-approved; toolkit adoption,
 license, supported-platform and full D1 reviews remain separate gates. Historical
 Python/Qt results are preserved in [history/python-validation.md](history/python-validation.md)
@@ -8,20 +8,20 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.5**. Earlier capture/CI evidence retains its
+Current local checkpoint: **0.1.0-alpha.6**. Earlier capture/CI evidence retains its
 original scope; this iteration does not establish native Windows behavior.
 
 | Local check | Observed result |
 | :--- | :--- |
-| `cargo test --locked` | 48 passed: 23 engine/storage/presentation, 3 CLI subprocess and 22 actual egui widget event tests; no skipped tests |
+| `cargo test --locked` | 54 passed: 23 engine/storage/presentation, 3 CLI subprocess and 28 actual egui widget event tests; no skipped tests |
 | `cargo test --locked --no-default-features` | 26 passed; core and CLI build without GUI dependencies |
 | `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
 | `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
-| Copied executable outside checkout | Alpha.5 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
+| Copied executable outside checkout | Alpha.6 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
 | Repository references, contract and artwork | `python3 tools/check_repository.py` passed; approved logo embedded directly and archive copy byte-identical |
 | Workflow YAML / whitespace | Ruby YAML parse and `git diff --check` passed |
-| Native rendering | Alpha.5 Home and Font dialog inspected at 1366 × 900 and 640 × 480 DIP, backing scale 2; see [current captures](UI_SPEC.md#actual-application-capture). Earlier captures retain their version context |
-| Native macOS interaction | Alpha.5 Unicode paste, Font shortcut, draft cancellation, invalid size, combined B/I/U/size, one-step undo/redo, system Save/Open and split Find passed through Computer Use. Saved v2 text/styles inspected. Alpha.4 lifecycle smoke is preserved below; native non-ASCII typing/IME is not certified |
+| Native rendering | Alpha.6 tabs-only / temporary Home inspected at 1366 × 900, temporary Home also at 640 × 480 DIP, backing scale 2; see [captures](UI_SPEC.md#alpha6-native-captures). Earlier captures retain their version context |
+| Native macOS interaction | Alpha.6 Unicode paste, collapse/F10/Home/group traversal, Bold, undo/redo, dropdown/Escape/size selection, F6/Shift+F6, pinning and system Save/Open passed through Computer Use. Saved v2 text/styles inspected. Earlier lifecycle smoke is preserved below; native non-ASCII typing/IME is not certified |
 | Synthetic DPI | Actual widgets at 1/1.25/1.5 scale and 960/1366/1920 physical widths; ribbon/group/workspace/status bounds and collapse assertions passed; 27 additional width/scale combinations check individual Home control containment/nonoverlap and title/search/window bounds |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
@@ -56,6 +56,38 @@ widget tests cover wide/minimum-width Grow/Shrink, composition disablement,
 Paste/Find/Select menus, Escape cancellation and working overflow. Strict geometry
 checks now include menu triggers and the More button. The initial 640-DIP budget
 failure was resolved by narrowing the overflow Font group, keeping the assertions.
+
+## Alpha.6 ribbon validation
+
+Six additional actual-widget tests cover temporary expansion with no workspace
+reflow, outside dismissal, command focus return, Unicode selection/history/native
+roundtrip, F10/Alt+H, Tab/Shift+Tab, spatial/group arrows, dropdown activation,
+layered Escape, visible-region F6, size cancellation/commit and resize-to-More focus.
+Temporary geometry also passes nine width/DPI combinations (640/900/1366 DIP ×
+1/1.25/1.5). Existing 27 density cases, modal tests, IME projection and engine/storage
+regressions remain passing. Initial focus regressions and first-frame overlay
+measurement were corrected without weakening existing assertions.
+
+Native macOS Computer Use on the alpha.6 release binary confirmed:
+
+| Action | Observed evidence |
+| :--- | :--- |
+| Unicode paste, Command+A, Ctrl+F1, F10 | Three exact paragraphs retained; only tabs remain; Home receives focus |
+| Tab, Ctrl+Right, four Tab steps, Space | Font group reached; Bold changes the selected text; temporary ribbon closes |
+| Command+Z / Command+Shift+Z with separate observations | Bold off / on; original Unicode text retained |
+| Alt+H, Font group, Down, Escape | Preset menu focuses 8; Escape closes only the menu and returns focus to its arrow |
+| Down, Down, Enter | 9-pt preset applied to original selection; temporary ribbon closes |
+| F6, F6, Shift+F6 | Focus visits 100% status, Home, then 100%; hidden navigation stays hidden |
+| System Save, New, Open | Saved locally; reopened exact English/Ukrainian/Russian combining text, all bold 9 pt; empty history |
+| Double-click Home | Pins expanded ribbon; subsequent Escape leaves it visible. Final build also returns document focus when switching to tabs-only mode |
+| Click status zoom +, then F6 | Final build focuses Home from the status region, including after pointer input |
+
+The saved file was independently decoded: exactly three expected text runs, all
+bold with `font_size_half_points: 18`, no italic/underline. SHA-256:
+`9daf859ddb8692b57a88778c45d92a2aedb303f8e024ca86ccdc8ce83561f9fa`.
+The saved test session was closed. Native Windows DPI, Word matching, non-ASCII
+character typing, OS IME and assistive technology remain unverified. F10/Alt+H
+is the supported keyboard entry; bare Alt and full sequential KeyTips are pending.
 
 ## Alpha.5 Font and Editing validation
 

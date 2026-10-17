@@ -120,12 +120,18 @@ native dialog/IME, accessibility and target-platform reviews are outstanding.
   formatting, cancellation and Unicode save/reopen. Split Find primary/options.
   Alpha.5: 48 full / 26 core-only local tests, native macOS keyboard/save smoke and
   wide/minimum-window Home/Font captures; Windows comparison remains open.
+- [x] Add tabs-only temporary expansion, dismissal/pinning, Home command/group/menu
+  keyboard routing and visible-region F6. Alpha.6: 54 full / 26 core-only tests,
+  nine additional overlay DPI cases, native macOS keyboard/save smoke and three
+  inspected captures. No canvas reflow or lost selection in the covered scenarios.
+- [ ] Add and verify bare-Alt activation and sequential KeyTips, including non-Home
+  tabs and File navigation, against the named Windows reference build.
 - [ ] Capture Word 2024 Windows and Docs at matched build/language/theme/window,
   document zoom and Windows 100/125/150%; record measured deltas in UI_SPEC.
 - [ ] Verify native Windows keyboard, IME, dialogs, font fallback, clipping and focus.
 - [ ] Review context tabs when document objects exist; full KeyTips and vertical ruler.
 
-**Exit:** matched screenshots with recorded measurements, no Home/workspace overlap,
+**Exit:** matched screenshots with recorded measurements, no unintended Home/workspace overlap,
 all active commands change real state, native D01–D09 reviewed, no fake pagination.
 Rust selection is complete; this gate evaluates GUI behavior and visual fidelity.
 
@@ -238,3 +244,4 @@ Use public specifications and original test cases, not copied application code. 
 | 2026-10-16 | Owner requested font size and underline as the next small increment; alpha.3 implements shared formatting and native content v2 | Strict v1 reading retained; protocol v1 unchanged. Local history/storage/widget checks and wide/narrow native captures recorded; Windows comparison remains pending |
 | 2026-10-16 | Owner approved alpha.3; alpha.4 tightens Home geometry/menus/icons and implements shared font-size stepping | 44 full / 24 core-only local tests, three native widths and macOS keyboard/dialog smoke; Windows reference/native DPI and IME gates remain open |
 | 2026-10-16 | Owner approved alpha.4; alpha.5 adds transactional Font dialog and split Find | 48 full / 26 core-only local tests; native macOS dialog/history/save/reopen and four inspected captures; Windows/Word/IME gates remain open |
+| 2026-10-17 | Owner approved alpha.5; alpha.6 adds temporary ribbon and Home keyboard navigation | 54 full / 26 core-only local tests; native macOS focus/menu/undo/save checks and three captures; Windows/Word/IME and full KeyTips gates remain open |

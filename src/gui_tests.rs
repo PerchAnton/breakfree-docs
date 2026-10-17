@@ -1154,3 +1154,314 @@ fn font_dialog_keyboard_default_action_modal_close_and_dpi_bounds() {
         assert!(app.font_dialog.is_none());
     }
 }
+
+fn ribbon_key(
+    ctx: &egui::Context,
+    app: &mut DocsApp,
+    key: Key,
+    modifiers: Modifiers,
+    size: [f32; 2],
+) {
+    for pressed in [true, false] {
+        frame(
+            ctx,
+            app,
+            vec![egui::Event::Key {
+                key,
+                physical_key: None,
+                pressed,
+                repeat: false,
+                modifiers,
+            }],
+            size,
+            1.,
+        );
+    }
+}
+
+#[test]
+fn temporary_ribbon_overlays_without_reflow_and_dismisses_after_real_command() {
+    for width in [640., 1366.] {
+        let (ctx, mut app) = setup();
+        let size = [width, 900.];
+        app.session
+            .editor
+            .replace(0, 0, "English\nУкраїнська\nРусский e\u{301}", "Paste")
+            .unwrap();
+        app.execute(Action::SelectAll, &ctx);
+        app.execute(Action::Ribbon, &ctx);
+        frame(&ctx, &mut app, vec![], size, 1.);
+        let workspace = app
+            .regions
+            .iter()
+            .find(|r| r.name == "workspace")
+            .unwrap()
+            .rect;
+        let selection = app.session.editor.selection;
+        click_region_at(&ctx, &mut app, "tab-Home", size);
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![], size, 1.);
+        }
+        assert!(app.ribbon_collapsed && app.ribbon_temporary);
+        assert_eq!(
+            workspace,
+            app.regions
+                .iter()
+                .find(|r| r.name == "workspace")
+                .unwrap()
+                .rect
+        );
+        let ribbon = app
+            .regions
+            .iter()
+            .find(|r| r.name == "ribbon")
+            .unwrap()
+            .rect;
+        assert!((ribbon.height() - RIBBON_HEIGHT).abs() <= 1., "{ribbon:?}");
+        assert!(ribbon.right() <= width + 1.);
+        click_region_at(&ctx, &mut app, "command-Bold", size);
+        assert!(!app.ribbon_temporary && app.ribbon_collapsed);
+        assert_eq!(app.session.editor.selection, selection);
+        assert!(app.checked(Action::Bold));
+        app.execute(Action::Undo, &ctx);
+        assert!(!app.checked(Action::Bold));
+        // A genuine click below the overlay closes it and keeps the document usable.
+        click_region_at(&ctx, &mut app, "tab-Home", size);
+        frame(&ctx, &mut app, vec![], size, 1.);
+        click_region_at(&ctx, &mut app, "workspace", size);
+        assert!(!app.ribbon_temporary && app.ribbon_collapsed);
+    }
+}
+
+#[test]
+fn home_keyboard_preserves_selection_history_and_roundtrip() {
+    let (ctx, mut app) = setup();
+    let size = [1366., 900.];
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Paste(
+            "English\nУкраїнська\nРусский e\u{301}".into(),
+        )],
+        size,
+        1.,
+    );
+    app.execute(Action::SelectAll, &ctx);
+    app.execute(Action::Ribbon, &ctx);
+    frame(&ctx, &mut app, vec![], size, 1.);
+    let selection = app.session.editor.selection;
+    ribbon_key(&ctx, &mut app, Key::F10, Modifiers::NONE, size);
+    assert_eq!(app.ribbon_focus, Some(RibbonFocus::Tab));
+    assert!(!app.ribbon_temporary);
+    ribbon_key(&ctx, &mut app, Key::Tab, Modifiers::NONE, size);
+    assert!(app.ribbon_temporary);
+    assert_eq!(
+        app.ribbon_focus,
+        Some(RibbonFocus::Control("command-Paste".into()))
+    );
+    ribbon_key(&ctx, &mut app, Key::ArrowRight, Modifiers::CTRL, size);
+    assert_eq!(
+        app.ribbon_focus,
+        Some(RibbonFocus::Control("font-size".into()))
+    );
+    for _ in 0..4 {
+        ribbon_key(&ctx, &mut app, Key::Tab, Modifiers::NONE, size);
+    }
+    assert_eq!(
+        app.ribbon_focus,
+        Some(RibbonFocus::Control("command-Bold".into()))
+    );
+    ribbon_key(&ctx, &mut app, Key::Space, Modifiers::NONE, size);
+    assert!(app.checked(Action::Bold));
+    assert!(!app.ribbon_temporary && app.ribbon_collapsed);
+    assert_eq!(app.session.editor.selection, selection);
+    assert!(ctx.memory(|m| m.has_focus(Id::new(EDIT_ID))));
+    let bold = app.session.editor.document.clone();
+    app.execute(Action::Undo, &ctx);
+    assert!(!app.checked(Action::Bold));
+    app.execute(Action::Redo, &ctx);
+    assert_eq!(app.session.editor.document, bold);
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("Keyboard.bfdoc");
+    app.session.save(&path).unwrap();
+    assert_eq!(storage::load(&path).unwrap(), bold);
+}
+
+#[test]
+fn ribbon_menus_escape_overflow_and_keyboard_resize_retain_focus() {
+    let (ctx, mut app) = setup();
+    let wide = [1366., 900.];
+    app.execute(Action::Ribbon, &ctx);
+    ribbon_key(&ctx, &mut app, Key::H, Modifiers::ALT, wide);
+    ribbon_key(&ctx, &mut app, Key::ArrowRight, Modifiers::CTRL, wide);
+    ribbon_key(&ctx, &mut app, Key::ArrowDown, Modifiers::NONE, wide);
+    assert!(egui::Popup::is_any_open(&ctx));
+    assert!(app.ribbon_temporary);
+    assert_eq!(app.ribbon_menu_index, Some(0));
+    ribbon_key(&ctx, &mut app, Key::ArrowDown, Modifiers::NONE, wide);
+    assert_eq!(app.ribbon_menu_index, Some(1));
+    ribbon_key(&ctx, &mut app, Key::Escape, Modifiers::NONE, wide);
+    assert!(!egui::Popup::is_any_open(&ctx));
+    assert!(app.ribbon_temporary);
+    assert_eq!(
+        app.ribbon_focus,
+        Some(RibbonFocus::Control("font-size-menu".into()))
+    );
+    // Move Font -> Paragraph -> Editing; a narrow window moves Editing into More.
+    for _ in 0..2 {
+        ribbon_key(&ctx, &mut app, Key::ArrowRight, Modifiers::CTRL, wide);
+    }
+    assert_eq!(
+        app.ribbon_focus,
+        Some(RibbonFocus::Control("command-Find".into()))
+    );
+    for _ in 0..3 {
+        frame(&ctx, &mut app, vec![], [640., 480.], 1.);
+    }
+    assert_eq!(
+        app.ribbon_focus,
+        Some(RibbonFocus::Control("home-overflow".into()))
+    );
+    ribbon_key(
+        &ctx,
+        &mut app,
+        Key::ArrowDown,
+        Modifiers::NONE,
+        [640., 480.],
+    );
+    assert!(egui::Popup::is_any_open(&ctx));
+    ribbon_key(&ctx, &mut app, Key::Enter, Modifiers::NONE, [640., 480.]);
+    assert!(app.navigation);
+    assert!(!app.ribbon_temporary);
+    assert!(ctx.memory(|m| m.has_focus(Id::new("find-text"))));
+}
+
+#[test]
+fn ribbon_size_cancel_commit_and_f6_visible_zones() {
+    let (ctx, mut app) = setup();
+    let size = [1366., 900.];
+    app.execute(Action::Ribbon, &ctx);
+    edit_size(&ctx, &mut app, "19.5", Key::Escape);
+    assert!(app.ribbon_collapsed && !app.ribbon_temporary);
+    assert_eq!(app.session.editor.typing_style.font_size.to_string(), "11");
+    edit_size(&ctx, &mut app, "19.5", Key::Enter);
+    assert!(app.ribbon_collapsed && !app.ribbon_temporary);
+    assert_eq!(
+        app.session.editor.typing_style.font_size.to_string(),
+        "19.5"
+    );
+    ribbon_key(&ctx, &mut app, Key::F6, Modifiers::NONE, size);
+    assert!(!app.navigation);
+    assert!(ctx.memory(|m| m.focused() == app.status_focus));
+    ribbon_key(&ctx, &mut app, Key::F6, Modifiers::NONE, size);
+    assert_eq!(app.ribbon_focus, Some(RibbonFocus::Tab));
+    ribbon_key(&ctx, &mut app, Key::F6, Modifiers::SHIFT, size);
+    assert!(ctx.memory(|m| m.focused() == app.status_focus));
+    ribbon_key(&ctx, &mut app, Key::F6, Modifiers::SHIFT, size);
+    assert!(ctx.memory(|m| m.has_focus(Id::new(EDIT_ID))));
+    click_region(&ctx, &mut app, "zoom-in");
+    ribbon_key(&ctx, &mut app, Key::F6, Modifiers::NONE, size);
+    assert_eq!(app.ribbon_focus, Some(RibbonFocus::Tab));
+    ribbon_key(&ctx, &mut app, Key::F6, Modifiers::NONE, size);
+    assert!(ctx.memory(|m| m.has_focus(Id::new(EDIT_ID))));
+    app.navigation = true;
+    app.formatting = true;
+    frame(&ctx, &mut app, vec![], size, 1.);
+    ribbon_key(&ctx, &mut app, Key::F6, Modifiers::NONE, size);
+    assert!(ctx.memory(|m| m.has_focus(Id::new("find-text"))));
+    ribbon_key(&ctx, &mut app, Key::F6, Modifiers::NONE, size);
+    assert!(ctx.memory(|m| m.focused() == app.formatting_focus));
+    ribbon_key(&ctx, &mut app, Key::F6, Modifiers::NONE, size);
+    assert!(ctx.memory(|m| m.focused() == app.status_focus));
+}
+
+#[test]
+fn temporary_home_geometry_at_synthetic_dpi_and_pin_shortcut() {
+    for dpi in [1., 1.25, 1.5] {
+        for width in [640., 900., 1366.] {
+            let (ctx, mut app) = setup();
+            app.ribbon_collapsed = true;
+            app.ribbon_temporary = true;
+            for _ in 0..4 {
+                frame(&ctx, &mut app, vec![], [width * dpi, 480. * dpi], dpi);
+            }
+            let ribbon = app
+                .regions
+                .iter()
+                .find(|r| r.name == "ribbon")
+                .unwrap()
+                .rect;
+            assert!(
+                ribbon.left() >= 0. && ribbon.right() <= width + 1.,
+                "{width}/{dpi}: {ribbon:?}"
+            );
+            for target in &app.ribbon_targets {
+                assert!(ribbon.expand(1.).contains_rect(target.rect));
+            }
+            frame(
+                &ctx,
+                &mut app,
+                vec![key(Key::F1, true)],
+                [width * dpi, 480. * dpi],
+                dpi,
+            );
+            assert!(!app.ribbon_collapsed && !app.ribbon_temporary);
+            let workspace = app
+                .regions
+                .iter()
+                .find(|r| r.name == "workspace")
+                .unwrap()
+                .rect;
+            assert!(workspace.top() >= TITLE_HEIGHT + TABS_HEIGHT + RIBBON_HEIGHT - 1.);
+        }
+    }
+}
+
+#[test]
+fn keyboard_preset_activation_arrows_and_escape_do_not_insert_into_document() {
+    let (ctx, mut app) = setup();
+    let size = [1366., 900.];
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Paste("Українська e\u{301}".into())],
+        size,
+        1.,
+    );
+    app.execute(Action::SelectAll, &ctx);
+    app.execute(Action::Ribbon, &ctx);
+    let selection = app.session.editor.selection;
+    ribbon_key(&ctx, &mut app, Key::H, Modifiers::ALT, size);
+    ribbon_key(&ctx, &mut app, Key::ArrowRight, Modifiers::NONE, size);
+    assert_eq!(
+        app.ribbon_focus,
+        Some(RibbonFocus::Control("command-Cut".into()))
+    );
+    ribbon_key(&ctx, &mut app, Key::ArrowDown, Modifiers::NONE, size);
+    assert_eq!(
+        app.ribbon_focus,
+        Some(RibbonFocus::Control("command-Copy".into()))
+    );
+    ribbon_key(&ctx, &mut app, Key::Tab, Modifiers::SHIFT, size);
+    assert_eq!(
+        app.ribbon_focus,
+        Some(RibbonFocus::Control("command-Cut".into()))
+    );
+    ribbon_key(&ctx, &mut app, Key::ArrowRight, Modifiers::CTRL, size);
+    ribbon_key(&ctx, &mut app, Key::ArrowDown, Modifiers::ALT, size);
+    ribbon_key(&ctx, &mut app, Key::ArrowDown, Modifiers::NONE, size);
+    ribbon_key(&ctx, &mut app, Key::Enter, Modifiers::NONE, size);
+    assert!(!app.ribbon_temporary && app.ribbon_collapsed);
+    assert_eq!(app.session.editor.selection, selection);
+    assert_eq!(app.session.editor.document.text(), "Українська e\u{301}");
+    assert_eq!(
+        app.session.editor.selected_font_size().unwrap().to_string(),
+        "9"
+    );
+    ribbon_key(&ctx, &mut app, Key::H, Modifiers::ALT, size);
+    ribbon_key(&ctx, &mut app, Key::Escape, Modifiers::NONE, size);
+    assert!(!app.ribbon_temporary);
+    assert_eq!(app.ribbon_focus, Some(RibbonFocus::Tab));
+    ribbon_key(&ctx, &mut app, Key::Escape, Modifiers::NONE, size);
+    assert!(ctx.memory(|m| m.has_focus(Id::new(EDIT_ID))));
+}
