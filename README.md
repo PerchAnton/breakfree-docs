@@ -183,7 +183,11 @@ Top-level 1/2/3 invokes Save/Undo/Redo on the default Quick Access Toolbar (also
 Alt+1/2/3). Alt, 0 opens customization: show/hide New/Open/Save/Undo/Redo, move
 the toolbar above/below the ribbon, or reset. New entries append; hints 1–5 follow
 visible order, and disabled actions keep their place. Command visibility, order and
-above/below placement are saved immediately and restored on the next launch. From focused tabs, Up enters the toolbar (Down also works below the
+above/below placement persist across launches. Visibility and placement changes
+save immediately. Choose More Commands to reorder the current commands: Up/Down
+selects, Alt+Up/Down or the move buttons changes order, and OK applies and saves.
+Cancel/Escape discards the draft; unchanged OK does not write. Tab/Shift+Tab cycles
+the list, enabled move buttons and OK/Cancel. From focused tabs, Up enters the toolbar (Down also works below the
 ribbon); Left/Right skips unavailable actions, Down opens options, Tab returns to
 tabs and Escape backs out. N/JI/G/P/S/M/R/W/Y1 selects the
 other tabs. T opens More tabs when the row overflows. View W → K/R toggles
@@ -199,8 +203,9 @@ focus levels in order. F6/Shift+F6 cycles document, visible panes, status and ri
 explicit paste and formatting commands have separate boundaries. See the
 [implemented KeyTips and limits](docs/UI_SPEC.md#alpha9-quick-access-and-view).
 Bare Alt is implemented and event-tested; native Windows Alt/AltGr, exact Word 2024 mappings and assistive-technology behavior
-remain review gates. Draw/Help/ruler/100% assignments are provisional; toolbar
-reordering controls and unsupported-tab commands remain roadmap work.
+remain review gates. Draw/Help/ruler/100% assignments are provisional; unsupported-tab
+commands and broader toolbar customization remain roadmap work. See the
+[ordering dialog](docs/UI_SPEC.md#alpha12-toolbar-ordering).
 
 ## Local toolbar settings
 

@@ -281,6 +281,7 @@ impl DocsApp {
             || self.font_dialog.is_some()
             || self.zoom_dialog.is_some()
             || self.quick_reset
+            || self.quick_order.is_some()
             || self.pending.is_some()
             || self.error.is_some()
             || events.iter().any(|e| matches!(e, egui::Event::Ime(_)));
@@ -499,6 +500,7 @@ impl DocsApp {
         if self.font_dialog.is_some()
             || self.zoom_dialog.is_some()
             || self.quick_reset
+            || self.quick_order.is_some()
             || self.pending.is_some()
             || self.error.is_some()
         {

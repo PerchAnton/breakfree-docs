@@ -3,7 +3,28 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
-## 0.1.0-alpha.11 — Unreleased; submitted for owner approval
+## 0.1.0-alpha.12 — Unreleased; submitted for owner approval
+
+Prepared 2026-10-17. The owner approved alpha.11 in the project chat; that approval
+covers its version number, not a merge, tag or release.
+
+- Add More Commands to Quick Access Toolbar customization, with an ordered list
+  and Move Up / Move Down controls. OK applies and saves the draft; Cancel/Escape
+  retains the previous toolbar. Unchanged OK does not write settings.
+- Keep command selection and keyboard focus after moves. Support Up/Down/Home/End,
+  Alt+Up/Down, Tab/Shift+Tab and Enter/Space, with disabled boundary controls.
+  Numeric KeyTips follow the applied order, including unavailable history actions.
+- Reuse settings conflict/error/retry handling; preserve previous bytes on failed
+  writes and keep document content, selection and undo history independent.
+- Add five actual-widget regressions, including 18 size/scale/list combinations,
+  and two native captures. Verify native macOS cancellation, apply, renumbered
+  Undo/Redo and order restoration after a normal application restart.
+
+No dependency, license, settings-schema, document-content or process-protocol
+change. Native Windows DPI/input and matched Word 2024 acceptance remain open.
+No merge, tag or release.
+
+## 0.1.0-alpha.11 — Unreleased; version approved by owner on 2026-10-17
 
 Prepared 2026-10-17. Alpha.10 approval has not been received. This focused design
 fix follows the owner's report of a Home separator overlapping Font controls.

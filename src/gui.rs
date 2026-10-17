@@ -32,6 +32,10 @@ use keytips::KeyTips;
 mod zoom_dialog;
 use zoom_dialog::{ZoomDialog, ZoomOutcome};
 
+#[path = "quick_order.rs"]
+mod quick_order;
+use quick_order::{OrderOutcome, QuickOrderDialog};
+
 #[path = "quick_access.rs"]
 mod quick_access;
 #[path = "view_ribbon.rs"]
@@ -179,6 +183,7 @@ pub struct DocsApp {
     preferences_backup: Option<PathBuf>,
     preferences_reset_pending: bool,
     quick_reset: bool,
+    quick_order: Option<QuickOrderDialog>,
     ribbon_targets: Vec<RibbonTarget>,
     ribbon_menu_targets: Vec<RibbonTarget>,
     ribbon_menu_index: Option<usize>,
@@ -278,6 +283,7 @@ impl DocsApp {
             preferences_backup: None,
             preferences_reset_pending: false,
             quick_reset: false,
+            quick_order: None,
             ribbon_targets: Vec::new(),
             ribbon_menu_targets: Vec::new(),
             ribbon_menu_index: None,
@@ -323,7 +329,11 @@ impl DocsApp {
         });
     }
     fn enabled(&self, action: Action) -> bool {
-        if self.font_dialog.is_some() || self.zoom_dialog.is_some() || self.quick_reset {
+        if self.font_dialog.is_some()
+            || self.zoom_dialog.is_some()
+            || self.quick_reset
+            || self.quick_order.is_some()
+        {
             return false;
         }
         if matches!(action, Action::FontDialog | Action::Zoom)
@@ -1704,7 +1714,11 @@ impl DocsApp {
 
     fn shortcuts(&mut self, ctx: &egui::Context) {
         // Modal drafts must never dispatch edits, Save or New into the background.
-        if self.font_dialog.is_some() || self.zoom_dialog.is_some() || self.quick_reset {
+        if self.font_dialog.is_some()
+            || self.zoom_dialog.is_some()
+            || self.quick_reset
+            || self.quick_order.is_some()
+        {
             return;
         }
         self.ribbon_keys(ctx);
@@ -2373,6 +2387,19 @@ impl DocsApp {
 
     fn dialogs(&mut self, ctx: &egui::Context) {
         self.quick_reset_dialog(ctx);
+        if let Some(mut dialog) = self.quick_order.take() {
+            match dialog.show(ctx, &mut self.regions) {
+                OrderOutcome::Open => self.quick_order = Some(dialog),
+                OrderOutcome::Cancel => self.finish_quick_option(ctx),
+                OrderOutcome::Apply(commands) => {
+                    self.finish_quick_option(ctx);
+                    if self.quick_access != commands {
+                        self.quick_access = commands;
+                        self.save_quick_preferences();
+                    }
+                }
+            }
+        }
         if let Some(mut dialog) = self.zoom_dialog.take() {
             match dialog.show(ctx, &mut self.regions) {
                 ZoomOutcome::Open => self.zoom_dialog = Some(dialog),
@@ -2478,7 +2505,10 @@ impl DocsApp {
     pub fn update_ui(&mut self, ctx: &egui::Context) {
         let mut close_requested = ctx.input(|i| i.viewport().close_requested());
         if close_requested
-            && (self.font_dialog.is_some() || self.zoom_dialog.is_some() || self.quick_reset)
+            && (self.font_dialog.is_some()
+                || self.zoom_dialog.is_some()
+                || self.quick_reset
+                || self.quick_order.is_some())
         {
             ctx.send_viewport_cmd(ViewportCommand::CancelClose);
             close_requested = false;

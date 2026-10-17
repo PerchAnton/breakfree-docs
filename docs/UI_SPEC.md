@@ -107,6 +107,48 @@ L/E/R/J are implemented. Ctrl/Command+D or Shift+F opens the Font dialog.
 Home/File KeyTips and Alt entry, plus quick-access/tab/View extensions, are described below. Contextual KeyTips,
 native assistive technology and multilingual OS IME remain unverified/incomplete.
 
+## Alpha.12 toolbar ordering
+
+More Commands in the customization menu opens an ordered list of the currently
+visible commands, with Move Up/Move Down controls on its right and OK/Cancel below.
+The [official customization guide](https://support.microsoft.com/en-us/office/customize-the-quick-access-toolbar)
+was checked on 2026-10-17 for this sequence. Its current applies-to list covers
+several Office versions but does not explicitly list Word 2024; this is behavioral
+guidance, not a verified Word 2024 dialog image or pixel measurement.
+
+| Element | Docs value / behavior |
+| :--- | :--- |
+| Dialog content | 420 DIP wide, light surface, neutral border and restrained violet selection/focus |
+| Ordered list | 368-DIP content width, 3-DIP inset, 26-DIP rows; stable command IDs and numbered accessible names |
+| Move controls | 30 × 28 DIP, original vector arrows and bordered hover/pressed/disabled controls; unavailable directions disabled |
+| Footer | 82 × 27 DIP OK/Cancel; no immediate writes while drafting |
+| Keyboard | Up/Down/Home/End select; Alt+Up/Down move; Tab/Shift+Tab cycles enabled targets; Enter/Space activates focused buttons; Enter from list accepts; Escape cancels |
+
+Selection follows the moved command; focus returns to its row if a move button
+becomes disabled. Background editing, shortcuts and window close are blocked while
+the draft is open. OK updates the toolbar and its numeric KeyTips, saves changed
+preferences and restores focus to customization. Cancel/Escape restores that focus
+without changing the toolbar. Failed writes retain previous file bytes and use the
+existing error/Retry Saving path. Document content/history/selection are unchanged.
+The Alt+arrow shortcuts are Docs choices pending native Windows reference review.
+
+### Alpha.12 native captures
+
+Captured and inspected on macOS on 2026-10-17, English UI, light theme, 100% document
+zoom and backing scale 2. The fixture enables all five supported commands below
+the ribbon, using the real 20-word/four-paragraph Welcome document:
+
+- [Ordering dialog, 1366 × 900 DIP](screenshots/rust-qat-order-alpha12-macos.png).
+- [Ordering dialog, 640 × 480 DIP](screenshots/rust-qat-order-alpha12-macos-narrow.png).
+
+The list, labels, controls and footer fit both sizes. Native input additionally
+verified focus following Undo, draft cancellation, apply, renumbered Undo/Redo and
+restart in the normal binary. The full Options catalog, add/remove lists, import/
+export customization and context menu remain unimplemented. BreakFree identity and
+violet focus are intentional brand differences; dialog composition, font metrics,
+spacing and exact shortcuts still require a matched Word 2024 Windows comparison.
+The existing Welcome emoji fallback remains visible. See [validation](VALIDATION.md#alpha12-toolbar-order-validation).
+
 ## Alpha.11 Home separator correction
 
 Each Home group now reserves its complete specified width independently of its

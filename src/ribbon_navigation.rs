@@ -19,6 +19,7 @@ pub(super) enum TargetKind {
     QuickPosition,
     QuickReset,
     QuickRetry,
+    QuickOrder,
 }
 
 #[derive(Clone)]
@@ -125,6 +126,18 @@ impl DocsApp {
                 self.finish_quick_option(ctx);
                 self.quick_reset = true;
             }
+            TargetKind::QuickOrder => {
+                self.finish_quick_option(ctx);
+                self.focus_font_size = false;
+                self.focus_search = false;
+                self.focus_find = false;
+                ctx.memory_mut(|m| {
+                    if let Some(id) = m.focused() {
+                        m.surrender_focus(id);
+                    }
+                });
+                self.quick_order = Some(QuickOrderDialog::new(&self.quick_access));
+            }
             TargetKind::QuickRetry => {
                 self.finish_quick_option(ctx);
                 self.save_quick_preferences();
@@ -137,6 +150,7 @@ impl DocsApp {
             || self.error.is_some()
             || self.zoom_dialog.is_some()
             || self.quick_reset
+            || self.quick_order.is_some()
         {
             return;
         }
@@ -433,6 +447,7 @@ impl DocsApp {
             || self.font_dialog.is_some()
             || self.zoom_dialog.is_some()
             || self.quick_reset
+            || self.quick_order.is_some()
             || self.pending.is_some()
             || self.error.is_some()
         {

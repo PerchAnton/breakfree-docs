@@ -1,7 +1,7 @@
 # ADR 0004 — Local Quick Access Toolbar preferences
 
 - Date: 2026-10-17
-- Status: implemented for the owner-requested alpha.10 review
+- Status: implemented in alpha.10; ordering UI extended in alpha.12 for review
 - Scope: local toolbar settings; no document, process protocol, dependency or license change
 
 ## Decision
@@ -10,8 +10,8 @@ Keep preferences in the GUI-independent Rust `preferences` module. The GUI adapt
 maps its typed commands to real file/history actions. Read once when a desktop
 window starts; save each command-visibility or placement change immediately. The
 ordered list preserves numeric KeyTips, including unavailable Undo/Redo slots.
-Newly enabled commands append. An empty toolbar is valid. Explicit move controls
-are a later increment. Do not store document text, paths, selection or undo history
+Newly enabled commands append. An empty toolbar is valid. Alpha.12 adds explicit
+move controls through More Commands. Do not store document text, paths, selection or undo history
 in this file, and never put settings into `.bfdoc` documents.
 
 All documents opened by this user/profile share the saved defaults. Existing
@@ -21,6 +21,20 @@ directories or writing a file. Only a user change or confirmed Reset writes.
 `--version`, `--capabilities` and rejected arguments/files exit before preferences
 or a graphical context are opened. Tests and capture previews use memory or an
 explicit temporary profile, never the user's actual profile.
+
+## Alpha.12 ordering draft
+
+Keep the ordering dialog in the GUI adapter, separate from preferences and the
+document engine. Clone the current ordered commands when opening More Commands.
+Move Up/Down and keyboard moves change this draft only. OK saves a changed order
+through the existing preferences boundary; unchanged OK and Cancel/Escape do not
+write. On save failure the applied window order remains usable with the existing
+warning and Retry Saving; previous bytes and any pending reset-backup obligation
+are preserved. Command identity, not row position, anchors focus after a move.
+
+The dialog neither adds commands nor implements a full application Options
+catalog. Visibility remains in the existing toolbar menu. Settings version 1,
+placement, document history and native file format are unchanged.
 
 ## Paths and schema
 

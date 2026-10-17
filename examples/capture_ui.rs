@@ -28,7 +28,8 @@ impl eframe::App for Capture {
                 "keytips-qat"
                 | "keytips-qat-below"
                 | "keytips-settings"
-                | "keytips-settings-reset" => keys.push(egui::Key::Num0),
+                | "keytips-settings-reset"
+                | "keytips-settings-order" => keys.push(egui::Key::Num0),
                 "keytips-home" => keys.push(egui::Key::H),
                 "keytips-prefix" => keys.extend([egui::Key::H, egui::Key::F]),
                 "keytips-tabs" => keys.push(egui::Key::T),
@@ -66,8 +67,10 @@ impl eframe::App for Capture {
                 }
             }
         }
-        if self.mode == "keytips-settings-reset" {
-            let key = match self.frames {
+        if self.mode == "keytips-settings-reset" || self.mode == "keytips-settings-order" {
+            let frame = self.frames
+                - usize::from(self.mode == "keytips-settings-order" && self.frames >= 10);
+            let key = match frame {
                 4..=9 => Some(egui::Key::ArrowDown),
                 11 => Some(egui::Key::Enter),
                 _ => None,
@@ -136,6 +139,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "keytips-qat-below",
             "keytips-settings",
             "keytips-settings-reset",
+            "keytips-settings-order",
             "settings-error",
             "keytips-root",
             "keytips-home",
@@ -192,12 +196,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Store::open(Ok(path.clone()))
                         .0
                         .save(&Toolbar {
-                            commands: vec![
-                                QuickCommand::Save,
-                                QuickCommand::Undo,
-                                QuickCommand::Redo,
-                                QuickCommand::Open,
-                            ],
+                            commands: if mode == "keytips-settings-order" {
+                                vec![
+                                    QuickCommand::New,
+                                    QuickCommand::Open,
+                                    QuickCommand::Save,
+                                    QuickCommand::Undo,
+                                    QuickCommand::Redo,
+                                ]
+                            } else {
+                                vec![
+                                    QuickCommand::Save,
+                                    QuickCommand::Undo,
+                                    QuickCommand::Redo,
+                                    QuickCommand::Open,
+                                ]
+                            },
                             placement: Placement::Below,
                         })
                         .expect("Preferences fixture");

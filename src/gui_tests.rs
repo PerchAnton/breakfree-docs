@@ -2676,3 +2676,264 @@ fn failed_reset_retry_keeps_backup_requirement_and_current_toolbar_draft() {
     );
     assert!(!app.session.dirty());
 }
+
+fn open_order(ctx: &egui::Context, app: &mut DocsApp) {
+    click_region(ctx, app, "qat-options");
+    click_region(ctx, app, "qat-order");
+    assert!(app.quick_order.is_some());
+}
+
+#[test]
+fn toolbar_order_apply_roundtrips_and_renumbers_real_history_actions() {
+    for below in [false, true] {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("settings.json");
+        let (ctx, mut app) = setup_preferences(&path);
+        app.quick_access_below = below;
+        click_region(&ctx, &mut app, "qat-options");
+        click_region(&ctx, &mut app, "qat-toggle-Open");
+        let saved = std::fs::read(&path).unwrap();
+        app.leave_ribbon(&ctx);
+        frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::Paste(
+                "English e\u{301}\nУкраїнська\nРусский".into(),
+            )],
+            [1366., 900.],
+            1.,
+        );
+        app.execute(Action::SelectAll, &ctx);
+        app.execute(Action::Bold, &ctx);
+        let document = app.session.editor.document.clone();
+        let selection = app.session.editor.selection;
+        let history = app.session.editor.undo_stack.len();
+        open_order(&ctx, &mut app);
+        click_region(&ctx, &mut app, "qat-order-Open");
+        click_region(&ctx, &mut app, "qat-order-up");
+        click_region(&ctx, &mut app, "qat-order-up");
+        assert_eq!(std::fs::read(&path).unwrap(), saved);
+        assert_eq!(
+            app.quick_access,
+            [Action::Save, Action::Undo, Action::Redo, Action::Open]
+        );
+        click_region(&ctx, &mut app, "qat-order-ok");
+        assert!(app.quick_order.is_none() && app.preferences_warning.is_none());
+        assert_eq!(
+            app.quick_access,
+            [Action::Save, Action::Open, Action::Undo, Action::Redo]
+        );
+        assert_eq!(
+            app.ribbon_focus,
+            Some(RibbonFocus::QuickAccess("qat-options".into()))
+        );
+        let (_, restored) = setup_preferences(&path);
+        assert_eq!(restored.quick_access, app.quick_access);
+        assert_eq!(restored.quick_access_below, below);
+        assert_eq!(app.session.editor.document, document);
+        assert_eq!(app.session.editor.selection, selection);
+        assert_eq!(app.session.editor.undo_stack.len(), history);
+        let doc_path = dir.path().join("order.bfdoc");
+        app.session.save(&doc_path).unwrap();
+        assert_eq!(storage::load(&doc_path).unwrap(), document);
+        tip_sequence(&ctx, &mut app, &[Key::F10], [1366., 900.]);
+        let get = |name: &str| app.regions.iter().find(|r| r.name == name).unwrap().rect;
+        assert!((get("keytip-3").center().x - get("qat-Undo").center().x).abs() < 1.);
+        tip_sequence(&ctx, &mut app, &[Key::Num3], [1366., 900.]);
+        assert!(!app.session.editor.document.paragraphs[0].styles[0].bold);
+        assert_eq!(app.session.editor.undo_stack.len(), history - 1);
+    }
+}
+
+#[test]
+fn toolbar_order_keyboard_keeps_selection_focus_and_cancel_blocks_background_edits() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("settings.json");
+    let (ctx, mut app) = setup_preferences(&path);
+    tip_sequence(&ctx, &mut app, &[Key::F10, Key::Num0], [1366., 900.]);
+    for _ in 0..7 {
+        ribbon_key(
+            &ctx,
+            &mut app,
+            Key::ArrowDown,
+            Modifiers::NONE,
+            [1366., 900.],
+        );
+    }
+    ribbon_key(&ctx, &mut app, Key::Enter, Modifiers::NONE, [1366., 900.]);
+    assert!(app.quick_order.is_some());
+    ribbon_key(
+        &ctx,
+        &mut app,
+        Key::ArrowDown,
+        Modifiers::NONE,
+        [1366., 900.],
+    );
+    let undo_focus = ctx.memory(|m| m.focused());
+    ribbon_key(
+        &ctx,
+        &mut app,
+        Key::ArrowDown,
+        Modifiers::ALT,
+        [1366., 900.],
+    );
+    assert_eq!(ctx.memory(|m| m.focused()), undo_focus);
+    ribbon_key(&ctx, &mut app, Key::Tab, Modifiers::NONE, [1366., 900.]);
+    ribbon_key(&ctx, &mut app, Key::Enter, Modifiers::NONE, [1366., 900.]);
+    assert!(app.quick_order.is_some()); // Enter activates Move Up, not default OK.
+    ribbon_key(&ctx, &mut app, Key::Enter, Modifiers::NONE, [1366., 900.]);
+    assert_eq!(ctx.memory(|m| m.focused()), undo_focus); // Boundary returns to selected row.
+    frame(
+        &ctx,
+        &mut app,
+        vec![
+            key(Key::B, true),
+            key(Key::N, true),
+            key(Key::S, true),
+            key(Key::F10, false),
+            egui::Event::Paste("blocked".into()),
+            egui::Event::Text("blocked".into()),
+        ],
+        [1366., 900.],
+        1.,
+    );
+    assert!(app.session.editor.document.text().is_empty());
+    assert!(!app.session.editor.typing_style.bold);
+    assert!(app.session.editor.undo_stack.is_empty());
+    assert!(app.pending.is_none() && app.keytips.level.is_none());
+    let mut input = egui::RawInput::default();
+    input
+        .viewports
+        .get_mut(&egui::ViewportId::ROOT)
+        .unwrap()
+        .events
+        .push(egui::ViewportEvent::Close);
+    let output = ctx.run(input, |ctx| app.update_ui(ctx));
+    assert!(
+        output.viewport_output[&egui::ViewportId::ROOT]
+            .commands
+            .contains(&ViewportCommand::CancelClose)
+    );
+    ribbon_key(&ctx, &mut app, Key::Escape, Modifiers::NONE, [1366., 900.]);
+    assert!(app.quick_order.is_none());
+    assert_eq!(app.quick_access, quick_access::DEFAULT);
+    assert!(!path.exists());
+    assert_eq!(
+        app.ribbon_focus,
+        Some(RibbonFocus::QuickAccess("qat-options".into()))
+    );
+}
+
+#[test]
+fn toolbar_order_failed_save_preserves_previous_file_and_retry_keeps_new_order() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("settings.json");
+    let (ctx, mut app) = setup_preferences(&path);
+    click_region(&ctx, &mut app, "qat-options");
+    click_region(&ctx, &mut app, "qat-toggle-Open");
+    let original = std::fs::read(&path).unwrap();
+    let lock = dir.path().join(".toolbar-settings.lock");
+    std::fs::write(&lock, b"busy").unwrap();
+    open_order(&ctx, &mut app);
+    click_region(&ctx, &mut app, "qat-order-down");
+    click_region(&ctx, &mut app, "qat-order-ok");
+    assert!(app.error.is_some() && app.preferences_warning.is_some());
+    assert_eq!(std::fs::read(&path).unwrap(), original);
+    assert_eq!(
+        app.quick_access,
+        [Action::Undo, Action::Save, Action::Redo, Action::Open]
+    );
+    click_region(&ctx, &mut app, "error-ok");
+    std::fs::remove_file(lock).unwrap();
+    click_region(&ctx, &mut app, "qat-options");
+    click_region(&ctx, &mut app, "qat-retry");
+    let (_, reopened) = setup_preferences(&path);
+    assert_eq!(reopened.quick_access, app.quick_access);
+    assert!(app.error.is_none() && app.preferences_warning.is_none());
+    assert!(!app.session.dirty());
+}
+
+#[test]
+fn toolbar_order_empty_single_and_all_commands_fit_without_noop_writes() {
+    for dpi in [1., 1.25, 1.5] {
+        for width in [640., 1366.] {
+            for commands in [
+                vec![],
+                vec![Action::Save],
+                vec![
+                    Action::New,
+                    Action::Open,
+                    Action::Save,
+                    Action::Undo,
+                    Action::Redo,
+                ],
+            ] {
+                let dir = tempfile::tempdir().unwrap();
+                let path = dir.path().join("settings.json");
+                let (ctx, mut app) = setup_preferences(&path);
+                app.quick_access = commands.clone();
+                open_order(&ctx, &mut app);
+                for _ in 0..3 {
+                    frame(&ctx, &mut app, vec![], [width * dpi, 480. * dpi], dpi);
+                }
+                let screen = Rect::from_min_size(Pos2::ZERO, vec2(width, 480.));
+                let bounds = app
+                    .regions
+                    .iter()
+                    .find(|r| r.name == "qat-order-dialog")
+                    .unwrap()
+                    .rect;
+                assert!(screen.contains_rect(bounds), "{width}/{dpi}: {bounds:?}");
+                for r in app
+                    .regions
+                    .iter()
+                    .filter(|r| r.name.starts_with("qat-order-"))
+                {
+                    assert!(bounds.contains_rect(r.rect), "{} {width}/{dpi}", r.name);
+                }
+                ribbon_key(&ctx, &mut app, Key::ArrowUp, Modifiers::ALT, [width, 480.]);
+                ribbon_key(&ctx, &mut app, Key::Enter, Modifiers::NONE, [width, 480.]);
+                assert!(app.quick_order.is_none());
+                assert_eq!(app.quick_access, commands);
+                assert!(!path.exists());
+            }
+        }
+    }
+}
+
+#[test]
+fn toolbar_order_cancel_and_unchanged_ok_preserve_existing_profile_bytes() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("settings.json");
+    let (ctx, mut app) = setup_preferences(&path);
+    click_region(&ctx, &mut app, "qat-options");
+    click_region(&ctx, &mut app, "qat-toggle-New");
+    let original = std::fs::read(&path).unwrap();
+    let commands = app.quick_access.clone();
+    open_order(&ctx, &mut app);
+    click_region(&ctx, &mut app, "qat-order-down");
+    click_region(&ctx, &mut app, "qat-order-cancel");
+    assert_eq!(app.quick_access, commands);
+    assert_eq!(std::fs::read(&path).unwrap(), original);
+    open_order(&ctx, &mut app);
+    ribbon_key(
+        &ctx,
+        &mut app,
+        Key::ArrowDown,
+        Modifiers::ALT,
+        [1366., 900.],
+    );
+    // Reverse traversal from the list reaches Cancel, not OK.
+    ribbon_key(&ctx, &mut app, Key::Tab, Modifiers::SHIFT, [1366., 900.]);
+    ribbon_key(&ctx, &mut app, Key::Enter, Modifiers::NONE, [1366., 900.]);
+    assert!(app.quick_order.is_none());
+    assert_eq!(app.quick_access, commands);
+    assert_eq!(std::fs::read(&path).unwrap(), original);
+    // An unchanged OK must not even attempt a write under an existing lock.
+    std::fs::write(dir.path().join(".toolbar-settings.lock"), b"busy").unwrap();
+    open_order(&ctx, &mut app);
+    click_region(&ctx, &mut app, "qat-order-ok");
+    assert!(app.error.is_none() && app.preferences_warning.is_none());
+    assert_eq!(std::fs::read(&path).unwrap(), original);
+}

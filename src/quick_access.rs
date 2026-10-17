@@ -217,7 +217,8 @@ impl DocsApp {
             && self.error.is_none()
             && self.font_dialog.is_none()
             && self.zoom_dialog.is_none()
-            && !self.quick_reset;
+            && !self.quick_reset
+            && self.quick_order.is_none();
         let response = chrome::control(
             ui,
             rect,
@@ -304,6 +305,14 @@ impl DocsApp {
                     TargetKind::QuickRetry,
                 );
             }
+            ui.separator();
+            self.quick_option(
+                ui,
+                "qat-order",
+                "More Commands…",
+                None,
+                TargetKind::QuickOrder,
+            );
             self.collecting_menu = false;
             self.ribbon_group = None;
             self.record("quick-access-menu", ui.min_rect());

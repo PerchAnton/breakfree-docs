@@ -8,20 +8,20 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.11**. Earlier capture/CI evidence retains its
+Current local checkpoint: **0.1.0-alpha.12**. Earlier capture/CI evidence retains its
 original scope; this iteration does not establish native Windows behavior.
 
 | Local check | Observed result |
 | :--- | :--- |
-| `cargo test --locked` | 90 passed: 23 engine/storage/presentation, 9 preferences, 4 CLI subprocess and 54 actual egui widget event tests; no skipped tests |
+| `cargo test --locked` | 95 passed: 23 engine/storage/presentation, 9 preferences, 4 CLI subprocess and 59 actual egui widget event tests; no skipped tests |
 | `cargo test --locked --no-default-features` | 36 passed; preferences, core and CLI build without GUI dependencies |
 | `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
 | `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
-| Copied executable outside checkout | Alpha.11 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
+| Copied executable outside checkout | Alpha.12 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
 | Repository references, contract and artwork | `python3 tools/check_repository.py` passed; approved logo embedded directly and archive copy byte-identical |
 | Workflow YAML / whitespace | Ruby YAML parse and `git diff --check` passed |
-| Native rendering | Alpha.11 Home at 1366 × 900, 960 × 700 and 640 × 480 DIP, plus temporary Home at 640 × 480 inspected at backing scale 2; [captures](UI_SPEC.md#alpha11-native-captures). Earlier evidence retains its version context |
-| Native macOS interaction | Alpha.11 normal binary: Unicode paste/selection, pointer Bold, size 14, two-step Undo/Redo, Ctrl+F1, F10 H, Escape and repinning passed; selected-state/separator placement inspected. Earlier alpha.10 settings and native Save/Open evidence remains historical; native Windows/AltGr/IME remains unverified |
+| Native rendering | Alpha.12 ordering dialog at 1366 × 900 and 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha12-native-captures). Earlier evidence retains its version context |
+| Native macOS interaction | Alpha.12 normal binary: Unicode paste/selection/Bold, F10/0 ordering entry, Alt+arrow focus, Escape cancellation, OK, renumbered Undo/Redo and restart restored the saved order. Earlier native Save/Open and Home geometry evidence retains its version context; Windows/AltGr/IME remains unverified |
 | Synthetic DPI | Actual widgets at 1/1.25/1.5 scale and 960/1366/1920 physical widths; ribbon/group/workspace/status bounds and collapse assertions passed; 27 additional width/scale combinations check individual Home control containment/nonoverlap and title/search/window bounds |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
@@ -56,6 +56,38 @@ widget tests cover wide/minimum-width Grow/Shrink, composition disablement,
 Paste/Find/Select menus, Escape cancellation and working overflow. Strict geometry
 checks now include menu triggers and the More button. The initial 640-DIP budget
 failure was resolved by narrowing the overflow Font group, keeping the assertions.
+
+## Alpha.12 toolbar order validation
+
+Five new actual-widget tests cover draft isolation, Apply/reload at both toolbar
+positions, stable selected-command focus, keyboard menu entry and traversal,
+background command/input/close blocking, Escape and pointer/keyboard Cancel,
+failed-save byte preservation and Retry Saving, unchanged OK with a busy lock,
+and empty/single/all-command lists. Eighteen geometry combinations cover those
+three lists at 640/1366-DIP widths, 480-DIP height and synthetic scales 1/1.25/1.5.
+Dialog bounds and every recorded control fit; boundary moves are no-ops.
+
+A styled English/Ukrainian/Russian/combining-text document retains its selection,
+history and supported model snapshot through reordering, preferences reload and
+native-format save/reopen. Updated numeric KeyTips target the reordered real Undo
+command. The original Home gutter and all previous keyboard/persistence tests pass.
+The capture-feature all-targets Clippy check also passed with warnings denied.
+
+Native macOS Computer Use ran the normal release executable from a temporary
+app bundle outside the repository with an isolated profile. Paste of
+`English e\u{301}\nУкраїнська\nРусский`, Select All and Bold prepared three paragraphs.
+F10, 0 and the customization menu opened More Commands. Down then Alt+Up moved
+Undo to the first row, retaining its accessible selected identity and visible
+focus. Escape cancelled; opening again, Alt+Down and Enter applied Undo/Save/Redo.
+F10 1 undid Bold and F10 3 restored it with the selection intact. The test document
+closed through Discard. A normal restart displayed Undo/Save/Redo; independent
+JSON decoding confirmed that exact order and above-ribbon placement. The empty
+restarted window closed normally. User settings were not touched.
+
+Two native captures were inspected for list/arrow alignment, focus, labels, footer
+and minimum-window fit. Native system Save/Open dialogs and real OS IME were not
+repeated in this iteration; automated save/reopen passed. Native Windows scales,
+AltGr/accessibility and a paired Word 2024 comparison remain unperformed.
 
 ## Alpha.11 Home separator validation
 
