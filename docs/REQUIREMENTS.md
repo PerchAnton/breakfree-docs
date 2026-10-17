@@ -1,6 +1,8 @@
 # First milestone — a reliable writing loop
 
-**Proposed requirements; no implementation is present yet.** This document defines a small first milestone rather than all of Microsoft Word.
+**Acceptance requirements for the first prototype.** Implementation and local test
+evidence now exist in [VALIDATION.md](VALIDATION.md); complete milestone approval
+and target-platform reviews remain open. The scenario IDs below are preserved.
 
 ## User story
 
@@ -8,7 +10,13 @@ A person creates a short document, types several paragraphs, applies basic forma
 
 ## In scope
 
-A single document window, plain paragraphs, text selection, basic emphasis, paragraph alignment, undo/redo, local persistence and unsaved-change handling. Language/toolkit, native file format and first operating system remain architecture decisions.
+A single document window, paragraphs, text selection, basic emphasis, paragraph
+alignment, undo/redo, local persistence and unsaved-change handling. Rust is the approved runtime language. The native ribbon prototype and preserved
+v1 reader are documented in [ADR 0002](adr/0002-rust-native-ribbon.md).
+[ADR 0003](adr/0003-character-size-and-underline.md) adds size/underline and content
+v2 writing while preserving the D01–D09 scenarios. Follow the
+Word 2024 Windows reference in [UI_SPEC](UI_SPEC.md). GUI-library adoption, licensing
+and supported-platform decisions remain open.
 
 ## Acceptance scenarios
 

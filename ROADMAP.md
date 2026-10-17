@@ -1,9 +1,20 @@
 # BreakFree Docs — Development roadmap
 
-**Stage: planning · Next gate: D0 — architecture and a buildable shell**  
-**Reviewed: 2026-10-16.** This is an original implementation plan. Documentation and branding exist; application features do not. Milestone names below are planning identifiers, not published releases. No dates, delivery estimates or readiness percentages have been measured.
+**Stage: Rust D1 loop and native Home ribbon · Next gate: native Windows input/visual validation**
+**Reviewed: 2026-10-16.** The first standalone writing loop is implemented as a
+reversible experiment. D0 adoption, license, accessibility and cross-platform gates
+remain open. The detailed long-term plan is preserved below. Milestone names are
+planning identifiers, not published releases; no readiness percentage is claimed.
 
 [Overview](README.md) · [Initial acceptance scenarios](docs/REQUIREMENTS.md) · [Suite plan](https://github.com/PerchAnton/breakfree-office/blob/main/ROADMAP.md) · [Evidence rules](https://github.com/PerchAnton/breakfree-office/blob/main/docs/DEVELOPMENT_STANDARD.md)
+
+The owner-defined release cycle is `0.1.0-alpha.N` → beta → RC → `0.1.0`;
+the `0.2.0` cycle starts after actual first stable publication. See
+[VERSIONING](docs/VERSIONING.md) and [CHANGELOG](CHANGELOG.md). D0–D8/R1 remain
+feature/evidence milestones; version numbers do not mark those gates complete.
+Every delivered change set increments the current prerelease counter and updates
+CHANGELOG, including documentation-only work. Every work report includes the
+current application version for owner approval.
 
 ## 1. Product destination and current position
 
@@ -11,20 +22,25 @@ Build a local-first word processor that grows from everyday writing into structu
 
 | Dimension | Current evidence | Required evidence later |
 | :--- | :--- | :--- |
-| Feature coverage and depth | No implementation | Versioned feature inventory and workflow tests |
-| Layout and typography | Not measured | Semantic assertions and controlled visual fixtures |
+| Feature coverage and depth | Basic D1 prototype; [acceptance evidence](docs/VALIDATION.md) | Versioned feature inventory and expanded workflow tests |
+| Layout and typography | Rust galley wrapping/alignment and hit-test assertions; no pagination/fidelity measurements | Semantic assertions and controlled visual fixtures |
 | DOCX fidelity | Not implemented | Separate import, edit, export and reopen reports |
-| File safety and recovery | Design requirements only | Fault-injection and recovery tests |
+| File safety and recovery | Write-then-replace and fault-injection tests; no crash recovery | Interrupted-process, power-loss and recovery tests |
 | Performance | No baseline | Published hardware, corpus, versions and timings |
-| Accessibility and localization | Requirements only | Keyboard, assistive-technology and language reviews |
-| Platforms and distribution | No builds | Installation and workflow evidence per OS/architecture |
-| Automation | Proposed | The same documented commands exercised through each client |
+| Accessibility and localization | Rust widget event tests; assistive technology and localization pending | Native platform, assistive-technology and language reviews |
+| Platforms and distribution | Rust native executable; local macOS build/render checks | Installation and workflow evidence per OS/architecture |
+| Automation | Process launch/capability adapter v1, provisional Office baseline | Published Office contract reconciliation and launcher tests |
 
 Readiness will be assessed separately for short everyday documents, long structured reports and review-heavy professional work. Do not publish a single percentage until the feature inventory, weighting and measurements exist.
 
 ## 2. Proposed architecture
 
-**Proposal for D0 review, not a selected stack:** a Rust core organized into focused packages, with a replaceable desktop UI. Evaluate the toolkit against text input, layout, accessibility, clipboard and printing requirements before adopting it. A browser build is a later investigation, not a reason to weaken the desktop editor.
+**Approved language:** Rust for model, editing, storage, integration and GUI. No
+further language approval is needed. The owner selected desktop Word 2024 for
+Windows as the visual reference. The native eframe/egui ribbon is a replaceable
+implementation under [ADR 0002](docs/adr/0002-rust-native-ribbon.md); toolkit,
+accessibility, licensing and platform gates remain open. The superseded Python
+experiment is retained in `prototypes/python/` as historical evidence.
 
 | Boundary | Responsibility |
 | :--- | :--- |
@@ -41,7 +57,8 @@ Keep unsupported imported data separate from editable content. Preserve it only 
 
 ## 3. Feature map
 
-Every row is **planned**, not implemented. Read and write coverage must be tracked separately.
+Rows describe intended coverage; only the narrow D1 subset in the evidence report
+is implemented. All wider coverage remains planned. Track read/write separately.
 
 | Area | Intended coverage | First phase |
 | :--- | :--- | :--- |
@@ -62,26 +79,98 @@ Every row is **planned**, not implemented. Read and write coverage must be track
 
 ### D0 — Decide and prove the foundation
 
-- [ ] Record architecture decisions: license approval, first target OS, language, toolkit and native format.
+- [x] Record the owner-approved Rust language and Word 2024 Windows visual target (ADR 0002).
+- [ ] Review license, first supported target OS, toolkit and native format adoption.
 - [ ] Prototype caret movement, input methods, clipboard, font fallback and accessibility on the first target.
-- [ ] Define document invariants, command parameters, undo boundaries and the failure model for saves.
-- [ ] Create a minimal shell, headless test runner and reproducible build instructions.
-- [ ] Add baseline formatting/linting, dependency review and layer checks to real CI.
+- [x] Define prototype invariants, command parameters, undo boundaries and the tested failure model for saves (ADR 0002 and NATIVE_FORMAT.md).
+- [x] Create a minimal standalone shell, headless test runner and reproducible build instructions (README and local validation).
+- [x] Configure Rust formatting, Clippy, core/widget/CLI tests and binary build in CI.
+- [ ] Review exact dependency licenses and enforce architectural boundaries beyond feature separation.
 
 **Exit:** an owner-reviewed decision record and a shell another contributor can build. A toolkit demo alone does not pass the text-input investigation. No build commands are advertised before validation.
 
 ### D1 — A reliable writing loop
 
-- [ ] Implement paragraphs, selections, typing, deletion and basic formatting.
-- [ ] Route edits through validated commands; expose a minimal headless command path for tests.
-- [ ] Add undo/redo, explicit save/discard/cancel choices and versioned local save/reopen.
-- [ ] Handle failed writes, malformed files and keyboard-only operation.
+- [x] Implement prototype paragraphs, selections, typing, deletion, bold/italic and paragraph alignment.
+- [x] Route edits through validated commands; expose the same engine to headless tests.
+- [x] Add undo/redo, explicit save/discard/cancel choices and versioned local save/reopen, covered by local tests.
+- [x] Handle tested write failures, malformed files and the tested keyboard workflow on the evaluation host.
 - [ ] Run all D01–D09 scenarios in [REQUIREMENTS.md](docs/REQUIREMENTS.md).
+
+The last gate remains open: automated cases cover the initial loop, but complete
+native dialog/IME, accessibility and target-platform reviews are outstanding.
 
 **Exit:** create → edit → save → reopen → continue preserves supported content, and every initial acceptance scenario has evidence. This is the first implementation milestone, not a DOCX milestone.
 
+### R1 — Rust ribbon and native-platform proof (depends on D1 data-safety tests)
+
+- [x] Migrate all runtime layers to Rust; reopen the native v1 fixture unchanged.
+- [x] Implement custom title/search, File, Home groups, white continuous canvas,
+  real statistics, navigation, formatting pane and adaptive ribbon overflow.
+- [x] Cover shared editing, format/history, lifecycle, transient IME and synthetic
+  100/125/150% geometry with actual Rust widget events.
+- [x] Refine Home icon density, two-row Font/Paragraph, style previews, title/search,
+  File Home/Options and status zoom; inspect native wide/narrow/File captures and
+  test individual control containment and nonoverlap at responsive breakpoints.
+- [x] Refine Home density, split Paste, menu affordances, inline style previews and
+  common font-size stepping; preserve mixed runs/history and 640-DIP overflow.
+  Alpha.4 native macOS keyboard/paste, formatting, Save/Open and Cancel/Discard
+  smoke passed; automated non-ASCII character typing remains unresolved.
+- [x] Give Font its own draft dialog and one shared undo transaction; preserve mixed
+  formatting, cancellation and Unicode save/reopen. Split Find primary/options.
+  Alpha.5: 48 full / 26 core-only local tests, native macOS keyboard/save smoke and
+  wide/minimum-window Home/Font captures; Windows comparison remains open.
+- [x] Add tabs-only temporary expansion, dismissal/pinning, Home command/group/menu
+  keyboard routing and visible-region F6. Alpha.6: 54 full / 26 core-only tests,
+  nine additional overlay DPI cases, native macOS keyboard/save smoke and three
+  inspected captures. No canvas reflow or lost selection in the covered scenarios.
+- [x] Add Home/File sequential KeyTips, bare-Alt modifier-transition entry, F10,
+  prefix/Escape/focus handling and responsive More routes. Alpha.7: 61 full / 26
+  core-only tests, nine badge scale cases, four inspected native render captures
+  and macOS F10/Alt+H/menu/size/Save/Open smoke. Bare Alt has event-test evidence only.
+- [x] Extend KeyTips to the fixed Quick Access Toolbar, all tab entries, narrow
+  More tabs and real View commands; add a validated view-only Zoom draft.
+  Alpha.8: 68 full / 26 core-only tests, 27 badge width/scale and three modal-scale
+  cases, four inspected captures; native macOS QAT/history, View/Zoom, Draw/Help
+  and Unicode Save/Open passed. Reference mappings remain provisional.
+- [x] Correct Home inter-group separator overlap reported by the owner. Alpha.11:
+  8-DIP gaps and divider/control separation pass 54 width/scale/state cases;
+  four native macOS captures and normal-binary pointer/keyboard checks inspected.
+  Matched Windows/reference acceptance remains separate.
+- [x] Alpha.14: refine the existing Navigation pane with one grapheme-safe matcher,
+  active result count, previous/next keyboard routing, virtual rows beyond 40,
+  bounded highlighted excerpts and document scrolling. Preserve alpha.13 palette
+  and icons; [validation](docs/VALIDATION.md#alpha14-navigation-validation) records
+  local evidence. This improves the R1 prototype, not the full D1/D2 exit gates.
+- [x] Alpha.15: add Match case/Whole words to the shared literal query, with original
+  Unicode ranges, keyboard toggles/Escape, bounded errors and replacement/history
+  regressions. Preserve palette/icons; [validation](docs/VALIDATION.md#alpha15-search-options-validation)
+  records 110/44 local tests, two captures and native macOS Save/Open evidence.
+  This depends on alpha.14 Navigation; full linguistic search/D2 remains open.
+- [x] Alpha.16: add a read-only Replace All preview and one shared-engine undo
+  transaction using alpha.15 query options and original ranges. Validate Unicode,
+  mixed formatting, no-op/stale/oversized plans and keyboard cancellation/apply.
+  [Validation](docs/VALIDATION.md#alpha16-replace-all-validation) records 121/51
+  local tests, two native captures and macOS Save/Open; [ADR 0005](docs/adr/0005-replace-all-preview.md)
+  defines style/paragraph rules. Native Windows acceptance and full D2 remain open.
+- [ ] Verify native bare Alt/AltGr and rapid modifier taps, contextual/future command
+  hints, and compare all mappings against the named Windows reference build. Depends on the native Windows/Word environment; no full parity claimed.
+- [ ] Capture Word 2024 Windows and Docs at matched build/language/theme/window,
+  document zoom and Windows 100/125/150%; record measured deltas in UI_SPEC.
+- [ ] Verify native Windows keyboard, IME, dialogs, font fallback, clipping and focus.
+- [ ] Review context tabs when document objects exist; full KeyTips and vertical ruler.
+
+**Exit:** matched screenshots with recorded measurements, no unintended Home/workspace overlap,
+all active commands change real state, native D01–D09 reviewed, no fake pagination.
+Rust selection is complete; this gate evaluates GUI behavior and visual fidelity.
+
 ### D2 — Everyday document structure
 
+- [x] Add direct font size and underline through shared commands and Home controls;
+  preserve mixed selections, pending input, undo/redo and v1-read/v2-save content.
+  [ADR 0003](docs/adr/0003-character-size-and-underline.md) and
+  [validation](docs/VALIDATION.md) record the narrow alpha.3 increment; this does not
+  complete D2 or the native-platform R1 gate.
 - [ ] Add paragraph/character styles with inheritance and direct-formatting rules.
 - [ ] Add lists, indentation, tabs, spacing, links and Unicode-aware search/replace.
 - [ ] Add table editing and images with explicit sizing and anchoring semantics.
@@ -150,16 +239,53 @@ Test pure model invariants, command/undo round trips, native persistence, malfor
 
 Proposed benchmark fixtures: a short letter; a 100-page report; a 500-page stress document; mixed-script paragraphs; large tables and image-rich reports. These are **test designs, not supported capacity claims**. Establish reference hardware and baseline measurements in D0–D2 before adopting numeric performance budgets. Record cold/warm startup, typing latency, repagination, open/save time and peak memory.
 
+### Next small toolbar increment
+
+- [x] Alpha.9: window-local command visibility, above/below placement, dynamic numeric hints, keyboard focus and reset; real View 100%/width fitting. Local event/native evidence: [validation](docs/VALIDATION.md#alpha9-toolbar-and-view-validation).
+- [x] Alpha.10: persist ordered toolbar commands and placement in a versioned user profile; confirmed reset/backup, unknown-version preservation and failed-write/stale-window handling. Alpha.9 approved; restart/roundtrip, failure, unchanged-document tests and native macOS checks passed. [ADR 0004](docs/adr/0004-local-toolbar-preferences.md), [validation](docs/VALIDATION.md#alpha10-preferences-validation).
+- [x] Alpha.12: explicit command reordering through More Commands, keyboard-accessible move controls, draft OK/Cancel, unique ordered commands, hint remapping and stable focus after moves. Uses the alpha.10 settings boundary; five widget regressions, 18 geometry cases and native macOS restart evidence: [validation](docs/VALIDATION.md#alpha12-toolbar-order-validation). Alpha.11 approved; alpha.12 awaits version/review approval.
+- [x] Alpha.13: refine icon color roles and light surfaces using owner-supplied macOS visual evidence, retaining original vector artwork, disabled command semantics, geometry and editing. Alpha.13 version approved in chat. Three native captures and the existing 95/36 tests verified; [palette evidence](docs/UI_SPEC.md#alpha13-icon-palette). This does not complete the Windows comparison gate.
+- [ ] Compare both toolbar positions and View against a named Word 2024 Windows build at matched sizes/theme/language and native 100/125/150%; attach paired captures and measured differences. Depends on an available reference environment; no similarity percentage.
+
 ## 6. Work order, evidence and ownership
 
 Critical path: **D0 → D1 → D2 → D3 → D4**. Review features, accessibility and automation can progress in parallel once their model boundaries stabilize. A milestone is complete only with linked tests, fixtures, platform results and maintainer review. Name an accountable owner before starting each milestone; none is assigned by this plan.
+
+### Optional Office integration and concrete dependencies
+
+| Step | Depends on | Completion criterion / current evidence |
+| :--- | :--- | :--- |
+| I0: independent executable | D0 shell | `breakfree-docs` installs from this repo; headless commands work with the GUI and Office unavailable; tested by Rust subprocesses outside the checkout |
+| I1: process contract v1 | I0, owner baseline | `--new`, absolute `--open`, `--capabilities`, `--version`; exact JSON/version, invalid args and failed-open tests; [pinned local snapshot](contracts/v1/BASELINE.md) |
+| I2: Office reconciliation | Published Office `contracts/v1/` and ADR | Pin its source commit/version, compare every field/command and record differences; **pending**, no published contract found at inspected revision |
+| I3: Office launcher smoke | I2, actual Office launcher, D1 editor | Office starts this same executable with new/open; standalone launch still passes with all sibling repositories absent; **pending** |
+| D1 review gate | D0 owner review, data-safety tests, platform input/dialog evidence | D01–D09 evidence reviewed, limitations accepted, no known blocking data-loss bug; **pending** |
+| D2 next increment | D1 review, stable command/native fixtures | Choose one small feature; retain exact undo and native round-trip tests rather than starting several adapters |
+
+I2/I3 never block development or standalone builds. Office is an optional launcher,
+not the host of the Docs engine. No shared document engine is planned without
+demonstrated need in multiple applications. Build inputs must never track another
+repository's live main branch.
 
 Turn checklist items into small issues with a user outcome, dependencies, fixture, acceptance test and risk. Prioritize data loss, unsafe input handling and broken core workflows before feature breadth. Do not invent effort estimates from another project's pace; calibrate ranges from completed BreakFree work.
 
 ## 7. Specification inputs and revision log
 
-Use public specifications and original test cases, not copied application code. Useful starting points: [ECMA-376 / OOXML](https://ecma-international.org/publications-and-standards/standards/ecma-376/) and, if the Rust proposal is adopted, [Cargo workspaces](https://doc.rust-lang.org/cargo/reference/workspaces.html). Pin editions and relevant clauses in implementation decisions.
+Use public specifications and original test cases, not copied application code. Useful starting points: [ECMA-376 / OOXML](https://ecma-international.org/publications-and-standards/standards/ecma-376/) and [Cargo workspaces](https://doc.rust-lang.org/cargo/reference/workspaces.html). Pin editions and relevant clauses in implementation decisions.
 
 | Date | Change | Implementation impact |
 | :--- | :--- | :--- |
 | 2026-10-16 | Expanded the independent roadmap, quality gates and app identity | Documentation only; no feature completion claimed |
+| 2026-10-16 | Added a reversible standalone D1 editor experiment, local evidence and optional Office I0–I3 dependencies | Narrow implemented subset checked above; D0 adoption, full D1 review and Office reconciliation remain open |
+| 2026-10-16 | Owner approved Rust and Word 2024 Windows reference; replaced runtime with Rust and added R1 ribbon proof gate | Native v1/CLI preserved; toolkit adoption and matched Windows visual/DPI evidence pending |
+| 2026-10-16 | Owner requested font size and underline as the next small increment; alpha.3 implements shared formatting and native content v2 | Strict v1 reading retained; protocol v1 unchanged. Local history/storage/widget checks and wide/narrow native captures recorded; Windows comparison remains pending |
+| 2026-10-16 | Owner approved alpha.3; alpha.4 tightens Home geometry/menus/icons and implements shared font-size stepping | 44 full / 24 core-only local tests, three native widths and macOS keyboard/dialog smoke; Windows reference/native DPI and IME gates remain open |
+| 2026-10-16 | Owner approved alpha.4; alpha.5 adds transactional Font dialog and split Find | 48 full / 26 core-only local tests; native macOS dialog/history/save/reopen and four inspected captures; Windows/Word/IME gates remain open |
+| 2026-10-17 | Owner approved alpha.5; alpha.6 adds temporary ribbon and Home keyboard navigation | 54 full / 26 core-only local tests; native macOS focus/menu/undo/save checks and three captures; Windows/Word/IME and full KeyTips gates remain open |
+| 2026-10-17 | Owner approved alpha.6; alpha.7 adds Alt/F10 and Home/File KeyTips | 61 full / 26 core-only local tests, native macOS sequence/Save/Open smoke and four captures; native bare Alt/AltGr, Windows/Word and remaining KeyTips gates stay open |
+| 2026-10-17 | Owner approved alpha.7; alpha.8 extends QAT/all-tab/View KeyTips and adds a view-only Zoom draft | 68 full / 26 core-only local tests, four captures, native macOS keyboard/Unicode Save/Open; Windows/Word/AltGr/IME and exact mapping review remain open |
+| 2026-10-17 | Owner approved alpha.8; alpha.9 adds window-local QAT customization/keyboard focus and compact View with 100%/Canvas Width | 74 full / 26 core-only local tests, four native captures and macOS keyboard/Unicode Save/Open; toolbar persistence/reordering and Windows/Word acceptance remain open |
+| 2026-10-17 | Owner approved alpha.9; alpha.10 persists QAT settings with reset/backup, conflict detection and retry | 89 full / 36 core-only tests, three native captures and macOS restart/error/Unicode save checks; explicit ordering controls and Windows/Word acceptance remain open |
+| 2026-10-17 | Alpha.11 fixes Home separators overlapping Bold/font-family controls | 90 full / 36 core-only tests, 54 gutter cases and four native captures; native macOS formatting/history/temporary Home passed. Alpha.10 and alpha.11 approvals remain pending |
+| 2026-10-17 | Owner approved alpha.11; alpha.12 adds keyboard-accessible QAT ordering | 95 full / 36 core-only tests, 18 dialog cases and two native captures; native macOS cancellation/apply/KeyTips/restart passed. Windows/Word acceptance and alpha.12 approval remain open |
+| 2026-10-17 | Alpha.13 refines icon accents and neutral shell/File colors from owner-supplied macOS captures | 95 full / 36 core-only tests and three native captures; native formatting/history/File/KeyTips verified. Alpha.12/13 approval and Windows/Word comparison remain open |
