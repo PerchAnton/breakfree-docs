@@ -24,7 +24,7 @@ fn preview_is_read_only_and_apply_is_one_exact_styled_undo_roundtrip() {
     e.align(12, e.document.character_count(), Alignment::Right)
         .unwrap();
     e.selection = (1, 3);
-    e.typing_style.italic = true;
+    e.typing_style.italic = Some(true);
     let original = e.document.clone();
     let selection = e.selection;
     let typing = e.typing_style;
@@ -43,8 +43,8 @@ fn preview_is_read_only_and_apply_is_one_exact_styled_undo_roundtrip() {
     assert_eq!(e.undo_stack.len(), count);
     let expected = plan.result().clone();
     assert_eq!(expected.text(), "ї ї cats\nУкраїна Русский e\u{301}");
-    assert!(expected.paragraphs[0].styles[0].bold);
-    assert!(expected.paragraphs[0].styles[2].underline);
+    assert!(expected.paragraphs[0].styles[0].bold.unwrap_or(false));
+    assert!(expected.paragraphs[0].styles[2].underline.unwrap_or(false));
     assert_eq!(expected.paragraphs[1], original.paragraphs[1]);
     assert_eq!(e.apply_replace_all(plan).unwrap(), 2);
     assert_eq!(e.document, expected);
@@ -212,7 +212,7 @@ fn combining_replacements_and_mixed_noops_keep_valid_carets_and_exact_counts() {
     );
     let plan = e.preview_replace_all(&found, "a").unwrap();
     assert_eq!((plan.match_count(), plan.change_count()), (2, 1));
-    assert!(plan.result().paragraphs[0].styles[2].bold);
+    assert!(plan.result().paragraphs[0].styles[2].bold.unwrap_or(false));
     e.apply_replace_all(plan).unwrap();
     let plan = e.preview_replace_all(&[(1, 2)], "\u{301}").unwrap();
     e.apply_replace_all(plan).unwrap();

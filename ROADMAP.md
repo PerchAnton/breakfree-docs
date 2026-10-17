@@ -176,7 +176,15 @@ Rust selection is complete; this gate evaluates GUI behavior and visual fidelity
   text/alignment, pending input, no-op redo and exact history/native roundtrip are
   preserved. [ADR 0003](docs/adr/0003-character-size-and-underline.md#alpha17-direct-character-reset)
   defines this narrow rule. This does not complete inherited styles or D2.
-- [ ] Add paragraph/character styles with inheritance and direct-formatting rules.
+- [x] Alpha.18: built-in Normal/No Spacing/Heading 1 inheritance, distinct direct
+  overrides, real Home gallery and spacing, one-operation undo and strict v3
+  roundtrip with v1/v2 appearance preservation. Depends on alpha.17 reset and
+  alpha.16 replacement snapshots; [ADR 0006](docs/adr/0006-built-in-paragraph-styles.md).
+- [ ] Extend paragraph/character styles with editable definitions, validated parent
+  graphs and explicit direct-formatting rules. Next increment: Modify Style draft
+  with parent selection, cycle rejection, Cancel and one undo; changing Normal
+  updates inherited properties only, surviving save/reopen. Depends on alpha.18.
+  Complete this broader item only with custom/character-style fixture coverage.
 - [ ] Add lists, indentation, tabs, spacing, links and Unicode-aware search/replace.
 - [ ] Add table editing and images with explicit sizing and anchoring semantics.
 - [ ] Add navigation, command search and understandable tool states.

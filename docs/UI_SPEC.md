@@ -70,9 +70,10 @@ disables these commands. The Paste icon performs plain-text paste; its lower men
 contains the same action and an explained disabled Paste Special. Find opens
 navigation directly; its separate 18-DIP arrow opens options. Select opens a real
 command menu; overflow retains Find/Replace/Select All/Formatting.
-Style previews remain disabled and do not claim applied model styles. A single
-63-DIP gallery holds inline Normal/No Spacing/Heading 1 names and three disabled
-navigation buttons; no selected style frame is drawn.
+The 63-DIP Styles gallery applies Normal/No Spacing/Heading 1 through shared
+commands. Its selected frame follows the uniform paragraph style; mixed selection
+has no selected frame. A 15-DIP trailing menu exposes all styles at compact width.
+See the alpha.18 behavior and inheritance rules below.
 Native egui hover/pressed/disabled/focus states remain active; unsupported controls
 have tooltips explaining the missing capability. Styling uses restrained violet
 #7047ae, pale selected-state fill, light chrome and readable dark text.
@@ -108,6 +109,9 @@ Home/File KeyTips and Alt entry, plus quick-access/tab/View extensions, are desc
 native assistive technology and multilingual OS IME remain unverified/incomplete.
 
 ## Alpha.17 clear character formatting
+
+Historical checkpoint: alpha.18 replaces the fixed 11-pt reset with inherited
+paragraph values and advances native content to v3; see the alpha.18 section.
 
 The existing original eraser icon is active as **Clear character formatting**.
 Its 25 × 25 DIP control stays in the upper Font row. Full density retains Change
@@ -727,6 +731,55 @@ Create `artifacts` first. On Windows PowerShell, set `$env:BREAKFREE_CAPTURE_TO`
 to the absolute PNG path and run the same Cargo arguments. `navigation` is also
 accepted in place of `home`. This development example adds no production CLI flags.
 
+## Alpha.18 paragraph styles
+
+Normal, No Spacing and Heading 1 are actual paragraph styles. The full gallery
+retains its 63-DIP frame and name previews (12-DIP body / 18-DIP bold heading).
+Compact mode shows the current uniform style, or an unselected Normal card for
+mixed paragraphs; the 15 × 61-DIP trailing More styles button opens the complete
+catalog. Minimum width uses Home More. Group widths, 8-DIP gutters, light palette
+and original icons remain unchanged. No redundant disabled scrolling arrows are
+shown for a three-item catalog. Modify style is disabled with an explanation.
+
+Apply changes whole intersected paragraphs in one undo; text, direct font overrides
+and alignment remain. A selected name denotes paragraph identity even if direct
+formatting changes its appearance. Clear character formatting removes overrides
+and reveals each paragraph's inherited properties. The default 11-pt Normal,
+bold 18-pt Heading 1 and true single-spaced/no-gap No Spacing are defined in
+[ADR 0006](adr/0006-built-in-paragraph-styles.md), with explicit migration limits.
+The canvas remains continuous, and a heading does not imply outline navigation
+or pagination. There is no hover preview or automatic following-style transition.
+
+Cards and menus register with existing Tab/arrows/Enter navigation. F10/Alt → H →
+L opens the gallery menu; N/S/H selects Normal/No Spacing/Heading 1. At minimum width
+H → E opens More with the same N/S/H routes. These are provisional Docs mappings;
+exact Word 2024 KeyTip parity is unverified. Escape cancels, and an applied style
+returns to the document/collapses the temporary ribbon. Command search exposes the
+same names. IME composition and modal drafts block style application.
+
+Reference: Microsoft's [Styles gallery documentation](https://support.microsoft.com/en-us/word/add-and-remove-styles-from-the-quick-styles-gallery).
+This supports the Home grouping; no matched Windows capture or similarity score
+is claimed. Native macOS captures and checks are recorded separately below and in
+[validation](VALIDATION.md#alpha18-style-inheritance-validation).
+
+### Alpha.18 native captures
+
+macOS arm64, light UI, 100% document zoom, backing scale 2. Inspected 2026-10-17.
+The source is [Styles.bfdoc](../examples/Styles.bfdoc); the caret is in its final
+Normal paragraph. Heading/body size and real zero-gap pairs come from the model.
+The menu capture uses F10/H/E, exposing styles at the 640 × 480 minimum size.
+No matched Word/Windows image is available; these are scoped Docs visual checks.
+
+![Full Home Styles and inherited document](screenshots/rust-styles-alpha18-macos.png)
+![Minimum-width Styles overflow with KeyTips](screenshots/rust-styles-alpha18-macos-narrow.png)
+
+Reproduce with `cargo build --locked --release --features capture --example capture_ui`:
+
+```sh
+BREAKFREE_CAPTURE_TO="$PWD/docs/screenshots/rust-styles-alpha18-macos.png" target/release/examples/capture_ui 1366 900 styles
+BREAKFREE_CAPTURE_TO="$PWD/docs/screenshots/rust-styles-alpha18-macos-narrow.png" target/release/examples/capture_ui 640 480 styles-menu
+```
+
 ## Intentional brand differences
 
 - BreakFree Docs title and approved transparent page/rainbow icon.
@@ -736,7 +789,7 @@ accepted in place of `home`. This development example adds no production CLI fla
 
 ## Remaining differences and reproducible comparison gate
 
-Current gaps include print pagination and page rulers, vertical ruler, font-family/color controls, lists/styles, contextual object tabs, KeyTips for future commands,
+Current gaps include print pagination and page rulers, vertical ruler, font-family/color controls, lists/custom styles, contextual object tabs, KeyTips for future commands,
 view-mode buttons, additional File operations and complete native window/accessibility
 behavior. Metrics are provisional until measured against the named reference.
 

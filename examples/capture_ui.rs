@@ -22,6 +22,7 @@ impl eframe::App for Capture {
         if self.mode.starts_with("keytips")
             || self.mode == "temporary"
             || self.mode == "replace-all"
+            || self.mode.starts_with("styles")
             || self.mode.starts_with("clear-formatting")
             || self.mode.starts_with("navigation")
         {
@@ -43,6 +44,19 @@ impl eframe::App for Capture {
                 _ => {}
             }
             for key in keys {
+                for pressed in [true, false] {
+                    input.events.push(egui::Event::Key {
+                        key,
+                        physical_key: None,
+                        pressed,
+                        repeat: false,
+                        modifiers: egui::Modifiers::NONE,
+                    });
+                }
+            }
+        }
+        if self.frames == 2 && self.mode == "styles-menu" {
+            for key in [egui::Key::F10, egui::Key::H, egui::Key::E] {
                 for pressed in [true, false] {
                     input.events.push(egui::Event::Key {
                         key,
@@ -201,6 +215,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if args.len() != 3
         || ![
             "home",
+            "styles",
+            "styles-menu",
             "file",
             "navigation",
             "navigation-options",
@@ -228,7 +244,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ]
         .contains(&args[2].as_str())
     {
-        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
+        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
     }
     let path = std::env::var("BREAKFREE_CAPTURE_TO")
         .map_err(|_| "Set BREAKFREE_CAPTURE_TO to an output PNG path")?;
@@ -240,13 +256,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if !(640.0..=1920.0).contains(&width) || !(480.0..=1080.0).contains(&height) {
         return Err("Capture dimensions outside 640–1920 × 480–1080 DIP".into());
     }
-    let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(
-        if ["formatting", "font"].contains(&args[2].as_str()) {
+    let fixture =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(if args[2].starts_with("styles") {
+            "examples/Styles.bfdoc"
+        } else if ["formatting", "font"].contains(&args[2].as_str()) {
             "examples/Formatting.bfdoc"
         } else {
             "examples/Welcome.bfdoc"
-        },
-    );
+        });
     let session = if args[2] == "replace-all" {
         let mut session = Session::default();
         session.editor.replace(0, 0, "BreakFree Docs\nBreakFree writes locally.\nBreakFree preserves Unicode: Україна Русский e\u{301}.", "Fixture")?;

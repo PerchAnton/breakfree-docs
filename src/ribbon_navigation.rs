@@ -155,7 +155,12 @@ impl DocsApp {
         {
             return;
         }
-        if !self.focus_font_size && ctx.memory(|m| m.has_focus(Id::new(EDIT_ID))) {
+        // A popup owns ribbon navigation even while its first frame still reports
+        // the underlying document focus (notably after resizing a temporary ribbon).
+        if !self.focus_font_size
+            && !egui::Popup::is_any_open(ctx)
+            && ctx.memory(|m| m.has_focus(Id::new(EDIT_ID)))
+        {
             self.ribbon_focus = None;
         }
         // Dismiss before drawing the canvas so the outside click reaches its target.

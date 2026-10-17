@@ -11,6 +11,7 @@ pub(super) enum Level {
     Paste,
     Select,
     Editing,
+    Styles,
 }
 #[derive(Default)]
 pub(super) struct KeyTips {
@@ -123,7 +124,7 @@ impl DocsApp {
                 Tip::action("1", Action::Bold),
                 Tip::action("2", Action::Italic),
                 Tip::action("3", Action::Underline),
-                // Docs-specific while named styles and the full reference command are absent.
+                // Docs-specific character-reset route.
                 Tip::action("FC", Action::ClearFormatting),
                 Tip::new("FS", "font-size", Destination::Action(Action::FontSize)),
                 Tip::action("FG", Action::GrowFont),
@@ -133,6 +134,11 @@ impl DocsApp {
                 Tip::action("AC", Action::Center),
                 Tip::action("AR", Action::Right),
                 Tip::action("AJ", Action::Justify),
+                Tip::new(
+                    "L",
+                    "home-menu-Styles",
+                    Menu("home-menu-Styles", Level::Styles),
+                ),
                 Tip::action("FD", Action::Find),
                 Tip::action("R", Action::Replace),
                 Tip::new(
@@ -152,7 +158,15 @@ impl DocsApp {
             ],
             Level::Paste => vec![Tip::action("T", Action::Paste)],
             Level::Select => vec![Tip::action("A", Action::SelectAll)],
+            Level::Styles => vec![
+                Tip::action("N", Action::Style(ParagraphStyle::Normal)),
+                Tip::action("S", Action::Style(ParagraphStyle::NoSpacing)),
+                Tip::action("H", Action::Style(ParagraphStyle::Heading1)),
+            ],
             Level::Editing => vec![
+                Tip::action("N", Action::Style(ParagraphStyle::Normal)),
+                Tip::action("S", Action::Style(ParagraphStyle::NoSpacing)),
+                Tip::action("H", Action::Style(ParagraphStyle::Heading1)),
                 Tip::action("FD", Action::Find),
                 Tip::action("R", Action::Replace),
                 Tip::action("A", Action::SelectAll),
@@ -200,7 +214,7 @@ impl DocsApp {
             return;
         }
         match self.keytips.level {
-            Some(Level::Paste | Level::Select | Level::Editing) => {
+            Some(Level::Paste | Level::Select | Level::Editing | Level::Styles) => {
                 egui::Popup::close_all(ctx);
                 self.ribbon_menu_index = None;
                 self.keytips.level = Some(Level::Home);
@@ -527,7 +541,14 @@ impl DocsApp {
             };
             let menu = matches!(
                 self.keytips.level,
-                Some(Level::Paste | Level::Select | Level::Editing | Level::File | Level::Tabs)
+                Some(
+                    Level::Paste
+                        | Level::Select
+                        | Level::Editing
+                        | Level::Styles
+                        | Level::File
+                        | Level::Tabs
+                )
             );
             let center = if menu {
                 pos2(anchor.right() - 16., anchor.center().y)

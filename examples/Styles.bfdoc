@@ -1,0 +1,81 @@
+{
+  "format": "breakfree.docs.native",
+  "content_version": 3,
+  "paragraphs": [
+    {
+      "alignment": "left",
+      "paragraph_style": "heading1",
+      "runs": [
+        {
+          "text": "BreakFree Docs",
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "runs": [
+        {
+          "text": "Styles keep a document consistent. Direct formatting stays where you put it.",
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "alignment": "left",
+      "paragraph_style": "no_spacing",
+      "runs": [
+        {
+          "text": "A compact pair of paragraphs",
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "alignment": "left",
+      "paragraph_style": "no_spacing",
+      "runs": [
+        {
+          "text": "No Spacing removes the extra gap.",
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "runs": [
+        {
+          "text": "Україна · Русский · café",
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    }
+  ]
+}

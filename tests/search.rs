@@ -92,7 +92,7 @@ fn searched_replacement_uses_existing_history_format_and_storage_rules() {
         .unwrap();
     let changed = editor.document.clone();
     assert_eq!(changed.text(), "English\nУкраїна e\u{301}\nРусский");
-    assert!(changed.paragraphs[1].styles[0].bold);
+    assert!(changed.paragraphs[1].styles[0].bold.unwrap_or(false));
     assert_eq!(changed.paragraphs[1].alignment, Alignment::Right);
     editor.undo();
     assert_eq!(editor.document, original);
@@ -229,7 +229,7 @@ fn folded_whole_word_replacement_roundtrips_style_and_history() {
     editor.replace(a, b, "e\u{301}", "Replace match").unwrap();
     let after = editor.document.clone();
     assert_eq!(after.text(), "e\u{301} Kx\nУкраїна УКРАЇНА");
-    assert!(after.paragraphs[0].styles[0].bold);
+    assert!(after.paragraphs[0].styles[0].bold.unwrap_or(false));
     editor.undo();
     assert_eq!(editor.document, before);
     editor.redo();

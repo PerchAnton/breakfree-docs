@@ -3,7 +3,31 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
-## 0.1.0-alpha.17 — Unreleased; submitted for owner approval
+## 0.1.0-alpha.18 — Unreleased; submitted for owner approval
+
+Prepared 2026-10-17. The owner approved alpha.17 in the project chat.
+
+- Activate Home's Normal, No Spacing and Heading 1 gallery, with responsive menus,
+  selected/mixed state, keyboard traversal, KeyTips and command search. Preserve
+  the palette, original icons and group gutters.
+- Separate inherited character values from explicit overrides in the Rust model.
+  Apply a paragraph style in one undo; keep direct formatting and alignment.
+  Clear character formatting now restores each paragraph's inherited values.
+  No Spacing changes actual line/paragraph spacing; Heading 1 supplies bold 18 pt.
+- Preserve style identity through text editing, previewed batch replacement,
+  undo/redo and native content v3. Read v1/v2 unchanged and preserve their appearance
+  as explicit overrides; opening does not rewrite the source. Older builds reject
+  v3 saves. Use Save As to retain an older file.
+- Correct previously ignored paragraph gaps in the layout adapter and retain
+  keyboard focus in overflow menus after resizing a temporary ribbon.
+- Add inheritance, migration, save-failure and actual-widget/layout regressions.
+  Document fixed catalog rules and the deferred style-definition editor.
+
+No new dependency, process/settings schema or license change. Custom/character
+styles, pagination and native Windows/Word comparison remain separate work.
+Version approval does not authorize merge, tag or release.
+
+## 0.1.0-alpha.17 — Unreleased; version approved 2026-10-17
 
 Prepared 2026-10-17. The owner approved alpha.16 in the project chat.
 

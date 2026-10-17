@@ -5,14 +5,8 @@ use crate::{Result, model::*};
 mod replace_all;
 pub use replace_all::ReplacementPlan;
 
-/// A partial character-format change. Unspecified properties keep each run's value.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub struct FontPatch {
-    pub bold: Option<bool>,
-    pub italic: Option<bool>,
-    pub underline: Option<bool>,
-    pub font_size: Option<FontSize>,
-}
+/// A partial character-format change; unspecified properties retain their override.
+pub type FontPatch = CharacterFormat;
 
 #[derive(Clone, Debug)]
 pub struct Operation {
@@ -21,15 +15,15 @@ pub struct Operation {
     after: Document,
     before_selection: (usize, usize),
     after_selection: (usize, usize),
-    before_typing_style: Style,
-    after_typing_style: Style,
+    before_typing_style: CharacterFormat,
+    after_typing_style: CharacterFormat,
 }
 
 #[derive(Default)]
 pub struct Editor {
     pub document: Document,
     pub selection: (usize, usize),
-    pub typing_style: Style,
+    pub typing_style: CharacterFormat,
     pub undo_stack: Vec<Operation>,
     pub redo_stack: Vec<Operation>,
 }
@@ -48,7 +42,7 @@ impl Editor {
         document: Document,
         label: &str,
         selection: (usize, usize),
-        typing: Style,
+        typing: CharacterFormat,
     ) {
         if document != self.document {
             self.undo_stack.push(Operation {
@@ -83,7 +77,7 @@ impl Editor {
             text,
             slice(&b.text, right, b.styles.len())
         );
-        let styles: Vec<Style> = a.styles[..left]
+        let styles: Vec<CharacterFormat> = a.styles[..left]
             .iter()
             .copied()
             .chain(std::iter::repeat_n(self.typing_style, text.chars().count()))
@@ -97,6 +91,7 @@ impl Editor {
                 text: part.into(),
                 styles: styles[offset..offset + len].to_vec(),
                 alignment: a.alignment,
+                paragraph_style: a.paragraph_style,
             });
             offset += len + 1;
         }
@@ -114,28 +109,37 @@ impl Editor {
     }
 
     pub fn emphasize(&mut self, start: usize, end: usize, bold: bool, enabled: bool) -> Result<()> {
-        self.format_range(start, end, if bold { "Bold" } else { "Italic" }, |style| {
-            if bold {
-                style.bold = enabled;
-            } else {
-                style.italic = enabled;
-            }
-        })
+        self.format_range(
+            start,
+            end,
+            if bold { "Bold" } else { "Italic" },
+            |style, _base| {
+                if bold {
+                    style.bold = Some(enabled);
+                } else {
+                    style.italic = Some(enabled);
+                }
+            },
+        )
     }
 
     pub fn underline(&mut self, start: usize, end: usize, enabled: bool) -> Result<()> {
-        self.format_range(start, end, "Underline", |style| style.underline = enabled)
+        self.format_range(start, end, "Underline", |style, _base| {
+            style.underline = Some(enabled)
+        })
     }
 
     pub fn set_font_size(&mut self, start: usize, end: usize, size: FontSize) -> Result<()> {
-        self.format_range(start, end, "Font size", |style| style.font_size = size)
+        self.format_range(start, end, "Font size", |style, _base| {
+            style.font_size = Some(size)
+        })
     }
 
     /// Reset supported direct character properties, preserving paragraph formatting.
     /// At a caret, reset only the pending insertion style, like other font commands.
     pub fn clear_character_formatting(&mut self, start: usize, end: usize) -> Result<()> {
-        self.format_range(start, end, "Clear character formatting", |style| {
-            *style = Style::default();
+        self.format_range(start, end, "Clear character formatting", |style, _base| {
+            *style = CharacterFormat::default();
         })
     }
 
@@ -145,18 +149,18 @@ impl Editor {
         if patch == FontPatch::default() {
             return Ok(());
         }
-        self.format_range(start, end, "Font", |style| {
+        self.format_range(start, end, "Font", |style, _base| {
             if let Some(value) = patch.bold {
-                style.bold = value;
+                style.bold = Some(value);
             }
             if let Some(value) = patch.italic {
-                style.italic = value;
+                style.italic = Some(value);
             }
             if let Some(value) = patch.underline {
-                style.underline = value;
+                style.underline = Some(value);
             }
             if let Some(value) = patch.font_size {
-                style.font_size = value;
+                style.font_size = Some(value);
             }
         })
     }
@@ -176,8 +180,8 @@ impl Editor {
             start,
             end,
             if grow { "Grow font" } else { "Shrink font" },
-            |style| {
-                style.font_size = style.font_size.stepped(grow);
+            |style, _base| {
+                style.font_size = Some(style.resolve(_base).font_size.stepped(grow));
             },
         )
     }
@@ -187,11 +191,14 @@ impl Editor {
         start: usize,
         end: usize,
         label: &str,
-        change: impl Fn(&mut Style),
+        change: impl Fn(&mut CharacterFormat, Style),
     ) -> Result<()> {
         validate_range(&self.document.text(), start, end)?;
         if start == end {
-            change(&mut self.typing_style);
+            let base = self.document.paragraphs[self.document.locate(start)?.0]
+                .paragraph_style
+                .character_style();
+            change(&mut self.typing_style, base);
             return Ok(());
         }
         let mut result = self.document.clone();
@@ -200,7 +207,7 @@ impl Editor {
         for p in &mut result.paragraphs {
             for (i, style) in p.styles.iter_mut().enumerate() {
                 if (start..end).contains(&(offset + i)) {
-                    change(style);
+                    change(style, p.paragraph_style.character_style());
                     typing.get_or_insert(*style);
                 }
             }
@@ -232,6 +239,47 @@ impl Editor {
         Ok(())
     }
 
+    /// Apply to intersected paragraphs, preserving every direct character override.
+    pub fn apply_paragraph_style(
+        &mut self,
+        start: usize,
+        end: usize,
+        style: ParagraphStyle,
+    ) -> Result<()> {
+        validate_range(&self.document.text(), start, end)?;
+        let (first, _) = self.document.locate(start)?;
+        let (mut last, offset) = self.document.locate(end)?;
+        if end > start && offset == 0 && last > first {
+            last -= 1;
+        }
+        let mut result = self.document.clone();
+        for p in &mut result.paragraphs[first..=last] {
+            p.paragraph_style = style;
+        }
+        self.selection = (start, end);
+        self.commit(
+            result,
+            "Apply paragraph style",
+            (start, end),
+            self.typing_style,
+        );
+        Ok(())
+    }
+
+    pub fn selected_paragraph_style(&self) -> Option<ParagraphStyle> {
+        let (start, end) = self.selection;
+        let (first, _) = self.document.locate(start).ok()?;
+        let (mut last, offset) = self.document.locate(end).ok()?;
+        if end > start && offset == 0 && last > first {
+            last -= 1;
+        }
+        let style = self.document.paragraphs[first].paragraph_style;
+        self.document.paragraphs[first..=last]
+            .iter()
+            .all(|p| p.paragraph_style == style)
+            .then_some(style)
+    }
+
     pub fn emphasis_selected(&self, bold: bool) -> bool {
         self.selected_value(|s| if bold { s.bold } else { s.italic }) == Some(true)
     }
@@ -248,7 +296,14 @@ impl Editor {
     fn selected_value<T: Copy + Eq>(&self, value: impl Fn(Style) -> T) -> Option<T> {
         let (start, end) = self.selection;
         if start == end {
-            return Some(value(self.typing_style));
+            let p = self.document.locate(start).ok()?.0;
+            return Some(value(
+                self.typing_style.resolve(
+                    self.document.paragraphs[p]
+                        .paragraph_style
+                        .character_style(),
+                ),
+            ));
         }
         let mut offset = 0;
         let mut selected = Vec::new();
@@ -258,7 +313,7 @@ impl Editor {
                     .iter()
                     .enumerate()
                     .filter(|(i, _)| (start..end).contains(&(offset + i)))
-                    .map(|(_, s)| value(*s)),
+                    .map(|(_, s)| value(s.resolve(p.paragraph_style.character_style()))),
             );
             offset += p.styles.len() + 1;
         }

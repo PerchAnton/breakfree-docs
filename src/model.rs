@@ -102,6 +102,87 @@ pub struct Style {
     pub font_size: FontSize,
 }
 
+/// Direct character overrides. None inherits; Some(false) explicitly disables a property.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CharacterFormat {
+    pub bold: Option<bool>,
+    pub italic: Option<bool>,
+    pub underline: Option<bool>,
+    pub font_size: Option<FontSize>,
+}
+impl CharacterFormat {
+    pub fn resolve(self, base: Style) -> Style {
+        Style {
+            bold: self.bold.unwrap_or(base.bold),
+            italic: self.italic.unwrap_or(base.italic),
+            underline: self.underline.unwrap_or(base.underline),
+            font_size: self.font_size.unwrap_or(base.font_size),
+        }
+    }
+    /// Legacy files contain resolved values, with no reliable authored inheritance.
+    pub fn explicit(style: Style) -> Self {
+        Self {
+            bold: Some(style.bold),
+            italic: Some(style.italic),
+            underline: Some(style.underline),
+            font_size: Some(style.font_size),
+        }
+    }
+}
+
+/// The content-v3 built-in style catalog is fixed, acyclic and independent of the GUI.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ParagraphStyle {
+    #[default]
+    Normal,
+    NoSpacing,
+    Heading1,
+}
+impl ParagraphStyle {
+    pub const ALL: [Self; 3] = [Self::Normal, Self::NoSpacing, Self::Heading1];
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Normal => "Normal",
+            Self::NoSpacing => "No Spacing",
+            Self::Heading1 => "Heading 1",
+        }
+    }
+    pub fn parent(self) -> Option<Self> {
+        match self {
+            Self::Normal => None,
+            _ => Some(Self::Normal),
+        }
+    }
+    pub fn character_style(self) -> Style {
+        let base = self.parent().map(Self::character_style).unwrap_or_default();
+        match self {
+            Self::Heading1 => CharacterFormat {
+                bold: Some(true),
+                font_size: Some(FontSize(36)),
+                ..Default::default()
+            }
+            .resolve(base),
+            _ => base,
+        }
+    }
+    pub fn line_height(self) -> f32 {
+        if self == Self::NoSpacing {
+            1.0
+        } else {
+            self.parent().map(Self::line_height).unwrap_or(1.25)
+        }
+    }
+    pub fn space_after_points(self) -> f32 {
+        if self == Self::NoSpacing {
+            0.0
+        } else {
+            self.parent().map(Self::space_after_points).unwrap_or(5.5)
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Alignment {
@@ -115,7 +196,8 @@ pub enum Alignment {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Paragraph {
     pub text: String,
-    pub styles: Vec<Style>,
+    pub styles: Vec<CharacterFormat>,
+    pub paragraph_style: ParagraphStyle,
     pub alignment: Alignment,
 }
 
@@ -205,7 +287,7 @@ impl Document {
         Err("Position is outside the document.".into())
     }
 
-    pub fn style_at(&self, position: usize) -> Style {
+    pub fn style_at(&self, position: usize) -> CharacterFormat {
         self.locate(position)
             .ok()
             .and_then(|(p, i)| self.paragraphs[p].styles.get(i.saturating_sub(1)).copied())

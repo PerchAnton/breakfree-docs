@@ -167,26 +167,33 @@ changing their mixed formatting. Inserted text takes each match's first characte
 style. Over-limit results and stale previews are rejected before editing.
 [Batch replacement semantics](docs/adr/0005-replace-all-preview.md).
 Clear character formatting (the Home eraser, Ctrl+Space in the document, or
-KeyTips H → FC) resets bold/italic/underline and size to regular 11 pt in one Undo
-operation. Text and paragraph alignment remain unchanged. At a caret it resets
+KeyTips H → FC) removes direct bold/italic/underline and size overrides in one
+Undo operation, restoring the paragraph style. Text and paragraph alignment remain unchanged. At a caret it resets
 only future input; it does not expand to the surrounding word. This is the
-currently supported character-only reset, without named-style inheritance.
+supported character-only reset; paragraph style and alignment remain intact.
 Control remains Control on macOS; system input-source shortcuts may intercept it.
 The ribbon and command search provide the same action without that chord.
 [Navigation details and evidence](docs/UI_SPEC.md#alpha15-search-options).
 The Font launcher opens a dialog for style, size and underline with a preview.
 Only OK applies the draft, together in one undo operation; Cancel/Escape discards
 it. Mixed properties stay unchanged unless edited. Unimplemented font-family,
-style and list commands are disabled with explanations.
+custom-style and list commands are disabled with explanations.
 
-This build reads native content v1 and v2 and **saves v2**. Opening a v1 file does
-not change it; an explicit save converts it to v2. Earlier v1-only builds cannot
-open new saves. Use Save As to keep an older copy. See [format details](docs/NATIVE_FORMAT.md).
+Home Styles applies Normal, No Spacing or Heading 1 to selected paragraphs in one
+undo. Direct formatting and alignment remain unchanged; Clear character formatting
+returns the selected text to its paragraph style. No Spacing changes real spacing.
+Older files retain their explicit formatting until cleared. New paragraphs inherit
+the current style, including headings. Compact layouts offer all styles through
+More styles or More. [Inheritance rules](docs/adr/0006-built-in-paragraph-styles.md).
+
+This build reads native content v1/v2/v3 and **saves v3**. Opening an older file
+does not change it; an explicit save converts it to v3. Earlier builds cannot
+open new v3 saves. Use Save As to keep an older copy. See [format details](docs/NATIVE_FORMAT.md).
 File provides New/Open/Save/Save As, unsaved Save/Discard/Cancel and view settings;
 Print is disabled. Navigation and the formatting pane operate on real model ranges.
 The white canvas is continuous; pagination, page numbers and print layout are absent.
 Status reports real word/paragraph counts and zoom. The ribbon uses compact vector controls, two-row Font/Paragraph groups and
-disabled style previews; it compacts and moves commands into overflow menus as
+an active paragraph-style gallery; it compacts and moves commands into overflow menus as
 the window narrows. File has Home/Options navigation and real document properties.
 The status bar provides zoom out/in and a percentage button that opens Zoom.
 View groups real Ruler/Navigation checkboxes, Zoom, 100% and Canvas Width. Width
@@ -301,7 +308,7 @@ See [UI_SPEC](docs/UI_SPEC.md) for comparison conditions and remaining visual ga
 | :--- | :--- |
 | Identity and planning documents | Available |
 | Implementation language | Rust approved; language decision complete |
-| UI toolkit and native persistence format | Native eframe/egui ribbon experiment; strict `.bfdoc` v1/v2 reading, v2 writing |
+| UI toolkit and native persistence format | Native eframe/egui ribbon experiment; strict `.bfdoc` v1/v2/v3 reading, v3 writing |
 | Windows, macOS and Linux | macOS local build/render; native Windows/Linux evaluation pending |
 | Application code and tests | Available; [evidence and limits](docs/VALIDATION.md) |
 | Releases and installers | None |

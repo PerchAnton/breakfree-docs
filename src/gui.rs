@@ -3,7 +3,7 @@ use crate::{
     Result, VERSION,
     chrome::{self, Icon},
     layout,
-    model::{Alignment, FONT_SIZE_PRESETS, FontSize, boundaries},
+    model::{Alignment, FONT_SIZE_PRESETS, FontSize, ParagraphStyle, boundaries},
     presentation::*,
     session::Session,
     storage,
@@ -70,6 +70,7 @@ pub enum Action {
     Italic,
     Underline,
     ClearFormatting,
+    Style(ParagraphStyle),
     FontSize,
     FontDialog,
     GrowFont,
@@ -106,6 +107,7 @@ impl Action {
             Self::Italic => "Italic",
             Self::Underline => "Underline",
             Self::ClearFormatting => "Clear character formatting",
+            Self::Style(style) => style.name(),
             Self::FontSize => "Font size",
             Self::FontDialog => "Font dialog",
             Self::GrowFont => "Grow font",
@@ -142,6 +144,9 @@ const COMMANDS: &[Action] = &[
     Action::Italic,
     Action::Underline,
     Action::ClearFormatting,
+    Action::Style(ParagraphStyle::Normal),
+    Action::Style(ParagraphStyle::NoSpacing),
+    Action::Style(ParagraphStyle::Heading1),
     Action::FontSize,
     Action::FontDialog,
     Action::GrowFont,
@@ -382,6 +387,7 @@ impl DocsApp {
     }
     fn checked(&self, action: Action) -> bool {
         match action {
+            Action::Style(style) => self.session.editor.selected_paragraph_style() == Some(style),
             Action::Navigation => self.navigation,
             Action::Rulers => self.rulers,
             Action::ZoomWidth => self.zoom_width,
@@ -489,7 +495,7 @@ impl DocsApp {
         if !self.enabled(action) {
             return;
         }
-        if action == Action::ClearFormatting
+        if matches!(action, Action::ClearFormatting | Action::Style(_))
             && (self.pending.is_some()
                 || self.error.is_some()
                 || ctx.input(|i| i.events.iter().any(|e| matches!(e, egui::Event::Ime(_)))))
@@ -559,6 +565,11 @@ impl DocsApp {
                     .session
                     .editor
                     .underline(start, end, !self.checked(action));
+                self.fail(result);
+                self.sync_view();
+            }
+            Action::Style(style) => {
+                let result = self.session.editor.apply_paragraph_style(start, end, style);
                 self.fail(result);
                 self.sync_view();
             }
@@ -1034,7 +1045,7 @@ impl DocsApp {
             shortcut
         );
         if action == Action::ClearFormatting {
-            tip.push_str("\nReset bold, italic, underline and size to regular 11 pt. Paragraph alignment stays unchanged. At a caret, reset the next text you type.");
+            tip.push_str("\nRemove direct bold, italic, underline and size overrides; inherit the paragraph style. Paragraph alignment stays unchanged. At a caret, reset the next text you type.");
         }
         if response
             .on_hover_text(&tip)
@@ -1547,8 +1558,6 @@ impl DocsApp {
                 );
             }
             3 => {
-                // Names are the preview, matching the reference's compact gallery.
-                // No selected frame: named styles do not exist in the model yet.
                 let gallery = r(0., 3., width - 1., 63.);
                 ui.painter().rect_stroke(
                     gallery,
@@ -1558,39 +1567,74 @@ impl DocsApp {
                 );
                 let count = if width >= 280. { 3 } else { 1 };
                 let card = (width - 19.) / count as f32;
-                for (i, label) in ["Normal", "No Spacing", "Heading 1"]
-                    .into_iter()
-                    .take(count)
-                    .enumerate()
-                {
+                let selected = self.session.editor.selected_paragraph_style();
+                let styles = if count == 1 {
+                    vec![selected.unwrap_or_default()]
+                } else {
+                    ParagraphStyle::ALL.to_vec()
+                };
+                for (i, style) in styles.into_iter().enumerate() {
+                    let action = Action::Style(style);
                     let rect = r(2. + i as f32 * card, 5., card - 3., 59.);
-                    let response = chrome::button(ui, rect, label, false, false)
-                        .on_disabled_hover_text(
-                            "Named styles are planned. This preview does not apply a style.",
-                        );
-                    self.record(&format!("style-{label}"), response.rect);
+                    let response = chrome::button(
+                        ui,
+                        rect,
+                        style.name(),
+                        self.enabled(action),
+                        selected == Some(style),
+                    );
+                    self.record(&format!("command-{action:?}"), response.rect);
+                    self.track_ribbon(
+                        &response,
+                        &format!("command-{action:?}"),
+                        TargetKind::Action(action),
+                    );
                     ui.painter().with_clip_rect(rect).text(
                         rect.center(),
                         Align2::CENTER_CENTER,
-                        label,
+                        style.name(),
                         FontId::new(
-                            if i == 2 { 18. } else { 12. },
-                            egui::FontFamily::Name("body".into()),
+                            if style == ParagraphStyle::Heading1 {
+                                18.
+                            } else {
+                                12.
+                            },
+                            egui::FontFamily::Name(
+                                if style == ParagraphStyle::Heading1 {
+                                    "body-bold"
+                                } else {
+                                    "body"
+                                }
+                                .into(),
+                            ),
                         ),
-                        Color32::from_gray(135),
+                        if self.enabled(action) {
+                            INK
+                        } else {
+                            Color32::from_gray(135)
+                        },
                     );
+                    if response.on_hover_text(format!("Apply {} to the selected paragraphs. Direct font formatting and alignment stay unchanged.", style.name()))
+                        .on_disabled_hover_text("Finish the current dialog or text composition first.").clicked() {
+                        self.execute(action, ui.ctx());
+                    }
                 }
-                for (i, (icon, name)) in [
-                    (Icon::Chevron(true), "Previous styles"),
-                    (Icon::Chevron(false), "Next styles"),
-                    (Icon::Chevron(false), "More styles"),
-                ]
-                .into_iter()
-                .enumerate()
-                {
-                    let rect = r(width - 17., 4. + i as f32 * 20., 15., 19.);
-                    self.unavailable(ui, rect, icon, "", name, "Named styles are planned.");
-                }
+                let response = chrome::control(
+                    ui,
+                    r(width - 17., 4., 15., 61.),
+                    Icon::Chevron(false),
+                    "",
+                    "More styles",
+                    self.enabled(Action::Style(ParagraphStyle::Normal)),
+                    false,
+                );
+                self.record("home-menu-Styles", response.rect);
+                self.track_ribbon(&response, "home-menu-Styles", TargetKind::Menu);
+                egui::Popup::menu(&response).show(|ui| {
+                    self.collecting_menu = true;
+                    self.styles_menu(ui);
+                    self.collecting_menu = false;
+                });
             }
             4 => {
                 self.editing_menu(ui, r(0., 0., width - 3., 23.), true);
@@ -1626,6 +1670,20 @@ impl DocsApp {
             );
         }
     }
+    fn styles_menu(&mut self, ui: &mut Ui) {
+        for style in ParagraphStyle::ALL {
+            self.command(ui, style.name(), Action::Style(style), vec2(160., 27.));
+        }
+        ui.separator();
+        ui.small("Direct formatting takes precedence.");
+        Self::disabled(
+            ui,
+            "Modify style…",
+            vec2(160., 27.),
+            "Editing style definitions is planned.",
+        );
+    }
+
     fn ribbon_contents(&mut self, ui: &mut Ui) {
         let shell = ui.max_rect();
         ui.painter().rect_filled(shell, 6., chrome::SURFACE);
@@ -1652,14 +1710,7 @@ impl DocsApp {
                     let menu = ui.menu_button("More", |ui| {
                         self.collecting_menu = true;
                         ui.label("Styles");
-                        for name in ["Normal", "Heading 1"] {
-                            Self::disabled(
-                                ui,
-                                name,
-                                vec2(100., 24.),
-                                "Styles are not implemented.",
-                            );
-                        }
+                        self.styles_menu(ui);
                         ui.separator();
                         for action in [
                             Action::Find,
@@ -2083,11 +2134,13 @@ impl DocsApp {
         let font_size = 14.6667 * zoom;
         let model = self.session.editor.document.clone();
         let typing = self.session.editor.typing_style;
+        let typing_position = self.session.editor.selection.0;
         let natural = layout::galley(
             ui.ctx(),
             &model,
             &self.buffer,
             typing,
+            typing_position,
             text_width,
             font_size,
         )
@@ -2125,7 +2178,7 @@ impl DocsApp {
                                     Some(CCursorRange::two(CCursor::new(b),CCursor::new(a)))
                                 } else {None};
                                 let mut layouter=|ui:&Ui,text:&dyn egui::TextBuffer,wrap:f32| {
-                                    let mut galley=layout::galley(ui.ctx(),&model,text.as_str(),typing,wrap,font_size);
+                                    let mut galley=layout::galley(ui.ctx(),&model,text.as_str(),typing,typing_position,wrap,font_size);
                                     if !ui.memory(|m|m.has_focus(id)) && let Some(range)=search_range {
                                         egui::text_selection::visuals::paint_text_selection(&mut galley,ui.visuals(),&range,None);
                                     }

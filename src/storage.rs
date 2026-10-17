@@ -1,4 +1,4 @@
-//! Strict .bfdoc v1/v2 reading, v2 writing and checked temporary-file replacement.
+//! Strict .bfdoc v1/v2/v3 reading, v3 writing and checked temporary-file replacement.
 use crate::{Result, model::*};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -8,7 +8,7 @@ use std::{
 };
 
 pub const FORMAT_ID: &str = "breakfree.docs.native";
-pub const CONTENT_VERSION: u32 = 2;
+pub const CONTENT_VERSION: u32 = 3;
 pub const MAX_FILE_BYTES: usize = 16 * 1024 * 1024;
 
 #[derive(Serialize, Deserialize)]
@@ -61,38 +61,52 @@ struct Header {
     content_version: u32,
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NativeV3 {
+    format: String,
+    content_version: u32,
+    paragraphs: Vec<ParagraphV3>,
+}
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ParagraphV3 {
+    alignment: Alignment,
+    paragraph_style: ParagraphStyle,
+    runs: Vec<RunV3>,
+}
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RunV3 {
+    text: String,
+    direct: CharacterFormat,
+}
+
 pub fn encode(document: &Document) -> Result<Vec<u8>> {
     document.validate()?;
     let paragraphs = document
         .paragraphs
         .iter()
         .map(|p| {
-            let mut runs: Vec<Run> = Vec::new();
-            for (ch, style) in p.text.chars().zip(&p.styles) {
-                if let Some(last) = runs.last_mut().filter(|r| {
-                    r.bold == style.bold
-                        && r.italic == style.italic
-                        && r.underline == style.underline
-                        && r.font_size_half_points == style.font_size
-                }) {
+            let mut runs: Vec<RunV3> = Vec::new();
+            for (ch, &direct) in p.text.chars().zip(&p.styles) {
+                if let Some(last) = runs.last_mut().filter(|r| r.direct == direct) {
                     last.text.push(ch);
                 } else {
-                    runs.push(Run {
+                    runs.push(RunV3 {
                         text: ch.to_string(),
-                        bold: style.bold,
-                        italic: style.italic,
-                        underline: style.underline,
-                        font_size_half_points: style.font_size,
+                        direct,
                     });
                 }
             }
-            NativeParagraph {
+            ParagraphV3 {
                 alignment: p.alignment,
+                paragraph_style: p.paragraph_style,
                 runs,
             }
         })
         .collect();
-    let mut bytes = serde_json::to_vec_pretty(&Native {
+    let mut bytes = serde_json::to_vec_pretty(&NativeV3 {
         format: FORMAT_ID.into(),
         content_version: CONTENT_VERSION,
         paragraphs,
@@ -103,6 +117,38 @@ pub fn encode(document: &Document) -> Result<Vec<u8>> {
         return Err("File exceeds 16 MiB.".into());
     }
     Ok(bytes)
+}
+
+fn decode_v3(bytes: &[u8]) -> Result<Document> {
+    let file: NativeV3 =
+        serde_json::from_slice(bytes).map_err(|e| format!("Invalid native v3 document: {e}"))?;
+    let mut paragraphs = Vec::new();
+    let mut total = file.paragraphs.len().saturating_sub(1);
+    for p in file.paragraphs {
+        let mut paragraph = Paragraph {
+            alignment: p.alignment,
+            paragraph_style: p.paragraph_style,
+            ..Default::default()
+        };
+        for run in p.runs {
+            if run.text.is_empty() {
+                return Err("Native runs must be nonempty.".into());
+            }
+            let count = run.text.chars().count();
+            total += count;
+            if total > MAX_CHARACTERS {
+                return Err("Document exceeds 100,000 characters.".into());
+            }
+            paragraph
+                .styles
+                .extend(std::iter::repeat_n(run.direct, count));
+            paragraph.text.push_str(&run.text);
+        }
+        paragraphs.push(paragraph);
+    }
+    let result = Document { paragraphs };
+    result.validate()?;
+    Ok(result)
 }
 
 pub fn decode(bytes: &[u8]) -> Result<Document> {
@@ -124,7 +170,8 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
                 runs: p.runs.into_iter().map(Run::from).collect(),
             })
             .collect(),
-        CONTENT_VERSION => {
+        CONTENT_VERSION => return decode_v3(bytes),
+        2 => {
             serde_json::from_slice::<Native<Run>>(bytes)
                 .map_err(|e| format!("Invalid native v2 document: {e}"))?
                 .paragraphs
@@ -146,12 +193,12 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
                 return Err("Document exceeds 100,000 characters.".into());
             }
             styles.extend(std::iter::repeat_n(
-                Style {
+                CharacterFormat::explicit(Style {
                     bold: run.bold,
                     italic: run.italic,
                     underline: run.underline,
                     font_size: run.font_size_half_points,
-                },
+                }),
                 count,
             ));
             text.push_str(&run.text);
@@ -160,6 +207,7 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
             text,
             styles,
             alignment: p.alignment,
+            paragraph_style: ParagraphStyle::Normal,
         });
     }
     let result = Document { paragraphs };

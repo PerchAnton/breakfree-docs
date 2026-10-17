@@ -1,7 +1,7 @@
 //! Native text projection. One galley retains cross-paragraph selection and hit testing.
 use crate::{
     commands::Editor,
-    model::{Alignment, Document, Style},
+    model::{Alignment, CharacterFormat, Document, Style},
     presentation,
 };
 use eframe::egui::{
@@ -59,7 +59,7 @@ pub fn configure_fonts(ctx: &egui::Context) -> String {
     name
 }
 
-fn format(style: Style, size: f32) -> TextFormat {
+fn format(style: Style, size: f32, line_height: f32) -> TextFormat {
     let size = size * style.font_size.points() / Style::default().font_size.points();
     TextFormat {
         font_id: FontId::new(
@@ -73,7 +73,7 @@ fn format(style: Style, size: f32) -> TextFormat {
             egui::Stroke::NONE
         },
         color: Color32::from_rgb(24, 24, 24),
-        line_height: Some(size * 1.25),
+        line_height: Some(size * line_height),
         ..Default::default()
     }
 }
@@ -82,7 +82,8 @@ pub fn galley(
     ctx: &egui::Context,
     source: &Document,
     display: &str,
-    typing_style: Style,
+    typing_style: CharacterFormat,
+    typing_position: usize,
     width: f32,
     size: f32,
 ) -> Arc<Galley> {
@@ -93,6 +94,7 @@ pub fn galley(
         let _ = preview.replace(start, end, &text, "Input projection");
     }
     let source = &preview.document;
+    let active_paragraph = source.locate(typing_position).ok().map(|(p, _)| p);
     let mut whole = LayoutJob::default();
     let mut paragraphs = Vec::new();
     for (index, p) in source.paragraphs.iter().enumerate() {
@@ -108,12 +110,33 @@ pub fn galley(
                 end += 1;
             }
             let text: String = chars[start..end].iter().collect();
-            job.append(&text, 0., format(p.styles[start], size));
-            whole.append(&text, 0., format(p.styles[start], size));
+            job.append(
+                &text,
+                0.,
+                format(
+                    p.styles[start].resolve(p.paragraph_style.character_style()),
+                    size,
+                    p.paragraph_style.line_height(),
+                ),
+            );
+            whole.append(
+                &text,
+                0.,
+                format(
+                    p.styles[start].resolve(p.paragraph_style.character_style()),
+                    size,
+                    p.paragraph_style.line_height(),
+                ),
+            );
             start = end;
         }
         if chars.is_empty() {
-            job.append("", 0., format(typing_style, size));
+            let style = if active_paragraph == Some(index) {
+                typing_style.resolve(p.paragraph_style.character_style())
+            } else {
+                p.paragraph_style.character_style()
+            };
+            job.append("", 0., format(style, size, p.paragraph_style.line_height()));
         }
         let mut paragraph = ctx.fonts_mut(|f| f.layout_job(job)).as_ref().clone();
         for placed in &mut paragraph.rows {
@@ -137,13 +160,39 @@ pub fn galley(
         }
         paragraph.rect.max.x = width;
         if index + 1 < source.paragraphs.len() {
-            paragraph.rect.max.y += size * 0.5;
-            whole.append("\n", 0., format(Style::default(), size));
+            whole.append(
+                "\n",
+                0.,
+                format(
+                    p.paragraph_style.character_style(),
+                    size,
+                    p.paragraph_style.line_height(),
+                ),
+            );
         }
         paragraphs.push(Arc::new(paragraph));
     }
     whole.wrap.max_width = width;
     let mut merged = Galley::concat(Arc::new(whole), &paragraphs, ctx.pixels_per_point());
+    // Galley::concat derives height from rows, ignoring each input galley's rect.
+    // Offset placed rows after concatenation so paragraph gaps affect both painting
+    // and cursor hit testing, without creating fictitious text rows or characters.
+    let mut spacing = 0.;
+    let mut paragraph_index = 0;
+    merged.mesh_bounds = egui::Rect::NOTHING;
+    for row in &mut merged.rows {
+        row.pos.y += spacing;
+        merged.mesh_bounds |= row.visuals.mesh_bounds.translate(row.pos.to_vec2());
+        if row.ends_with_newline {
+            spacing += size
+                * source.paragraphs[paragraph_index]
+                    .paragraph_style
+                    .space_after_points()
+                / 11.;
+            paragraph_index += 1;
+        }
+    }
+    merged.rect.max.y += spacing;
     merged.rect.min.x = 0.;
     merged.rect.max.x = width;
     Arc::new(merged)

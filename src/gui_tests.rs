@@ -1,6 +1,6 @@
 //! Event-loop tests on the actual Rust widgets, without a native window or OS clipboard.
 use super::*;
-use crate::model::{Document, Style};
+use crate::model::{CharacterFormat, Document};
 use eframe::egui::Pos2;
 
 fn frame(
@@ -74,7 +74,7 @@ fn native_widget_edit_format_history_save_reopen_cycle() {
             .paragraphs
             .iter()
             .flat_map(|p| &p.styles)
-            .all(|s| s.bold)
+            .all(|s| s.bold.unwrap_or(false))
     );
     let bold = app.session.editor.document.clone();
     app.execute(Action::Center, &ctx);
@@ -223,7 +223,8 @@ fn galley_alignment_and_hit_testing_keep_scalar_indices() {
             ctx,
             &editor.document,
             &editor.document.text(),
-            Style::default(),
+            CharacterFormat::default(),
+            0,
             500.,
             16.,
         );
@@ -415,7 +416,11 @@ fn navigation_replace_rejects_partial_graphemes_and_refreshes_after_history() {
     assert_eq!(app.session.editor.selection, (0, 2));
     click_region(&ctx, &mut app, "find-replace");
     assert_eq!(app.session.editor.document.text(), "ї e\u{301}");
-    assert!(app.session.editor.document.paragraphs[0].styles[0].bold);
+    assert!(
+        app.session.editor.document.paragraphs[0].styles[0]
+            .bold
+            .unwrap_or(false)
+    );
     assert_eq!(app.session.editor.undo_stack.len(), history + 1);
     let changed = app.session.editor.document.clone();
     app.execute(Action::Undo, &ctx);
@@ -567,7 +572,7 @@ fn ribbon_pointer_and_all_unsaved_dialog_choices_are_real() {
         app.session.editor.document.paragraphs[0]
             .styles
             .iter()
-            .all(|s| s.bold)
+            .all(|s| s.bold.unwrap_or(false))
     );
     app.request(Pending::New, &ctx);
     click_region(&ctx, &mut app, "unsaved-cancel");
@@ -795,10 +800,10 @@ fn revised_shell_controls_preserve_selection_and_real_document_state() {
         styled
             .paragraphs
             .iter()
-            .all(|p| p.alignment == Alignment::Right && p.styles.iter().all(|s| s.italic))
+            .all(|p| p.alignment == Alignment::Right
+                && p.styles.iter().all(|s| s.italic.unwrap_or(false)))
     );
     click_region(&ctx, &mut app, "unavailable-Strikethrough");
-    click_region(&ctx, &mut app, "style-Heading 1");
     assert_eq!(app.session.editor.document, styled);
     click_region(&ctx, &mut app, "qat-Undo");
     assert!(
@@ -920,7 +925,8 @@ fn home_size_and_underline_preserve_selection_history_and_saved_content() {
             .paragraphs
             .iter()
             .flat_map(|p| &p.styles)
-            .all(|s| s.underline && s.font_size.to_string() == "24.5")
+            .all(|s| s.underline.unwrap_or(false)
+                && s.font_size.unwrap_or_default().to_string() == "24.5")
     );
     frame(&ctx, &mut app, vec![key(Key::Z, true)], [1366., 900.], 1.);
     assert_eq!(app.session.editor.document, underlined);
@@ -990,8 +996,8 @@ fn caret_font_commands_and_ime_use_the_same_pending_style() {
     assert!(!app.session.dirty());
     assert!(app.session.editor.undo_stack.is_empty());
     let pending = app.session.editor.typing_style;
-    assert!(pending.underline);
-    assert_eq!(pending.font_size.to_string(), "18");
+    assert_eq!(pending.underline, Some(true));
+    assert_eq!(pending.font_size.unwrap_or_default().to_string(), "18");
     frame(
         &ctx,
         &mut app,
@@ -1050,7 +1056,8 @@ fn mixed_font_layout_changes_real_geometry_and_preserves_unicode_hits() {
                 ctx,
                 &editor.document,
                 &editor.document.text(),
-                Style::default(),
+                CharacterFormat::default(),
+                0,
                 600.,
                 14.6667 * zoom,
             );
@@ -1096,7 +1103,7 @@ fn save_and_close_resolve_pending_size_before_operating_on_document() {
         saved.paragraphs[0]
             .styles
             .iter()
-            .all(|s| s.font_size.to_string() == "32")
+            .all(|s| s.font_size.unwrap_or_default().to_string() == "32")
     );
     assert!(!app.session.dirty());
     app.execute(Action::FontSize, &ctx);
@@ -1162,15 +1169,45 @@ fn font_step_controls_keep_mixed_selection_at_wide_and_minimum_width() {
         let after = app.session.editor.document.clone();
         assert_eq!(app.session.editor.selection, (0, 6));
         assert_eq!(app.session.editor.undo_stack.len(), count + 1);
-        assert_eq!(after.paragraphs[0].styles[0].font_size.to_string(), "36");
-        assert_eq!(after.paragraphs[0].styles[5].font_size.to_string(), "12");
-        assert!(after.paragraphs[0].styles.iter().all(|s| s.underline));
+        assert_eq!(
+            after.paragraphs[0].styles[0]
+                .font_size
+                .unwrap_or_default()
+                .to_string(),
+            "36"
+        );
+        assert_eq!(
+            after.paragraphs[0].styles[5]
+                .font_size
+                .unwrap_or_default()
+                .to_string(),
+            "12"
+        );
+        assert!(
+            after.paragraphs[0]
+                .styles
+                .iter()
+                .all(|s| s.underline.unwrap_or(false))
+        );
         app.execute(Action::Undo, &ctx);
         assert_eq!(app.session.editor.document, before);
         app.execute(Action::Redo, &ctx);
         assert_eq!(app.session.editor.document, after);
         click_region_at(&ctx, &mut app, "command-ShrinkFont", [width, 900.]);
-        assert_eq!(app.session.editor.document, before);
+        for (a, b) in app.session.editor.document.paragraphs[0]
+            .styles
+            .iter()
+            .zip(&before.paragraphs[0].styles)
+        {
+            assert_eq!(
+                a.resolve(crate::model::Style::default()),
+                b.resolve(crate::model::Style::default())
+            );
+        }
+        assert_eq!(
+            app.session.editor.document.paragraphs[0].styles[5].font_size,
+            Some(FontSize::default())
+        );
         frame(&ctx, &mut app, vec![], [width, 900.], 1.);
         let mut grow = key(Key::Period, true);
         if let egui::Event::Key { modifiers, .. } = &mut grow {
@@ -1321,8 +1358,8 @@ fn font_dialog_drafts_cancel_validate_and_apply_one_shared_transaction() {
             for (a, b) in old.styles.iter().zip(&new.styles) {
                 assert_eq!(a.bold, b.bold);
                 assert_eq!(a.italic, b.italic);
-                assert!(b.underline);
-                assert_eq!(b.font_size.to_string(), "19.5");
+                assert_eq!(b.underline, Some(true));
+                assert_eq!(b.font_size.unwrap_or_default().to_string(), "19.5");
             }
         }
         app.execute(Action::Undo, &ctx);
@@ -1402,12 +1439,24 @@ fn font_dialog_keyboard_default_action_modal_close_and_dpi_bounds() {
         );
         assert!(app.font_dialog.is_some());
         assert_eq!(
-            app.session.editor.typing_style.font_size,
+            app.session
+                .editor
+                .typing_style
+                .font_size
+                .unwrap_or_default(),
             FontSize::default()
         );
         frame(&ctx, &mut app, vec![key(Key::Enter, false)], screen, dpi);
         assert!(app.font_dialog.is_none());
-        assert_eq!(app.session.editor.typing_style.font_size.to_string(), "400");
+        assert_eq!(
+            app.session
+                .editor
+                .typing_style
+                .font_size
+                .unwrap_or_default()
+                .to_string(),
+            "400"
+        );
         assert!(!app.session.dirty());
         assert!(app.session.editor.undo_stack.is_empty());
         app.composing = true;
@@ -1581,8 +1630,8 @@ fn ribbon_menus_escape_overflow_and_keyboard_resize_retain_focus() {
         app.ribbon_focus,
         Some(RibbonFocus::Control("font-size-menu".into()))
     );
-    // Move Font -> Paragraph -> Editing; a narrow window moves Editing into More.
-    for _ in 0..2 {
+    // Move Font -> Paragraph -> Styles -> Editing; a narrow window uses More.
+    for _ in 0..3 {
         ribbon_key(&ctx, &mut app, Key::ArrowRight, Modifiers::CTRL, wide);
     }
     assert_eq!(
@@ -1604,8 +1653,22 @@ fn ribbon_menus_escape_overflow_and_keyboard_resize_retain_focus() {
         [640., 480.],
     );
     assert!(egui::Popup::is_any_open(&ctx));
+    for _ in 0..3 {
+        ribbon_key(
+            &ctx,
+            &mut app,
+            Key::ArrowDown,
+            Modifiers::NONE,
+            [640., 480.],
+        );
+    }
     ribbon_key(&ctx, &mut app, Key::Enter, Modifiers::NONE, [640., 480.]);
-    assert!(app.navigation);
+    assert!(
+        app.navigation,
+        "menu index {:?}; style {:?}",
+        app.ribbon_menu_index,
+        app.session.editor.selected_paragraph_style()
+    );
     assert!(!app.ribbon_temporary);
     assert!(ctx.memory(|m| m.has_focus(Id::new("find-text"))));
 }
@@ -1617,11 +1680,24 @@ fn ribbon_size_cancel_commit_and_f6_visible_zones() {
     app.execute(Action::Ribbon, &ctx);
     edit_size(&ctx, &mut app, "19.5", Key::Escape);
     assert!(app.ribbon_collapsed && !app.ribbon_temporary);
-    assert_eq!(app.session.editor.typing_style.font_size.to_string(), "11");
+    assert_eq!(
+        app.session
+            .editor
+            .typing_style
+            .font_size
+            .unwrap_or_default()
+            .to_string(),
+        "11"
+    );
     edit_size(&ctx, &mut app, "19.5", Key::Enter);
     assert!(app.ribbon_collapsed && !app.ribbon_temporary);
     assert_eq!(
-        app.session.editor.typing_style.font_size.to_string(),
+        app.session
+            .editor
+            .typing_style
+            .font_size
+            .unwrap_or_default()
+            .to_string(),
         "19.5"
     );
     ribbon_key(&ctx, &mut app, Key::F6, Modifiers::NONE, size);
@@ -1865,7 +1941,7 @@ fn keytips_sequences_preserve_unicode_selection_history_and_roundtrip() {
         bold.paragraphs
             .iter()
             .flat_map(|p| &p.styles)
-            .all(|s| s.bold)
+            .all(|s| s.bold.unwrap_or(false))
     );
     assert_eq!(app.session.editor.selection, selection);
     assert_eq!(app.session.editor.undo_stack.len(), count + 1);
@@ -1922,7 +1998,11 @@ fn keytips_prefix_backspace_escape_size_entry_and_font_modal() {
     assert!(ctx.memory(|m| m.has_focus(Id::new(FONT_SIZE_ID))));
     edit_size(&ctx, &mut app, "19.5", Key::Enter);
     assert_eq!(
-        app.session.editor.typing_style.font_size,
+        app.session
+            .editor
+            .typing_style
+            .font_size
+            .unwrap_or_default(),
         FontSize::try_from(39).unwrap()
     );
     assert!(app.session.editor.document.text().is_empty());
@@ -2770,7 +2850,7 @@ fn toolbar_reset_confirmation_blocks_editing_cancels_and_restores_persistent_def
         1.,
     );
     assert!(app.session.editor.document.text().is_empty());
-    assert!(!app.session.editor.typing_style.bold);
+    assert!(!app.session.editor.typing_style.bold.unwrap_or(false));
     assert!(app.quick_reset);
     ribbon_key(&ctx, &mut app, Key::Escape, Modifiers::NONE, [1366., 900.]);
     assert!(!app.quick_reset);
@@ -2947,7 +3027,11 @@ fn toolbar_order_apply_roundtrips_and_renumbers_real_history_actions() {
         let get = |name: &str| app.regions.iter().find(|r| r.name == name).unwrap().rect;
         assert!((get("keytip-3").center().x - get("qat-Undo").center().x).abs() < 1.);
         tip_sequence(&ctx, &mut app, &[Key::Num3], [1366., 900.]);
-        assert!(!app.session.editor.document.paragraphs[0].styles[0].bold);
+        assert!(
+            !app.session.editor.document.paragraphs[0].styles[0]
+                .bold
+                .unwrap_or(false)
+        );
         assert_eq!(app.session.editor.undo_stack.len(), history - 1);
     }
 }
@@ -3005,7 +3089,7 @@ fn toolbar_order_keyboard_keeps_selection_focus_and_cancel_blocks_background_edi
         1.,
     );
     assert!(app.session.editor.document.text().is_empty());
-    assert!(!app.session.editor.typing_style.bold);
+    assert!(!app.session.editor.typing_style.bold.unwrap_or(false));
     assert!(app.session.editor.undo_stack.is_empty());
     assert!(app.pending.is_none() && app.keytips.level.is_none());
     let mut input = egui::RawInput::default();
@@ -3244,7 +3328,7 @@ fn search_options_replacement_uses_original_ranges_and_history_refresh() {
     click_region(&ctx, &mut app, "find-replace");
     let after = app.session.editor.document.clone();
     assert_eq!(after.text(), "e\u{301} Kx k");
-    assert!(after.paragraphs[0].styles[0].bold);
+    assert!(after.paragraphs[0].styles[0].bold.unwrap_or(false));
     assert_eq!(app.session.editor.undo_stack.len(), history + 1);
     app.execute(Action::Undo, &ctx);
     frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
@@ -3349,7 +3433,7 @@ fn replace_all_preview_cancel_keyboard_apply_and_single_undo_are_real() {
     assert!(app.replace_all_dialog.is_none());
     let after = app.session.editor.document.clone();
     assert_eq!(after.text(), "ї ї cats\nУкраїна e\u{301}");
-    assert!(after.paragraphs[0].styles[0].bold);
+    assert!(after.paragraphs[0].styles[0].bold.unwrap_or(false));
     assert_eq!(app.session.editor.undo_stack.len(), history + 1);
     assert_eq!(
         app.replace_all_notice.as_deref(),
@@ -3527,7 +3611,7 @@ fn clear_formatting_pointer_keytips_and_search_share_one_history_operation() {
                 .paragraphs
                 .iter()
                 .all(|p| p.alignment == Alignment::Center
-                    && p.styles.iter().all(|s| *s == Style::default()))
+                    && p.styles.iter().all(|s| *s == CharacterFormat::default()))
         );
         app.execute(Action::Undo, &ctx);
         assert_eq!(app.session.editor.document, before);
@@ -3622,9 +3706,9 @@ fn clear_formatting_control_space_respects_focus_modifiers_and_modal_guards() {
 fn clear_formatting_caret_and_composition_keep_pending_input_and_clean_document() {
     let (ctx, mut app) = setup();
     app.execute(Action::Bold, &ctx);
-    assert!(app.session.editor.typing_style.bold);
+    assert!(app.session.editor.typing_style.bold.unwrap_or(false));
     click_region(&ctx, &mut app, "command-ClearFormatting");
-    assert_eq!(app.session.editor.typing_style, Style::default());
+    assert_eq!(app.session.editor.typing_style, CharacterFormat::default());
     assert!(!app.session.dirty());
     assert!(app.session.editor.undo_stack.is_empty());
     frame(
@@ -3638,7 +3722,7 @@ fn clear_formatting_caret_and_composition_keep_pending_input_and_clean_document(
         app.session.editor.document.paragraphs[0]
             .styles
             .iter()
-            .all(|s| *s == Style::default())
+            .all(|s| *s == CharacterFormat::default())
     );
     app.execute(Action::Bold, &ctx);
     frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
@@ -3654,9 +3738,9 @@ fn clear_formatting_caret_and_composition_keep_pending_input_and_clean_document(
         1.,
     );
     assert!(app.composing);
-    assert!(app.session.editor.typing_style.bold);
+    assert!(app.session.editor.typing_style.bold.unwrap_or(false));
     click_region(&ctx, &mut app, "command-ClearFormatting");
-    assert!(app.session.editor.typing_style.bold);
+    assert!(app.session.editor.typing_style.bold.unwrap_or(false));
     app.focus_document = true;
     frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
     frame(
@@ -3672,5 +3756,170 @@ fn clear_formatting_caret_and_composition_keep_pending_input_and_clean_document(
             .last()
             .unwrap()
             .bold
+            .unwrap_or(false)
     );
+}
+
+#[test]
+fn styles_gallery_menu_keytips_and_history_use_the_shared_engine() {
+    for width in [1366., 1000., 640.] {
+        let (ctx, mut app) = setup();
+        let size = [width, 900.];
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::Paste(
+                "Title\nУкраїна e\u{301}\nРусский".into(),
+            )],
+            size,
+            1.,
+        );
+        app.session.editor.selection = (0, 5);
+        app.session.editor.typing_style = CharacterFormat::default();
+        app.sync_view();
+        let before = app.session.editor.document.clone();
+        let n = app.session.editor.undo_stack.len();
+        if width == 1366. {
+            click_region_at(&ctx, &mut app, "command-Style(Heading1)", size);
+        } else {
+            click_region_at(
+                &ctx,
+                &mut app,
+                if width == 640. {
+                    "home-overflow"
+                } else {
+                    "home-menu-Styles"
+                },
+                size,
+            );
+            click_region_at(&ctx, &mut app, "command-Style(Heading1)", size);
+        }
+        assert_eq!(
+            app.session.editor.selected_paragraph_style(),
+            Some(ParagraphStyle::Heading1)
+        );
+        assert_eq!(
+            app.session.editor.selected_font_size().unwrap().to_string(),
+            "18"
+        );
+        assert!(app.checked(Action::Bold));
+        assert_eq!(app.session.editor.selection, (0, 5));
+        assert_eq!(app.session.editor.undo_stack.len(), n + 1);
+        let after = app.session.editor.document.clone();
+        app.execute(Action::Undo, &ctx);
+        assert_eq!(app.session.editor.document, before);
+        app.execute(Action::Redo, &ctx);
+        assert_eq!(app.session.editor.document, after);
+        // The temporary ribbon exposes the same menu routes; Escape/selection closes it.
+        app.execute(Action::Ribbon, &ctx);
+        for k in [
+            Key::F10,
+            Key::H,
+            if width == 640. { Key::E } else { Key::L },
+            Key::S,
+        ] {
+            ribbon_key(&ctx, &mut app, k, Modifiers::NONE, size);
+        }
+        assert_eq!(
+            app.session.editor.selected_paragraph_style(),
+            Some(ParagraphStyle::NoSpacing)
+        );
+        assert!(app.ribbon_collapsed && !app.ribbon_temporary);
+        assert!(ctx.memory(|m| m.has_focus(Id::new(EDIT_ID))));
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("Gallery.bfdoc");
+        app.session.save(&path).unwrap();
+        assert_eq!(storage::load(&path).unwrap(), app.session.editor.document);
+    }
+}
+
+#[test]
+fn inherited_layout_tracks_real_size_spacing_empty_paragraphs_and_hit_testing() {
+    let ctx = egui::Context::default();
+    layout::configure_fonts(&ctx);
+    let mut e = crate::commands::Editor::default();
+    e.replace(0, 0, "Heading\nBody\n\nEnd", "Input").unwrap();
+    let _ = ctx.run(egui::RawInput::default(), |ctx| {
+        let render = |e: &crate::commands::Editor| {
+            layout::galley(
+                ctx,
+                &e.document,
+                &e.document.text(),
+                e.typing_style,
+                e.selection.0,
+                500.,
+                14.6667,
+            )
+        };
+        let normal = render(&e);
+        let gap = normal.rows[1].pos.y - normal.rows[0].pos.y - normal.rows[0].row.size.y;
+        assert!(
+            (gap - 14.6667 * 0.5).abs() < 0.6,
+            "Normal paragraph gap: {gap}"
+        );
+        e.apply_paragraph_style(0, 7, ParagraphStyle::Heading1)
+            .unwrap();
+        e.apply_paragraph_style(13, 13, ParagraphStyle::Heading1)
+            .unwrap();
+        let heading = render(&e);
+        assert!(heading.rows[0].row.size.y > normal.rows[0].row.size.y * 1.5);
+        assert!(heading.rows[2].row.size.y > normal.rows[2].row.size.y * 1.5);
+        for i in [0, 3, 7, 8, 11, 12, 13, 14, 16] {
+            let pos = heading.pos_from_cursor(CCursor::new(i));
+            assert_eq!(heading.cursor_from_pos(pos.center().to_vec2()).index, i);
+        }
+        e.apply_paragraph_style(0, e.document.character_count(), ParagraphStyle::NoSpacing)
+            .unwrap();
+        let tight = render(&e);
+        assert!(tight.size().y < normal.size().y);
+        let gap = tight.rows[1].pos.y - tight.rows[0].pos.y - tight.rows[0].row.size.y;
+        assert!(gap.abs() < 0.6, "No Spacing paragraph gap: {gap}");
+        assert_eq!(tight.text(), normal.text());
+        e.selection = (13, 13);
+        e.set_font_size(13, 13, "30".parse().unwrap()).unwrap();
+        let pending = render(&e);
+        assert!(pending.rows[2].row.size.y > tight.rows[2].row.size.y * 2.);
+        assert_eq!(pending.rows[0].row.size.y, tight.rows[0].row.size.y);
+    });
+}
+
+#[test]
+fn style_actions_respect_composition_dialogs_and_command_search() {
+    let (ctx, mut app) = setup();
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Paste("Text".into())],
+        [1366., 900.],
+        1.,
+    );
+    let before = app.session.editor.document.clone();
+    app.composing = true;
+    app.execute(Action::Style(ParagraphStyle::Heading1), &ctx);
+    assert_eq!(app.session.editor.document, before);
+    app.composing = false;
+    app.execute(Action::FontDialog, &ctx);
+    app.execute(Action::Style(ParagraphStyle::Heading1), &ctx);
+    assert_eq!(app.session.editor.document, before);
+    app.font_dialog = None;
+    ribbon_key(&ctx, &mut app, Key::Q, Modifiers::ALT, [1366., 900.]);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("Heading 1".into())],
+        [1366., 900.],
+        1.,
+    );
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Enter, false)],
+        [1366., 900.],
+        1.,
+    );
+    assert_eq!(
+        app.session.editor.selected_paragraph_style(),
+        Some(ParagraphStyle::Heading1)
+    );
+    assert_eq!(app.session.editor.document.text(), "Text");
 }

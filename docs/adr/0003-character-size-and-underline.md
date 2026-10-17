@@ -102,3 +102,7 @@ Docs-specific H → FC KeyTip route (E remains the existing overflow route).
 Ctrl+Space is handled only with document focus, with physical Control on all
 platforms. Do not capture Command+Space, AltGr, Shift variants, repeated keydown or
 IME lifecycle events. Native input-source interception remains OS-dependent.
+
+Alpha.18 extension: [ADR 0006](0006-built-in-paragraph-styles.md) supersedes the
+fixed character-reset baseline with inherited paragraph values and introduces v3
+writing. The alpha.3/alpha.17 rules above remain historical checkpoints.

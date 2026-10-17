@@ -14,7 +14,9 @@ A single document window, paragraphs, text selection, basic emphasis, paragraph
 alignment, undo/redo, local persistence and unsaved-change handling. Rust is the approved runtime language. The native ribbon prototype and preserved
 v1 reader are documented in [ADR 0002](adr/0002-rust-native-ribbon.md).
 [ADR 0003](adr/0003-character-size-and-underline.md) adds size/underline and content
-v2 writing while preserving the D01–D09 scenarios. Follow the
+v2 writing while preserving the D01–D09 scenarios.
+[ADR 0006](adr/0006-built-in-paragraph-styles.md) extends this with fixed paragraph
+styles, direct overrides and v3 writing while retaining strict v1/v2 readers. Follow the
 Word 2024 Windows reference in [UI_SPEC](UI_SPEC.md). GUI-library adoption, licensing
 and supported-platform decisions remain open.
 

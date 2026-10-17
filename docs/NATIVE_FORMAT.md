@@ -1,56 +1,60 @@
-# Native document format v2 and v1 compatibility
+# Native BreakFree Docs document format
 
-The only accepted file extension is `.bfdoc` (case-insensitive). Content is UTF-8
-JSON with an exact schema; no scripts, HTML, URLs or embedded resources are loaded.
+Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v3.
 This is not a DOCX container. Process protocol and file-content versions are independent.
 
 ```json
 {
   "format": "breakfree.docs.native",
-  "content_version": 2,
+  "content_version": 3,
   "paragraphs": [
     {
       "alignment": "left",
-      "runs": [{"text": "Hello", "bold": true, "italic": false, "underline": true, "font_size_half_points": 24}]
+      "paragraph_style": "heading1",
+      "runs": [{"text": "Hello", "direct": {"bold": null, "italic": true, "underline": null, "font_size": null}}]
     },
-    {"alignment": "center", "runs": []}
+    {"alignment": "center", "paragraph_style": "normal", "runs": []}
   ]
 }
 ```
 
-A document contains at least one paragraph. An empty paragraph has `runs: []`.
-Run text is nonempty; bold, italic and underline are required booleans.
-`font_size_half_points` is a required integer from 2 through 800 (1–400 pt), with
-22 representing the default 11 pt. Missing, null, fractional and out-of-range values
-are rejected. There are no implicit run defaults in v2. Alignment is `left`, `center`,
-`right` or `justify`. Paragraph text cannot contain LF; document paragraphs are
-joined with LF for edit indices. Adjacent equal styles are compacted on write.
-The model retains supported text exactly, without Unicode normalization. See
-[ADR 0002](adr/0002-rust-native-ribbon.md) for Unicode boundaries and controls.
+A document has at least one paragraph; an empty paragraph has `runs: []`.
+`paragraph_style` is required: `normal`, `no_spacing` or `heading1`. The fixed v3
+catalog and inheritance order are specified in [ADR 0006](adr/0006-built-in-paragraph-styles.md).
+Each nonempty run requires text and a `direct` object. Its four properties are
+optional or null for inheritance; explicit booleans override bold/italic/underline.
+`font_size`, when present and non-null, is an integer from 2 through 800 half points
+(1–400 pt). False is distinct from inherited; 22 is an explicit 11 pt override.
+The writer emits all four properties, including nulls. No resolved-style cache is saved.
+Alignment is `left`, `center`, `right` or `justify`, independent of the named style.
+Paragraph text cannot contain LF. Paragraphs join with LF for scalar edit indices.
+Adjacent identical direct overrides compact on write, without Unicode normalization.
 
-Reject unknown top-level, paragraph and run fields, duplicate JSON keys, foreign
-format IDs, unsupported versions, invalid UTF-8, invalid styles and resource-limit
-violations. There is no lossy fallback. Limits: 16 MiB encoded
-file, 100,000 scalar characters including paragraph separators. Read failures never
-write the source file or replace the current GUI session.
+Reject unknown fields at every level, duplicate keys, unknown style IDs, foreign
+types, unsupported versions, invalid UTF-8/values and resource-limit violations.
+Limits: 16 MiB encoded; 100,000 scalars including paragraph separators. There is no
+lossy fallback. Read failures never modify the source or current GUI session.
 
 ## Reading earlier files
 
-The v1 schema uses the same envelope and paragraphs, but runs have exactly `text`,
-`bold` and `italic`. A separate strict reader maps v1 runs to 11 pt with underline
-off. Unknown v1 fields remain errors, including fields that are valid only in v2.
-The original [Welcome fixture](../examples/Welcome.bfdoc) stays byte-identical.
-Opening v1 performs only an in-memory conversion and does not dirty or write it.
+Separate strict readers retain the original v1/v2 schemas. Both have paragraphs
+with alignment and runs, without paragraph_style/direct. V1 runs require exactly
+text/bold/italic; missing size/underline resolve to 11 pt/off. V2 runs additionally
+require underline and font_size_half_points (integer 2–800); missing/null values
+are rejected. The [v1](../examples/Welcome.bfdoc) and [v2](../examples/Formatting.bfdoc)
+fixtures stay byte-identical.
 
-All explicit saves write v2, including unchanged v1 documents. A successful save
-to the original path replaces the older encoding; Save As keeps the older file.
-**Earlier v1-only builds cannot open new v2 saves.** There is no downgrade/export
-to v1. Unknown versions are rejected before constructing a document. Header and
-full-schema decoding retain duplicate-key rejection. See [ADR 0003](adr/0003-character-size-and-underline.md).
+Import every legacy character value as an explicit override on Normal, preserving
+appearance without guessing authored inheritance. Applying a named style retains
+these values; Clear character formatting makes the text inherit its paragraph.
+Opening performs only in-memory conversion and does not dirty/write the file.
+Every explicit save writes v3, even for an unchanged older document. Use Save As
+to retain the original. **Earlier builds cannot open v3 saves.** No downgrade or
+lossy export is provided. Header/full-schema parsing preserves duplicate rejection.
 
-Pending caret size/underline is session state until text is inserted. It does not
-persist as formatting for an empty paragraph. Application version and process
-protocol v1 remain independent of this file-content version.
+Empty paragraphs retain their named style. Pending direct formatting at a caret
+is session state until text is inserted. Application version, process protocol v1
+and toolbar settings v1 are independent of this content version.
 
 ## Save transaction and exact guarantees
 
@@ -74,3 +78,8 @@ process can leave an orphan temporary file; cleanup of those is not implemented.
 Network filesystems and abrupt hardware failures have not been tested. Existing
 extended attributes/ACLs are not copied; binary distribution and OS integration need
 a separate review. New files use the temporary-file restrictive default mode.
+
+Layout note: alpha.18 also fixes a previously ignored paragraph gap. Legacy
+character values and alignment are preserved; corrected spacing can change the
+vertical positions compared with an earlier renderer. This is a layout bug fix,
+not a stored-text conversion.

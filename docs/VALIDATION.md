@@ -8,20 +8,20 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.17**. Earlier capture/CI evidence retains its
+Current local checkpoint: **0.1.0-alpha.18**. Earlier capture/CI evidence retains its
 original scope; this iteration does not establish native Windows behavior.
 
 | Local check | Observed result |
 | :--- | :--- |
-| `cargo test --locked` | 127 passed: 26 engine/storage/presentation, 8 search, 7 batch replacement, 9 preferences, 4 CLI subprocess and 73 actual egui widget event tests; no skipped tests |
-| `cargo test --locked --no-default-features` | 54 passed; preferences, core/search/batch replacement and CLI build without GUI dependencies |
+| `cargo test --locked` | 136 passed: 26 engine/storage/presentation, 6 styles/inheritance, 8 search, 7 batch replacement, 9 preferences, 4 CLI subprocess and 76 actual egui widget event tests; no skipped tests |
+| `cargo test --locked --no-default-features` | 60 passed; preferences, core/styles/search/batch replacement and CLI build without GUI dependencies |
 | `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
 | `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
-| Copied executable outside checkout | Alpha.17 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
+| Copied executable outside checkout | Alpha.18 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
 | Repository references, contract and artwork | `python3 tools/check_repository.py` passed; approved logo embedded directly and archive copy byte-identical |
 | Workflow YAML / whitespace | Ruby YAML parse and `git diff --check` passed |
-| Native rendering | Alpha.17 clear-format result / compact Font KeyTips at 1366 × 900 / 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha17-native-captures). Earlier evidence retains its version context |
-| Native macOS interaction | Alpha.17: Home clear, F10/H/FC, Alt+Q command search, Undo/Redo, system Save/Open and exact Unicode/regular 11-pt/centered v2 readback passed in an isolated profile; clean close passed. Earlier evidence retains its version context |
+| Native rendering | Alpha.18 gallery/spacing and minimum-width Styles overflow at 1366 × 900 / 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha18-native-captures). Earlier evidence retains its version context |
+| Native macOS interaction | Alpha.18: Home Heading 1, F10/H/L/N, Unicode input, italic/clear/undo/redo, system Save/Open, exact v3 readback and final-binary `--open`; gallery arrow/Enter No Spacing and undo/redo return to saved state. Isolated profile; clean close passed |
 | Synthetic DPI | Actual widgets at 1/1.25/1.5 scale and 960/1366/1920 physical widths; ribbon/group/workspace/status bounds and collapse assertions passed; 27 additional width/scale combinations check individual Home control containment/nonoverlap and title/search/window bounds |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
@@ -56,6 +56,49 @@ widget tests cover wide/minimum-width Grow/Shrink, composition disablement,
 Paste/Find/Select menus, Escape cancellation and working overflow. Strict geometry
 checks now include menu triggers and the More button. The initial 640-DIP budget
 failure was resolved by narrowing the overflow Font group, keeping the assertions.
+
+## Alpha.18 style inheritance validation
+
+2026-10-17, Europe/Kyiv. Six new core tests exercise the fixed acyclic catalog,
+explicit false versus inherited values, exclusive paragraph boundaries, mixed
+selection, empty paragraph persistence, exact one-operation style/reset history,
+resolved size stepping, split/merge, combining boundaries, previewed Replace All,
+strict v3 parsing, older-format import and write/sync/replace failure preservation.
+Existing v1/v2 fixtures remain unchanged. Older encoding tests still exercise real
+v2 schema input; the writer's version and duplicate-key tests now target v3.
+
+Three new actual-widget tests cover gallery pointer/menu/KeyTips at 1366/1000/640
+DIP, temporary ribbon return, modal/composition guards, command search, semantic
+save/reopen and resolved layout/hit testing. Empty paragraphs use their own style;
+pending input affects only the active empty paragraph. Explicit coordinate checks
+verify a 5.5-pt Normal gap and zero No Spacing gap. This caught a renderer defect:
+Galley concatenation ignored the input rect's extra height. Placed rows and mesh
+bounds now include the gap without adding fake characters. The existing resize
+regression also exposed loss of ribbon focus during the first overflow-menu frame;
+popup ownership now retains keyboard routing. All 136 full / 60 core tests pass,
+including unchanged search, settings, CLI and failure-preservation suites.
+
+Native normal-binary macOS test: applied Heading 1 to an empty document, typed a
+heading/newline, used F10 → H → L → N for the next paragraph, pasted English,
+Ukrainian, Russian and a combining accent, selected all and applied italic. Home
+Clear removed overrides; undo/redo restored the intermediate state. Native Save
+and Open succeeded. JSON readback confirmed exact text, first paragraph heading1,
+three normal paragraphs and null direct overrides; reopening was clean with no
+history. Unicode paste is evidence of preserved input, not physical IME coverage.
+
+After the gap fix, the final release executable was copied outside the checkout
+and launched through absolute `--open`. F10/H/L → Down focused No Spacing; Enter
+applied it to the selection. Undo/redo/undo restored the saved mixed-style document
+and clean state; close exited successfully. Two final capture-harness images were
+inspected for palette, glyphs, active card/menu states, spacing and Home gutters.
+The harness uses a synthetic committed v3 fixture and injected focus/menu events;
+it is separate from the normal-binary native-input evidence. Release, fmt, normal
+and capture Clippy, repository references/artwork, YAML and whitespace checks pass.
+
+Not performed: native Windows/Word paired captures, 100/125/150% Windows scaling,
+physical AltGr/IME and full accessibility. Custom/character-style definitions,
+parent editing, automatic following styles, pagination and exact reference KeyTips
+remain deferred. The fixed catalog is a reviewed increment, not completion of D2.
 
 ## Alpha.17 character-format reset validation
 

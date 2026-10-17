@@ -8,7 +8,7 @@ pub struct ReplacementPlan {
     matches: usize,
     changes: usize,
     caret: usize,
-    typing: Style,
+    typing: CharacterFormat,
 }
 
 impl ReplacementPlan {
@@ -26,13 +26,17 @@ impl ReplacementPlan {
 #[derive(Clone, Copy)]
 struct Unit {
     ch: char,
-    style: Style,
+    style: CharacterFormat,
     next_alignment: Option<Alignment>,
+    next_style: Option<ParagraphStyle>,
 }
 
 fn append(paragraphs: &mut Vec<Paragraph>, unit: Unit) {
     if unit.ch == '\n' {
         paragraphs.push(Paragraph {
+            paragraph_style: unit
+                .next_style
+                .unwrap_or(paragraphs.last().unwrap().paragraph_style),
             alignment: unit
                 .next_alignment
                 .unwrap_or(paragraphs.last().unwrap().alignment),
@@ -91,6 +95,7 @@ impl Editor {
                         ch,
                         style,
                         next_alignment: None,
+                        next_style: None,
                     }),
             );
             if let Some(next) = self.document.paragraphs.get(index + 1) {
@@ -98,11 +103,13 @@ impl Editor {
                     ch: '\n',
                     style: paragraph.styles.last().copied().unwrap_or_default(),
                     next_alignment: Some(next.alignment),
+                    next_style: Some(next.paragraph_style),
                 });
             }
         }
         let mut paragraphs = vec![Paragraph {
             alignment: self.document.paragraphs[0].alignment,
+            paragraph_style: self.document.paragraphs[0].paragraph_style,
             ..Paragraph::default()
         }];
         let (mut offset, mut output_length, mut changes, mut caret) = (0, 0, 0, 0);
@@ -130,6 +137,7 @@ impl Editor {
                             ch,
                             style: typing,
                             next_alignment: None,
+                            next_style: None,
                         },
                     );
                 }

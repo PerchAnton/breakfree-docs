@@ -55,7 +55,9 @@ the requested first cycle. This is application renumbering, not a native-documen
 migration. At that checkpoint protocol and content versions both remained 1.
 Alpha.3 separately introduces native content v2 for size/underline under
 [ADR 0003](adr/0003-character-size-and-underline.md), with v1 reading retained.
-Protocol `protocol_version: 1` stays unchanged. Neither compatibility version is
+Alpha.18 introduces native content v3 for paragraph-style identity and direct
+overrides under [ADR 0006](adr/0006-built-in-paragraph-styles.md), retaining v1/v2
+readers. Protocol `protocol_version: 1` stays unchanged. Neither compatibility version is
 inferred from the application version.
 
 ## End-of-work report and approval
