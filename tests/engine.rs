@@ -250,7 +250,7 @@ fn rejects_corrupt_foreign_unknown_and_duplicate_fields() {
             .unwrap();
     for (key, value) in [
         ("format", serde_json::json!("breakfree.sheets.native")),
-        ("content_version", serde_json::json!(7)),
+        ("content_version", serde_json::json!(8)),
         ("content_version", serde_json::json!(true)),
         ("unknown", serde_json::json!("preserve")),
         ("paragraphs", serde_json::json!([])),
@@ -261,8 +261,8 @@ fn rejects_corrupt_foreign_unknown_and_duplicate_fields() {
     }
     let mut duplicate = String::from_utf8(storage::encode(&sample().document).unwrap()).unwrap();
     duplicate = duplicate.replacen(
-        "\"content_version\": 6",
-        "\"content_version\": 6, \"content_version\": 6",
+        "\"content_version\": 7",
+        "\"content_version\": 7, \"content_version\": 7",
         1,
     );
     assert!(storage::decode(duplicate.as_bytes()).is_err());
@@ -475,7 +475,7 @@ fn font_size_input_is_exact_and_bounded() {
 }
 
 #[test]
-fn v1_load_is_read_only_and_v6_roundtrip_preserves_new_styles() {
+fn v1_load_is_read_only_and_v7_roundtrip_preserves_new_styles() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("v1.bfdoc");
     let old = include_bytes!("../examples/Welcome.bfdoc");
@@ -497,7 +497,7 @@ fn v1_load_is_read_only_and_v6_roundtrip_preserves_new_styles() {
     s.save(&path).unwrap();
     let new = fs::read(&path).unwrap();
     let json: serde_json::Value = serde_json::from_slice(&new).unwrap();
-    assert_eq!(json["content_version"], 6);
+    assert_eq!(json["content_version"], 7);
     assert_eq!(storage::load(&path).unwrap(), s.editor.document);
     assert!(!s.dirty());
 }
@@ -696,6 +696,7 @@ fn clear_at_caret_only_resets_pending_style_without_dirtying_or_losing_redo() {
     e.undo();
     e.selection = (2, 2);
     e.typing_style = CharacterFormat {
+        character_style: None,
         bold: Some(true),
         italic: Some(true),
         underline: Some(true),

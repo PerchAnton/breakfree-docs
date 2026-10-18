@@ -1,0 +1,86 @@
+{
+  "format": "breakfree.docs.native",
+  "content_version": 7,
+  "paragraphs": [
+    {
+      "alignment": "left",
+      "paragraph_style": "heading1",
+      "runs": [
+        {
+          "text": "Character styles",
+          "character_style": null,
+          "direct": {}
+        }
+      ]
+    },
+    {
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "runs": [
+        {
+          "text": "Strong inherits the paragraph size.",
+          "character_style": "strong",
+          "direct": {}
+        }
+      ]
+    },
+    {
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "runs": [
+        {
+          "text": "Emphasis inherits the paragraph weight.",
+          "character_style": "emphasis",
+          "direct": {}
+        }
+      ]
+    },
+    {
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "runs": [
+        {
+          "text": "Direct regular overrides Strong.",
+          "character_style": "strong",
+          "direct": {
+            "bold": false
+          }
+        }
+      ]
+    },
+    {
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "runs": [
+        {
+          "text": "English · Україна · Русский · é · 🙂",
+          "character_style": "emphasis",
+          "direct": {}
+        }
+      ]
+    }
+  ],
+  "style_catalog": {
+    "custom": [],
+    "normal": {
+      "parent": null,
+      "next_style": null,
+      "character": {}
+    },
+    "no_spacing": {
+      "parent": "normal",
+      "next_style": null,
+      "character": {},
+      "line_height_percent": 100,
+      "space_after_half_points": 0
+    },
+    "heading1": {
+      "parent": "normal",
+      "next_style": "normal",
+      "character": {
+        "bold": true,
+        "font_size": 36
+      }
+    }
+  }
+}

@@ -3,7 +3,7 @@ use crate::{
     Result, VERSION,
     chrome::{self, Icon},
     layout,
-    model::{Alignment, FONT_SIZE_PRESETS, FontSize, ParagraphStyle, boundaries},
+    model::{Alignment, CharacterStyle, FONT_SIZE_PRESETS, FontSize, ParagraphStyle, boundaries},
     presentation::*,
     session::Session,
     storage,
@@ -77,6 +77,7 @@ pub enum Action {
     Underline,
     ClearFormatting,
     Style(ParagraphStyle),
+    CharacterStyle(Option<CharacterStyle>),
     FontSize,
     FontDialog,
     ModifyStyle,
@@ -117,6 +118,9 @@ impl Action {
             Self::Underline => "Underline",
             Self::ClearFormatting => "Clear character formatting",
             Self::Style(style) => style.name(),
+            Self::CharacterStyle(style) => {
+                style.map_or("Default paragraph font", CharacterStyle::name)
+            }
             Self::FontSize => "Font size",
             Self::FontDialog => "Font dialog",
             Self::ModifyStyle => "Modify style…",
@@ -159,6 +163,9 @@ const COMMANDS: &[Action] = &[
     Action::Style(ParagraphStyle::Normal),
     Action::Style(ParagraphStyle::NoSpacing),
     Action::Style(ParagraphStyle::Heading1),
+    Action::CharacterStyle(Some(CharacterStyle::Strong)),
+    Action::CharacterStyle(Some(CharacterStyle::Emphasis)),
+    Action::CharacterStyle(None),
     Action::FontSize,
     Action::FontDialog,
     Action::ModifyStyle,
@@ -422,6 +429,9 @@ impl DocsApp {
     fn checked(&self, action: Action) -> bool {
         match action {
             Action::Style(style) => self.session.editor.selected_paragraph_style() == Some(style),
+            Action::CharacterStyle(style) => {
+                self.session.editor.selected_character_style() == Some(style)
+            }
             Action::Navigation => self.navigation,
             Action::Rulers => self.rulers,
             Action::ZoomWidth => self.zoom_width,
@@ -533,6 +543,7 @@ impl DocsApp {
             action,
             Action::ClearFormatting
                 | Action::Style(_)
+                | Action::CharacterStyle(_)
                 | Action::ModifyStyle
                 | Action::CreateStyle
                 | Action::DeleteStyle
@@ -610,6 +621,11 @@ impl DocsApp {
             }
             Action::Style(style) => {
                 let result = self.session.editor.apply_paragraph_style(start, end, style);
+                self.fail(result);
+                self.sync_view();
+            }
+            Action::CharacterStyle(style) => {
+                let result = self.session.editor.apply_character_style(start, end, style);
                 self.fail(result);
                 self.sync_view();
             }
@@ -741,9 +757,13 @@ impl DocsApp {
             || matches!(action, Action::Undo | Action::Redo | Action::Ribbon) && size.x <= 32.0;
         let text = if glyph {
             RichText::new("")
-        } else if action == Action::Bold && label == "B" {
+        } else if (action == Action::Bold && label == "B")
+            || action == Action::CharacterStyle(Some(CharacterStyle::Strong))
+        {
             RichText::new(label).strong()
-        } else if action == Action::Italic && label == "I" {
+        } else if (action == Action::Italic && label == "I")
+            || action == Action::CharacterStyle(Some(CharacterStyle::Emphasis))
+        {
             RichText::new(label).italics()
         } else if action == Action::Underline {
             RichText::new(label).underline()
@@ -754,7 +774,11 @@ impl DocsApp {
         let response = ui
             .add_enabled_ui(enabled, |ui| ui.add_sized(size, button))
             .inner;
-        self.record(&format!("command-{action:?}"), response.rect);
+        // Hidden scroll-list rows must not anchor KeyTips over unrelated controls.
+        // Keep every row in keyboard targets so arrow navigation can scroll to it.
+        if !self.collecting_menu || ui.clip_rect().contains_rect(response.rect) {
+            self.record(&format!("command-{action:?}"), response.rect);
+        }
         if action == Action::Bold && !self.collecting_menu {
             self.formatting_focus = Some(response.id);
         }
@@ -824,6 +848,10 @@ impl DocsApp {
         }
         let tip = if self.composing && !enabled {
             "Finish text composition first."
+        } else if action == Action::CharacterStyle(None) {
+            "Remove the named character style; retain direct formatting."
+        } else if action == Action::ClearFormatting {
+            "Clear direct font overrides; retain paragraph and character styles."
         } else if action == Action::DeleteStyle
             && !matches!(self.target_style(), ParagraphStyle::Custom(_))
         {
@@ -1871,6 +1899,16 @@ impl DocsApp {
                         .name(style)
                         .to_owned();
                     self.command(ui, &name, Action::Style(style), vec2(210., 27.));
+                }
+                ui.separator();
+                ui.small("Character styles");
+                for style in [
+                    None,
+                    Some(CharacterStyle::Strong),
+                    Some(CharacterStyle::Emphasis),
+                ] {
+                    let action = Action::CharacterStyle(style);
+                    self.command(ui, action.label(), action, vec2(210., 27.));
                 }
             });
         ui.separator();

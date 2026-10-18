@@ -220,6 +220,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "home",
             "styles",
             "styles-menu",
+            "styles-character",
             "styles-modify",
             "styles-following",
             "styles-create",
@@ -265,7 +266,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Err("Capture dimensions outside 640–1920 × 480–1080 DIP".into());
     }
     let fixture =
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(if args[2] == "styles-following" {
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(if args[2] == "styles-character" {
+            "examples/CharacterStyles.bfdoc"
+        } else if args[2] == "styles-following" {
             "examples/FollowingStyles.bfdoc"
         } else if args[2] == "styles-delete" {
             "examples/StyleDeletion.bfdoc"

@@ -1,4 +1,4 @@
-//! Strict .bfdoc v1–v6 reading, v6 writing and checked temporary-file replacement.
+//! Strict .bfdoc v1–v7 reading, v7 writing and checked temporary-file replacement.
 use crate::{Result, model::*};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -8,7 +8,7 @@ use std::{
 };
 
 pub const FORMAT_ID: &str = "breakfree.docs.native";
-pub const CONTENT_VERSION: u32 = 6;
+pub const CONTENT_VERSION: u32 = 7;
 pub const MAX_FILE_BYTES: usize = 16 * 1024 * 1024;
 
 #[derive(Serialize, Deserialize)]
@@ -105,6 +105,29 @@ struct RunV3 {
     direct: CharacterFormat,
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NativeV7 {
+    format: String,
+    content_version: u32,
+    style_catalog: StyleCatalog,
+    paragraphs: Vec<ParagraphV7>,
+}
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ParagraphV7 {
+    alignment: Alignment,
+    paragraph_style: ParagraphStyle,
+    runs: Vec<RunV7>,
+}
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RunV7 {
+    text: String,
+    character_style: Option<CharacterStyle>,
+    direct: CharacterFormat,
+}
+
 // Frozen v4/v5 definitions reject v6 fields instead of silently accepting them.
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -155,25 +178,26 @@ pub fn encode(document: &Document) -> Result<Vec<u8>> {
         .paragraphs
         .iter()
         .map(|p| {
-            let mut runs: Vec<RunV3> = Vec::new();
+            let mut runs: Vec<RunV7> = Vec::new();
             for (ch, &direct) in p.text.chars().zip(&p.styles) {
                 if let Some(last) = runs.last_mut().filter(|r| r.direct == direct) {
                     last.text.push(ch);
                 } else {
-                    runs.push(RunV3 {
+                    runs.push(RunV7 {
                         text: ch.to_string(),
+                        character_style: direct.character_style,
                         direct,
                     });
                 }
             }
-            ParagraphV3 {
+            ParagraphV7 {
                 alignment: p.alignment,
                 paragraph_style: p.paragraph_style,
                 runs,
             }
         })
         .collect();
-    let mut bytes = serde_json::to_vec_pretty(&NativeV6 {
+    let mut bytes = serde_json::to_vec_pretty(&NativeV7 {
         format: FORMAT_ID.into(),
         content_version: CONTENT_VERSION,
         style_catalog: document.style_catalog.clone(),
@@ -282,10 +306,34 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
                 },
             );
         }
-        CONTENT_VERSION => {
+        6 => {
             let file: NativeV6 = serde_json::from_slice(bytes)
                 .map_err(|e| format!("Invalid native v6 document: {e}"))?;
             return decode_styled(file.paragraphs, file.style_catalog);
+        }
+        CONTENT_VERSION => {
+            let file: NativeV7 = serde_json::from_slice(bytes)
+                .map_err(|e| format!("Invalid native v7 document: {e}"))?;
+            let paragraphs = file
+                .paragraphs
+                .into_iter()
+                .map(|p| ParagraphV3 {
+                    alignment: p.alignment,
+                    paragraph_style: p.paragraph_style,
+                    runs: p
+                        .runs
+                        .into_iter()
+                        .map(|r| RunV3 {
+                            text: r.text,
+                            direct: CharacterFormat {
+                                character_style: r.character_style,
+                                ..r.direct
+                            },
+                        })
+                        .collect(),
+                })
+                .collect();
+            return decode_styled(paragraphs, file.style_catalog);
         }
         2 => {
             serde_json::from_slice::<Native<Run>>(bytes)

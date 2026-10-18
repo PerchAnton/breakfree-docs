@@ -200,8 +200,12 @@ Rust selection is complete; this gate evaluates GUI behavior and visual fidelity
   inheritance, with exact undo/redo and native v6 migration. Shared engine and widget
   regressions cover references and keyboard input; native-platform gates stay open.
   [ADR 0010](docs/adr/0010-following-paragraph-styles.md).
-- [ ] Extend style rules with character styles. Next small increment: define their
-  precedence over paragraph styles and direct overrides before adding UI/schema.
+- [x] Alpha.24: built-in Strong/Emphasis character styles, semantic run references,
+  paragraph → character → direct cascade, selection/pending Undo/Redo and native v7
+  roundtrip. Home/KeyTips use the shared engine; Unicode and failed saves are tested.
+  Depends on alpha.23; [ADR 0011](docs/adr/0011-character-style-precedence.md).
+- [ ] Next small increment: document-owned custom character-style definitions and
+  validated naming, retaining the alpha.24 cascade and single-operation history.
 - [ ] Add lists, indentation, tabs, spacing, links and Unicode-aware search/replace.
 - [ ] Add table editing and images with explicit sizing and anchoring semantics.
 - [ ] Add navigation, command search and understandable tool states.

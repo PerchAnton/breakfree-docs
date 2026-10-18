@@ -60,3 +60,7 @@ A reproducible build and test command, automated persistence and undo tests, syn
 
 Alpha.23 extends style behavior with [ADR 0010](adr/0010-following-paragraph-styles.md):
 following styles, transactional Enter and strict v6 migration. D01–D09 remain.
+
+Alpha.24 adds built-in character styles with explicit precedence and one-operation
+history, specified in [ADR 0011](adr/0011-character-style-precedence.md). Native v7
+stores references independently of direct properties; earlier readers stay strict.

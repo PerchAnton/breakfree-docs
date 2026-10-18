@@ -102,10 +102,36 @@ pub struct Style {
     pub font_size: FontSize,
 }
 
-/// Direct character overrides. None inherits; Some(false) explicitly disables a property.
+/// Stable built-in character styles; unspecified properties inherit the paragraph style.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CharacterStyle {
+    Strong,
+    Emphasis,
+}
+impl CharacterStyle {
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Strong => "Strong",
+            Self::Emphasis => "Emphasis",
+        }
+    }
+    fn resolve(self, mut base: Style) -> Style {
+        match self {
+            Self::Strong => base.bold = true,
+            Self::Emphasis => base.italic = true,
+        }
+        base
+    }
+}
+
+/// A named character style and direct overrides; explicit false overrides either style.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct CharacterFormat {
+    // Serialized separately by the versioned run schema, never in paragraph definitions.
+    #[serde(skip)]
+    pub character_style: Option<CharacterStyle>,
     pub bold: Option<bool>,
     pub italic: Option<bool>,
     pub underline: Option<bool>,
@@ -113,6 +139,9 @@ pub struct CharacterFormat {
 }
 impl CharacterFormat {
     pub fn resolve(self, base: Style) -> Style {
+        let base = self
+            .character_style
+            .map_or(base, |style| style.resolve(base));
         Style {
             bold: self.bold.unwrap_or(base.bold),
             italic: self.italic.unwrap_or(base.italic),
@@ -123,6 +152,7 @@ impl CharacterFormat {
     /// Legacy files contain resolved values, with no reliable authored inheritance.
     pub fn explicit(style: Style) -> Self {
         Self {
+            character_style: None,
             bold: Some(style.bold),
             italic: Some(style.italic),
             underline: Some(style.underline),
@@ -384,6 +414,9 @@ impl StyleCatalog {
         }
         for id in self.ids() {
             let definition = self.get(id).ok_or("Unknown paragraph style.")?;
+            if definition.character.character_style.is_some() {
+                return Err("Paragraph definitions cannot reference character styles.".into());
+            }
             if definition
                 .next_style
                 .is_some_and(|next| self.get(next).is_none())

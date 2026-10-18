@@ -44,7 +44,18 @@ impl Editor {
         selection: (usize, usize),
         typing: CharacterFormat,
     ) {
-        if document != self.document {
+        self.commit_inner(document, label, selection, typing, false);
+    }
+
+    fn commit_inner(
+        &mut self,
+        document: Document,
+        label: &str,
+        selection: (usize, usize),
+        typing: CharacterFormat,
+        pending: bool,
+    ) {
+        if document != self.document || (pending && typing != self.typing_style) {
             self.undo_stack.push(Operation {
                 label: label.into(),
                 before: self.document.clone(),
@@ -172,8 +183,61 @@ impl Editor {
     /// At a caret, reset only the pending insertion style, like other font commands.
     pub fn clear_character_formatting(&mut self, start: usize, end: usize) -> Result<()> {
         self.format_range(start, end, "Clear character formatting", |style, _base| {
-            *style = CharacterFormat::default();
+            *style = CharacterFormat {
+                character_style: style.character_style,
+                ..Default::default()
+            };
         })
+    }
+
+    /// Apply/remove a semantic character style, retaining all direct overrides.
+    pub fn apply_character_style(
+        &mut self,
+        start: usize,
+        end: usize,
+        style: Option<CharacterStyle>,
+    ) -> Result<()> {
+        validate_range(&self.document.text(), start, end)?;
+        if start == end {
+            let typing = CharacterFormat {
+                character_style: style,
+                ..self.typing_style
+            };
+            self.commit_inner(
+                self.document.clone(),
+                "Character style",
+                (start, end),
+                typing,
+                true,
+            );
+            return Ok(());
+        }
+        self.format_range(start, end, "Character style", |format, _| {
+            format.character_style = style
+        })
+    }
+
+    /// None means mixed/separators; Some(None) means no named character style.
+    pub fn selected_character_style(&self) -> Option<Option<CharacterStyle>> {
+        let (start, end) = self.selection;
+        if start == end {
+            return Some(self.typing_style.character_style);
+        }
+        let mut offset = 0;
+        let mut found = None;
+        for p in &self.document.paragraphs {
+            for (i, format) in p.styles.iter().enumerate() {
+                if (start..end).contains(&(offset + i)) {
+                    let value = format.character_style;
+                    if found.is_some_and(|prior| prior != value) {
+                        return None;
+                    }
+                    found = Some(value);
+                }
+            }
+            offset += p.styles.len() + 1;
+        }
+        found
     }
 
     /// Apply a dialog's changes together, with one undo boundary and no live edits.
@@ -201,6 +265,7 @@ impl Editor {
     /// Uniform values for the selection; None means mixed or only separators.
     pub fn selected_font(&self) -> FontPatch {
         FontPatch {
+            character_style: None,
             bold: self.selected_value(|s| s.bold),
             italic: self.selected_value(|s| s.italic),
             underline: self.selected_value(|s| s.underline),

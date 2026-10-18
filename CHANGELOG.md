@@ -3,6 +3,21 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.24 — Unreleased; submitted for owner approval
+
+Prepared 2026-10-18. The owner approved alpha.23 in the project chat.
+
+- Add built-in Strong and Emphasis character styles and Default paragraph font
+  through Home Styles, command search and wide/narrow KeyTips.
+- Resolve paragraph style → character style → direct overrides. Applying/removing
+  a character style retains direct formatting; clearing direct formatting retains
+  named styles. Selection and pending-caret changes support one-step Undo/Redo.
+- Save semantic run references in native v7; retain strict v1–v6 readers. Earlier
+  builds reject v7 saves; use Save As to retain an older file.
+- Add Unicode, cascade, history, migration, failed-save and real-widget regressions
+  and a synthetic character-style fixture. Keep the approved palette and icons.
+- Custom character-style definitions and native Windows acceptance remain open.
+
 ## 0.1.0-alpha.23 — Unreleased; submitted for owner approval
 
 Prepared 2026-10-18. The owner approved alpha.22 in the project chat.

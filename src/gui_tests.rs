@@ -1653,7 +1653,12 @@ fn ribbon_menus_escape_overflow_and_keyboard_resize_retain_focus() {
         [640., 480.],
     );
     assert!(egui::Popup::is_any_open(&ctx));
-    for _ in 0..5 {
+    let find_index = app
+        .ribbon_menu_targets
+        .iter()
+        .position(|t| matches!(t.kind, TargetKind::Action(Action::Find)))
+        .unwrap();
+    for _ in 0..find_index {
         ribbon_key(
             &ctx,
             &mut app,
@@ -3666,6 +3671,7 @@ fn clear_formatting_control_space_respects_focus_modifiers_and_modal_guards() {
         assert_eq!(
             app.session.editor.selected_font(),
             crate::commands::FontPatch {
+                character_style: None,
                 bold: Some(false),
                 italic: Some(false),
                 underline: Some(false),
@@ -5045,5 +5051,137 @@ fn enter_before_existing_separator_uses_caret_not_ambiguous_diff() {
         app.execute(Action::Redo, &ctx);
         assert_eq!(app.session.editor.document, after);
         app.execute(Action::Undo, &ctx);
+    }
+}
+
+#[test]
+fn character_styles_keytips_apply_remove_and_undo_at_wide_and_narrow_widths() {
+    for width in [640., 1366.] {
+        let (ctx, mut app) = setup();
+        app.session
+            .editor
+            .replace(0, 0, "English Україна e\u{301} Русский", "Input")
+            .unwrap();
+        app.sync_view();
+        app.execute(Action::SelectAll, &ctx);
+        let before = app.session.editor.document.clone();
+        let n = app.session.editor.undo_stack.len();
+        let menu = if width < 900. { Key::E } else { Key::L };
+        tip_sequence(
+            &ctx,
+            &mut app,
+            &[Key::F10, Key::H, menu, Key::I],
+            [width, 900.],
+        );
+        assert_eq!(
+            app.session.editor.selected_character_style(),
+            Some(Some(CharacterStyle::Emphasis))
+        );
+        assert_eq!(app.session.editor.undo_stack.len(), n + 1);
+        assert!(app.checked(Action::Italic));
+        let after = app.session.editor.document.clone();
+        app.execute(Action::Undo, &ctx);
+        assert_eq!(app.session.editor.document, before);
+        app.execute(Action::Redo, &ctx);
+        assert_eq!(app.session.editor.document, after);
+        tip_sequence(
+            &ctx,
+            &mut app,
+            &[Key::F10, Key::H, menu, Key::Z],
+            [width, 900.],
+        );
+        assert_eq!(app.session.editor.document, before);
+        app.execute(Action::Undo, &ctx);
+        assert_eq!(app.session.editor.document, after);
+        assert_eq!(
+            storage::decode(&storage::encode(&after).unwrap()).unwrap(),
+            after
+        );
+    }
+}
+
+#[test]
+fn character_styles_respect_ime_guard_and_pending_input_history() {
+    let (ctx, mut app) = setup();
+    app.composing = true;
+    app.execute(Action::CharacterStyle(Some(CharacterStyle::Strong)), &ctx);
+    assert!(app.session.editor.undo_stack.is_empty());
+    app.composing = false;
+    app.execute(Action::CharacterStyle(Some(CharacterStyle::Strong)), &ctx);
+    assert!(!app.session.dirty());
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("a".into())],
+        [1366., 900.],
+        1.,
+    );
+    assert_eq!(
+        app.session.editor.document.paragraphs[0].styles[0].character_style,
+        Some(CharacterStyle::Strong)
+    );
+    app.execute(Action::Undo, &ctx);
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.typing_style.character_style, None);
+    app.execute(Action::Redo, &ctx);
+    app.execute(Action::Redo, &ctx);
+    assert_eq!(app.session.editor.document.text(), "a");
+}
+
+#[test]
+fn styles_scrolled_rows_do_not_paint_keytips_over_other_commands() {
+    for width in [640., 1366.] {
+        let (ctx, mut app) = setup();
+        let size = [width, 480.];
+        let menu = if width < 900. { Key::E } else { Key::L };
+        tip_sequence(&ctx, &mut app, &[Key::F10, Key::H, menu], size);
+        for _ in 0..4 {
+            frame(&ctx, &mut app, vec![], size, 1.);
+        }
+        let tips: Vec<_> = app
+            .regions
+            .iter()
+            .filter(|r| r.name.starts_with("keytip-"))
+            .collect();
+        for (i, tip) in tips.iter().enumerate() {
+            assert!(Rect::from_min_size(Pos2::ZERO, vec2(width, 480.)).contains_rect(tip.rect));
+            for other in &tips[i + 1..] {
+                assert!(
+                    !tip.rect.intersects(other.rect),
+                    "{} / {}",
+                    tip.name,
+                    other.name
+                );
+            }
+        }
+        // Emphasis starts below the clipped list, but keyboard navigation still finds it.
+        assert!(!app.regions.iter().any(|r| r.name == "keytip-I"));
+        let index = app
+            .ribbon_menu_targets
+            .iter()
+            .position(|t| {
+                matches!(
+                    t.kind,
+                    TargetKind::Action(Action::CharacterStyle(Some(CharacterStyle::Emphasis)))
+                )
+            })
+            .unwrap();
+        for _ in 0..index {
+            ribbon_key(&ctx, &mut app, Key::ArrowDown, Modifiers::NONE, size);
+        }
+        for _ in 0..4 {
+            frame(&ctx, &mut app, vec![], size, 1.);
+        }
+        let row = app
+            .regions
+            .iter()
+            .find(|r| r.name == "command-CharacterStyle(Some(Emphasis))")
+            .unwrap();
+        assert!(Rect::from_min_size(Pos2::ZERO, vec2(width, 480.)).contains_rect(row.rect));
+        ribbon_key(&ctx, &mut app, Key::Enter, Modifiers::NONE, size);
+        assert_eq!(
+            app.session.editor.typing_style.character_style,
+            Some(CharacterStyle::Emphasis)
+        );
     }
 }

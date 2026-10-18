@@ -8,20 +8,20 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.23**. Earlier capture/CI evidence retains its
+Current local checkpoint: **0.1.0-alpha.24**. Earlier capture/CI evidence retains its
 original scope; this iteration does not establish native Windows behavior.
 
 | Local check | Observed result |
 | :--- | :--- |
-| `cargo test --locked` | 180 passed: 26 engine/storage/presentation, 32 styles/inheritance, 8 search, 7 batch replacement, 9 preferences, 4 CLI subprocess and 94 actual egui widget event tests; no skipped tests |
-| `cargo test --locked --no-default-features` | 86 passed; preferences, core/styles/search/batch replacement and CLI build without GUI dependencies |
+| `cargo test --locked` | 189 passed: 26 engine/storage/presentation, 38 styles/inheritance, 8 search, 7 batch replacement, 9 preferences, 4 CLI subprocess and 97 actual egui widget event tests; no skipped tests |
+| `cargo test --locked --no-default-features` | 92 passed; preferences, core/styles/search/batch replacement and CLI build without GUI dependencies |
 | `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
 | `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
-| Copied executable outside checkout | Alpha.23 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that identical copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
+| Copied executable outside checkout | Alpha.24 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that identical copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
 | Repository references, contract and artwork | `python3 tools/check_repository.py` passed; approved logo embedded directly and archive copy byte-identical |
 | Workflow YAML / whitespace | Ruby YAML parse and `git diff --check` passed |
-| Native rendering | Alpha.23 Following paragraph at 1366 × 900 / 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha23-native-captures). Earlier evidence retains its version context |
-| Native macOS interaction | Alpha.23 F10/H/L/M, Following paragraph selector, Enter before an existing separator, one Undo/Redo, Save, exact v6 readback and fresh-process `--open` passed (details below) |
+| Native rendering | Alpha.24 character-style fixture at 1366 × 900 and Styles menu at 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha24-native-captures). Earlier evidence retains its version context |
+| Native macOS interaction | Alpha.24 Select All, F10/H/L/B, Save, one Undo/Save, one Redo/Save, fresh-process `--open`, F10/H/L/Z and Save passed; complete JSON readback retained text/catalogs/direct overrides |
 | Synthetic DPI | Actual widgets at 1/1.25/1.5 scale and 960/1366/1920 physical widths; ribbon/group/workspace/status bounds and collapse assertions passed; 27 additional width/scale combinations check individual Home control containment/nonoverlap and title/search/window bounds |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
@@ -823,3 +823,38 @@ preservation. Native Windows 100/125/150%, matched Word build, full accessibilit
 soft line breaks and unusual mixed paste/IME/keyboard batches remain unverified.
 Content v6 changes compatibility: alpha.22 and earlier reject new saves; use Save
 As to retain older documents. No new save atomicity/recovery claim is made.
+
+## Alpha.24 character-style validation
+
+Final local checks: **189 full / 92 without GUI**, including six character-style
+engine/storage regressions and three new real-widget regressions. Existing CLI,
+Unicode, save-failure, style deletion/following, search/Replace All and synthetic
+DPI checks remain passing. fmt, normal/capture all-target Clippy, release/capture
+builds, repository/artwork checks, YAML and whitespace checks passed.
+
+New checks cover paragraph → character → direct precedence and explicit false;
+selection apply/remove/clear, caret history without dirtying, Enter, mixed/invalid
+Unicode ranges, no-op redo preservation, parent modification, Replace All, v7
+roundtrip, frozen v6 schema, unknown references and injected write/sync/replace
+failures preserving previous bytes. Widget tests exercise wide/narrow KeyTips,
+undo/redo, pending input, IME guard and scrolling to hidden rows. KeyTips no longer
+anchor to clipped menu rows and overlap unrelated controls.
+
+Native macOS smoke used the final release binary copied into a temporary app
+bundle and a disposable CharacterStyles fixture. Select All → F10/H/L/B → Save
+set every run reference to Strong while preserving direct false, paragraph styles,
+catalog and Unicode. One Cmd+Z/Save restored the original supported document;
+Cmd+Shift+Z/Save restored the Strong result. A fresh process opened that saved v7
+file; F10/H/L/Z/Save removed references while preserving all direct properties.
+Independent full JSON comparisons verified each checkpoint (only absent/null
+optional fields normalized for the original hand-authored fixture). No user file
+was used. The copied binary reports alpha.24 and protocol-v1 capabilities outside
+the checkout, without Office or sibling repositories.
+
+Two final native captures were inspected: character formatting is visibly resolved
+and the narrow popup fits the window with clipped rows scrollable by keyboard.
+The fixture's emoji renders a missing-glyph box on this machine; its Unicode scalar
+remains intact in storage. Custom character definitions, native Windows input and
+100/125/150% scaling, matched Word screenshots, physical IME/AltGr and full
+accessibility remain unverified. The supplied macOS references establish palette
+intent only. No release/merge or complete D2 acceptance follows from these checks.

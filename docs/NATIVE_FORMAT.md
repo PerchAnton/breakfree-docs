@@ -1,12 +1,12 @@
 # Native BreakFree Docs document format
 
-Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v6.
+Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v7.
 This is not a DOCX container. Process protocol and file-content versions are independent.
 
 ```json
 {
   "format": "breakfree.docs.native",
-  "content_version": 6,
+  "content_version": 7,
   "style_catalog": {
     "custom": [],
     "normal": {"parent": null, "character": {}, "line_height_percent": null, "space_after_half_points": null},
@@ -17,7 +17,7 @@ This is not a DOCX container. Process protocol and file-content versions are ind
     {
       "alignment": "left",
       "paragraph_style": "heading1",
-      "runs": [{"text": "Hello", "direct": {"bold": null, "italic": true, "underline": null, "font_size": null}}]
+      "runs": [{"text": "Hello", "character_style": "emphasis", "direct": {"bold": null, "italic": true, "underline": null, "font_size": null}}]
     },
     {"alignment": "center", "paragraph_style": "normal", "runs": []}
   ]
@@ -48,7 +48,7 @@ optional or null for inheritance; explicit booleans override bold/italic/underli
 The writer emits all four properties, including nulls. No resolved-style cache is saved.
 Alignment is `left`, `center`, `right` or `justify`, independent of the named style.
 Paragraph text cannot contain LF. Paragraphs join with LF for scalar edit indices.
-Adjacent identical direct overrides compact on write, without Unicode normalization.
+Adjacent identical character references and direct overrides compact on write, without Unicode normalization.
 
 Reject unknown fields at every level, duplicate keys, unknown style IDs, foreign
 types, unsupported versions, invalid UTF-8/values and resource-limit violations.
@@ -71,9 +71,9 @@ Opening performs only in-memory conversion and does not dirty/write the file.
 V3 uses its frozen built-in catalog from [ADR 0006](adr/0006-built-in-paragraph-styles.md);
 it rejects embedded definitions. V4 reads its original three-definition catalog
 with no custom array and preserves its graph. V5 retains its custom catalog. Legacy definitions receive Same style in memory.
-Every explicit save writes v6, even
+Every explicit save writes v7, even
 for an unchanged older document. Use Save As
-to retain the original. **Alpha.22 and earlier cannot open v6 saves.** No downgrade or
+to retain the original. **Alpha.23 and earlier cannot open v7 saves.** No downgrade or
 lossy export is provided. Header/full-schema parsing preserves duplicate rejection.
 
 Empty paragraphs retain their named style. Pending direct formatting at a caret
@@ -114,3 +114,19 @@ Each definition accepts `next_style`: null/absent means Same style, otherwise an
 existing style ID. This is not inherited. Self and reciprocal following links are
 valid; missing IDs are rejected. The writer emits this field, while frozen v4/v5
 readers reject it. See [ADR 0010](adr/0010-following-paragraph-styles.md).
+
+## Character styles (v7)
+
+Each run additionally has `character_style`: `"strong"`, `"emphasis"`, or null
+(default/missing means no character style). Strong overrides bold to true;
+Emphasis overrides italic to true. Other properties inherit the resolved paragraph
+style. Direct properties are applied last, including explicit false. A run has
+only one named character style. Definitions are fixed in v7; there is no mutable
+character-style catalog in this iteration.
+
+The writer emits the reference separately from `direct`. Paragraph definitions
+and the `direct` object reject this field; v1–v6 schemas reject v7 run fields.
+Legacy imports receive no character reference, without guessing from appearance.
+Distinct references are never merged just because their current appearance matches.
+Pending caret style is session state, not persisted before insertion. See
+[ADR 0011](adr/0011-character-style-precedence.md).

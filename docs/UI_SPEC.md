@@ -1021,3 +1021,34 @@ BREAKFREE_CAPTURE_TO="$PWD/docs/screenshots/rust-following-style-alpha23-macos-n
 
 ![Following paragraph selector](screenshots/rust-following-style-alpha23-macos.png)
 ![Following paragraph at minimum width](screenshots/rust-following-style-alpha23-macos-narrow.png)
+
+## Alpha.24 native captures
+
+Home Styles now includes a Character styles section inside the existing 220-DIP
+menu / 150-DIP scroll viewport, with 210 × 27-DIP rows: Default paragraph font,
+Strong and Emphasis. The latter two preview bold/italic. Paragraph gallery cards
+remain unchanged. Direct formatting still wins; tooltips distinguish clearing
+properties from removing the named character style. Arrow keys scroll hidden rows;
+clipped rows cannot paint KeyTips over other commands. B/I/Z are Docs access keys
+within Styles (narrow Editing overflow); exact Word parity is not claimed.
+
+The existing palette, original icons, 8-DIP gutters and light continuous canvas are
+unchanged. Captured on macOS, backing scale 2, English, light theme, 100% document
+zoom. These are real native renders, not matched Windows reference comparisons.
+
+| Capture | Viewport | SHA-256 |
+| --- | --- | --- |
+| [Character styles fixture](screenshots/rust-character-styles-alpha24-macos.png) | 1366 × 900 DIP | `1d23a2a64df82834f49b014d2ebb16aad84bb486669130c68a1083f1e4414692` |
+| [Narrow Styles menu](screenshots/rust-character-menu-alpha24-macos-narrow.png) | 640 × 480 DIP | `df57fa50645f90af14bd30a8a30ea3d80cd7c88ce7058dc621912fc2ec9550d1` |
+
+The narrow initial scroll position shows paragraph styles and Default paragraph
+font; Strong/Emphasis are reached by scrolling/arrow keys or their access keys.
+The Latin/Cyrillic/combining fixture renders as inspected; emoji fallback shows a
+missing glyph on this machine although the stored scalar survives. No full script
+coverage claim, pagination claim or numeric similarity score is made. Windows
+100/125/150%, physical IME and matched Word 2024 Windows captures remain open.
+
+Reproduce with `cargo build --locked --release --features capture --example capture_ui`,
+then `BREAKFREE_CAPTURE_TO=/absolute/output.png target/release/examples/capture_ui
+1366 900 styles-character` (or `640 480 styles-menu`). The harness is a developer
+utility, not an integration command.
