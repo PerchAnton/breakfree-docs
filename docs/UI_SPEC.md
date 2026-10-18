@@ -1301,3 +1301,21 @@ Light theme, English, 100% document zoom, macOS backing scale 2:
 | [Named return](screenshots/rust-named-return-alpha38-macos-narrow.png) | 640 × 480 DIP | `e552d4db849e5212dbf81afdeaeb9a0625b5b7a2beca6fa974d63e7e300f74e6` |
 
 Both harness captures inspected: Back to: Normal fits without overlap. Long Unicode-name width and live rename are checked by widget tests. Ordinary native input and matched Windows/Word/DPI verification were not performed.
+
+
+## Alpha.39 dependency navigation
+
+An unavailable return row leaves the exact saved filters intact, displays a
+wrapped explanation inside the existing scrolling list and focuses the name
+filter. Explicit filter changes dismiss the notice and cancel pending jumps.
+Palette, icons, menu width and list height remain unchanged.
+
+Light theme, English, 100% document zoom; macOS backing scale 2. Captures show
+Normal → Heading 1 and the retained return control, not the unavailable notice.
+
+| Capture | Window | SHA-256 |
+| --- | --- | --- |
+| [Dependency navigation](screenshots/rust-style-navigation-alpha39-macos.png) | 1366 × 900 DIP | `7fb4940a028eaa6dac4272b214c869708942ad9b095e8578ef124184ba85947e` |
+| [Dependency navigation](screenshots/rust-style-navigation-alpha39-macos-narrow.png) | 640 × 480 DIP | `e552d4db849e5212dbf81afdeaeb9a0625b5b7a2beca6fa974d63e7e300f74e6` |
+
+Both captures inspected. Windows/reference/DPI and ordinary native keyboard acceptance remain open; widget tests are separate evidence.

@@ -5931,3 +5931,138 @@ fn return_name_tracks_long_custom_names_without_expanding_menu() {
             .any(|r| r.name == "style-return-label-Back to: Renamed parent")
     );
 }
+
+#[test]
+fn dependency_return_handles_renamed_deleted_and_unused_sources() {
+    for change in 0..3 {
+        let (ctx, mut app) = setup();
+        let id = app
+            .session
+            .editor
+            .document
+            .add_character_style("Original", CharacterFormat::default())
+            .unwrap();
+        app.session.editor.replace(0, 0, "x", "Fixture").unwrap();
+        app.session
+            .editor
+            .apply_character_style(0, 1, Some(id))
+            .unwrap();
+        let source = Action::CharacterStyle(Some(id));
+        let size = [640., 480.];
+        frame(&ctx, &mut app, vec![], size, 1.);
+        for k in [Key::F10, Key::H, Key::E] {
+            ribbon_key(&ctx, &mut app, k, Modifiers::NONE, size);
+        }
+        app.style_filter = "Original".into();
+        app.style_scope = crate::style_filter::Scope::Character;
+        app.style_used_only = change == 2;
+        app.jump_to_style(source, Action::CharacterStyle(Some(CharacterStyle::Strong)));
+        match change {
+            0 => app
+                .session
+                .editor
+                .document
+                .update_character_style(id, "Renamed", CharacterFormat::default())
+                .unwrap(),
+            1 => app
+                .session
+                .editor
+                .document
+                .delete_character_style(id, None)
+                .unwrap(),
+            _ => app
+                .session
+                .editor
+                .apply_character_style(0, 1, None)
+                .unwrap(),
+        }
+        let before = app.session.editor.document.clone();
+        let depth = app.session.editor.undo_stack.len();
+        app.return_to_style();
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![], size, 1.);
+        }
+        assert_eq!(app.style_filter, "Original");
+        assert_eq!(app.style_scope, crate::style_filter::Scope::Character);
+        assert_eq!(app.style_used_only, change == 2);
+        assert!(app.style_jump.is_none());
+        assert!(app.style_return.is_none());
+        assert!(app.style_navigation_notice.is_some());
+        assert!(ctx.memory(|m| m.has_focus(Id::new("style-filter-input"))));
+        assert_eq!(app.session.editor.document, before);
+        assert_eq!(app.session.editor.undo_stack.len(), depth);
+        // Reset must not resurrect a stale jump when its destination becomes visible.
+        click_region_at(&ctx, &mut app, "style-filter-reset", size);
+        assert!(app.style_jump.is_none());
+    }
+}
+
+#[test]
+fn dependency_navigation_long_reverse_catalog_chain_keeps_identity_and_history() {
+    let (ctx, mut app) = setup();
+    let mut ids = Vec::new();
+    for n in 0..32 {
+        ids.push(
+            app.session
+                .editor
+                .document
+                .add_character_style(&format!("Style {n}"), CharacterFormat::default())
+                .unwrap(),
+        );
+    }
+    for n in 0..31 {
+        app.session
+            .editor
+            .document
+            .set_character_parent(ids[n], Some(ids[n + 1]))
+            .unwrap();
+    }
+    app.session.editor.replace(0, 0, "ab", "Fixture").unwrap();
+    app.session
+        .editor
+        .apply_character_style(0, 1, Some(ids[0]))
+        .unwrap();
+    app.session
+        .editor
+        .apply_character_style(1, 2, Some(ids[16]))
+        .unwrap();
+    let source = Action::CharacterStyle(Some(ids[31]));
+    let middle = Action::CharacterStyle(Some(ids[16]));
+    let leaf = Action::CharacterStyle(Some(ids[0]));
+    let before = app.session.editor.document.clone();
+    let depth = app.session.editor.undo_stack.len();
+    let size = [640., 480.];
+    frame(&ctx, &mut app, vec![], size, 1.);
+    for k in [Key::F10, Key::H, Key::E] {
+        ribbon_key(&ctx, &mut app, k, Modifiers::NONE, size);
+    }
+    app.style_filter = "Style 31".into();
+    app.style_scope = crate::style_filter::Scope::Custom;
+    for (from, to) in [(source, middle), (middle, leaf)] {
+        frame(&ctx, &mut app, vec![], size, 1.);
+        app.ribbon_menu_index = app
+            .ribbon_menu_targets
+            .iter()
+            .position(|t| matches!(t.kind, TargetKind::StyleJump(a, b) if a == from && b == to));
+        assert!(app.ribbon_menu_index.is_some());
+        frame(&ctx, &mut app, vec![], size, 1.);
+        ribbon_key(&ctx, &mut app, Key::Enter, Modifiers::NONE, size);
+        for _ in 0..12 {
+            frame(&ctx, &mut app, vec![], size, 1.);
+        }
+        let target = &app.ribbon_menu_targets[app.ribbon_menu_index.unwrap()];
+        assert!(matches!(target.kind, TargetKind::Action(action) if action == to));
+        assert!(ctx.memory(|m| m.has_focus(target.id)));
+        assert!(app.style_jump.is_none());
+    }
+    app.return_to_style();
+    for _ in 0..12 {
+        frame(&ctx, &mut app, vec![], size, 1.);
+    }
+    assert_eq!(app.style_filter, "Style 31");
+    let target = &app.ribbon_menu_targets[app.ribbon_menu_index.unwrap()];
+    assert!(matches!(target.kind, TargetKind::Action(action) if action == source));
+    assert!(ctx.memory(|m| m.has_focus(target.id)));
+    assert_eq!(app.session.editor.document, before);
+    assert_eq!(app.session.editor.undo_stack.len(), depth);
+}

@@ -8,16 +8,16 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.38**. Historical evidence retains its scope.
+Current local checkpoint: **0.1.0-alpha.39**. Historical evidence retains its scope.
 
 | Local check | Observed result |
 | --- | --- |
-| Full / no-default-features tests | 232 / 117 passed; named return width and live custom-name checks added |
+| Full / no-default-features tests | 234 / 117 passed; stale-return and long-chain keyboard checks added |
 | fmt / Clippy | Passed; normal/capture all-target checks with warnings denied |
 | Release builds | Native binary and capture harness passed without Office/sibling inputs |
-| CLI | Version/capabilities report alpha.38; existing CLI subprocess tests pass |
+| CLI | Version/capabilities report alpha.39; existing CLI subprocess tests pass |
 | Repository/artwork/YAML/whitespace | Passed |
-| Native rendering | Named return controls at 1366 × 900 / 640 × 480 DIP, backing scale 2 |
+| Native rendering | Dependency navigation at 1366 × 900 / 640 × 480 DIP, backing scale 2 |
 | Native input | Not repeated this iteration; previous automation lost its window. CPU widget events are separate evidence |
 | Existing regressions | Home geometry, minimum-width 64-style keyboard scrolling, history, storage and synthetic scaling checks retained |
 
@@ -1096,3 +1096,20 @@ ID and verifies the displayed name updates. The toolkit expands the requested
 layout contract. Existing return/filter/history and scrolling checks remain.
 Ordinary native input was not repeated; harness captures only establish rendering.
 Windows/Word/DPI/IME/accessibility gates remain open.
+
+
+## Alpha.39 dependency navigation validation
+
+Final gate: 234 full / 117 core tests, fmt, normal/capture all-target Clippy with
+warnings denied, release/capture builds, repository/artwork/YAML/whitespace and
+CLI version/capabilities passed. Two new widget tests cover renamed/deleted/no
+longer used destinations with exact filter restoration and filter focus; a real
+32-style reverse-order character inheritance chain with two directly assigned
+styles, repeated Enter navigation, scrolling and return. Document and undo depth
+remain unchanged by navigation. Reset cannot revive the stale destination.
+
+Two native harness captures at 1366 × 900 and 640 × 480 DIP were inspected; the
+palette, icons and existing return menu remain intact. This harness injects
+widget events, not physical input. Ordinary native input was not repeated;
+Windows 100/125/150%, matched Word comparison, physical IME and accessibility
+remain unverified. No content/protocol/settings/dependency/license changes.

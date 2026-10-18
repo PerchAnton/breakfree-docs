@@ -254,6 +254,7 @@ pub struct DocsApp {
     style_used_only: bool,
     style_jump: Option<Action>,
     style_jump_ready: bool,
+    style_navigation_notice: Option<String>,
     style_return: Option<(Action, String, crate::style_filter::Scope, bool)>,
     style_filter: String,
     style_scope: crate::style_filter::Scope,
@@ -372,6 +373,7 @@ impl DocsApp {
             style_used_only: false,
             style_jump: None,
             style_jump_ready: false,
+            style_navigation_notice: None,
             style_return: None,
             style_filter: String::new(),
             style_scope: Default::default(),
@@ -1995,6 +1997,7 @@ impl DocsApp {
         }
     }
     fn jump_to_style(&mut self, source: Action, action: Action) {
+        self.style_navigation_notice = None;
         if self.style_return.is_none() {
             self.style_return = Some((
                 source,
@@ -2097,7 +2100,50 @@ impl DocsApp {
         }
     }
 
+    fn style_destination_visible(&self, action: Action) -> bool {
+        let document = &self.session.editor.document;
+        let used = crate::style_filter::UsedStyles::collect(document);
+        let (exists, character, custom, in_use) = match action {
+            Action::Style(id) => (
+                document.style_catalog.get(id).is_some(),
+                false,
+                matches!(id, ParagraphStyle::Custom(_)),
+                used.paragraphs.contains(&id),
+            ),
+            Action::CharacterStyle(id) => (
+                id.is_none_or(|id| document.character_style_exists(id)),
+                true,
+                matches!(id, Some(CharacterStyle::Custom(_))),
+                used.character(id),
+            ),
+            _ => return false,
+        };
+        exists
+            && self.style_scope.matches(
+                &self.style_filter,
+                self.command_name(action),
+                character,
+                custom,
+            )
+            && (!self.style_used_only || in_use)
+    }
+
     fn styles_menu(&mut self, ui: &mut Ui) {
+        // Resolve against the current document and filters, never leave an unreachable
+        // jump pending: an undo, rename or usage change can invalidate the bookmark.
+        let unavailable = self
+            .style_jump
+            .filter(|action| !self.style_destination_visible(*action));
+        if let Some(action) = unavailable {
+            self.style_navigation_notice = Some(format!(
+                "Cannot show {}. The style was removed or is hidden by the restored filters.",
+                self.command_name(action)
+            ));
+            self.style_jump = None;
+            self.ribbon_menu_index = None;
+            ui.ctx()
+                .memory_mut(|m| m.request_focus(Id::new("style-filter-input")));
+        }
         self.style_jump_ready = self.style_jump.is_some();
         ui.set_width(220.);
         let filter = ui.add(
@@ -2109,6 +2155,8 @@ impl DocsApp {
         );
         self.record("style-filter-input", filter.rect);
         if filter.clicked() || filter.changed() {
+            self.style_jump = None;
+            self.style_navigation_notice = None;
             self.ribbon_menu_index = None;
         }
         ui.horizontal(|ui| {
@@ -2118,12 +2166,16 @@ impl DocsApp {
                 .on_hover_text("Cycle: All, Paragraph, Character, Custom. Tab/Space also work.")
                 .clicked()
             {
+                self.style_jump = None;
+                self.style_navigation_notice = None;
                 self.style_scope = self.style_scope.next();
                 self.ribbon_menu_index = None;
             }
             let clear = ui.button("Reset");
             self.record("style-filter-reset", clear.rect);
             if clear.clicked() {
+                self.style_jump = None;
+                self.style_navigation_notice = None;
                 self.style_filter.clear();
                 self.style_scope = Default::default();
                 self.style_used_only = false;
@@ -2133,6 +2185,8 @@ impl DocsApp {
         let used_toggle = ui.checkbox(&mut self.style_used_only, "Used in document");
         self.record("style-filter-used", used_toggle.rect);
         if used_toggle.changed() {
+            self.style_jump = None;
+            self.style_navigation_notice = None;
             self.ribbon_menu_index = None;
         }
         used_toggle.on_hover_text("Document text and empty paragraphs, plus parent styles. Excludes future typing and next-style links.");
@@ -2157,6 +2211,10 @@ impl DocsApp {
                 125.
             })
             .show(ui, |ui| {
+                if let Some(notice) = &self.style_navigation_notice {
+                    let response = ui.label(notice);
+                    self.record("style-navigation-notice", response.rect);
+                }
                 for style in self.session.editor.document.style_catalog.ids() {
                     let name = self
                         .session
@@ -3302,6 +3360,7 @@ impl DocsApp {
         if !egui::Popup::is_any_open(ctx) {
             self.style_return = None;
             self.style_jump = None;
+            self.style_navigation_notice = None;
         }
         self.keytip_input(ctx);
         self.prepare_keytip_menu(ctx);

@@ -3,6 +3,12 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.39 — 2026-10-18
+
+- Resolve pending style navigation against the current document and filters. If a return destination was deleted, renamed out of the query or is no longer used, restore the exact filters, explain the unavailable row and focus the filter instead of retaining a stale jump.
+- Cancel pending navigation and its notice on explicit filter changes. Cover a 32-style reverse-order inheritance chain, repeated keyboard jumps, return, stale destinations and unchanged document/history.
+- Preserve palette/icons and native/protocol/settings versions. Alpha.38 approved; alpha.39 awaits approval.
+
 ## 0.1.0-alpha.38 — 2026-10-18
 
 - Show the original parent name in Back to: <style>. Resolve the current name from its stable ID; constrain the button width and show the full name in its tooltip when truncated.

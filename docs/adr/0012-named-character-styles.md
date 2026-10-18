@@ -199,3 +199,14 @@ The name is resolved from the stored stable ID on each frame, including custom
 paragraph and character names. Its 23-DIP-high button fits the 220-DIP menu width and truncates long labels;
 the tooltip retains the full name and restoration explanation. Return behavior,
 palette, icons, document/history and storage are unchanged.
+
+
+## Dependency navigation resilience (alpha.39)
+
+Pending jumps are checked against the current document and filters. If a source
+was removed, renamed outside the saved query or excluded by changed usage,
+Return restores the exact filters, explains why the row cannot be shown and
+focuses the filter. It does not apply a replacement style. Explicit filter edits
+cancel pending navigation and clear the notice. Navigation does not change
+content or undo history. A 32-style reverse-catalog chain and repeated keyboard
+jumps are covered by widget tests; native Windows acceptance remains open.
