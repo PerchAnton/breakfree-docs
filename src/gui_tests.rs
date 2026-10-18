@@ -7048,3 +7048,312 @@ fn ruler_lost_pointer_cancels_and_release_outside_commits_once() {
         }
     }
 }
+
+fn ruler_key(key: Key, modifiers: Modifiers) -> egui::Event {
+    egui::Event::Key {
+        key,
+        physical_key: None,
+        pressed: true,
+        repeat: false,
+        modifiers,
+    }
+}
+#[test]
+fn ruler_keyboard_preview_steps_tab_commit_escape_and_history() {
+    for dpi in [1., 1.25, 1.5] {
+        for zoom in [50., 100., 200.] {
+            let (ctx, mut app) = setup();
+            app.zoom = zoom;
+            app.session
+                .editor
+                .replace(0, 0, "English cafe\u{301}\nУкраїна\nРусский", "Fixture")
+                .unwrap();
+            app.session.editor.selection = (0, app.session.editor.document.text().chars().count());
+            app.sync_view();
+            let size = [1366. * dpi, 900. * dpi];
+            for _ in 0..3 {
+                frame(&ctx, &mut app, vec![], size, dpi);
+            }
+            let before = app.session.editor.document.clone();
+            let n = app.session.editor.undo_stack.len();
+            frame(
+                &ctx,
+                &mut app,
+                vec![ruler_key(Key::F8, Modifiers::CTRL | Modifiers::SHIFT)],
+                size,
+                dpi,
+            );
+            assert_eq!(app.ruler_key_focus, Some(crate::ruler::Handle::First));
+            frame(
+                &ctx,
+                &mut app,
+                vec![
+                    key(Key::ArrowRight, false),
+                    ruler_key(Key::ArrowRight, Modifiers::SHIFT),
+                ],
+                size,
+                dpi,
+            );
+            assert_eq!(app.session.editor.document, before);
+            assert_eq!(
+                app.ruler_drag.as_ref().unwrap().draft.preview.paragraphs[0]
+                    .spacing
+                    .first_line_half_points,
+                Some(11)
+            );
+            frame(&ctx, &mut app, vec![key(Key::Enter, false)], size, dpi);
+            assert_eq!(
+                app.session.editor.undo_stack.len(),
+                n + 1,
+                "dpi={dpi} zoom={zoom} error={:?} focus={:?}",
+                app.error,
+                app.ruler_key_focus
+            );
+            assert!(
+                app.session
+                    .editor
+                    .document
+                    .paragraphs
+                    .iter()
+                    .all(|p| p.spacing.first_line_half_points == Some(11))
+            );
+            let committed = app.session.editor.document.clone();
+            frame(
+                &ctx,
+                &mut app,
+                vec![key(Key::Tab, false), key(Key::ArrowRight, false)],
+                size,
+                dpi,
+            );
+            assert_eq!(app.ruler_key_focus, Some(crate::ruler::Handle::Body));
+            frame(&ctx, &mut app, vec![key(Key::Escape, false)], size, dpi);
+            assert!(app.ruler_drag.is_none());
+            assert!(app.ruler_key_focus.is_none());
+            assert_eq!(app.session.editor.document, committed);
+            app.execute(Action::Undo, &ctx);
+            assert_eq!(app.session.editor.document, before);
+            app.execute(Action::Redo, &ctx);
+            assert_eq!(app.session.editor.document, committed);
+        }
+    }
+}
+#[test]
+fn ruler_keyboard_bounds_reverse_tab_and_noop_preserve_redo() {
+    let (ctx, mut app) = setup();
+    let size = [1366., 900.];
+    app.session
+        .editor
+        .set_paragraph_geometry(
+            0,
+            0,
+            crate::commands::ParagraphGeometryPatch {
+                right: Some(Some(288)),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    frame(
+        &ctx,
+        &mut app,
+        vec![
+            ruler_key(Key::F8, Modifiers::CTRL | Modifiers::SHIFT),
+            ruler_key(Key::Tab, Modifiers::SHIFT),
+        ],
+        size,
+        1.,
+    );
+    assert_eq!(app.ruler_key_focus, Some(crate::ruler::Handle::Right));
+    let n = app.session.editor.undo_stack.len();
+    frame(
+        &ctx,
+        &mut app,
+        vec![
+            key(Key::ArrowLeft, false),
+            key(Key::ArrowLeft, false),
+            key(Key::ArrowRight, false),
+            key(Key::Tab, false),
+        ],
+        size,
+        1.,
+    );
+    assert_eq!(
+        app.session.editor.document.paragraphs[0]
+            .spacing
+            .right_indent_half_points,
+        Some(287)
+    );
+    assert_eq!(app.session.editor.undo_stack.len(), n + 1);
+    frame(&ctx, &mut app, vec![key(Key::Escape, false)], size, 1.);
+    app.execute(Action::Undo, &ctx);
+    frame(
+        &ctx,
+        &mut app,
+        vec![
+            ruler_key(Key::F8, Modifiers::CTRL | Modifiers::SHIFT),
+            key(Key::ArrowRight, false),
+            key(Key::ArrowLeft, false),
+            key(Key::Enter, false),
+        ],
+        size,
+        1.,
+    );
+    assert_eq!(app.session.editor.redo_stack.len(), 1);
+}
+#[test]
+fn ruler_keyboard_cancel_on_resize_focus_loss_and_guard_modal() {
+    for resize in [false, true] {
+        let (ctx, mut app) = setup();
+        let size = [1366., 900.];
+        let before = app.session.editor.document.clone();
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                ruler_key(Key::F8, Modifiers::CTRL | Modifiers::SHIFT),
+                key(Key::ArrowRight, false),
+                egui::Event::Text("ignored".into()),
+                key(Key::S, true),
+            ],
+            size,
+            1.,
+        );
+        assert!(app.ruler_drag.is_some());
+        assert_eq!(app.session.editor.document, before);
+        if resize {
+            frame(&ctx, &mut app, vec![], [1000., 800.], 1.);
+        } else {
+            let input = egui::RawInput {
+                focused: false,
+                ..Default::default()
+            };
+            let _ = ctx.run(input, |ctx| app.update_ui(ctx));
+        }
+        assert!(app.ruler_drag.is_none());
+        assert!(app.ruler_key_focus.is_none());
+        assert_eq!(app.session.editor.document, before);
+    }
+    let (ctx, mut app) = setup();
+    app.execute(Action::ParagraphSpacing, &ctx);
+    frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(Key::F8, Modifiers::CTRL | Modifiers::SHIFT)],
+        [1366., 900.],
+        1.,
+    );
+    assert!(app.ruler_key_focus.is_none());
+    assert!(app.paragraph_dialog.is_some());
+}
+
+#[test]
+fn ruler_keyboard_reveals_hidden_ruler_pointer_takeover_and_value_bounds() {
+    let (ctx, mut app) = setup();
+    let size = [640., 480.];
+    app.zoom = 50.;
+    app.rulers = false;
+    for _ in 0..3 {
+        frame(&ctx, &mut app, vec![], size, 1.);
+    }
+    frame(
+        &ctx,
+        &mut app,
+        vec![
+            ruler_key(Key::F8, Modifiers::CTRL | Modifiers::SHIFT),
+            key(Key::ArrowRight, false),
+        ],
+        size,
+        1.,
+    );
+    assert!(app.rulers);
+    assert!(app.ruler_drag.is_some());
+    let before = app.session.editor.document.clone();
+    let pos = app
+        .regions
+        .iter()
+        .find(|r| r.name == "document-text")
+        .unwrap()
+        .rect
+        .center();
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::PointerMoved(pos), ruler_pointer(pos, true)],
+        size,
+        1.,
+    );
+    assert!(app.ruler_drag.is_none());
+    assert!(app.ruler_key_focus.is_none());
+    assert_eq!(app.session.editor.document, before);
+    frame(&ctx, &mut app, vec![ruler_pointer(pos, false)], size, 1.);
+    let p = &mut app.session.editor.document.paragraphs[0];
+    p.spacing.left_indent_half_points = Some(288);
+    p.spacing.right_indent_half_points = Some(288);
+    p.spacing.first_line_half_points = Some(-288);
+    frame(&ctx, &mut app, vec![], size, 1.);
+    let style = app
+        .session
+        .editor
+        .document
+        .resolved_paragraph(&app.session.editor.document.paragraphs[0]);
+    let width = ctx.fonts_mut(|f| {
+        f.layout_no_wrap(crate::ruler::values(style), FontId::proportional(11.), INK)
+            .size()
+            .x
+    });
+    let rect = app
+        .regions
+        .iter()
+        .find(|r| r.name == "ruler-values")
+        .unwrap()
+        .rect;
+    assert!(width <= rect.width(), "{width} > {}", rect.width());
+}
+
+#[test]
+fn ruler_keyboard_scrolls_focused_marker_into_view_without_cancelling_preview() {
+    let (ctx, mut app) = setup();
+    let size = [640., 480.];
+    app.zoom = 200.;
+    for _ in 0..3 {
+        frame(&ctx, &mut app, vec![], size, 1.);
+    }
+    frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(Key::F8, Modifiers::CTRL | Modifiers::SHIFT)],
+        size,
+        1.,
+    );
+    frame(
+        &ctx,
+        &mut app,
+        vec![
+            ruler_key(Key::Tab, Modifiers::SHIFT),
+            key(Key::ArrowLeft, false),
+        ],
+        size,
+        1.,
+    );
+    for _ in 0..30 {
+        frame(&ctx, &mut app, vec![], size, 1.);
+    }
+    assert_eq!(app.ruler_key_focus, Some(crate::ruler::Handle::Right));
+    assert!(app.ruler_drag.is_some());
+    let target = app
+        .regions
+        .iter()
+        .find(|r| r.name == "ruler-right")
+        .unwrap()
+        .rect;
+    assert!(
+        target.center().x > 0. && target.center().x < 640.,
+        "{target:?}"
+    );
+    frame(&ctx, &mut app, vec![key(Key::Enter, false)], size, 1.);
+    assert_eq!(
+        app.session.editor.document.paragraphs[0]
+            .spacing
+            .right_indent_half_points,
+        Some(1)
+    );
+}

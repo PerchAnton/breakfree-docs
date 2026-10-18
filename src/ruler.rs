@@ -13,6 +13,30 @@ pub enum Handle {
     Right,
 }
 
+impl Handle {
+    /// Horizontal position in half points from the text origin (right is reversed).
+    pub fn position(self, style: ResolvedParagraphStyle) -> i32 {
+        let left = i32::from(style.left_indent_half_points);
+        let special = i32::from(style.first_line_half_points);
+        match self {
+            Self::Left => left,
+            Self::First => left + special.max(0),
+            Self::Body => left + (-special).max(0),
+            Self::Right => -i32::from(style.right_indent_half_points),
+        }
+    }
+}
+
+pub fn values(style: ResolvedParagraphStyle) -> String {
+    format!(
+        "Left {:.1} pt   Right {:.1} pt   First {:.1} pt   Hanging {:.1} pt",
+        f32::from(style.left_indent_half_points) / 2.,
+        f32::from(style.right_indent_half_points) / 2.,
+        f32::from(style.first_line_half_points.max(0)) / 2.,
+        f32::from((-style.first_line_half_points).max(0)) / 2.
+    )
+}
+
 /// Shared narrow-column projection, also used by the native text adapter.
 pub fn indent_scale(style: ResolvedParagraphStyle, unit: f32, width: f32) -> f32 {
     let total = (f32::from(style.left_indent_half_points)
@@ -214,5 +238,21 @@ mod tests {
         let changed = e.document.clone();
         assert!(draft.commit(&mut e).is_err());
         assert_eq!(e.document, changed);
+    }
+    #[test]
+    fn exact_values_distinguish_special_amounts_and_origins() {
+        let mut e = editor();
+        let p = &mut e.document.paragraphs[0];
+        p.spacing.left_indent_half_points = Some(37);
+        p.spacing.right_indent_half_points = Some(5);
+        p.spacing.first_line_half_points = Some(-11);
+        let style = e.document.resolved_paragraph(&e.document.paragraphs[0]);
+        assert_eq!(
+            values(style),
+            "Left 18.5 pt   Right 2.5 pt   First 0.0 pt   Hanging 5.5 pt"
+        );
+        assert_eq!(Handle::First.position(style), 37);
+        assert_eq!(Handle::Body.position(style), 48);
+        assert_eq!(Handle::Right.position(style), -5);
     }
 }

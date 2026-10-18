@@ -20,6 +20,7 @@ impl eframe::App for Capture {
     fn raw_input_hook(&mut self, _ctx: &egui::Context, input: &mut egui::RawInput) {
         // Deterministic render fixture, including focus; this does not prove OS input.
         if self.mode.starts_with("keytips")
+            || self.mode == "ruler-keyboard"
             || self.mode == "temporary"
             || self.mode == "replace-all"
             || self.mode.starts_with("styles")
@@ -27,6 +28,25 @@ impl eframe::App for Capture {
             || self.mode.starts_with("navigation")
         {
             input.focused = true;
+        }
+        if self.mode == "ruler-keyboard" && matches!(self.frames, 3 | 5) {
+            let (key, modifiers) = if self.frames == 3 {
+                (
+                    egui::Key::F8,
+                    egui::Modifiers::CTRL | egui::Modifiers::SHIFT,
+                )
+            } else {
+                (egui::Key::ArrowRight, egui::Modifiers::SHIFT)
+            };
+            for pressed in [true, false] {
+                input.events.push(egui::Event::Key {
+                    key,
+                    physical_key: None,
+                    pressed,
+                    repeat: false,
+                    modifiers,
+                });
+            }
         }
         if self.frames == 2 && self.mode.starts_with("keytips") {
             let mut keys = vec![egui::Key::F10];
@@ -298,6 +318,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "font",
             "paragraph",
             "indent-layout",
+            "ruler-keyboard",
             "collapsed",
             "temporary",
             "view",
@@ -317,7 +338,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ]
         .contains(&args[2].as_str())
     {
-        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|styles-modify|styles-following|styles-create|styles-rename|styles-delete|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|paragraph|indent-layout|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
+        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|styles-modify|styles-following|styles-create|styles-rename|styles-delete|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|paragraph|indent-layout|ruler-keyboard|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
     }
     let path = std::env::var("BREAKFREE_CAPTURE_TO")
         .map_err(|_| "Set BREAKFREE_CAPTURE_TO to an output PNG path")?;
@@ -354,7 +375,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "examples/Welcome.bfdoc"
         },
     );
-    let session = if args[2] == "indent-layout" {
+    let session = if matches!(args[2].as_str(), "indent-layout" | "ruler-keyboard") {
         let mut session = Session::default();
         let sample =
             "English Україна Русский cafe\u{301}. Text wraps without changing stored characters.  ";
@@ -494,7 +515,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "styles-create" => app.execute(Action::CreateStyle, &cc.egui_ctx),
                 "styles-delete" => app.execute(Action::DeleteStyle, &cc.egui_ctx),
                 "formatting" => app.execute(Action::Formatting, &cc.egui_ctx),
-                "indent-layout" => {
+                "indent-layout" | "ruler-keyboard" => {
                     if width < 800. {
                         app.zoom = 50.;
                     }

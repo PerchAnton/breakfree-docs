@@ -3,6 +3,12 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.47 — 2026-10-18
+
+- Add keyboard ruler control: Ctrl+Shift+F8 enters/reveals the ruler, Tab/Shift+Tab selects markers, arrows preview 0.5 pt steps and Shift+arrows 5 pt. Enter or changing marker commits one Undo/Redo; Escape/F6, focus/geometry loss or pointer takeover cancels the pending preview.
+- Show resolved left/right, first-line and hanging amounts in exact points, with a focus outline and keyboard hints. Keep selected ranges, bounds, inheritance and redo on no-op; prevent toolkit arrow navigation from stealing marker focus.
+- Preserve palette/icons, native v13, protocol/settings v1 and dependencies. Windows/reference acceptance remains deferred. Alpha.46 approved; alpha.47 awaits approval.
+
 ## 0.1.0-alpha.46 — 2026-10-18
 
 - Add prototype horizontal ruler handles for first/continuation lines and left/right indents. Drag previews through the shared validated geometry command; release commits one Undo/Redo, Escape or focus/geometry loss cancels without changing history.

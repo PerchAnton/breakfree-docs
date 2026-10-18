@@ -631,4 +631,21 @@ Undo/Redo. Escape, focus/pointer loss or a changed canvas/window transform cance
 returning to the original value preserves inheritance and redo. Text/shortcuts
 are blocked during dragging. Home → Paragraph spacing remains the keyboard
 alternative. This is a continuous-canvas prototype: no margins, tab stops,
-vertical ruler, pagination or direct keyboard nudging of handles yet.
+vertical ruler or pagination yet.
+
+## Ruler keyboard control and values (alpha.47)
+
+Ctrl+Shift+F8 reveals the ruler and focuses its first-line marker (a provisional
+Docs shortcut). Tab/Shift+Tab cycles first line, continuation lines, overall left
+and right. Left/Right previews 0.5 pt movement; Shift+Left/Right moves 5 pt. Enter
+commits one Undo/Redo and keeps focus. Tab commits the current marker before moving
+to another. Escape or F6 cancels the pending preview and returns to the document.
+Focus loss, resize or pointer takeover also cancels uncommitted changes. At a bound,
+reverse direction responds immediately. Text and editing shortcuts stay blocked
+while controlling markers; return to the document to use Undo/Redo.
+
+The readout shows exact resolved left/right and first-line/hanging amounts in
+points for the first selected paragraph, including the current preview. Zero is
+shown as 0.0 pt; zoom never changes stored/reported values. Left remains the
+outermost edge, while First/Hanging are additional distances. The first-line and
+continuation handles preserve the opposite origin. No native-format change.

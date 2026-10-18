@@ -118,3 +118,16 @@ apply. The first selected paragraph supplies values; changed properties apply to
 the original half-open paragraph selection. Unchanged properties remain inherited.
 No native format, dependency or license change. Direct handle keyboard navigation,
 tab stops, margins and pagination remain separate work.
+
+## Alpha.47 extension: keyboard ruler interaction
+
+Keyboard nudging uses the same immutable-source draft and validated command as
+pointer dragging. The provisional Docs entry is Ctrl+Shift+F8, avoiding AltGr text
+combinations. Arrows change by one half point, Shift+arrows by ten; displacement is
+recomputed from the effective preview position, so clamping never accumulates an
+invisible overshoot. Enter or Tab commits one marker transaction; Escape/F6, focus
+loss, geometry change or pointer takeover discards the pending draft. Tab then
+selects the next marker. Toolkit directional focus traversal is suppressed while
+the ruler owns input, including the first frame before its focus filter settles.
+The readout uses resolved model half points, independent of display zoom/scaling.
+File/version semantics, dependencies and palette remain unchanged.

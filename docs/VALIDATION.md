@@ -1281,3 +1281,23 @@ pointer/keyboard/IME input was not repeated. Windows/manual display-scale and
 matched-reference acceptance remain explicitly deferred. Alpha.45 code/journal
 CI succeeded, including Windows jobs; alpha.46 server CI is separate from these
 local results. No merge, tag or release.
+
+## Alpha.47 ruler keyboard validation
+
+2026-10-18, macOS arm64, Rust 1.99.1: 275 full / 138 core-only tests passed.
+Six new tests cover exact half-point values and origin semantics; keyboard entry,
+Tab/reverse traversal, fine/coarse nudges, Enter/Tab transaction boundaries,
+Escape cancellation, history and redo-preserving no-op at nine zoom/synthetic-DPI
+combinations; immediate reversal at bounds; blocked input/modal entry; focus and
+resize cancellation; hidden-ruler entry and pointer takeover; compact maximum-value
+text width; high-zoom focus scrolling without losing the keyboard preview.
+The existing pointer, Unicode, layout, storage and invalid-file tests remain.
+
+fmt, normal/capture all-target Clippy with warnings denied, release/capture builds,
+repository/artwork/contract checks, workflow YAML and diff whitespace passed.
+Isolated CLI version/capabilities report alpha.47 and protocol 1 without a GUI or
+neighboring repository. Two native macOS capture-harness images show active
+keyboard preview and exact values; they do not prove physical keyboard/IME input.
+The native automation app selector could not address the standalone executable by path or name; ordinary OS keyboard input was not verified. Windows/manual DPI and matched-reference
+acceptance remain deferred. Alpha.46 code/journal CI succeeded; alpha.47 server
+results are recorded separately in the project log. No merge, tag or release.

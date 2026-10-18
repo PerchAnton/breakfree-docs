@@ -356,4 +356,5 @@ Use public specifications and original test cases, not copied application code. 
 - [x] Alpha.44: first-line/hanging indents with inherited values, explicit zero/reset, one history operation, distinct row widths/hit-testing and strict v13 persistence.
 - [x] Alpha.45: 108 long/mixed-format indent layout cases; logical whitespace caret fix, zoom/edit/history/reopen coverage and compact font-metric regression checks.
 - [x] Prototype interactive ruler handles through validated paragraph geometry commands, with one undo per completed drag and Escape/focus/transform cancellation (alpha.46 local engine/widget tests).
-- [ ] Next: keyboard focus and nudging for ruler handles, with explicit values and tested cancellation. Native Windows acceptance remains deferred.
+- [x] Alpha.47: keyboard entry, marker traversal, half-point/coarse preview, transactional commit/cancel and exact resolved values (local widget tests).
+- [ ] Next: inspect mixed paragraph selections on the ruler and clearly distinguish differing values. Native Windows acceptance remains deferred.

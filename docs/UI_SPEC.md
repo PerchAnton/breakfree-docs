@@ -1480,3 +1480,34 @@ SHA-256: `1ae6234be342e630e5ced5889ffb0c2eb6cec0f8db1537c3bca8633f8ece1607`.
 SHA-256: `40e2599ddac7e42ac7e0221f54337ae96e6b9f4b716508f9c820e5a8b8e7c302`.
 
 Both native macOS capture-harness images were inspected: marker lanes remain separate and text geometry is preserved. These captures do not verify physical pointer/keyboard/IME input or matched Windows behavior.
+
+## Alpha.47 ruler keyboard and exact values
+
+Ctrl+Shift+F8 reveals the ruler and focuses First line; this is a provisional Docs
+shortcut, not a verified Word binding. Tab/Shift+Tab cycles the four markers.
+Left/Right previews 0.5 pt movement; Shift+Left/Right previews 5 pt. Enter commits
+one marker transaction; Tab commits before moving focus. Escape/F6 discards the
+pending preview and returns to text. Focus/resize loss or pointer takeover cancels.
+A focus outline extends 2 DIP beyond the existing marker hit box. Toolkit arrow
+focus traversal is suppressed, including the first focus frame. Focused markers
+scroll into view at high zoom without cancelling the keyboard draft; pointer
+capture still cancels when its coordinate transform changes.
+
+A 30-DIP readout below the 36-DIP ruler uses 11-DIP text on two 15-DIP rows. It shows
+resolved Left, Right, First and Hanging amounts to one decimal place in points,
+from the first selected paragraph or its preview, independently of zoom. Left is
+the outermost edge; First/Hanging are additional offsets. The second row identifies
+the focused marker and commit/cancel keys, or selection scope and the entry shortcut.
+The readout remains inside the visible horizontal viewport when scrolling.
+Existing palette, icons and file format are unchanged. Mixed-selection indicators,
+native Windows keyboard/DPI and matched reference acceptance remain open.
+
+![Keyboard ruler at 1366 × 900 DIP](screenshots/rust-ruler-keyboard-alpha47-macos.png)
+
+SHA-256: `4f54dffef9a6b6b16c6dd2463ffed0dbca645e66c79bec508d54a3a7879e2ba7`.
+
+![Keyboard ruler at 640 × 480 DIP](screenshots/rust-ruler-keyboard-alpha47-compact-macos.png)
+
+SHA-256: `47be632529d21056fcd0e8df4887b38ee6b5d267fc2133b3ea24a7d76a0ba6a3`.
+
+Both native macOS capture-harness images were inspected with keyboard preview active: focus outline and exact values are visible without overlap. These fixtures inject widget events, not OS keystrokes. The native automation app selector did not recognize the standalone binary by path or name, so ordinary OS keyboard input was not verified this iteration.

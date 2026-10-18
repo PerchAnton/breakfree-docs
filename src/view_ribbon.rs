@@ -20,7 +20,14 @@ impl DocsApp {
         let name = format!("command-{action:?}");
         self.record(&name, response.rect);
         self.track_ribbon(&response, &name, TargetKind::Action(action));
-        if response.on_hover_text(action.label()).clicked() {
+        if response
+            .on_hover_text(if action == Action::Rulers {
+                "Ruler. Ctrl+Shift+F8 focuses its markers."
+            } else {
+                action.label()
+            })
+            .clicked()
+        {
             self.execute(action, ui.ctx());
         }
     }

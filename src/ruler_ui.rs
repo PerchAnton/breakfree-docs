@@ -9,9 +9,13 @@ pub(super) struct Drag {
     rect: Rect,
     zoom: f32,
     screen: Rect,
+    keyboard: bool,
 }
 impl DocsApp {
     pub(super) fn prepare_ruler_input(&mut self, ctx: &egui::Context) {
+        if self.ruler_keyboard_input(ctx) {
+            return;
+        }
         if self.ruler_drag.is_none() {
             return;
         }
@@ -38,6 +42,7 @@ impl DocsApp {
         });
         if cancel {
             self.ruler_drag = None;
+            self.ruler_key_focus = None;
             self.sync_view();
         }
     }
@@ -45,10 +50,16 @@ impl DocsApp {
     pub(super) fn ruler(&mut self, ui: &mut Ui, width: f32, zoom: f32) {
         let (rect, _) = ui.allocate_exact_size(vec2(width, 36.), Sense::hover());
         self.record("ruler", rect);
+        if let Some(drag) = &mut self.ruler_drag
+            && drag.rect == Rect::NOTHING
+        {
+            drag.rect = rect;
+        }
         if self.ruler_drag.as_ref().is_some_and(|d| {
-            d.rect != rect || d.zoom != zoom || d.screen != ui.ctx().content_rect()
+            (!d.keyboard && d.rect != rect) || d.zoom != zoom || d.screen != ui.ctx().content_rect()
         }) {
             self.ruler_drag = None;
+            self.ruler_key_focus = None;
             self.sync_view();
         }
         let margin = CANVAS_MARGIN * zoom;
@@ -132,14 +143,14 @@ impl DocsApp {
                 if enabled {
                     Sense::click_and_drag()
                 } else {
-                    Sense::hover()
+                    Sense::focusable_noninteractive()
                 },
             );
             let active = self
                 .ruler_drag
                 .as_ref()
                 .is_some_and(|d| d.draft.handle == handle);
-            let fill = if active || response.hovered() {
+            let fill = if active || response.hovered() || self.ruler_key_focus == Some(handle) {
                 ACCENT
             } else {
                 Color32::from_gray(245)
@@ -179,6 +190,7 @@ impl DocsApp {
                             rect,
                             zoom,
                             screen: ui.ctx().content_rect(),
+                            keyboard: false,
                         });
                         ui.memory_mut(|m| m.surrender_focus(Id::new(EDIT_ID)));
                         self.focus_document = false;
@@ -186,9 +198,49 @@ impl DocsApp {
                     Err(error) => self.error = Some(error),
                 }
             }
-            response.on_hover_text(format!("{label} — drag to preview; release to apply; Esc cancels. Half-point steps. Uses the first selected paragraph; applies to selected paragraphs. Keyboard alternative: Home → Paragraph spacing."));
+            if self.ruler_key_focus == Some(handle) {
+                if response.gained_focus() {
+                    ui.scroll_to_rect(target.expand(4.), Some(Align::Center));
+                }
+                if !response.has_focus() {
+                    response.request_focus();
+                }
+                ui.memory_mut(|m| {
+                    m.set_focus_lock_filter(
+                        response.id,
+                        egui::EventFilter {
+                            tab: true,
+                            horizontal_arrows: true,
+                            vertical_arrows: true,
+                            escape: true,
+                        },
+                    )
+                });
+                ui.painter().rect_stroke(
+                    target.expand(2.),
+                    2.,
+                    Stroke::new(1.0_f32, ACCENT),
+                    egui::StrokeKind::Outside,
+                );
+            } else if response.gained_focus()
+                && !self.focus_document
+                && self.ruler_drag.is_none()
+                && enabled
+            {
+                self.ruler_key_focus = Some(handle);
+            }
+            response.widget_info(|| {
+                egui::WidgetInfo::labeled(
+                    egui::WidgetType::Button,
+                    enabled || self.ruler_key_focus == Some(handle),
+                    format!("{label}. {}", crate::ruler::values(style)),
+                )
+            });
+            response.on_hover_text(format!("{label} — drag to preview; release to apply; Esc cancels. Half-point steps. Uses the first selected paragraph; applies to selected paragraphs. Ctrl+Shift+F8 enters keyboard control; Tab changes marker, arrows nudge 0.5 pt, Shift+arrows 5 pt, Enter applies, Esc cancels. {}", crate::ruler::values(style)));
         }
-        if let Some(drag) = &mut self.ruler_drag {
+        if let Some(drag) = &mut self.ruler_drag
+            && !drag.keyboard
+        {
             if let Some(pointer) = ui.input(|i| i.pointer.interact_pos()) {
                 if let Err(error) = drag
                     .draft
@@ -205,5 +257,207 @@ impl DocsApp {
                 self.sync_view();
             }
         }
+        let model = self
+            .ruler_drag
+            .as_ref()
+            .map(|d| &d.draft.preview)
+            .unwrap_or(&self.session.editor.document);
+        let style = model.resolved_paragraph(&model.paragraphs[index]);
+        let (readout, _) = ui.allocate_exact_size(vec2(width, 30.), Sense::hover());
+        self.record("ruler-values", readout);
+        let readout_origin = pos2(
+            readout.left().max(ui.clip_rect().left() + 4.),
+            readout.top(),
+        );
+        ui.painter().text(
+            readout_origin,
+            Align2::LEFT_TOP,
+            crate::ruler::values(style),
+            FontId::proportional(11.),
+            INK,
+        );
+        let hint = self
+            .ruler_key_focus
+            .map(|h| format!("{} · Enter applies · Esc cancels", marker_name(h)))
+            .unwrap_or_else(|| "First selected paragraph · Ctrl+Shift+F8: keyboard".into());
+        ui.painter().text(
+            readout_origin + vec2(0., 15.),
+            Align2::LEFT_TOP,
+            hint,
+            FontId::proportional(11.),
+            INK,
+        );
+    }
+}
+
+const MARKERS: [(Handle, &str); 4] = [
+    (Handle::First, "ruler-first"),
+    (Handle::Body, "ruler-body"),
+    (Handle::Left, "ruler-left"),
+    (Handle::Right, "ruler-right"),
+];
+fn marker_name(handle: Handle) -> &'static str {
+    match handle {
+        Handle::First => "First line",
+        Handle::Body => "Continuation lines",
+        Handle::Left => "Left indent",
+        Handle::Right => "Right indent",
+    }
+}
+impl DocsApp {
+    fn ruler_keyboard_input(&mut self, ctx: &egui::Context) -> bool {
+        let enter = self.ruler_drag.is_none()
+            && self.enabled(Action::ParagraphSpacing)
+            && !self.composing
+            && !self.backstage
+            && !egui::Popup::is_any_open(ctx)
+            && ctx.input_mut(|i| i.consume_key(Modifiers::CTRL | Modifiers::SHIFT, Key::F8));
+        if enter {
+            if !self.commit_font_size_input() {
+                return true;
+            }
+            self.leave_ribbon(ctx);
+            self.rulers = true;
+            self.focus_document = false;
+            self.ruler_key_focus = Some(Handle::First);
+            ctx.memory_mut(|m| m.request_focus(Id::new("ruler-first")));
+        }
+        let Some(mut handle) = self.ruler_key_focus else {
+            return false;
+        };
+        if self.ruler_drag.as_ref().is_some_and(|d| !d.keyboard) {
+            return false;
+        }
+        let events = ctx.input(|i| i.events.clone());
+        let cancel = !self.rulers
+            || self.backstage
+            || ctx.input(|i| !i.focused || i.viewport().close_requested())
+            || events.iter().any(|e| {
+                matches!(
+                    e,
+                    egui::Event::Key {
+                        key: Key::Escape,
+                        pressed: true,
+                        ..
+                    }
+                )
+            });
+        let pointer = ctx.input(|i| i.pointer.any_pressed());
+        let lost =
+            !enter && !ctx.memory(|m| MARKERS.iter().any(|(_, id)| m.has_focus(Id::new(id))));
+        if cancel || pointer || lost {
+            self.ruler_drag = None;
+            self.ruler_key_focus = None;
+            if !pointer {
+                self.sync_view();
+            }
+            if cancel {
+                ctx.input_mut(|i| {
+                    i.events.retain(|e| {
+                        !matches!(
+                            e,
+                            egui::Event::Key { .. } | egui::Event::Text(_) | egui::Event::Paste(_)
+                        )
+                    })
+                });
+            }
+            return !pointer;
+        }
+        ctx.memory_mut(|m| m.move_focus(egui::FocusDirection::None));
+        // Explicit focus routing prevents Tab/arrows from reaching the editor or ribbon.
+        ctx.input_mut(|i| {
+            i.events.retain(|e| {
+                !matches!(
+                    e,
+                    egui::Event::Key { .. }
+                        | egui::Event::Text(_)
+                        | egui::Event::Paste(_)
+                        | egui::Event::Ime(_)
+                        | egui::Event::MouseWheel { .. }
+                )
+            })
+        });
+        for event in events {
+            let egui::Event::Key {
+                key,
+                pressed: true,
+                modifiers,
+                ..
+            } = event
+            else {
+                continue;
+            };
+            if modifiers.ctrl || modifiers.alt || modifiers.command {
+                continue;
+            }
+            match key {
+                Key::ArrowLeft | Key::ArrowRight => {
+                    if self.ruler_drag.is_none() {
+                        let rect = self
+                            .regions
+                            .iter()
+                            .find(|r| r.name == "ruler")
+                            .map(|r| r.rect)
+                            .unwrap_or(Rect::NOTHING);
+                        match Draft::new(&self.session.editor, handle) {
+                            Ok(draft) => {
+                                self.ruler_drag = Some(Drag {
+                                    draft,
+                                    origin: 0.,
+                                    unit: 1.,
+                                    rect,
+                                    zoom: self.zoom / 100.,
+                                    screen: ctx.content_rect(),
+                                    keyboard: true,
+                                })
+                            }
+                            Err(error) => {
+                                self.error = Some(error);
+                                continue;
+                            }
+                        }
+                    }
+                    if let Some(drag) = &mut self.ruler_drag {
+                        let (index, _) = drag.draft.preview.locate(drag.draft.selection.0).unwrap();
+                        let style = drag
+                            .draft
+                            .preview
+                            .resolved_paragraph(&drag.draft.preview.paragraphs[index]);
+                        let current = handle.position(style) - handle.position(drag.draft.style);
+                        let step = if modifiers.shift { 10 } else { 1 };
+                        let delta = current + if key == Key::ArrowLeft { -step } else { step };
+                        if let Err(error) = drag.draft.move_by(delta as f32) {
+                            self.error = Some(error);
+                        }
+                    }
+                }
+                Key::Enter | Key::Tab => {
+                    if let Some(drag) = self.ruler_drag.take() {
+                        let result = drag.draft.commit(&mut self.session.editor);
+                        self.fail(result);
+                    }
+                    if key == Key::Tab {
+                        let index = MARKERS.iter().position(|(h, _)| *h == handle).unwrap();
+                        handle = MARKERS[(index + if modifiers.shift { 3 } else { 1 }) % 4].0;
+                        self.ruler_key_focus = Some(handle);
+                    }
+                }
+                Key::F6 => {
+                    self.ruler_drag = None;
+                    self.ruler_key_focus = None;
+                    self.sync_view();
+                    return true;
+                }
+                _ => {}
+            }
+        }
+        if let Some((_, id)) = MARKERS.iter().find(|(h, _)| *h == handle) {
+            ctx.memory_mut(|m| {
+                if !m.has_focus(Id::new(id)) {
+                    m.request_focus(Id::new(id));
+                }
+            });
+        }
+        true
     }
 }
