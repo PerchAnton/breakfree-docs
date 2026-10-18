@@ -12,7 +12,8 @@ pub(super) enum RibbonFocus {
 #[derive(Clone, Copy)]
 pub(super) enum TargetKind {
     Action(Action),
-    StyleJump(Action),
+    StyleJump(Action, Action),
+    StyleReturn,
     Menu,
     Text,
     Preset(FontSize),
@@ -63,6 +64,7 @@ impl DocsApp {
         self.ribbon_temporary = false;
         self.ribbon_focus = None;
         self.style_jump = None;
+        self.style_return = None;
         self.ribbon_menu_index = None;
         egui::Popup::close_all(ctx);
         self.focus_document = true;
@@ -100,7 +102,8 @@ impl DocsApp {
 
     pub(super) fn activate_target(&mut self, target: &RibbonTarget, ctx: &egui::Context) {
         match target.kind {
-            TargetKind::StyleJump(action) => self.jump_to_style(action),
+            TargetKind::StyleJump(source, action) => self.jump_to_style(source, action),
+            TargetKind::StyleReturn => self.return_to_style(),
             TargetKind::Action(action) => self.execute(action, ctx),
             TargetKind::Preset(size) => {
                 self.apply_font_size(size);
@@ -260,6 +263,7 @@ impl DocsApp {
             if ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Escape)) {
                 egui::Popup::close_all(ctx);
                 self.style_jump = None;
+                self.style_return = None;
                 self.ribbon_menu_index = None;
                 return;
             }

@@ -1266,3 +1266,22 @@ Light theme, English, 100% document zoom, macOS backing scale 2:
 | [Dependency navigation](screenshots/rust-style-navigation-alpha36-macos-narrow.png) | 640 × 480 DIP | `2401d023765b5ecda2004a5d372355faf877159070cdce5afc35ac74ec08261d` |
 
 Both harness captures inspected: names and commands do not overlap; lower rows require scrolling. Pointer/Enter focus handoff is covered by CPU widget events. Ordinary native input and matched Windows/Word/DPI validation were not repeated.
+
+## Alpha.37 return navigation
+
+Back to parent appears after the first dependency jump, outside the scrolling
+list and below the filters. It uses the existing button/text palette and participates
+in menu keyboard navigation. The list is 100 DIP high while Back is present,
+otherwise 125 DIP. Return restores the first source and all three filters, then
+focuses/scrolls to its row. Later jumps retain the same origin. Popup closure
+discards it. No new icon, color role or document state is introduced.
+
+Light theme, English, 100% document zoom, macOS backing scale 2; captured after
+following Normal → Heading 1:
+
+| Capture | Window | SHA-256 |
+| --- | --- | --- |
+| [Return navigation](screenshots/rust-style-return-alpha37-macos.png) | 1366 × 900 DIP | `3a96fca973269aed85e1472f4e3c2d926009b4a7bdc41002d1f077b074983967` |
+| [Return navigation](screenshots/rust-style-return-alpha37-macos-narrow.png) | 640 × 480 DIP | `306eba75d3360be16cf619a4bdd8c3a014198139ccfc5b80702400e7c577daba` |
+
+Both harness captures inspected: Back and the focused destination fit without overlap. Other rows require scrolling. Pointer/Space return is covered by CPU widget events; ordinary native keyboard and matched Windows/Word/DPI verification were not performed.

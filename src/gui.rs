@@ -253,6 +253,8 @@ pub struct DocsApp {
     delete_style_dialog: Option<DeleteStyleDialog>,
     style_used_only: bool,
     style_jump: Option<Action>,
+    style_jump_ready: bool,
+    style_return: Option<(Action, String, crate::style_filter::Scope, bool)>,
     style_filter: String,
     style_scope: crate::style_filter::Scope,
     style_context: Option<(ParagraphStyle, egui::Pos2, egui::LayerId)>,
@@ -369,6 +371,8 @@ impl DocsApp {
             delete_style_dialog: None,
             style_used_only: false,
             style_jump: None,
+            style_jump_ready: false,
+            style_return: None,
             style_filter: String::new(),
             style_scope: Default::default(),
             style_context: None,
@@ -1990,12 +1994,33 @@ impl DocsApp {
             self.style_dialog = Some(dialog);
         }
     }
-    fn jump_to_style(&mut self, action: Action) {
+    fn jump_to_style(&mut self, source: Action, action: Action) {
+        if self.style_return.is_none() {
+            self.style_return = Some((
+                source,
+                self.style_filter.clone(),
+                self.style_scope,
+                self.style_used_only,
+            ));
+        }
         self.style_filter.clear();
         self.style_scope = Default::default();
         self.ribbon_menu_index = None;
         self.style_jump = Some(action);
+        self.style_jump_ready = false;
         self.focus_document = false;
+    }
+
+    fn return_to_style(&mut self) {
+        if let Some((source, query, scope, used)) = self.style_return.take() {
+            self.style_filter = query;
+            self.style_scope = scope;
+            self.style_used_only = used;
+            self.ribbon_menu_index = None;
+            self.style_jump = Some(source);
+            self.style_jump_ready = false;
+            self.focus_document = false;
+        }
     }
 
     fn style_menu_command(
@@ -2006,7 +2031,7 @@ impl DocsApp {
         usage: crate::style_filter::Usage,
         used: &crate::style_filter::UsedStyles,
     ) {
-        if self.style_jump == Some(action) {
+        if self.style_jump_ready && self.style_jump == Some(action) {
             self.ribbon_menu_index = Some(self.ribbon_menu_targets.len());
             self.style_jump = None;
         }
@@ -2063,9 +2088,9 @@ impl DocsApp {
                 );
                 let key = format!("style-jump-{action:?}-{destination:?}");
                 self.record(&key, response.rect);
-                self.track_ribbon(&response, &key, TargetKind::StyleJump(destination));
+                self.track_ribbon(&response, &key, TargetKind::StyleJump(action, destination));
                 if response.on_hover_text("Go to this style without applying it. Clears name/category filters; keeps Used in document.").clicked() {
-                    self.jump_to_style(destination);
+                    self.jump_to_style(action, destination);
                     ui.ctx().request_repaint();
                 }
             }
@@ -2073,6 +2098,7 @@ impl DocsApp {
     }
 
     fn styles_menu(&mut self, ui: &mut Ui) {
+        self.style_jump_ready = self.style_jump.is_some();
         ui.set_width(220.);
         let filter = ui.add(
             egui::TextEdit::singleline(&mut self.style_filter)
@@ -2110,11 +2136,23 @@ impl DocsApp {
             self.ribbon_menu_index = None;
         }
         used_toggle.on_hover_text("Document text and empty paragraphs, plus parent styles. Excludes future typing and next-style links.");
+        if self.style_return.is_some() {
+            let back = ui.button("Back to parent").on_hover_text("Return to the original parent and restore its name, category and used-only filters. Does not apply formatting.");
+            self.record("style-return", back.rect);
+            self.track_ribbon(&back, "style-return", TargetKind::StyleReturn);
+            if back.clicked() {
+                self.return_to_style();
+            }
+        }
         let used = crate::style_filter::UsedStyles::collect(&self.session.editor.document);
         let mut matches = 0;
         egui::ScrollArea::vertical()
             .id_salt("style-list")
-            .max_height(125.)
+            .max_height(if self.style_return.is_some() {
+                100.
+            } else {
+                125.
+            })
             .show(ui, |ui| {
                 for style in self.session.editor.document.style_catalog.ids() {
                     let name = self
@@ -3257,6 +3295,10 @@ impl DocsApp {
         if close_requested && size_ready && self.session.dirty() && !self.allow_close {
             ctx.send_viewport_cmd(ViewportCommand::CancelClose);
             self.request(Pending::Close, ctx);
+        }
+        if !egui::Popup::is_any_open(ctx) {
+            self.style_return = None;
+            self.style_jump = None;
         }
         self.keytip_input(ctx);
         self.prepare_keytip_menu(ctx);

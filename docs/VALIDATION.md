@@ -8,16 +8,16 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.36**. Historical evidence retains its scope.
+Current local checkpoint: **0.1.0-alpha.37**. Historical evidence retains its scope.
 
 | Local check | Observed result |
 | --- | --- |
-| Full / no-default-features tests | 230 / 117 passed; pointer/keyboard dependency navigation regression added |
+| Full / no-default-features tests | 231 / 117 passed; return restoration, chained navigation and closure checks added |
 | fmt / Clippy | Passed; normal/capture all-target checks with warnings denied |
 | Release builds | Native binary and capture harness passed without Office/sibling inputs |
-| CLI | Version/capabilities report alpha.36; existing CLI subprocess tests pass |
+| CLI | Version/capabilities report alpha.37; existing CLI subprocess tests pass |
 | Repository/artwork/YAML/whitespace | Passed |
-| Native rendering | Dependency navigation controls at 1366 × 900 / 640 × 480 DIP, backing scale 2 |
+| Native rendering | Back to parent controls at 1366 × 900 / 640 × 480 DIP, backing scale 2 |
 | Native input | Not repeated this iteration; previous automation lost its window. CPU widget events are separate evidence |
 | Existing regressions | Home geometry, minimum-width 64-style keyboard scrolling, history, storage and synthetic scaling checks retained |
 
@@ -1071,3 +1071,17 @@ now waits one UI frame before locating the link. Existing style/filter/history
 and 64-style scrolling regressions remain. Native input was not repeated; the
 capture harness provides rendering evidence only. Windows/Word/DPI/IME and full
 accessibility acceptance remain open. No storage or dependency changes.
+
+## Alpha.37 return-navigation validation
+
+The actual-widget pointer/keyboard navigation regression now changes all filters
+after jumping, then uses pointer/Space on Back to parent and verifies exact
+restoration, original-row focus/visibility, menu persistence and unchanged
+document/undo depth. A separate transient-state test checks first-origin retention
+through chained character-style targets and disposal when no popup is open.
+
+A test exposed target-index drift when Back first appeared; resolving a jump on
+the next menu layout prevents that drift. Visibility assertions wait 12 frames
+for the existing scroll animation to settle. Full existing regressions remain.
+Native keyboard input is not repeated; captures are rendering evidence only.
+Windows/Word/DPI/IME/accessibility acceptance remains open.

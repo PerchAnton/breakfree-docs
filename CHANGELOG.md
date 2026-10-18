@@ -3,6 +3,11 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.37 — 2026-10-18
+
+- Add Back to parent after Required by navigation. Restore the original parent focus and name/category/used-only filters, even after further jumps or filter changes, without applying formatting or changing undo history. Closing the menu discards the return point.
+- Preserve palette/icons and native/protocol/settings versions. Alpha.36 approved; alpha.37 awaits approval.
+
 ## 0.1.0-alpha.36 — 2026-10-18
 
 - Navigate from Required by names to their style rows without applying formatting. Pointer and menu keyboard activation clear name/category filters, preserve Used in document, and focus/scroll to the stable-ID destination.

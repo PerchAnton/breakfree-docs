@@ -110,6 +110,25 @@ impl eframe::App for Capture {
                 }
             }
         }
+        if self.mode == "styles-menu"
+            && self.frames == 8
+            && let Some(region) = self
+                .app
+                .regions
+                .iter()
+                .find(|r| r.name == "style-jump-Style(Normal)-Style(Heading1)")
+        {
+            let pos = region.rect.center();
+            input.events.push(egui::Event::PointerMoved(pos));
+            for pressed in [true, false] {
+                input.events.push(egui::Event::PointerButton {
+                    pos,
+                    button: egui::PointerButton::Primary,
+                    pressed,
+                    modifiers: egui::Modifiers::NONE,
+                });
+            }
+        }
         if self.frames == 2 && self.mode.starts_with("navigation") {
             input.events.push(egui::Event::Text(
                 if self.mode == "navigation-options" {

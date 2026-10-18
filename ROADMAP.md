@@ -227,7 +227,8 @@ Rust selection is complete; this gate evaluates GUI behavior and visual fidelity
 - [x] Alpha.34: label direct use, parent dependencies and unused styles in menus; direct assignment wins for shared parents. Core/widget tests and capture evidence are recorded in validation.
 - [x] Alpha.35: show directly assigned consumers of parent dependencies, including transitive inheritance and direct-use parents.
 - [x] Alpha.36: navigate from Required by names to focused/scrolled style rows, clearing name/category filters without applying formatting.
-- [ ] Next small increment: return to the original parent/filter view after dependency navigation. Linked styles and direct paragraph-spacing overrides remain separate design decisions.
+- [x] Alpha.37: restore the original parent and exact filters after dependency navigation; pointer/keyboard return, chained jumps and menu-close lifecycle tested.
+- [ ] Next small increment: expose the return destination in the Back control and validate longer dependency navigation scenarios. Linked styles and direct paragraph-spacing overrides remain separate design decisions.
 - [ ] Add lists, indentation, tabs, spacing, links and Unicode-aware search/replace.
 - [ ] Add table editing and images with explicit sizing and anchoring semantics.
 - [ ] Add navigation, command search and understandable tool states.

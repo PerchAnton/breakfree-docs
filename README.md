@@ -500,3 +500,13 @@ and the destination receives keyboard focus and scrolls into view. Links use
 stable paragraph/character IDs, so duplicate names across namespaces are safe.
 Enter/Space activates the navigation target; a separate activation of the focused
 style applies it. Escape closes the menu. Document/history/settings stay unchanged.
+
+## Return to parent (alpha.37)
+
+Back to parent restores the source of the first Required by jump together with
+its exact query, category and used-only setting. Further jumps and filter edits
+do not replace that return point. Pointer or keyboard activation keeps the menu
+open, focuses and scrolls to the original style without applying it. The return
+point is consumed on return and discarded when the menu closes; it is not saved
+in the document, settings or undo history. The list shrinks from 125 to 100 DIP
+while Back is available so the minimum-height popup remains bounded.

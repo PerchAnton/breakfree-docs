@@ -5804,7 +5804,7 @@ fn required_by_navigation_reveals_focuses_without_applying() {
         } else {
             click_region_at(&ctx, &mut app, name, size);
         }
-        for _ in 0..4 {
+        for _ in 0..12 {
             frame(&ctx, &mut app, vec![], size, 1.);
         }
         assert!(egui::Popup::is_any_open(&ctx));
@@ -5824,7 +5824,64 @@ fn required_by_navigation_reveals_focuses_without_applying() {
         );
         assert_eq!(app.session.editor.document, before);
         assert_eq!(app.session.editor.undo_stack.len(), depth);
+        app.style_used_only = false;
+        app.style_filter = "No match".into();
+        app.style_scope = crate::style_filter::Scope::Custom;
+        frame(&ctx, &mut app, vec![], size, 1.);
+        if keyboard {
+            app.ribbon_menu_index = app
+                .ribbon_menu_targets
+                .iter()
+                .position(|t| t.name == "style-return");
+            assert!(app.ribbon_menu_index.is_some());
+            frame(&ctx, &mut app, vec![], size, 1.);
+            ribbon_key(&ctx, &mut app, Key::Space, Modifiers::NONE, size);
+        } else {
+            click_region_at(&ctx, &mut app, "style-return", size);
+        }
+        for _ in 0..12 {
+            frame(&ctx, &mut app, vec![], size, 1.);
+        }
+        assert!(egui::Popup::is_any_open(&ctx));
+        assert_eq!(app.style_filter, "Normal");
+        assert_eq!(app.style_scope, crate::style_filter::Scope::Paragraph);
+        assert!(app.style_used_only);
+        assert!(app.style_return.is_none());
+        let target = &app.ribbon_menu_targets[app.ribbon_menu_index.unwrap()];
+        assert!(matches!(
+            target.kind,
+            TargetKind::Action(Action::Style(ParagraphStyle::Normal))
+        ));
+        assert!(ctx.memory(|m| m.has_focus(target.id)));
+        assert!(
+            app.regions
+                .iter()
+                .any(|r| r.name == "command-Style(Normal)")
+        );
+        assert_eq!(app.session.editor.document, before);
+        assert_eq!(app.session.editor.undo_stack.len(), depth);
         ribbon_key(&ctx, &mut app, Key::Escape, Modifiers::NONE, size);
         assert!(!egui::Popup::is_any_open(&ctx));
     }
+}
+
+#[test]
+fn dependency_return_keeps_original_source_through_chained_jumps_and_clears_on_close() {
+    let (ctx, mut app) = setup();
+    let source = Action::CharacterStyle(Some(CharacterStyle::Strong));
+    let middle = Action::CharacterStyle(Some(CharacterStyle::Custom(1)));
+    let leaf = Action::CharacterStyle(Some(CharacterStyle::Custom(2)));
+    app.style_filter = "Strong".into();
+    app.style_scope = crate::style_filter::Scope::Character;
+    app.jump_to_style(source, middle);
+    app.jump_to_style(middle, leaf);
+    app.return_to_style();
+    assert_eq!(app.style_jump, Some(source));
+    assert_eq!(app.style_filter, "Strong");
+    assert_eq!(app.style_scope, crate::style_filter::Scope::Character);
+    assert!(!app.style_used_only);
+    app.jump_to_style(source, middle);
+    frame(&ctx, &mut app, vec![], [640., 480.], 1.);
+    assert!(app.style_return.is_none());
+    assert!(app.style_jump.is_none());
 }
