@@ -1165,3 +1165,18 @@ Writer v10/readers v1–v10; process/settings v1. Alpha.40 and earlier reject v1
 saves. Space-before, exact line-height units, indentation and pagination remain
 unimplemented. Alpha.40 code/journal CI succeeded; alpha.41 CI is reported in the
 project log separately from local results.
+
+## Alpha42 space-before validation
+
+2026-10-18, macOS arm64, Rust 1.99.1: **249 full tests / 127 core-only tests**
+passed. fmt, all-target Clippy (normal and capture, warnings denied), release and
+capture builds, repository/artwork checks, workflow YAML and whitespace passed.
+Coverage includes inherited/direct zero, partial/reset transactions, invalid/no-op
+redo preservation, Unicode selections, Enter/join/Replace All, v11 roundtrip, v10
+migration, older-schema key rejection and injected write/sync/replace failures.
+Actual-widget input sets before with the other intervals in one undo; reset/redo
+restore exact documents. Layout tests cover wrapped lines, empty paragraphs, first
+paragraph and additive intervals. Nine synthetic scale/size modal checks pass.
+Two native capture-harness images inspected (UI_SPEC); ordinary native input not
+repeated. Native Windows and matched Word reference checks remain deferred.
+Server CI is reported separately in the project journal; no merge or release.

@@ -24,6 +24,7 @@ pub(super) struct StyleDialog {
     pub size: String,
     pub line: String,
     pub after: String,
+    pub before: String,
     focus: bool,
 }
 impl StyleDialog {
@@ -50,6 +51,10 @@ impl StyleDialog {
                 .line_height_percent
                 .map(|v| v.to_string())
                 .unwrap_or_default(),
+            before: definition
+                .space_before_half_points
+                .map(|v| format!("{}{}", v / 2, if v % 2 == 1 { ".5" } else { "" }))
+                .unwrap_or_default(),
             after: definition
                 .space_after_half_points
                 .map(|v| format!("{}{}", v / 2, if v % 2 == 1 { ".5" } else { "" }))
@@ -73,6 +78,7 @@ impl StyleDialog {
         dialog.size.clear();
         dialog.line.clear();
         dialog.after.clear();
+        dialog.before.clear();
         dialog.character_styles = document.character_styles.clone();
         dialog.preview_base = document.style_catalog.resolve(paragraph).character;
         dialog
@@ -124,6 +130,15 @@ impl StyleDialog {
             Some(1)
         } else {
             Some(u16::from(self.after.parse::<FontSize>()?))
+        };
+        definition.space_before_half_points = if self.before.trim().is_empty() {
+            None
+        } else if matches!(self.before.trim(), "0" | "0.0") {
+            Some(0)
+        } else if self.before.trim() == "0.5" {
+            Some(1)
+        } else {
+            Some(u16::from(self.before.parse::<FontSize>()?))
         };
         let mut catalog = self.catalog.clone();
         if self.character {
@@ -406,6 +421,7 @@ impl StyleDialog {
                         for (name, label, value) in [
                             ("size", "Font size (pt):", &mut self.size),
                             ("line", "Line spacing (%):", &mut self.line),
+                            ("before", "Space before (pt):", &mut self.before),
                             ("after", "Space after (pt):", &mut self.after),
                         ] {
                             if self.character && name != "size" {

@@ -449,6 +449,18 @@ impl Editor {
         line: Option<Option<u16>>,
         after: Option<Option<u16>>,
     ) -> Result<()> {
+        self.set_paragraph_spacing_with_before(start, end, line, None, after)
+    }
+
+    /// Set any subset of paragraph spacing as one validated history operation.
+    pub fn set_paragraph_spacing_with_before(
+        &mut self,
+        start: usize,
+        end: usize,
+        line: Option<Option<u16>>,
+        before: Option<Option<u16>>,
+        after: Option<Option<u16>>,
+    ) -> Result<()> {
         validate_range(&self.document.text(), start, end)?;
         let (first, _) = self.document.locate(start)?;
         let (mut last, offset) = self.document.locate(end)?;
@@ -459,6 +471,9 @@ impl Editor {
         for p in &mut result.paragraphs[first..=last] {
             if let Some(value) = line {
                 p.spacing.line_height_percent = value;
+            }
+            if let Some(value) = before {
+                p.spacing.space_before_half_points = value;
             }
             if let Some(value) = after {
                 p.spacing.space_after_half_points = value;

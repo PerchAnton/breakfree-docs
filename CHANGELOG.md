@@ -3,6 +3,13 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.42 — 2026-10-18
+
+- Add paragraph space before (0–200 pt, half-point increments) to style inheritance and direct formatting. Explicit zero overrides inherited spacing; partial edits and reset share one Undo/Redo.
+- Extend paragraph/style dialogs and formatting provenance. Apply spacing once before each paragraph, including the first; add it to the previous paragraph's space after without repeating it on wrapped lines.
+- Write native v11, read v1–v11; older files default to zero before. Reject the new property in older schemas. Alpha.41 and earlier reject v11 saves; use Save As to retain an older copy.
+- Preserve palette/icons and dependencies. Alpha.41 approved; alpha.42 awaits approval. Native Windows acceptance remains deferred.
+
 ## 0.1.0-alpha.41 — 2026-10-18
 
 - Add direct paragraph line spacing and space-after overrides, inherited when unset, with validated partial updates and one Undo/Redo. Preserve spacing through Enter, joins, style changes and Replace All.

@@ -247,6 +247,8 @@ pub struct StyleDefinition {
     pub parent: Option<ParagraphStyle>,
     pub character: CharacterFormat,
     pub line_height_percent: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub space_before_half_points: Option<u16>,
     pub space_after_half_points: Option<u16>,
 }
 
@@ -296,11 +298,15 @@ impl Default for StyleCatalog {
 pub struct ResolvedParagraphStyle {
     pub character: Style,
     pub line_height_percent: u16,
+    pub space_before_half_points: u16,
     pub space_after_half_points: u16,
 }
 impl ResolvedParagraphStyle {
     pub fn line_height(self) -> f32 {
         f32::from(self.line_height_percent) / 100.
+    }
+    pub fn space_before_points(self) -> f32 {
+        f32::from(self.space_before_half_points) / 2.
     }
     pub fn space_after_points(self) -> f32 {
         f32::from(self.space_after_half_points) / 2.
@@ -471,6 +477,9 @@ impl StyleCatalog {
             {
                 return Err("Line spacing must be 100–300 percent.".into());
             }
+            if definition.space_before_half_points.is_some_and(|v| v > 400) {
+                return Err("Space before must be 0–200 pt in half-point steps.".into());
+            }
             if definition.space_after_half_points.is_some_and(|v| v > 400) {
                 return Err("Space after must be 0–200 pt in half-point steps.".into());
             }
@@ -501,6 +510,7 @@ impl StyleCatalog {
         let mut resolved = ResolvedParagraphStyle {
             character: Style::default(),
             line_height_percent: 125,
+            space_before_half_points: 0,
             space_after_half_points: 11,
         };
         for id in chain.into_iter().rev() {
@@ -511,6 +521,9 @@ impl StyleCatalog {
             resolved.line_height_percent = definition
                 .line_height_percent
                 .unwrap_or(resolved.line_height_percent);
+            resolved.space_before_half_points = definition
+                .space_before_half_points
+                .unwrap_or(resolved.space_before_half_points);
             resolved.space_after_half_points = definition
                 .space_after_half_points
                 .unwrap_or(resolved.space_after_half_points);
@@ -534,6 +547,8 @@ pub enum Alignment {
 #[serde(deny_unknown_fields)]
 pub struct ParagraphSpacing {
     pub line_height_percent: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub space_before_half_points: Option<u16>,
     pub space_after_half_points: Option<u16>,
 }
 impl ParagraphSpacing {
@@ -543,6 +558,9 @@ impl ParagraphSpacing {
             .is_some_and(|v| !(100..=300).contains(&v))
         {
             return Err("Line spacing must be 100–300 percent.".into());
+        }
+        if self.space_before_half_points.is_some_and(|v| v > 400) {
+            return Err("Space before must be 0–200 pt in half-point steps.".into());
         }
         if self.space_after_half_points.is_some_and(|v| v > 400) {
             return Err("Space after must be 0–200 pt in half-point steps.".into());
@@ -816,6 +834,10 @@ impl Document {
             .spacing
             .line_height_percent
             .unwrap_or(resolved.line_height_percent);
+        resolved.space_before_half_points = paragraph
+            .spacing
+            .space_before_half_points
+            .unwrap_or(resolved.space_before_half_points);
         resolved.space_after_half_points = paragraph
             .spacing
             .space_after_half_points

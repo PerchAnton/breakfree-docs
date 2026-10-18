@@ -92,8 +92,7 @@ Formatting also shows Alignment, Line spacing (percent) and Space after (points)
 Alignment is an explicit paragraph value in the current model, labeled
 “Paragraph value (not inherited)”; it is not attributed to a style or guessed
 from appearance. Intervals show the nearest supplying paragraph style/ancestor,
-or Document default. Explicit zero is preserved. There is no space-before property
-or direct paragraph-spacing override in this prototype.
+or Document default. Explicit zero is preserved. Space before and direct interval overrides are supported from alpha.42; the inspector identifies their supplying style or direct source.
 
 The paragraph section uses the same half-open selection rule as alignment/style
 commands: an exclusive end at the next paragraph start excludes that paragraph;
@@ -209,3 +208,16 @@ Enter and inserted replacement paragraphs copy the starting paragraph's direct
 spacing; joins keep the first paragraph's spacing. Unaffected paragraphs retain
 theirs. Native v10 persists the overrides; frozen v1–v9 imports inherit.
 No palette/icon change. Native Windows acceptance is deferred by owner request.
+
+## Space before paragraph (alpha.42)
+
+Home → Paragraph spacing supports Space before in points (0–200, steps of 0.5).
+Check the field to change it; leave it unchecked to preserve each selected value.
+A checked blank field inherits from the paragraph style. Use style spacing clears
+all three direct interval overrides in one Undo/Redo. Paragraph style creation and
+modification also support space before; a blank style value inherits its parent,
+with zero as the document default. Explicit zero overrides a nonzero ancestor.
+Formatting inspection reports the source. Spacing applies once before each
+paragraph, including the first, and adds to the previous paragraph's space after.
+This continuous layout policy is not pagination. Native v11 preserves the property;
+v1–v10 imports resolve to zero before. Windows acceptance remains deferred.

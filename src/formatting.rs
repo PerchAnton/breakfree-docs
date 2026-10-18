@@ -183,10 +183,16 @@ pub fn inspect_paragraph(
             value: format!("{} pt", resolved.space_after_points()),
             source: "Document default".into(),
         },
+        PropertyInfo {
+            name: "Space before",
+            value: format!("{} pt", resolved.space_before_points()),
+            source: "Document default".into(),
+        },
     ];
     let mut found = [
         paragraph.spacing.line_height_percent.is_some(),
         paragraph.spacing.space_after_half_points.is_some(),
+        paragraph.spacing.space_before_half_points.is_some(),
     ];
     for (i, direct) in found.iter().enumerate() {
         if *direct {
@@ -211,6 +217,7 @@ pub fn inspect_paragraph(
         for (i, supplied) in [
             definition.line_height_percent.is_some(),
             definition.space_after_half_points.is_some(),
+            definition.space_before_half_points.is_some(),
         ]
         .into_iter()
         .enumerate()

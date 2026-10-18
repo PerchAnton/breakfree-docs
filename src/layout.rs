@@ -174,7 +174,11 @@ pub fn galley(
     // Galley::concat derives height from rows, ignoring each input galley's rect.
     // Offset placed rows after concatenation so paragraph gaps affect both painting
     // and cursor hit testing, without creating fictitious text rows or characters.
-    let mut spacing = 0.;
+    let mut spacing = size
+        * source
+            .resolved_paragraph(&source.paragraphs[0])
+            .space_before_points()
+        / 11.;
     let mut paragraph_index = 0;
     merged.mesh_bounds = egui::Rect::NOTHING;
     for row in &mut merged.rows {
@@ -187,6 +191,9 @@ pub fn galley(
                     .space_after_points()
                 / 11.;
             paragraph_index += 1;
+            if let Some(next) = source.paragraphs.get(paragraph_index) {
+                spacing += size * source.resolved_paragraph(next).space_before_points() / 11.;
+            }
         }
     }
     merged.rect.max.y += spacing;

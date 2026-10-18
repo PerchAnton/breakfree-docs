@@ -1,4 +1,4 @@
-//! Strict .bfdoc v1–v10 reading, v10 writing and checked temporary-file replacement.
+//! Strict .bfdoc v1–v11 reading, v11 writing and checked temporary-file replacement.
 use crate::{Result, model::*};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -8,7 +8,7 @@ use std::{
 };
 
 pub const FORMAT_ID: &str = "breakfree.docs.native";
-pub const CONTENT_VERSION: u32 = 10;
+pub const CONTENT_VERSION: u32 = 11;
 pub const MAX_FILE_BYTES: usize = 16 * 1024 * 1024;
 
 #[derive(Serialize, Deserialize)]
@@ -148,7 +148,7 @@ struct ParagraphV10 {
 }
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct NativeV10 {
+struct NativeSpacing {
     format: String,
     content_version: u32,
     style_catalog: StyleCatalog,
@@ -191,6 +191,7 @@ impl From<LegacyDefinition> for StyleDefinition {
             character: d.character,
             line_height_percent: d.line_height_percent,
             space_after_half_points: d.space_after_half_points,
+            space_before_half_points: None,
         }
     }
 }
@@ -244,7 +245,7 @@ pub fn encode(document: &Document) -> Result<Vec<u8>> {
             }
         })
         .collect();
-    let mut bytes = serde_json::to_vec_pretty(&NativeV10 {
+    let mut bytes = serde_json::to_vec_pretty(&NativeSpacing {
         format: FORMAT_ID.into(),
         content_version: CONTENT_VERSION,
         style_catalog: document.style_catalog.clone(),
@@ -337,6 +338,24 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
     if file.format != FORMAT_ID {
         return Err("Not a BreakFree Docs native document.".into());
     }
+    // Legacy catalogs/spacing share model types. Explicitly freeze the new v11
+    // property for every older schema, even when null. This is only a gate: full
+    // typed deserialization below still rejects duplicates and unknown fields.
+    if file.content_version < 11 {
+        fn has_before(value: &serde_json::Value) -> bool {
+            match value {
+                serde_json::Value::Object(map) => {
+                    map.contains_key("space_before_half_points") || map.values().any(has_before)
+                }
+                serde_json::Value::Array(items) => items.iter().any(has_before),
+                _ => false,
+            }
+        }
+        let value: serde_json::Value = serde_json::from_slice(bytes).map_err(|e| e.to_string())?;
+        if has_before(&value) {
+            return Err("Space before requires native content v11.".into());
+        }
+    }
     let native_paragraphs = match file.content_version {
         1 => serde_json::from_slice::<Native<RunV1>>(bytes)
             .map_err(|e| format!("Invalid native v1 document: {e}"))?
@@ -393,9 +412,9 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
                 .map_err(|e| format!("Invalid native v6 document: {e}"))?;
             return decode_styled(file.paragraphs, file.style_catalog);
         }
-        CONTENT_VERSION => {
-            let file: NativeV10 = serde_json::from_slice(bytes)
-                .map_err(|e| format!("Invalid native v10 document: {e}"))?;
+        10 | CONTENT_VERSION => {
+            let file: NativeSpacing = serde_json::from_slice(bytes)
+                .map_err(|e| format!("Invalid native spacing document: {e}"))?;
             let (paragraphs, spacing): (Vec<_>, Vec<_>) = file
                 .paragraphs
                 .into_iter()

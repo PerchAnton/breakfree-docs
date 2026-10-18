@@ -6222,6 +6222,14 @@ fn paragraph_spacing_dialog_real_input_history_reset_and_layout() {
         [1366., 900.],
         1.,
     );
+    click_region(&ctx, &mut app, "paragraph-before");
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("7.5".into())],
+        [1366., 900.],
+        1.,
+    );
     app.execute(Action::New, &ctx); // Modal must guard background commands.
     assert_eq!(app.session.editor.document, before);
     click_region(&ctx, &mut app, "paragraph-ok");
@@ -6233,6 +6241,10 @@ fn paragraph_spacing_dialog_real_input_history_reset_and_layout() {
         after.paragraphs[0].spacing.space_after_half_points,
         Some(41)
     );
+    assert_eq!(
+        after.paragraphs[0].spacing.space_before_half_points,
+        Some(15)
+    );
     assert_eq!(after.paragraphs[1], before.paragraphs[1]);
     let layout_after = layout::galley(
         &ctx,
@@ -6243,6 +6255,7 @@ fn paragraph_spacing_dialog_real_input_history_reset_and_layout() {
         500.,
         15.,
     );
+    assert!(layout_after.rows[0].pos.y > layout_before.rows[0].pos.y);
     assert!(layout_after.rows[0].size.y > layout_before.rows[0].size.y);
     assert!(layout_after.rows[1].pos.y > layout_before.rows[1].pos.y);
     assert_eq!(
@@ -6321,6 +6334,7 @@ fn paragraph_spacing_keytips_and_scaled_modal_bounds() {
             );
             for name in [
                 "paragraph-line",
+                "paragraph-before",
                 "paragraph-after",
                 "paragraph-ok",
                 "paragraph-cancel",
@@ -6334,4 +6348,44 @@ fn paragraph_spacing_keytips_and_scaled_modal_bounds() {
             assert!(app.session.editor.undo_stack.is_empty());
         }
     }
+}
+
+#[test]
+fn space_before_offsets_first_wrapped_and_empty_paragraphs_once() {
+    let (ctx, mut app) = setup();
+    app.session
+        .editor
+        .replace(
+            0,
+            0,
+            "A long paragraph with wrapped words\n\nNext",
+            "Fixture",
+        )
+        .unwrap();
+    let before = app.session.editor.document.clone();
+    let mut after = before.clone();
+    after.paragraphs[0].spacing.space_before_half_points = Some(22);
+    after.paragraphs[1].spacing.space_before_half_points = Some(44);
+    after.paragraphs[2].spacing.space_before_half_points = Some(66);
+    let render = |d: &crate::model::Document| {
+        layout::galley(&ctx, d, &d.text(), CharacterFormat::default(), 0, 85., 11.)
+    };
+    let a = render(&before);
+    let b = render(&after);
+    assert_eq!(a.rows.len(), b.rows.len());
+    assert!(a.rows.len() > 3);
+    let mut offset = 11.;
+    let mut paragraph = 0;
+    for (x, y) in a.rows.iter().zip(&b.rows) {
+        assert!((y.pos.y - x.pos.y - offset).abs() < 0.01);
+        if x.ends_with_newline {
+            paragraph += 1;
+            offset += match paragraph {
+                1 => 22.,
+                2 => 33.,
+                _ => 0.,
+            };
+        }
+    }
+    assert!((b.rect.height() - a.rect.height() - 66.).abs() < 0.01);
 }

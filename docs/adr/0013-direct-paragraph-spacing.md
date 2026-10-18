@@ -42,6 +42,17 @@ temporary-file write/sync/replace implementation and failure tests remain in use
 Alpha.40 and earlier reject v10 saves; use Save As to retain an older file.
 Process/settings versions remain 1. No new dependency or project-license change.
 
-Space-before, indentation, tabs, exact line-height units and pagination are
+Indentation, tabs, exact line-height units and pagination are
 separate increments. Native Windows/reference acceptance is deferred by owner
 instruction; synthetic DPI tests do not close that gate.
+
+## Alpha.42 extension
+
+Add optional space-before to paragraph style definitions and direct spacing, using
+the same half-point range as space-after. Nearest ancestor supplies the value;
+document default is zero. Direct zero is an override. A three-property command
+preserves keep/set/inherit semantics in one validated history transaction. Dialog
+reset now clears all three properties. Native v11 carries the new key; older
+readers reject it and retain their strict typed validation. Continuous layout adds
+before-current to after-previous, including before the first paragraph, once per
+paragraph regardless of wrapping. This does not establish pagination behavior.

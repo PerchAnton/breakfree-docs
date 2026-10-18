@@ -4,18 +4,28 @@ use super::*;
 pub(super) enum ParagraphOutcome {
     Open,
     Cancel,
-    Apply(Option<Option<u16>>, Option<Option<u16>>),
+    Apply(
+        Option<Option<u16>>,
+        Option<Option<u16>>,
+        Option<Option<u16>>,
+    ),
 }
 #[derive(Default)]
 pub(super) struct ParagraphDialog {
     line: String,
     after: String,
+    before: String,
     change_line: bool,
     change_after: bool,
+    change_before: bool,
     focused: bool,
     error: Option<String>,
 }
-type SpacingValues = (Option<Option<u16>>, Option<Option<u16>>);
+type SpacingValues = (
+    Option<Option<u16>>,
+    Option<Option<u16>>,
+    Option<Option<u16>>,
+);
 
 impl ParagraphDialog {
     fn values(&self) -> Result<SpacingValues> {
@@ -51,12 +61,33 @@ impl ParagraphDialog {
             }
             Some(Some(whole * 2 + half))
         };
+        let before = if !self.change_before {
+            None
+        } else if self.before.trim().is_empty() {
+            Some(None)
+        } else {
+            let value = self.before.trim();
+            let (whole, fraction) = value.split_once('.').unwrap_or((value, "0"));
+            let half = match fraction {
+                "0" | "" => 0,
+                "5" => 1,
+                _ => return Err("Enter 0–200 pt in half-point steps.".into()),
+            };
+            let whole: u16 = whole
+                .parse()
+                .map_err(|_| "Enter 0–200 pt in half-point steps.")?;
+            if whole > 200 || (whole == 200 && half != 0) {
+                return Err("Enter 0–200 pt in half-point steps.".into());
+            }
+            Some(Some(whole * 2 + half))
+        };
         crate::model::ParagraphSpacing {
             line_height_percent: line.flatten(),
             space_after_half_points: after.flatten(),
+            space_before_half_points: before.flatten(),
         }
         .validate()?;
-        Ok((line, after))
+        Ok((line, before, after))
     }
     pub fn show(&mut self, ctx: &egui::Context, regions: &mut Vec<Region>) -> ParagraphOutcome {
         let mut cancel = false;
@@ -82,6 +113,12 @@ impl ParagraphDialog {
                         "Line spacing (%)",
                         &mut self.change_line,
                         &mut self.line,
+                    ),
+                    (
+                        "before",
+                        "Space before (pt)",
+                        &mut self.change_before,
+                        &mut self.before,
                     ),
                     (
                         "after",
@@ -112,11 +149,13 @@ impl ParagraphDialog {
                 if reset.clicked() {
                     self.change_line = true;
                     self.change_after = true;
+                    self.change_before = true;
                     self.line.clear();
                     self.after.clear();
+                    self.before.clear();
                     self.error = None;
                 }
-                ui.small("Line: 100–300%. After: 0–200 pt, in 0.5 pt steps.");
+                ui.small("Line: 100–300%. Before/after: 0–200 pt, in 0.5 pt steps.");
                 if let Some(error) = &self.error {
                     ui.colored_label(Color32::from_rgb(165, 30, 30), error);
                 }
@@ -141,7 +180,7 @@ impl ParagraphDialog {
         // Standard focused-button Enter/Space activation; no global Enter override.
         if accept {
             match self.values() {
-                Ok((line, after)) => return ParagraphOutcome::Apply(line, after),
+                Ok((line, before, after)) => return ParagraphOutcome::Apply(line, before, after),
                 Err(error) => self.error = Some(error),
             }
         }

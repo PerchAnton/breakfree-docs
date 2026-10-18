@@ -262,9 +262,9 @@ to the replacement and rejects a descendant replacement that would create a cycl
 [Character-style rules](docs/adr/0011-character-style-precedence.md).
 [Style rules](docs/adr/0008-custom-named-styles.md) · [Deletion rules](docs/adr/0009-delete-custom-styles.md).
 
-This build reads native content v1/v2/v3/v4/v5/v6/v7/v8/v9/v10 and **saves v10**. Opening an older file
-does not change it; an explicit save converts it to v10. Earlier builds cannot
-open new v10 saves. Use Save As to keep an older copy. See [format details](docs/NATIVE_FORMAT.md).
+This build reads native content v1/v2/v3/v4/v5/v6/v7/v8/v9/v10/v11 and **saves v11**. Opening an older file
+does not change it; an explicit save converts it to v11. Earlier builds cannot
+open new v11 saves. Use Save As to keep an older copy. See [format details](docs/NATIVE_FORMAT.md).
 File provides New/Open/Save/Save As, unsaved Save/Discard/Cancel and view settings;
 Print is disabled. Navigation and the formatting pane operate on real model ranges.
 The white canvas is continuous; pagination, page numbers and print layout are absent.
@@ -436,8 +436,7 @@ Formatting also shows Alignment, Line spacing (percent) and Space after (points)
 Alignment is an explicit paragraph value in the current model, labeled
 “Paragraph value (not inherited)”; it is not attributed to a style or guessed
 from appearance. Intervals show the nearest supplying paragraph style/ancestor,
-or Document default. Explicit zero is preserved. There is no space-before property
-or direct paragraph-spacing override in this prototype.
+or Document default. Explicit zero is preserved. Space before and direct interval overrides are supported from alpha.42; the inspector identifies their supplying style or direct source.
 
 The paragraph section uses the same half-open selection rule as alignment/style
 commands: an exclusive end at the next paragraph start excludes that paragraph;
@@ -548,11 +547,24 @@ Home's existing spacing icon or F10 → H → PS opens Paragraph spacing; comman
 search also finds it. Enter a whole line-height percentage (100–300) or space
 after in points (0–200, in 0.5 pt steps). Editing checks that property; unchecked
 fields keep their existing per-paragraph values, including mixed selections.
-A checked blank field inherits its style; Use style spacing resets both. OK is
+A checked blank field inherits its style; Use style spacing resets all three. OK is
 one undo operation; Cancel/Escape changes nothing. The selection uses the same
 half-open paragraph range as alignment. Direct spacing survives style changes,
 Enter, joins and Replace All. Formatting inspection identifies direct overrides.
 
-This is spacing only: alignment stays independent; space-before, indentation,
+This is spacing only: alignment stays independent; indentation,
 tabs and pagination remain deferred. [ADR 0013](docs/adr/0013-direct-paragraph-spacing.md)
 defines native v10 and editing policy. Windows acceptance is deferred by the owner.
+
+## Space before paragraph (alpha.42)
+
+Home → Paragraph spacing supports Space before in points (0–200, steps of 0.5).
+Check the field to change it; leave it unchecked to preserve each selected value.
+A checked blank field inherits from the paragraph style. Use style spacing clears
+all three direct interval overrides in one Undo/Redo. Paragraph style creation and
+modification also support space before; a blank style value inherits its parent,
+with zero as the document default. Explicit zero overrides a nonzero ancestor.
+Formatting inspection reports the source. Spacing applies once before each
+paragraph, including the first, and adds to the previous paragraph's space after.
+This continuous layout policy is not pagination. Native v11 preserves the property;
+v1–v10 imports resolve to zero before. Windows acceptance remains deferred.

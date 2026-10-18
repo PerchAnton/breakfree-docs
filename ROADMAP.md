@@ -232,7 +232,7 @@ Rust selection is complete; this gate evaluates GUI behavior and visual fidelity
 - [x] Alpha.39: test a 32-style reverse-order chain and repeated keyboard jumps; handle renamed/deleted/unused return destinations without stale focus or content/history changes.
 - [x] Alpha.40: add an 18-case synthetic dependency-keyboard/scale matrix, roundtripped 32-style fixture and reproducible Windows acceptance checklist/review-artifact workflow.
 - [x] Alpha.41: direct line-height/space-after overrides, partial/reset dialog, one undo, shared layout/provenance, Enter/Replace All preservation and strict v10 roundtrip; depends on alpha.31.
-- [ ] Execute native Windows dependency keyboard and 100/125/150% display-scaling acceptance using docs/WINDOWS_ACCEPTANCE.md; deferred by the owner until a Windows desktop is available. Linked styles, space-before and indentation remain separate increments.
+- [ ] Execute native Windows dependency keyboard and 100/125/150% display-scaling acceptance using docs/WINDOWS_ACCEPTANCE.md; deferred by the owner until a Windows desktop is available. Linked styles and indentation remain separate increments.
 - [ ] Add lists, indentation, tabs, spacing, links and Unicode-aware search/replace.
 - [ ] Add table editing and images with explicit sizing and anchoring semantics.
 - [ ] Add navigation, command search and understandable tool states.
@@ -350,3 +350,6 @@ Use public specifications and original test cases, not copied application code. 
 | 2026-10-17 | Alpha.11 fixes Home separators overlapping Bold/font-family controls | 90 full / 36 core-only tests, 54 gutter cases and four native captures; native macOS formatting/history/temporary Home passed. Alpha.10 and alpha.11 approvals remain pending |
 | 2026-10-17 | Owner approved alpha.11; alpha.12 adds keyboard-accessible QAT ordering | 95 full / 36 core-only tests, 18 dialog cases and two native captures; native macOS cancellation/apply/KeyTips/restart passed. Windows/Word acceptance and alpha.12 approval remain open |
 | 2026-10-17 | Alpha.13 refines icon accents and neutral shell/File colors from owner-supplied macOS captures | 95 full / 36 core-only tests and three native captures; native formatting/history/File/KeyTips verified. Alpha.12/13 approval and Windows/Word comparison remain open |
+
+- [x] Alpha.42: inherited/direct space-before, partial/reset dialog, provenance, one Undo/Redo, v11 persistence and wrapped-line layout; depends on alpha.41.
+- [ ] Next: paragraph indentation with shared style/direct resolution and validated history.

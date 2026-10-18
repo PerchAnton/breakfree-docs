@@ -1349,3 +1349,24 @@ harness images after layout settlement:
 | [Paragraph spacing](screenshots/rust-paragraph-spacing-alpha41-macos-narrow.png) | 640 × 480 DIP | `8c327d90a2ff08e8ce2fc0c9b8ae99fd7abb1783a6417a16f9af9137f84e654f` |
 
 Both final captures inspected: controls fit, input columns align and palette/icons remain. Widget tests separately cover nine size/scale combinations, actual input and layout changes. Ordinary native input was not repeated; Windows/reference/DPI acceptance is deferred by the owner. The existing emoji fallback limitation remains visible in the example text.
+
+## Alpha42 space before paragraph
+
+Preserve the neutral palette, original Home spacing icon and modal dimensions
+(370 DIP content width, 90 DIP fields, 82 × 27 DIP action buttons). Add Space before
+between Line spacing and Space after; style dialogs expose the same property.
+Formatting inspection adds Space before with its supplying style/direct source.
+The three-row modal fits nine synthetic size/scale combinations. The following
+macOS capture-harness images were inspected: no clipped labels, overlapping fields
+or off-window actions. These are rendering evidence, not ordinary native keyboard
+or Windows/reference acceptance. Windows checks remain deferred. Existing emoji
+fallback limitations remain visible. No percentage similarity claim is made.
+
+![Paragraph spacing](screenshots/rust-paragraph-before-alpha42-macos.png)
+
+SHA-256: `baf4e00d4758ae90731aec4d447d04b5de9e8acea453c8d9e2023e5579438d8e`.
+
+![Paragraph spacing](screenshots/rust-paragraph-before-alpha42-compact-macos.png)
+
+SHA-256: `8c8ae085a007329950df631a0bc2a4f8dfa06b085dfbf365e6bd1320c26fd9f3`.
+

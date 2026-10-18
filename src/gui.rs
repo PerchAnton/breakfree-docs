@@ -3219,12 +3219,12 @@ impl DocsApp {
             match dialog.show(ctx, &mut self.regions) {
                 ParagraphOutcome::Open => self.paragraph_dialog = Some(dialog),
                 ParagraphOutcome::Cancel => self.sync_view(),
-                ParagraphOutcome::Apply(line, after) => {
+                ParagraphOutcome::Apply(line, before, after) => {
                     let (start, end) = self.session.editor.selection;
                     let result = self
                         .session
                         .editor
-                        .set_paragraph_spacing(start, end, line, after);
+                        .set_paragraph_spacing_with_before(start, end, line, before, after);
                     self.fail(result);
                     self.sync_view();
                 }

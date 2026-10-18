@@ -1,12 +1,12 @@
 # Native BreakFree Docs document format
 
-Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v10.
+Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v11.
 This is not a DOCX container. Process protocol and file-content versions are independent.
 
 ```json
 {
   "format": "breakfree.docs.native",
-  "content_version": 10,
+  "content_version": 11,
   "character_styles": [],
   "style_catalog": {
     "custom": [],
@@ -73,9 +73,9 @@ Opening performs only in-memory conversion and does not dirty/write the file.
 V3 uses its frozen built-in catalog from [ADR 0006](adr/0006-built-in-paragraph-styles.md);
 it rejects embedded definitions. V4 reads its original three-definition catalog
 with no custom array and preserves its graph. V5 retains its custom catalog. Legacy definitions receive Same style in memory.
-Every explicit save writes v10, even
+Every explicit save writes v11, even
 for an unchanged older document. Use Save As
-to retain the original. **Alpha.40 and earlier cannot open v10 saves.** No downgrade or
+to retain the original. **Alpha.41 and earlier cannot open v11 saves.** No downgrade or
 lossy export is provided. Header/full-schema parsing preserves duplicate rejection.
 
 Empty paragraphs retain their named style. Pending direct formatting at a caret
@@ -178,3 +178,14 @@ remains explicit. Unknown fields and invalid ranges are rejected. Older v1–v9
 readers are frozen; their imports initialize both properties to null without
 changing source bytes. Relabeling v10 as v9 is rejected instead of dropping data.
 See [ADR 0013](adr/0013-direct-paragraph-spacing.md).
+
+## Space before (v11)
+
+Paragraph `spacing` and paragraph style definitions accept optional
+`space_before_half_points`: null/absent inherits, integers 0–400 are explicit.
+The cascade uses the nearest paragraph style/ancestor, then document default 0,
+then the direct paragraph override. Explicit zero is preserved. Readers v1–v10
+reject this key (including null) anywhere before their strict typed validation;
+legacy files import with inherited zero before. Writer v11 omits unset before
+values. Protocol/settings versions stay 1. Continuous layout adds before-current
+to after-previous and applies first-paragraph before; wrapped lines do not repeat it.
