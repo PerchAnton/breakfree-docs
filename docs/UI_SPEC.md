@@ -1369,4 +1369,3 @@ SHA-256: `baf4e00d4758ae90731aec4d447d04b5de9e8acea453c8d9e2023e5579438d8e`.
 ![Paragraph spacing](screenshots/rust-paragraph-before-alpha42-compact-macos.png)
 
 SHA-256: `8c8ae085a007329950df631a0bc2a4f8dfa06b085dfbf365e6bd1320c26fd9f3`.
-
