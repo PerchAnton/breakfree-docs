@@ -476,6 +476,7 @@ impl DocsApp {
         if self.backstage
             || self.replace_all_dialog.is_some()
             || self.font_dialog.is_some()
+            || self.paragraph_dialog.is_some()
             || self.style_dialog.is_some()
             || self.delete_style_dialog.is_some()
             || self.zoom_dialog.is_some()

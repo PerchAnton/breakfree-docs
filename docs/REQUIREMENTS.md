@@ -196,3 +196,16 @@ A Unicode 32-style fixture and a Windows CI review artifact with source/version/
 metadata make the procedure reproducible. No suitable Windows desktop was
 available; native keyboard, display scaling and Word comparison remain unverified.
 The review artifact is not a release. Runtime behavior, palette and icons are unchanged.
+
+
+## Direct paragraph spacing (alpha.41)
+
+Paragraphs may override line height (100–300 percent) and space after (0–400 half
+points); null inherits the paragraph style. Partial updates leave unchecked
+properties untouched, including mixed selections. Explicit zero is an override.
+The shared command validates before commit and changes intersecting paragraphs
+with one undo/redo. GUI, layout and source inspection use the same model.
+Enter and inserted replacement paragraphs copy the starting paragraph's direct
+spacing; joins keep the first paragraph's spacing. Unaffected paragraphs retain
+theirs. Native v10 persists the overrides; frozen v1–v9 imports inherit.
+No palette/icon change. Native Windows acceptance is deferred by owner request.

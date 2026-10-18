@@ -16,6 +16,9 @@ use eframe::egui::{
 };
 use std::path::PathBuf;
 
+#[path = "paragraph_dialog.rs"]
+mod paragraph_dialog;
+use paragraph_dialog::{ParagraphDialog, ParagraphOutcome};
 #[path = "font_dialog.rs"]
 mod font_dialog;
 #[path = "style_dialog.rs"]
@@ -80,6 +83,7 @@ pub enum Action {
     CharacterStyle(Option<CharacterStyle>),
     FontSize,
     FontDialog,
+    ParagraphSpacing,
     ModifyStyle,
     CreateStyle,
     CreateCharacterStyle,
@@ -126,6 +130,7 @@ impl Action {
             }
             Self::FontSize => "Font size",
             Self::FontDialog => "Font dialog",
+            Self::ParagraphSpacing => "Paragraph spacing",
             Self::ModifyStyle => "Modify style…",
             Self::CreateStyle => "Create style…",
             Self::ModifyCharacterStyle => "Modify character style…",
@@ -174,6 +179,7 @@ const COMMANDS: &[Action] = &[
     Action::CharacterStyle(None),
     Action::FontSize,
     Action::FontDialog,
+    Action::ParagraphSpacing,
     Action::ModifyStyle,
     Action::CreateStyle,
     Action::CreateCharacterStyle,
@@ -249,6 +255,7 @@ pub struct DocsApp {
     font_size_text: String,
     font_size_dirty: bool,
     font_dialog: Option<FontDialog>,
+    paragraph_dialog: Option<ParagraphDialog>,
     style_dialog: Option<StyleDialog>,
     delete_style_dialog: Option<DeleteStyleDialog>,
     style_used_only: bool,
@@ -368,6 +375,7 @@ impl DocsApp {
             font_size_text: String::new(),
             font_size_dirty: false,
             font_dialog: None,
+            paragraph_dialog: None,
             style_dialog: None,
             delete_style_dialog: None,
             style_used_only: false,
@@ -413,6 +421,7 @@ impl DocsApp {
     fn enabled(&self, action: Action) -> bool {
         if self.replace_all_dialog.is_some()
             || self.font_dialog.is_some()
+            || self.paragraph_dialog.is_some()
             || self.style_dialog.is_some()
             || self.delete_style_dialog.is_some()
             || self.zoom_dialog.is_some()
@@ -423,7 +432,8 @@ impl DocsApp {
         }
         if matches!(
             action,
-            Action::FontDialog
+            Action::ParagraphSpacing
+                | Action::FontDialog
                 | Action::ModifyStyle
                 | Action::CreateStyle
                 | Action::ModifyCharacterStyle
@@ -714,6 +724,13 @@ impl DocsApp {
                     ));
                 }
             }
+            Action::ParagraphSpacing => {
+                self.paragraph_dialog = Some(ParagraphDialog::default());
+                self.focus_document = false;
+                self.focus_font_size = false;
+                self.palette = false;
+                ctx.memory_mut(|m| m.surrender_focus(Id::new(EDIT_ID)));
+            }
             Action::FontDialog => {
                 self.font_dialog = Some(FontDialog::new(self.session.editor.selected_font()));
                 self.focus_document = false;
@@ -785,6 +802,7 @@ impl DocsApp {
                 action,
                 Action::Find
                     | Action::Replace
+                    | Action::ParagraphSpacing
                     | Action::FontDialog
                     | Action::ModifyStyle
                     | Action::CreateStyle
@@ -1723,12 +1741,12 @@ impl DocsApp {
                         action,
                     );
                 }
-                self.unavailable_menu(
+                self.ribbon_control(
                     ui,
                     r(101., 34., 31., 25.),
                     Icon::Spacing,
-                    "Line spacing",
-                    "Paragraph spacing controls are planned.",
+                    "",
+                    Action::ParagraphSpacing,
                 );
                 ui.painter().line_segment(
                     [origin + vec2(135., 36.), origin + vec2(135., 57.)],
@@ -2450,6 +2468,7 @@ impl DocsApp {
         // Modal drafts must never dispatch edits, Save or New into the background.
         if self.replace_all_dialog.is_some()
             || self.font_dialog.is_some()
+            || self.paragraph_dialog.is_some()
             || self.style_dialog.is_some()
             || self.delete_style_dialog.is_some()
             || self.zoom_dialog.is_some()
@@ -3196,6 +3215,21 @@ impl DocsApp {
                 }
             }
         }
+        if let Some(mut dialog) = self.paragraph_dialog.take() {
+            match dialog.show(ctx, &mut self.regions) {
+                ParagraphOutcome::Open => self.paragraph_dialog = Some(dialog),
+                ParagraphOutcome::Cancel => self.sync_view(),
+                ParagraphOutcome::Apply(line, after) => {
+                    let (start, end) = self.session.editor.selection;
+                    let result = self
+                        .session
+                        .editor
+                        .set_paragraph_spacing(start, end, line, after);
+                    self.fail(result);
+                    self.sync_view();
+                }
+            }
+        }
         if let Some(mut dialog) = self.font_dialog.take() {
             match dialog.show(ctx, &self.body_font, &mut self.regions) {
                 FontDialogOutcome::Open => self.font_dialog = Some(dialog),
@@ -3340,6 +3374,7 @@ impl DocsApp {
         if close_requested
             && (self.replace_all_dialog.is_some()
                 || self.font_dialog.is_some()
+                || self.paragraph_dialog.is_some()
                 || self.style_dialog.is_some()
                 || self.delete_style_dialog.is_some()
                 || self.zoom_dialog.is_some()

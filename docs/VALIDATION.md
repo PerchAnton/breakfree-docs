@@ -8,16 +8,16 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.40**. Historical evidence retains its scope.
+Current local checkpoint: **0.1.0-alpha.41**. Historical evidence retains its scope.
 
 | Local check | Observed result |
 | --- | --- |
-| Full / no-default-features tests | 236 / 118 passed; 18-case synthetic keyboard/scale matrix and fixture roundtrip added |
+| Full / no-default-features tests | 244 / 123 passed; direct paragraph spacing, v10, history/edit preservation and modal checks added |
 | fmt / Clippy | Passed; normal/capture all-target checks with warnings denied |
 | Release builds | Native binary and capture harness passed without Office/sibling inputs |
-| CLI | Version/capabilities report alpha.40; existing CLI subprocess tests pass |
+| CLI | Version/capabilities report alpha.41; existing CLI subprocess tests pass |
 | Repository/artwork/YAML/whitespace | Passed |
-| Native rendering | No new rendering changes; alpha.39 captures retained (1366 × 900 / 640 × 480 DIP) |
+| Native rendering | Paragraph spacing modal inspected at 1366 × 900 / 640 × 480 DIP |
 | Native input | Not repeated this iteration; previous automation lost its window. CPU widget events are separate evidence |
 | Existing regressions | Home geometry, minimum-width 64-style keyboard scrolling, history, storage and synthetic scaling checks retained |
 
@@ -1141,3 +1141,27 @@ metadata after successful Windows checks. Artifact publication and alpha.40 CI
 completion are separate from these local results. Follow
 [WINDOWS_ACCEPTANCE](WINDOWS_ACCEPTANCE.md); all native result cells remain Not run.
 No new screenshots, runtime, dependency, schema, palette or icon changes.
+
+
+## Alpha.41 direct paragraph spacing validation
+
+244 full / 123 core tests passed. Added five core tests for transactional changes,
+inheritance reset, mixed/partial/empty/exclusive-end selection, invalid range and
+redo preservation, Enter/join/style-change/Replace All behavior, provenance,
+v9 import, strict v10 save/reopen and injected write/sync/replace failures.
+Existing frozen-reader tests retain legacy field rejection. Three widget tests
+exercise real field input, OK/reset/Cancel, invalid decimal values, modal command
+guards, one Undo/Redo, effective layout row heights and nine size/scale cases via
+F10 → H → PS. No direct menu-index injection is used by these dialog checks.
+
+fmt, normal/capture all-target Clippy, release/capture builds,
+repository/artwork/YAML/whitespace and CLI version/capabilities passed. Native
+macOS capture harness images at 1366 × 900 and 640 × 480 DIP were inspected;
+this is rendering evidence, not physical keyboard/IME acceptance. Ordinary native
+input was not repeated. Windows/reference/native DPI acceptance is deferred by
+owner instruction, not completed. Palette/icons/dependencies/license unchanged.
+
+Writer v10/readers v1–v10; process/settings v1. Alpha.40 and earlier reject v10
+saves. Space-before, exact line-height units, indentation and pagination remain
+unimplemented. Alpha.40 code/journal CI succeeded; alpha.41 CI is reported in the
+project log separately from local results.

@@ -529,8 +529,31 @@ pub enum Alignment {
     Justify,
 }
 
+/// Optional direct paragraph spacing; None inherits the paragraph style.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ParagraphSpacing {
+    pub line_height_percent: Option<u16>,
+    pub space_after_half_points: Option<u16>,
+}
+impl ParagraphSpacing {
+    pub fn validate(self) -> Result<()> {
+        if self
+            .line_height_percent
+            .is_some_and(|v| !(100..=300).contains(&v))
+        {
+            return Err("Line spacing must be 100–300 percent.".into());
+        }
+        if self.space_after_half_points.is_some_and(|v| v > 400) {
+            return Err("Space after must be 0–200 pt in half-point steps.".into());
+        }
+        Ok(())
+    }
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Paragraph {
+    pub spacing: ParagraphSpacing,
     pub text: String,
     pub styles: Vec<CharacterFormat>,
     pub paragraph_style: ParagraphStyle,
@@ -787,6 +810,19 @@ impl Document {
         Ok(())
     }
 
+    pub fn resolved_paragraph(&self, paragraph: &Paragraph) -> ResolvedParagraphStyle {
+        let mut resolved = self.style_catalog.resolve(paragraph.paragraph_style);
+        resolved.line_height_percent = paragraph
+            .spacing
+            .line_height_percent
+            .unwrap_or(resolved.line_height_percent);
+        resolved.space_after_half_points = paragraph
+            .spacing
+            .space_after_half_points
+            .unwrap_or(resolved.space_after_half_points);
+        resolved
+    }
+
     pub fn text(&self) -> String {
         self.paragraphs
             .iter()
@@ -802,6 +838,7 @@ impl Document {
             return Err("A document needs a paragraph.".into());
         }
         for p in &self.paragraphs {
+            p.spacing.validate()?;
             if self.style_catalog.get(p.paragraph_style).is_none() {
                 return Err("Unknown paragraph style reference.".into());
             }

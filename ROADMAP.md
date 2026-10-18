@@ -231,7 +231,8 @@ Rust selection is complete; this gate evaluates GUI behavior and visual fidelity
 - [x] Alpha.38: expose the return destination name in the Back control, with bounded width and a full-name tooltip.
 - [x] Alpha.39: test a 32-style reverse-order chain and repeated keyboard jumps; handle renamed/deleted/unused return destinations without stale focus or content/history changes.
 - [x] Alpha.40: add an 18-case synthetic dependency-keyboard/scale matrix, roundtripped 32-style fixture and reproducible Windows acceptance checklist/review-artifact workflow.
-- [ ] Execute native Windows dependency keyboard and 100/125/150% display-scaling acceptance using docs/WINDOWS_ACCEPTANCE.md; requires an available Windows desktop. Linked styles and direct paragraph-spacing overrides remain separate design decisions.
+- [x] Alpha.41: direct line-height/space-after overrides, partial/reset dialog, one undo, shared layout/provenance, Enter/Replace All preservation and strict v10 roundtrip; depends on alpha.31.
+- [ ] Execute native Windows dependency keyboard and 100/125/150% display-scaling acceptance using docs/WINDOWS_ACCEPTANCE.md; deferred by the owner until a Windows desktop is available. Linked styles, space-before and indentation remain separate increments.
 - [ ] Add lists, indentation, tabs, spacing, links and Unicode-aware search/replace.
 - [ ] Add table editing and images with explicit sizing and anchoring semantics.
 - [ ] Add navigation, command search and understandable tool states.

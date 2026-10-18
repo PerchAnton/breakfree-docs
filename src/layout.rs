@@ -98,7 +98,7 @@ pub fn galley(
     let mut whole = LayoutJob::default();
     let mut paragraphs = Vec::new();
     for (index, p) in source.paragraphs.iter().enumerate() {
-        let resolved = source.style_catalog.resolve(p.paragraph_style);
+        let resolved = source.resolved_paragraph(p);
         let mut job = LayoutJob::default();
         job.wrap.max_width = width;
         job.justify = p.alignment == Alignment::Justify;
@@ -183,8 +183,7 @@ pub fn galley(
         if row.ends_with_newline {
             spacing += size
                 * source
-                    .style_catalog
-                    .resolve(source.paragraphs[paragraph_index].paragraph_style)
+                    .resolved_paragraph(&source.paragraphs[paragraph_index])
                     .space_after_points()
                 / 11.;
             paragraph_index += 1;

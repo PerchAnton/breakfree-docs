@@ -130,6 +130,7 @@ impl DocsApp {
                 Tip::action("FG", Action::GrowFont),
                 Tip::action("FK", Action::ShrinkFont),
                 Tip::action("FN", Action::FontDialog),
+                Tip::action("PS", Action::ParagraphSpacing),
                 Tip::action("AL", Action::Left),
                 Tip::action("AC", Action::Center),
                 Tip::action("AR", Action::Right),
@@ -314,6 +315,7 @@ impl DocsApp {
             || self.composing
             || self.replace_all_dialog.is_some()
             || self.font_dialog.is_some()
+            || self.paragraph_dialog.is_some()
             || self.style_dialog.is_some()
             || self.delete_style_dialog.is_some()
             || self.zoom_dialog.is_some()
@@ -537,6 +539,7 @@ impl DocsApp {
     pub(super) fn paint_keytips(&mut self, ctx: &egui::Context) {
         if self.replace_all_dialog.is_some()
             || self.font_dialog.is_some()
+            || self.paragraph_dialog.is_some()
             || self.style_dialog.is_some()
             || self.delete_style_dialog.is_some()
             || self.zoom_dialog.is_some()

@@ -178,7 +178,7 @@ fn native_v8_validation_legacy_reading_and_failed_writes_are_lossless() {
     e.create_character_style("Accent", format(), true).unwrap();
     let bytes = storage::encode(&e.document).unwrap();
     let value: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
-    assert_eq!(value["content_version"], 9);
+    assert_eq!(value["content_version"], 10);
     for (pointer, bad) in [
         ("/character_styles/0/id", serde_json::json!(0)),
         ("/character_styles/0/name", serde_json::json!("Strong")),
@@ -589,7 +589,7 @@ fn native_parent_migration_strict_v8_and_invalid_v9() {
         .unwrap();
     let bytes = storage::encode(&e.document).unwrap();
     let json: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
-    assert_eq!(json["content_version"], 9);
+    assert_eq!(json["content_version"], 10);
     for parent in [
         serde_json::json!({"custom":1}),
         serde_json::json!({"custom":999}),
@@ -600,6 +600,9 @@ fn native_parent_migration_strict_v8_and_invalid_v9() {
     }
     let mut bad = json.clone();
     bad["content_version"] = 8.into();
+    for p in bad["paragraphs"].as_array_mut().unwrap() {
+        p.as_object_mut().unwrap().remove("spacing");
+    }
     assert!(storage::decode(&serde_json::to_vec(&bad).unwrap()).is_err());
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("parents.bfdoc");

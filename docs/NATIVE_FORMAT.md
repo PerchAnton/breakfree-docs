@@ -1,12 +1,12 @@
 # Native BreakFree Docs document format
 
-Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v9.
+Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v10.
 This is not a DOCX container. Process protocol and file-content versions are independent.
 
 ```json
 {
   "format": "breakfree.docs.native",
-  "content_version": 9,
+  "content_version": 10,
   "character_styles": [],
   "style_catalog": {
     "custom": [],
@@ -18,9 +18,10 @@ This is not a DOCX container. Process protocol and file-content versions are ind
     {
       "alignment": "left",
       "paragraph_style": "heading1",
+      "spacing": {"line_height_percent": null, "space_after_half_points": 0},
       "runs": [{"text": "Hello", "character_style": "emphasis", "direct": {"bold": null, "italic": true, "underline": null, "font_size": null}}]
     },
-    {"alignment": "center", "paragraph_style": "normal", "runs": []}
+    {"alignment": "center", "paragraph_style": "normal", "spacing": {}, "runs": []}
   ]
 }
 ```
@@ -72,9 +73,9 @@ Opening performs only in-memory conversion and does not dirty/write the file.
 V3 uses its frozen built-in catalog from [ADR 0006](adr/0006-built-in-paragraph-styles.md);
 it rejects embedded definitions. V4 reads its original three-definition catalog
 with no custom array and preserves its graph. V5 retains its custom catalog. Legacy definitions receive Same style in memory.
-Every explicit save writes v9, even
+Every explicit save writes v10, even
 for an unchanged older document. Use Save As
-to retain the original. **Alpha.28 and earlier cannot open v9 saves.** No downgrade or
+to retain the original. **Alpha.40 and earlier cannot open v10 saves.** No downgrade or
 lossy export is provided. Header/full-schema parsing preserves duplicate rejection.
 
 Empty paragraphs retain their named style. Pending direct formatting at a caret
@@ -165,4 +166,15 @@ must exist and form an acyclic graph, including unused entries. Resolve ancestor
 then leaf properties, then run direct overrides. Deletion remaps direct child
 parents to its replacement and validates the resulting graph before committing.
 Frozen v8 rejects parent fields; v1–v8 imports have no character parents. No
-inference from appearance. The writer emits v9; earlier builds reject new saves.
+inference from appearance. The alpha.29 writer emitted v9; alpha.41 now writes v10.
+
+
+## Direct paragraph spacing (v10)
+
+Every paragraph requires a `spacing` object. Its optional/null
+`line_height_percent` (integer 100–300) and `space_after_half_points` (integer
+0–400) override the resolved style; absent/null fields inherit and zero after
+remains explicit. Unknown fields and invalid ranges are rejected. Older v1–v9
+readers are frozen; their imports initialize both properties to null without
+changing source bytes. Relabeling v10 as v9 is rejected instead of dropping data.
+See [ADR 0013](adr/0013-direct-paragraph-spacing.md).

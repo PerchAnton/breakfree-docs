@@ -160,7 +160,7 @@ pub fn inspect_paragraph(
     paragraph: &crate::model::Paragraph,
 ) -> Vec<PropertyInfo> {
     use crate::model::Alignment;
-    let resolved = document.style_catalog.resolve(paragraph.paragraph_style);
+    let resolved = document.resolved_paragraph(paragraph);
     let mut rows = vec![
         PropertyInfo {
             name: "Alignment",
@@ -184,7 +184,15 @@ pub fn inspect_paragraph(
             source: "Document default".into(),
         },
     ];
-    let mut found = [false; 2];
+    let mut found = [
+        paragraph.spacing.line_height_percent.is_some(),
+        paragraph.spacing.space_after_half_points.is_some(),
+    ];
+    for (i, direct) in found.iter().enumerate() {
+        if *direct {
+            rows[i + 1].source = "Direct paragraph formatting".into();
+        }
+    }
     let mut next = Some(paragraph.paragraph_style);
     let mut seen = Vec::new();
     while let Some(id) = next {

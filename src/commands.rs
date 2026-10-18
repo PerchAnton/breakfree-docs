@@ -132,6 +132,7 @@ impl Editor {
                 text: part.into(),
                 styles: styles[offset..offset + len].to_vec(),
                 alignment: a.alignment,
+                spacing: a.spacing,
                 paragraph_style,
             });
             offset += len + 1;
@@ -437,6 +438,34 @@ impl Editor {
             (start, end),
             typing.unwrap_or(self.typing_style),
         );
+        Ok(())
+    }
+
+    /// None leaves the property unchanged; Some(None) restores inheritance.
+    pub fn set_paragraph_spacing(
+        &mut self,
+        start: usize,
+        end: usize,
+        line: Option<Option<u16>>,
+        after: Option<Option<u16>>,
+    ) -> Result<()> {
+        validate_range(&self.document.text(), start, end)?;
+        let (first, _) = self.document.locate(start)?;
+        let (mut last, offset) = self.document.locate(end)?;
+        if end > start && offset == 0 && last > first {
+            last -= 1;
+        }
+        let mut result = self.document.clone();
+        for p in &mut result.paragraphs[first..=last] {
+            if let Some(value) = line {
+                p.spacing.line_height_percent = value;
+            }
+            if let Some(value) = after {
+                p.spacing.space_after_half_points = value;
+            }
+        }
+        result.validate()?;
+        self.commit(result, "Paragraph spacing", (start, end), self.typing_style);
         Ok(())
     }
 

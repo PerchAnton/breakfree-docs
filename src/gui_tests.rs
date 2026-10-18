@@ -6183,3 +6183,155 @@ fn dependency_keyboard_navigation_scale_matrix() {
         }
     }
 }
+
+#[test]
+fn paragraph_spacing_dialog_real_input_history_reset_and_layout() {
+    let (ctx, mut app) = setup();
+    app.session
+        .editor
+        .replace(0, 0, "Body\nNext", "Fixture")
+        .unwrap();
+    app.session.editor.selection = (0, 0);
+    app.sync_view();
+    let before = app.session.editor.document.clone();
+    let depth = app.session.editor.undo_stack.len();
+    let layout_before = layout::galley(
+        &ctx,
+        &before,
+        &before.text(),
+        CharacterFormat::default(),
+        0,
+        500.,
+        15.,
+    );
+    app.execute(Action::ParagraphSpacing, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    click_region(&ctx, &mut app, "paragraph-line");
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("200".into())],
+        [1366., 900.],
+        1.,
+    );
+    click_region(&ctx, &mut app, "paragraph-after");
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("20.5".into())],
+        [1366., 900.],
+        1.,
+    );
+    app.execute(Action::New, &ctx); // Modal must guard background commands.
+    assert_eq!(app.session.editor.document, before);
+    click_region(&ctx, &mut app, "paragraph-ok");
+    assert!(app.paragraph_dialog.is_none());
+    assert_eq!(app.session.editor.undo_stack.len(), depth + 1);
+    let after = app.session.editor.document.clone();
+    assert_eq!(after.paragraphs[0].spacing.line_height_percent, Some(200));
+    assert_eq!(
+        after.paragraphs[0].spacing.space_after_half_points,
+        Some(41)
+    );
+    assert_eq!(after.paragraphs[1], before.paragraphs[1]);
+    let layout_after = layout::galley(
+        &ctx,
+        &after,
+        &after.text(),
+        CharacterFormat::default(),
+        0,
+        500.,
+        15.,
+    );
+    assert!(layout_after.rows[0].size.y > layout_before.rows[0].size.y);
+    assert!(layout_after.rows[1].pos.y > layout_before.rows[1].pos.y);
+    assert_eq!(
+        storage::decode(&storage::encode(&after).unwrap()).unwrap(),
+        after
+    );
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.document, before);
+    app.execute(Action::Redo, &ctx);
+    assert_eq!(app.session.editor.document, after);
+    app.execute(Action::ParagraphSpacing, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    click_region(&ctx, &mut app, "paragraph-reset");
+    click_region(&ctx, &mut app, "paragraph-ok");
+    assert_eq!(app.session.editor.document, before);
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.document, after);
+}
+
+#[test]
+fn paragraph_spacing_dialog_invalid_and_cancel_leave_document_intact() {
+    for invalid in ["NaN", "0.25", "201", "-1"] {
+        let (ctx, mut app) = setup();
+        let before = app.session.editor.document.clone();
+        app.execute(Action::ParagraphSpacing, &ctx);
+        frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+        click_region(&ctx, &mut app, "paragraph-after");
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::Text(invalid.into())],
+            [1366., 900.],
+            1.,
+        );
+        click_region(&ctx, &mut app, "paragraph-ok");
+        assert!(app.paragraph_dialog.is_some());
+        assert_eq!(app.session.editor.document, before);
+        frame(
+            &ctx,
+            &mut app,
+            vec![key(Key::Escape, false)],
+            [1366., 900.],
+            1.,
+        );
+        assert!(app.paragraph_dialog.is_none());
+        assert!(app.session.editor.undo_stack.is_empty());
+    }
+}
+
+#[test]
+fn paragraph_spacing_keytips_and_scaled_modal_bounds() {
+    for dpi in [1., 1.25, 1.5] {
+        for logical in [[640., 480.], [1024., 768.], [1366., 900.]] {
+            let (ctx, mut app) = setup();
+            let screen = [logical[0] * dpi, logical[1] * dpi];
+            for _ in 0..3 {
+                frame(&ctx, &mut app, vec![], screen, dpi);
+            }
+            for k in [Key::F10, Key::H, Key::P, Key::S] {
+                frame(&ctx, &mut app, tip_events(&[k]), screen, dpi);
+            }
+            frame(&ctx, &mut app, vec![], screen, dpi);
+            assert!(app.paragraph_dialog.is_some());
+            let rect = app
+                .regions
+                .iter()
+                .find(|r| r.name == "paragraph-dialog")
+                .unwrap()
+                .rect;
+            assert!(
+                rect.min.x >= 0.
+                    && rect.min.y >= 0.
+                    && rect.max.x <= logical[0]
+                    && rect.max.y <= logical[1],
+                "{rect:?}"
+            );
+            for name in [
+                "paragraph-line",
+                "paragraph-after",
+                "paragraph-ok",
+                "paragraph-cancel",
+            ] {
+                assert!(
+                    rect.contains_rect(app.regions.iter().find(|r| r.name == name).unwrap().rect)
+                );
+            }
+            frame(&ctx, &mut app, vec![key(Key::Escape, false)], screen, dpi);
+            assert!(app.paragraph_dialog.is_none());
+            assert!(app.session.editor.undo_stack.is_empty());
+        }
+    }
+}

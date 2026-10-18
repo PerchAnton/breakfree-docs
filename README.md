@@ -262,9 +262,9 @@ to the replacement and rejects a descendant replacement that would create a cycl
 [Character-style rules](docs/adr/0011-character-style-precedence.md).
 [Style rules](docs/adr/0008-custom-named-styles.md) · [Deletion rules](docs/adr/0009-delete-custom-styles.md).
 
-This build reads native content v1/v2/v3/v4/v5/v6/v7/v8/v9 and **saves v9**. Opening an older file
-does not change it; an explicit save converts it to v9. Earlier builds cannot
-open new v9 saves. Use Save As to keep an older copy. See [format details](docs/NATIVE_FORMAT.md).
+This build reads native content v1/v2/v3/v4/v5/v6/v7/v8/v9/v10 and **saves v10**. Opening an older file
+does not change it; an explicit save converts it to v10. Earlier builds cannot
+open new v10 saves. Use Save As to keep an older copy. See [format details](docs/NATIVE_FORMAT.md).
 File provides New/Open/Save/Save As, unsaved Save/Discard/Cancel and view settings;
 Print is disabled. Navigation and the formatting pane operate on real model ranges.
 The white canvas is continuous; pagination, page numbers and print layout are absent.
@@ -540,3 +540,19 @@ A Unicode 32-style fixture and a Windows CI review artifact with source/version/
 metadata make the procedure reproducible. No suitable Windows desktop was
 available; native keyboard, display scaling and Word comparison remain unverified.
 The review artifact is not a release. Runtime behavior, palette and icons are unchanged.
+
+
+## Direct paragraph spacing (alpha.41)
+
+Home's existing spacing icon or F10 → H → PS opens Paragraph spacing; command
+search also finds it. Enter a whole line-height percentage (100–300) or space
+after in points (0–200, in 0.5 pt steps). Editing checks that property; unchecked
+fields keep their existing per-paragraph values, including mixed selections.
+A checked blank field inherits its style; Use style spacing resets both. OK is
+one undo operation; Cancel/Escape changes nothing. The selection uses the same
+half-open paragraph range as alignment. Direct spacing survives style changes,
+Enter, joins and Replace All. Formatting inspection identifies direct overrides.
+
+This is spacing only: alignment stays independent; space-before, indentation,
+tabs and pagination remain deferred. [ADR 0013](docs/adr/0013-direct-paragraph-spacing.md)
+defines native v10 and editing policy. Windows acceptance is deferred by the owner.

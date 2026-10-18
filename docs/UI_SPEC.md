@@ -1329,3 +1329,23 @@ with expanded/collapsed Home, keyboard traversal and Back bounds. It does not
 exercise Windows display settings or physical input. Native Windows acceptance
 was unavailable and remains open under [the checklist](WINDOWS_ACCEPTANCE.md).
 Existing palette and original icons are unchanged.
+
+
+## Alpha.41 paragraph spacing
+
+The existing Home spacing glyph opens a 370-DIP content-width modal; H → PS and
+command search reach the same draft. Two aligned input rows use 155-DIP checkbox
+slots and 90-DIP fields. Unchecked fields display Unchanged; checked blank fields
+show From style. Editing checks only that property. Use style spacing resets
+both; OK/Cancel are 82 × 27 DIP. Cancel starts focused; Escape cancels. No new
+color roles, icons or ribbon geometry were introduced.
+
+Light theme, English, 100% document zoom, macOS backing scale 2. Real capture
+harness images after layout settlement:
+
+| Capture | Window | SHA-256 |
+| --- | --- | --- |
+| [Paragraph spacing](screenshots/rust-paragraph-spacing-alpha41-macos.png) | 1366 × 900 DIP | `ea92aca91361afbafebae44233d347adbf775e0e8f7796430204c8faa6caf892` |
+| [Paragraph spacing](screenshots/rust-paragraph-spacing-alpha41-macos-narrow.png) | 640 × 480 DIP | `8c327d90a2ff08e8ce2fc0c9b8ae99fd7abb1783a6417a16f9af9137f84e654f` |
+
+Both final captures inspected: controls fit, input columns align and palette/icons remain. Widget tests separately cover nine size/scale combinations, actual input and layout changes. Ordinary native input was not repeated; Windows/reference/DPI acceptance is deferred by the owner. The existing emoji fallback limitation remains visible in the example text.

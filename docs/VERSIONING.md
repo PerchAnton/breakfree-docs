@@ -122,4 +122,6 @@ Historical alpha.31 checkpoint: alpha.30 approved; alpha.31 then awaited approva
 
 Historical alpha.32 checkpoint: alpha.31 approved; alpha.32 then awaited approval. No merge/tag/release authorized.
 
-Alpha.39 explicitly approved in chat; alpha.40 awaits approval. No merge/tag/release authorized.
+Alpha.40 explicitly approved in chat; alpha.41 awaits approval. No merge/tag/release authorized.
+
+Alpha.41 writes native v10 direct paragraph spacing and reads v1–v10. Alpha.40 and earlier reject v10 saves; process/settings remain v1.

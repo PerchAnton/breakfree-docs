@@ -216,6 +216,7 @@ impl DocsApp {
             && self.pending.is_none()
             && self.error.is_none()
             && self.font_dialog.is_none()
+            && self.paragraph_dialog.is_none()
             && self.style_dialog.is_none()
             && self.delete_style_dialog.is_none()
             && self.zoom_dialog.is_none()

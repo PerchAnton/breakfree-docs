@@ -3,6 +3,13 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.41 — 2026-10-18
+
+- Add direct paragraph line spacing and space-after overrides, inherited when unset, with validated partial updates and one Undo/Redo. Preserve spacing through Enter, joins, style changes and Replace All.
+- Enable the existing Home spacing icon and H → PS KeyTip. The modal changes only checked fields, supports Use style spacing and Cancel, and guards background commands. Formatting inspection reports direct spacing sources; layout uses the same resolved values.
+- Write native content v10; retain strict v1–v9 readers. Older imports inherit spacing; alpha.40 and earlier reject v10 saves. Use Save As to retain an older copy. Process/settings remain v1.
+- Preserve palette/icons and dependencies. Alpha.40 approved; alpha.41 awaits approval. Native Windows acceptance deferred by the owner.
+
 ## 0.1.0-alpha.40 — 2026-10-18
 
 - Add an 18-case synthetic scale/keyboard matrix for style dependency navigation: three window sizes, 100/125/150% scale and expanded/collapsed Home. Exercise Alt+H/F10, F3, arrows, Tab/Shift+Tab, Enter, Space and Escape without assigning menu focus in the test.

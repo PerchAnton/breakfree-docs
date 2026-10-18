@@ -29,6 +29,7 @@ struct Unit {
     style: CharacterFormat,
     next_alignment: Option<Alignment>,
     next_style: Option<ParagraphStyle>,
+    next_spacing: Option<ParagraphSpacing>,
 }
 
 fn append(paragraphs: &mut Vec<Paragraph>, unit: Unit) {
@@ -37,6 +38,9 @@ fn append(paragraphs: &mut Vec<Paragraph>, unit: Unit) {
             paragraph_style: unit
                 .next_style
                 .unwrap_or(paragraphs.last().unwrap().paragraph_style),
+            spacing: unit
+                .next_spacing
+                .unwrap_or(paragraphs.last().unwrap().spacing),
             alignment: unit
                 .next_alignment
                 .unwrap_or(paragraphs.last().unwrap().alignment),
@@ -96,6 +100,7 @@ impl Editor {
                         style,
                         next_alignment: None,
                         next_style: None,
+                        next_spacing: None,
                     }),
             );
             if let Some(next) = self.document.paragraphs.get(index + 1) {
@@ -104,11 +109,13 @@ impl Editor {
                     style: paragraph.styles.last().copied().unwrap_or_default(),
                     next_alignment: Some(next.alignment),
                     next_style: Some(next.paragraph_style),
+                    next_spacing: Some(next.spacing),
                 });
             }
         }
         let mut paragraphs = vec![Paragraph {
             alignment: self.document.paragraphs[0].alignment,
+            spacing: self.document.paragraphs[0].spacing,
             paragraph_style: self.document.paragraphs[0].paragraph_style,
             ..Paragraph::default()
         }];
@@ -138,6 +145,7 @@ impl Editor {
                             style: typing,
                             next_alignment: None,
                             next_style: None,
+                            next_spacing: None,
                         },
                     );
                 }
