@@ -98,6 +98,7 @@ pub fn galley(
     let mut whole = LayoutJob::default();
     let mut paragraphs = Vec::new();
     for (index, p) in source.paragraphs.iter().enumerate() {
+        let resolved = source.style_catalog.resolve(p.paragraph_style);
         let mut job = LayoutJob::default();
         job.wrap.max_width = width;
         job.justify = p.alignment == Alignment::Justify;
@@ -114,29 +115,29 @@ pub fn galley(
                 &text,
                 0.,
                 format(
-                    p.styles[start].resolve(p.paragraph_style.character_style()),
+                    p.styles[start].resolve(resolved.character),
                     size,
-                    p.paragraph_style.line_height(),
+                    resolved.line_height(),
                 ),
             );
             whole.append(
                 &text,
                 0.,
                 format(
-                    p.styles[start].resolve(p.paragraph_style.character_style()),
+                    p.styles[start].resolve(resolved.character),
                     size,
-                    p.paragraph_style.line_height(),
+                    resolved.line_height(),
                 ),
             );
             start = end;
         }
         if chars.is_empty() {
             let style = if active_paragraph == Some(index) {
-                typing_style.resolve(p.paragraph_style.character_style())
+                typing_style.resolve(resolved.character)
             } else {
-                p.paragraph_style.character_style()
+                resolved.character
             };
-            job.append("", 0., format(style, size, p.paragraph_style.line_height()));
+            job.append("", 0., format(style, size, resolved.line_height()));
         }
         let mut paragraph = ctx.fonts_mut(|f| f.layout_job(job)).as_ref().clone();
         for placed in &mut paragraph.rows {
@@ -163,11 +164,7 @@ pub fn galley(
             whole.append(
                 "\n",
                 0.,
-                format(
-                    p.paragraph_style.character_style(),
-                    size,
-                    p.paragraph_style.line_height(),
-                ),
+                format(resolved.character, size, resolved.line_height()),
             );
         }
         paragraphs.push(Arc::new(paragraph));
@@ -185,8 +182,9 @@ pub fn galley(
         merged.mesh_bounds |= row.visuals.mesh_bounds.translate(row.pos.to_vec2());
         if row.ends_with_newline {
             spacing += size
-                * source.paragraphs[paragraph_index]
-                    .paragraph_style
+                * source
+                    .style_catalog
+                    .resolve(source.paragraphs[paragraph_index].paragraph_style)
                     .space_after_points()
                 / 11.;
             paragraph_index += 1;

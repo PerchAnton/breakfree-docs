@@ -1,4 +1,4 @@
-//! Strict .bfdoc v1/v2/v3 reading, v3 writing and checked temporary-file replacement.
+//! Strict .bfdoc v1/v2/v3/v4 reading, v4 writing and checked temporary-file replacement.
 use crate::{Result, model::*};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -8,7 +8,7 @@ use std::{
 };
 
 pub const FORMAT_ID: &str = "breakfree.docs.native";
-pub const CONTENT_VERSION: u32 = 3;
+pub const CONTENT_VERSION: u32 = 4;
 pub const MAX_FILE_BYTES: usize = 16 * 1024 * 1024;
 
 #[derive(Serialize, Deserialize)]
@@ -70,6 +70,14 @@ struct NativeV3 {
 }
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+struct NativeV4 {
+    format: String,
+    content_version: u32,
+    style_catalog: StyleCatalog,
+    paragraphs: Vec<ParagraphV3>,
+}
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct ParagraphV3 {
     alignment: Alignment,
     paragraph_style: ParagraphStyle,
@@ -106,9 +114,10 @@ pub fn encode(document: &Document) -> Result<Vec<u8>> {
             }
         })
         .collect();
-    let mut bytes = serde_json::to_vec_pretty(&NativeV3 {
+    let mut bytes = serde_json::to_vec_pretty(&NativeV4 {
         format: FORMAT_ID.into(),
         content_version: CONTENT_VERSION,
+        style_catalog: document.style_catalog.clone(),
         paragraphs,
     })
     .map_err(|e| e.to_string())?;
@@ -119,12 +128,12 @@ pub fn encode(document: &Document) -> Result<Vec<u8>> {
     Ok(bytes)
 }
 
-fn decode_v3(bytes: &[u8]) -> Result<Document> {
-    let file: NativeV3 =
-        serde_json::from_slice(bytes).map_err(|e| format!("Invalid native v3 document: {e}"))?;
+fn decode_styled(paragraphs: Vec<ParagraphV3>, style_catalog: StyleCatalog) -> Result<Document> {
+    style_catalog.validate()?;
+    let native_paragraphs = paragraphs;
     let mut paragraphs = Vec::new();
-    let mut total = file.paragraphs.len().saturating_sub(1);
-    for p in file.paragraphs {
+    let mut total = native_paragraphs.len().saturating_sub(1);
+    for p in native_paragraphs {
         let mut paragraph = Paragraph {
             alignment: p.alignment,
             paragraph_style: p.paragraph_style,
@@ -146,7 +155,10 @@ fn decode_v3(bytes: &[u8]) -> Result<Document> {
         }
         paragraphs.push(paragraph);
     }
-    let result = Document { paragraphs };
+    let result = Document {
+        paragraphs,
+        style_catalog,
+    };
     result.validate()?;
     Ok(result)
 }
@@ -170,7 +182,16 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
                 runs: p.runs.into_iter().map(Run::from).collect(),
             })
             .collect(),
-        CONTENT_VERSION => return decode_v3(bytes),
+        3 => {
+            let file: NativeV3 = serde_json::from_slice(bytes)
+                .map_err(|e| format!("Invalid native v3 document: {e}"))?;
+            return decode_styled(file.paragraphs, StyleCatalog::default());
+        }
+        CONTENT_VERSION => {
+            let file: NativeV4 = serde_json::from_slice(bytes)
+                .map_err(|e| format!("Invalid native v4 document: {e}"))?;
+            return decode_styled(file.paragraphs, file.style_catalog);
+        }
         2 => {
             serde_json::from_slice::<Native<Run>>(bytes)
                 .map_err(|e| format!("Invalid native v2 document: {e}"))?
@@ -210,7 +231,10 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
             paragraph_style: ParagraphStyle::Normal,
         });
     }
-    let result = Document { paragraphs };
+    let result = Document {
+        paragraphs,
+        style_catalog: StyleCatalog::default(),
+    };
     result.validate()?;
     Ok(result)
 }

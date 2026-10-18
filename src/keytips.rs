@@ -162,11 +162,13 @@ impl DocsApp {
                 Tip::action("N", Action::Style(ParagraphStyle::Normal)),
                 Tip::action("S", Action::Style(ParagraphStyle::NoSpacing)),
                 Tip::action("H", Action::Style(ParagraphStyle::Heading1)),
+                Tip::action("M", Action::ModifyStyle),
             ],
             Level::Editing => vec![
                 Tip::action("N", Action::Style(ParagraphStyle::Normal)),
                 Tip::action("S", Action::Style(ParagraphStyle::NoSpacing)),
                 Tip::action("H", Action::Style(ParagraphStyle::Heading1)),
+                Tip::action("M", Action::ModifyStyle),
                 Tip::action("FD", Action::Find),
                 Tip::action("R", Action::Replace),
                 Tip::action("A", Action::SelectAll),
@@ -296,6 +298,7 @@ impl DocsApp {
             || self.composing
             || self.replace_all_dialog.is_some()
             || self.font_dialog.is_some()
+            || self.style_dialog.is_some()
             || self.zoom_dialog.is_some()
             || self.quick_reset
             || self.quick_order.is_some()
@@ -516,6 +519,7 @@ impl DocsApp {
     pub(super) fn paint_keytips(&mut self, ctx: &egui::Context) {
         if self.replace_all_dialog.is_some()
             || self.font_dialog.is_some()
+            || self.style_dialog.is_some()
             || self.zoom_dialog.is_some()
             || self.quick_reset
             || self.quick_order.is_some()

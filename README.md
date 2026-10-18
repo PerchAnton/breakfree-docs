@@ -177,7 +177,7 @@ The ribbon and command search provide the same action without that chord.
 The Font launcher opens a dialog for style, size and underline with a preview.
 Only OK applies the draft, together in one undo operation; Cancel/Escape discards
 it. Mixed properties stay unchanged unless edited. Unimplemented font-family,
-custom-style and list commands are disabled with explanations.
+style-creation and list commands are disabled with explanations.
 
 Home Styles applies Normal, No Spacing or Heading 1 to selected paragraphs in one
 undo. Direct formatting and alignment remain unchanged; Clear character formatting
@@ -186,9 +186,16 @@ Older files retain their explicit formatting until cleared. New paragraphs inher
 the current style, including headings. Compact layouts offer all styles through
 More styles or More. [Inheritance rules](docs/adr/0006-built-in-paragraph-styles.md).
 
-This build reads native content v1/v2/v3 and **saves v3**. Opening an older file
-does not change it; an explicit save converts it to v3. Earlier builds cannot
-open new v3 saves. Use Save As to keep an older copy. See [format details](docs/NATIVE_FORMAT.md).
+Modify an existing definition through Home → More styles → Modify style, or
+right-click its gallery card. Change its parent, emphasis, size and paragraph
+spacing in a local draft. Blank fields inherit; On/Off explicitly override a
+parent. Invalid cycles disable OK. Cancel/Escape changes nothing; OK updates
+inheriting paragraphs and descendants in one Undo, preserving direct formatting.
+These settings belong only to the current document. [Definition rules](docs/adr/0007-editable-style-definitions.md).
+
+This build reads native content v1/v2/v3/v4 and **saves v4**. Opening an older file
+does not change it; an explicit save converts it to v4. Earlier builds cannot
+open new v4 saves. Use Save As to keep an older copy. See [format details](docs/NATIVE_FORMAT.md).
 File provides New/Open/Save/Save As, unsaved Save/Discard/Cancel and view settings;
 Print is disabled. Navigation and the formatting pane operate on real model ranges.
 The white canvas is continuous; pagination, page numbers and print layout are absent.

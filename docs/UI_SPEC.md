@@ -822,3 +822,45 @@ BREAKFREE_CAPTURE_TO="$PWD/docs/screenshots/keytips-review.png" \
 ```
 
 These modes inject fixture focus/key events; they do not validate native Alt input.
+
+## Alpha.19 Modify Style
+
+The existing Home gallery and its palette/icons/gutters are preserved. A card's
+context menu opens Modify Style for that card without applying it. More styles /
+minimum-width More and command search edit the first selected paragraph's style.
+Provisional KeyTips: F10 or Alt, H → L → M; minimum width H → E → M.
+These are tested Docs mappings, not a claim of exact Word shortcut parity.
+
+The light modal has a 460-DIP content width (about 474 DIP including frame), a
+fixed style name, Based on, three tri-state emphasis selectors, size, percentage
+line spacing and point spacing-after fields. Grid gaps are 14 × 7 DIP, numeric
+fields 290 DIP, character preview 448 × 48 DIP and action buttons 82 × 27 DIP.
+The initial size is selected for replacement. Blank fields inherit; a cycle/range
+error disables OK. The preview clips oversized fonts; it does not simulate
+paragraph spacing. Gallery previews use actual resolved emphasis/size, bounded to
+12–20 DIP within unchanged cards. Dialog selection closes its dropdown; Escape
+first closes a dropdown, then cancels the draft. Enter applies a valid draft.
+
+Only OK submits one shared Modify Style command. Cancel/Escape preserve history;
+background edits, file shortcuts and window close wait for the draft. The document
+has the same text/direct formatting, but inherits changed definitions immediately.
+The [official Modify Style workflow](https://support.microsoft.com/en-us/word/customize-or-create-new-styles)
+was checked on 2026-10-18. Supported properties and current-document scope are
+intentional restrictions; custom IDs, font family/color, templates, following
+style and automatic update remain absent. Alignment stays paragraph-owned.
+
+### Alpha.19 native captures
+
+Actual macOS captures at 1366 × 900 and 640 × 480 DIP, 2× backing scale, English
+light UI and 100% canvas zoom. The window and controls fit without overlap or
+clipped labels in these captures; inherited character previews use the real font.
+
+![Modify Style at full width](screenshots/rust-modify-style-alpha19-macos.png)
+![Modify Style at minimum width](screenshots/rust-modify-style-alpha19-macos-narrow.png)
+
+Reproduce with the existing `capture` feature example and mode `styles-modify`.
+Native macOS interaction and synthetic 1/1.25/1.5 geometry are documented in
+[validation](VALIDATION.md#alpha19-editable-style-validation). Word 2024 Windows,
+matched reference captures, native Windows DPI and physical IME were unavailable;
+no visual equivalence percentage is inferred. Brand differences remain the Docs
+logo/title, violet selection accents and restrained original multicolor icons.

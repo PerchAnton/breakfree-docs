@@ -131,7 +131,7 @@ impl CharacterFormat {
     }
 }
 
-/// The content-v3 built-in style catalog is fixed, acyclic and independent of the GUI.
+/// Stable paragraph-style identifiers. Definitions belong to each document.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ParagraphStyle {
@@ -149,37 +149,142 @@ impl ParagraphStyle {
             Self::Heading1 => "Heading 1",
         }
     }
+    /// Frozen v3 baseline. Use the document catalog for actual editing/layout.
     pub fn parent(self) -> Option<Self> {
-        match self {
-            Self::Normal => None,
-            _ => Some(Self::Normal),
-        }
+        StyleCatalog::default().get(self).parent
     }
     pub fn character_style(self) -> Style {
-        let base = self.parent().map(Self::character_style).unwrap_or_default();
-        match self {
-            Self::Heading1 => CharacterFormat {
-                bold: Some(true),
-                font_size: Some(FontSize(36)),
-                ..Default::default()
-            }
-            .resolve(base),
-            _ => base,
-        }
+        StyleCatalog::default().resolve(self).character
     }
     pub fn line_height(self) -> f32 {
-        if self == Self::NoSpacing {
-            1.0
-        } else {
-            self.parent().map(Self::line_height).unwrap_or(1.25)
-        }
+        StyleCatalog::default().resolve(self).line_height()
     }
     pub fn space_after_points(self) -> f32 {
-        if self == Self::NoSpacing {
-            0.0
-        } else {
-            self.parent().map(Self::space_after_points).unwrap_or(5.5)
+        StyleCatalog::default().resolve(self).space_after_points()
+    }
+}
+
+/// Optional properties inherit from the parent, or the frozen root defaults.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct StyleDefinition {
+    pub parent: Option<ParagraphStyle>,
+    pub character: CharacterFormat,
+    pub line_height_percent: Option<u16>,
+    pub space_after_half_points: Option<u16>,
+}
+
+/// Fixed IDs avoid dangling references; definitions are editable and persisted.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct StyleCatalog {
+    pub normal: StyleDefinition,
+    pub no_spacing: StyleDefinition,
+    pub heading1: StyleDefinition,
+}
+impl Default for StyleCatalog {
+    fn default() -> Self {
+        Self {
+            normal: StyleDefinition::default(),
+            no_spacing: StyleDefinition {
+                parent: Some(ParagraphStyle::Normal),
+                line_height_percent: Some(100),
+                space_after_half_points: Some(0),
+                ..Default::default()
+            },
+            heading1: StyleDefinition {
+                parent: Some(ParagraphStyle::Normal),
+                character: CharacterFormat {
+                    bold: Some(true),
+                    font_size: Some(FontSize(36)),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
         }
+    }
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ResolvedParagraphStyle {
+    pub character: Style,
+    pub line_height_percent: u16,
+    pub space_after_half_points: u16,
+}
+impl ResolvedParagraphStyle {
+    pub fn line_height(self) -> f32 {
+        f32::from(self.line_height_percent) / 100.
+    }
+    pub fn space_after_points(self) -> f32 {
+        f32::from(self.space_after_half_points) / 2.
+    }
+}
+impl StyleCatalog {
+    pub fn get(&self, id: ParagraphStyle) -> &StyleDefinition {
+        match id {
+            ParagraphStyle::Normal => &self.normal,
+            ParagraphStyle::NoSpacing => &self.no_spacing,
+            ParagraphStyle::Heading1 => &self.heading1,
+        }
+    }
+    pub fn get_mut(&mut self, id: ParagraphStyle) -> &mut StyleDefinition {
+        match id {
+            ParagraphStyle::Normal => &mut self.normal,
+            ParagraphStyle::NoSpacing => &mut self.no_spacing,
+            ParagraphStyle::Heading1 => &mut self.heading1,
+        }
+    }
+    pub fn validate(&self) -> Result<()> {
+        for id in ParagraphStyle::ALL {
+            let definition = self.get(id);
+            if definition
+                .line_height_percent
+                .is_some_and(|v| !(100..=300).contains(&v))
+            {
+                return Err("Line spacing must be 100–300 percent.".into());
+            }
+            if definition.space_after_half_points.is_some_and(|v| v > 400) {
+                return Err("Space after must be 0–200 pt in half-point steps.".into());
+            }
+            let mut seen = Vec::new();
+            let mut next = Some(id);
+            while let Some(current) = next {
+                if seen.contains(&current) {
+                    return Err("A style cannot inherit from itself or its descendants.".into());
+                }
+                seen.push(current);
+                next = self.get(current).parent;
+            }
+        }
+        Ok(())
+    }
+    /// The bounded walk also keeps invalid external model values safe to inspect.
+    /// Editing and storage validate the complete catalog before accepting it.
+    pub fn resolve(&self, id: ParagraphStyle) -> ResolvedParagraphStyle {
+        let mut chain = Vec::new();
+        let mut next = Some(id);
+        while let Some(current) = next {
+            if chain.contains(&current) {
+                break;
+            }
+            chain.push(current);
+            next = self.get(current).parent;
+        }
+        let mut resolved = ResolvedParagraphStyle {
+            character: Style::default(),
+            line_height_percent: 125,
+            space_after_half_points: 11,
+        };
+        for id in chain.into_iter().rev() {
+            let definition = self.get(id);
+            resolved.character = definition.character.resolve(resolved.character);
+            resolved.line_height_percent = definition
+                .line_height_percent
+                .unwrap_or(resolved.line_height_percent);
+            resolved.space_after_half_points = definition
+                .space_after_half_points
+                .unwrap_or(resolved.space_after_half_points);
+        }
+        resolved
     }
 }
 
@@ -203,6 +308,7 @@ pub struct Paragraph {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Document {
+    pub style_catalog: StyleCatalog,
     pub paragraphs: Vec<Paragraph>,
 }
 
@@ -210,6 +316,7 @@ impl Default for Document {
     fn default() -> Self {
         Self {
             paragraphs: vec![Paragraph::default()],
+            style_catalog: StyleCatalog::default(),
         }
     }
 }
@@ -264,6 +371,7 @@ impl Document {
     }
 
     pub fn validate(&self) -> Result<()> {
+        self.style_catalog.validate()?;
         if self.paragraphs.is_empty() {
             return Err("A document needs a paragraph.".into());
         }

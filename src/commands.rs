@@ -96,7 +96,10 @@ impl Editor {
             offset += len + 1;
         }
         paragraphs.extend_from_slice(&self.document.paragraphs[last + 1..]);
-        let result = Document { paragraphs };
+        let result = Document {
+            paragraphs,
+            style_catalog: self.document.style_catalog.clone(),
+        };
         result.validate()?;
         let after = start + text.chars().count();
         let caret = boundaries(&result.text())
@@ -195,9 +198,11 @@ impl Editor {
     ) -> Result<()> {
         validate_range(&self.document.text(), start, end)?;
         if start == end {
-            let base = self.document.paragraphs[self.document.locate(start)?.0]
-                .paragraph_style
-                .character_style();
+            let base = self
+                .document
+                .style_catalog
+                .resolve(self.document.paragraphs[self.document.locate(start)?.0].paragraph_style)
+                .character;
             change(&mut self.typing_style, base);
             return Ok(());
         }
@@ -205,9 +210,14 @@ impl Editor {
         let mut offset = 0;
         let mut typing = None;
         for p in &mut result.paragraphs {
+            let base = self
+                .document
+                .style_catalog
+                .resolve(p.paragraph_style)
+                .character;
             for (i, style) in p.styles.iter_mut().enumerate() {
                 if (start..end).contains(&(offset + i)) {
-                    change(style, p.paragraph_style.character_style());
+                    change(style, base);
                     typing.get_or_insert(*style);
                 }
             }
@@ -266,6 +276,15 @@ impl Editor {
         Ok(())
     }
 
+    /// Replace a definition and its parent together, without flattening descendants.
+    pub fn modify_style(&mut self, id: ParagraphStyle, definition: StyleDefinition) -> Result<()> {
+        let mut result = self.document.clone();
+        *result.style_catalog.get_mut(id) = definition;
+        result.validate()?;
+        self.commit(result, "Modify style", self.selection, self.typing_style);
+        Ok(())
+    }
+
     pub fn selected_paragraph_style(&self) -> Option<ParagraphStyle> {
         let (start, end) = self.selection;
         let (first, _) = self.document.locate(start).ok()?;
@@ -299,21 +318,27 @@ impl Editor {
             let p = self.document.locate(start).ok()?.0;
             return Some(value(
                 self.typing_style.resolve(
-                    self.document.paragraphs[p]
-                        .paragraph_style
-                        .character_style(),
+                    self.document
+                        .style_catalog
+                        .resolve(self.document.paragraphs[p].paragraph_style)
+                        .character,
                 ),
             ));
         }
         let mut offset = 0;
         let mut selected = Vec::new();
         for p in &self.document.paragraphs {
+            let base = self
+                .document
+                .style_catalog
+                .resolve(p.paragraph_style)
+                .character;
             selected.extend(
                 p.styles
                     .iter()
                     .enumerate()
                     .filter(|(i, _)| (start..end).contains(&(offset + i)))
-                    .map(|(_, s)| value(s.resolve(p.paragraph_style.character_style()))),
+                    .map(|(_, s)| value(s.resolve(base))),
             );
             offset += p.styles.len() + 1;
         }

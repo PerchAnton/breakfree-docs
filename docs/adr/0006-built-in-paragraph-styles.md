@@ -4,6 +4,10 @@
 - Status: implemented for owner review in alpha.18; extensible catalog editing remains deferred
 - Scope: shared Rust model, commands, native content v3 and Home gallery; no new dependencies
 
+Alpha.19 extends this historical fixed-catalog decision through
+[ADR 0007](0007-editable-style-definitions.md): editable document definitions and
+content v4. The frozen v3 defaults remain the migration baseline.
+
 ## Decision
 
 Separate resolved `Style` values from stored `CharacterFormat` overrides. Each

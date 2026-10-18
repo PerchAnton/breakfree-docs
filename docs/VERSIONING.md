@@ -93,3 +93,8 @@ Approval of a number does not authorize a merge, tag, upload or GitHub Release.
    is `v<application-version>` at that approved commit; never move/reuse a published
    tag or replace artifacts under the same version. No tag or release is created
    automatically by the existing CI workflow.
+
+Alpha.19 introduces native content v4 for document-owned style definitions and
+parent graphs. It reads v1/v2/v3/v4 and saves v4; earlier builds reject v4. Process
+protocol and preferences remain v1. Version approval does not imply file-format
+backward compatibility or authorize a release.

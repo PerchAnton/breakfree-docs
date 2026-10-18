@@ -217,6 +217,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "home",
             "styles",
             "styles-menu",
+            "styles-modify",
             "file",
             "navigation",
             "navigation-options",
@@ -244,7 +245,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ]
         .contains(&args[2].as_str())
     {
-        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
+        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|styles-modify|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
     }
     let path = std::env::var("BREAKFREE_CAPTURE_TO")
         .map_err(|_| "Set BREAKFREE_CAPTURE_TO to an output PNG path")?;
@@ -345,6 +346,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     app.ribbon_collapsed = true;
                     app.ribbon_temporary = true;
                 }
+                "styles-modify" => app.execute(Action::ModifyStyle, &cc.egui_ctx),
                 "font" => {
                     app.execute(Action::SelectAll, &cc.egui_ctx);
                     app.execute(Action::FontDialog, &cc.egui_ctx);

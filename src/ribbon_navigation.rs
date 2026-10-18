@@ -452,6 +452,7 @@ impl DocsApp {
         if self.backstage
             || self.replace_all_dialog.is_some()
             || self.font_dialog.is_some()
+            || self.style_dialog.is_some()
             || self.zoom_dialog.is_some()
             || self.quick_reset
             || self.quick_order.is_some()

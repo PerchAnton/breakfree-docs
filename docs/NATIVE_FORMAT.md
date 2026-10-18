@@ -1,12 +1,17 @@
 # Native BreakFree Docs document format
 
-Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v3.
+Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v4.
 This is not a DOCX container. Process protocol and file-content versions are independent.
 
 ```json
 {
   "format": "breakfree.docs.native",
-  "content_version": 3,
+  "content_version": 4,
+  "style_catalog": {
+    "normal": {"parent": null, "character": {}, "line_height_percent": null, "space_after_half_points": null},
+    "no_spacing": {"parent": "normal", "character": {}, "line_height_percent": 100, "space_after_half_points": 0},
+    "heading1": {"parent": "normal", "character": {"bold": true, "font_size": 36}, "line_height_percent": null, "space_after_half_points": null}
+  },
   "paragraphs": [
     {
       "alignment": "left",
@@ -19,8 +24,12 @@ This is not a DOCX container. Process protocol and file-content versions are ind
 ```
 
 A document has at least one paragraph; an empty paragraph has `runs: []`.
-`paragraph_style` is required: `normal`, `no_spacing` or `heading1`. The fixed v3
-catalog and inheritance order are specified in [ADR 0006](adr/0006-built-in-paragraph-styles.md).
+`paragraph_style` is required: `normal`, `no_spacing` or `heading1`. The required
+`style_catalog` holds exactly those three definitions. Each requires a `character`
+object; optional/null parent, character properties and spacing inherit. Validate
+all parents/cycles before accepting the file. Line height is 100–300 percent;
+space after is 0–400 half points. Root fallback is regular 11 pt, 125%, 5.5 pt after.
+See [ADR 0007](adr/0007-editable-style-definitions.md).
 Each nonempty run requires text and a `direct` object. Its four properties are
 optional or null for inheritance; explicit booleans override bold/italic/underline.
 `font_size`, when present and non-null, is an integer from 2 through 800 half points
@@ -48,8 +57,9 @@ Import every legacy character value as an explicit override on Normal, preservin
 appearance without guessing authored inheritance. Applying a named style retains
 these values; Clear character formatting makes the text inherit its paragraph.
 Opening performs only in-memory conversion and does not dirty/write the file.
-Every explicit save writes v3, even for an unchanged older document. Use Save As
-to retain the original. **Earlier builds cannot open v3 saves.** No downgrade or
+V3 uses its frozen built-in catalog from [ADR 0006](adr/0006-built-in-paragraph-styles.md);
+it rejects embedded definitions. Every explicit save writes v4, even for an unchanged older document. Use Save As
+to retain the original. **Earlier builds cannot open v4 saves.** No downgrade or
 lossy export is provided. Header/full-schema parsing preserves duplicate rejection.
 
 Empty paragraphs retain their named style. Pending direct formatting at a caret

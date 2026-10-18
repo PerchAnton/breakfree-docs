@@ -180,10 +180,14 @@ Rust selection is complete; this gate evaluates GUI behavior and visual fidelity
   overrides, real Home gallery and spacing, one-operation undo and strict v3
   roundtrip with v1/v2 appearance preservation. Depends on alpha.17 reset and
   alpha.16 replacement snapshots; [ADR 0006](docs/adr/0006-built-in-paragraph-styles.md).
-- [ ] Extend paragraph/character styles with editable definitions, validated parent
-  graphs and explicit direct-formatting rules. Next increment: Modify Style draft
-  with parent selection, cycle rejection, Cancel and one undo; changing Normal
-  updates inherited properties only, surviving save/reopen. Depends on alpha.18.
+- [x] Alpha.19: Modify Style draft for the three built-in definitions, parent
+  selection, cycle/range rejection, Cancel and one undo. Changing Normal updates
+  inherited properties only; definitions survive v4 save/reopen, text editing and
+  batch replacement. Depends on alpha.18; [ADR 0007](docs/adr/0007-editable-style-definitions.md).
+- [ ] Extend paragraph/character styles with custom IDs and creation/rename/delete
+  rules. Next small increment: create a named paragraph style from an explicit
+  draft, apply it through Home, preserve its parent/direct overrides and roundtrip
+  it in one undo. Depends on alpha.19 graph validation and a versioned ID schema.
   Complete this broader item only with custom/character-style fixture coverage.
 - [ ] Add lists, indentation, tabs, spacing, links and Unicode-aware search/replace.
 - [ ] Add table editing and images with explicit sizing and anchoring semantics.

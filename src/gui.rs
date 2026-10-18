@@ -18,6 +18,9 @@ use std::path::PathBuf;
 
 #[path = "font_dialog.rs"]
 mod font_dialog;
+#[path = "style_dialog.rs"]
+mod style_dialog;
+use style_dialog::{StyleDialog, StyleOutcome};
 #[path = "replace_all_dialog.rs"]
 mod replace_all_dialog;
 use font_dialog::{FontDialog, FontDialogOutcome};
@@ -73,6 +76,7 @@ pub enum Action {
     Style(ParagraphStyle),
     FontSize,
     FontDialog,
+    ModifyStyle,
     GrowFont,
     ShrinkFont,
     Left,
@@ -110,6 +114,7 @@ impl Action {
             Self::Style(style) => style.name(),
             Self::FontSize => "Font size",
             Self::FontDialog => "Font dialog",
+            Self::ModifyStyle => "Modify style…",
             Self::GrowFont => "Grow font",
             Self::ShrinkFont => "Shrink font",
             Self::Left => "Align left",
@@ -149,6 +154,7 @@ const COMMANDS: &[Action] = &[
     Action::Style(ParagraphStyle::Heading1),
     Action::FontSize,
     Action::FontDialog,
+    Action::ModifyStyle,
     Action::GrowFont,
     Action::ShrinkFont,
     Action::Left,
@@ -218,6 +224,7 @@ pub struct DocsApp {
     font_size_text: String,
     font_size_dirty: bool,
     font_dialog: Option<FontDialog>,
+    style_dialog: Option<StyleDialog>,
     pending: Option<Pending>,
     error: Option<String>,
     backstage: bool,
@@ -327,6 +334,7 @@ impl DocsApp {
             font_size_text: String::new(),
             font_size_dirty: false,
             font_dialog: None,
+            style_dialog: None,
             pending: None,
             error: None,
             backstage: false,
@@ -362,14 +370,17 @@ impl DocsApp {
     fn enabled(&self, action: Action) -> bool {
         if self.replace_all_dialog.is_some()
             || self.font_dialog.is_some()
+            || self.style_dialog.is_some()
             || self.zoom_dialog.is_some()
             || self.quick_reset
             || self.quick_order.is_some()
         {
             return false;
         }
-        if matches!(action, Action::FontDialog | Action::Zoom)
-            && (self.pending.is_some() || self.error.is_some())
+        if matches!(
+            action,
+            Action::FontDialog | Action::ModifyStyle | Action::Zoom
+        ) && (self.pending.is_some() || self.error.is_some())
         {
             return false;
         }
@@ -495,10 +506,12 @@ impl DocsApp {
         if !self.enabled(action) {
             return;
         }
-        if matches!(action, Action::ClearFormatting | Action::Style(_))
-            && (self.pending.is_some()
-                || self.error.is_some()
-                || ctx.input(|i| i.events.iter().any(|e| matches!(e, egui::Event::Ime(_)))))
+        if matches!(
+            action,
+            Action::ClearFormatting | Action::Style(_) | Action::ModifyStyle
+        ) && (self.pending.is_some()
+            || self.error.is_some()
+            || ctx.input(|i| i.events.iter().any(|e| matches!(e, egui::Event::Ime(_)))))
         {
             return;
         }
@@ -586,6 +599,16 @@ impl DocsApp {
                 self.focus_font_size = true;
                 self.focus_document = false;
             }
+            Action::ModifyStyle => {
+                let id = self
+                    .session
+                    .editor
+                    .document
+                    .locate(start)
+                    .map(|(p, _)| self.session.editor.document.paragraphs[p].paragraph_style)
+                    .unwrap_or_default();
+                self.open_style_dialog(id, ctx);
+            }
             Action::FontDialog => {
                 self.font_dialog = Some(FontDialog::new(self.session.editor.selected_font()));
                 self.focus_document = false;
@@ -655,7 +678,12 @@ impl DocsApp {
             egui::Popup::close_all(ctx);
             if !matches!(
                 action,
-                Action::Find | Action::Replace | Action::FontDialog | Action::Zoom | Action::File
+                Action::Find
+                    | Action::Replace
+                    | Action::FontDialog
+                    | Action::ModifyStyle
+                    | Action::Zoom
+                    | Action::File
             ) {
                 self.focus_document = true;
             }
@@ -1589,31 +1617,52 @@ impl DocsApp {
                         &format!("command-{action:?}"),
                         TargetKind::Action(action),
                     );
-                    ui.painter().with_clip_rect(rect).text(
-                        rect.center(),
-                        Align2::CENTER_CENTER,
-                        style.name(),
-                        FontId::new(
-                            if style == ParagraphStyle::Heading1 {
-                                18.
-                            } else {
-                                12.
-                            },
-                            egui::FontFamily::Name(
-                                if style == ParagraphStyle::Heading1 {
-                                    "body-bold"
-                                } else {
-                                    "body"
-                                }
-                                .into(),
-                            ),
+                    let resolved = self
+                        .session
+                        .editor
+                        .document
+                        .style_catalog
+                        .resolve(style)
+                        .character;
+                    let mut preview = RichText::new(style.name()).font(FontId::new(
+                        resolved.font_size.points().clamp(12., 20.),
+                        egui::FontFamily::Name(
+                            if resolved.bold { "body-bold" } else { "body" }.into(),
                         ),
+                    ));
+                    if resolved.italic {
+                        preview = preview.italics();
+                    }
+                    if resolved.underline {
+                        preview = preview.underline();
+                    }
+                    let galley = egui::WidgetText::from(preview).into_galley(
+                        ui,
+                        Some(egui::TextWrapMode::Extend),
+                        f32::INFINITY,
+                        egui::TextStyle::Body,
+                    );
+                    ui.painter().with_clip_rect(rect).galley(
+                        rect.center() - galley.size() / 2.,
+                        galley,
                         if self.enabled(action) {
                             INK
                         } else {
                             Color32::from_gray(135)
                         },
                     );
+                    response.context_menu(|ui| {
+                        if ui
+                            .add_enabled(
+                                self.enabled(Action::ModifyStyle),
+                                Button::new("Modify style…"),
+                            )
+                            .clicked()
+                        {
+                            self.open_style_dialog(style, ui.ctx());
+                            ui.close();
+                        }
+                    });
                     if response.on_hover_text(format!("Apply {} to the selected paragraphs. Direct font formatting and alignment stay unchanged.", style.name()))
                         .on_disabled_hover_text("Finish the current dialog or text composition first.").clicked() {
                         self.execute(action, ui.ctx());
@@ -1670,18 +1719,24 @@ impl DocsApp {
             );
         }
     }
+    fn open_style_dialog(&mut self, id: ParagraphStyle, ctx: &egui::Context) {
+        self.style_dialog = Some(StyleDialog::new(
+            id,
+            &self.session.editor.document.style_catalog,
+        ));
+        self.focus_document = false;
+        self.focus_font_size = false;
+        self.palette = false;
+        ctx.memory_mut(|m| m.surrender_focus(Id::new(EDIT_ID)));
+    }
+
     fn styles_menu(&mut self, ui: &mut Ui) {
         for style in ParagraphStyle::ALL {
             self.command(ui, style.name(), Action::Style(style), vec2(160., 27.));
         }
         ui.separator();
         ui.small("Direct formatting takes precedence.");
-        Self::disabled(
-            ui,
-            "Modify style…",
-            vec2(160., 27.),
-            "Editing style definitions is planned.",
-        );
+        self.command(ui, "Modify style…", Action::ModifyStyle, vec2(160., 27.));
     }
 
     fn ribbon_contents(&mut self, ui: &mut Ui) {
@@ -1813,6 +1868,7 @@ impl DocsApp {
         // Modal drafts must never dispatch edits, Save or New into the background.
         if self.replace_all_dialog.is_some()
             || self.font_dialog.is_some()
+            || self.style_dialog.is_some()
             || self.zoom_dialog.is_some()
             || self.quick_reset
             || self.quick_order.is_some()
@@ -2454,6 +2510,17 @@ impl DocsApp {
                 }
             }
         }
+        if let Some(mut dialog) = self.style_dialog.take() {
+            match dialog.show(ctx, &mut self.regions) {
+                StyleOutcome::Open => self.style_dialog = Some(dialog),
+                StyleOutcome::Cancel => self.sync_view(),
+                StyleOutcome::Apply(definition) => {
+                    let result = self.session.editor.modify_style(dialog.id, definition);
+                    self.fail(result);
+                    self.sync_view();
+                }
+            }
+        }
         if let Some(mut dialog) = self.font_dialog.take() {
             match dialog.show(ctx, &self.body_font, &mut self.regions) {
                 FontDialogOutcome::Open => self.font_dialog = Some(dialog),
@@ -2576,6 +2643,7 @@ impl DocsApp {
         if close_requested
             && (self.replace_all_dialog.is_some()
                 || self.font_dialog.is_some()
+                || self.style_dialog.is_some()
                 || self.zoom_dialog.is_some()
                 || self.quick_reset
                 || self.quick_order.is_some())

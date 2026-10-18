@@ -1653,7 +1653,7 @@ fn ribbon_menus_escape_overflow_and_keyboard_resize_retain_focus() {
         [640., 480.],
     );
     assert!(egui::Popup::is_any_open(&ctx));
-    for _ in 0..3 {
+    for _ in 0..4 {
         ribbon_key(
             &ctx,
             &mut app,
@@ -3922,4 +3922,256 @@ fn style_actions_respect_composition_dialogs_and_command_search() {
         Some(ParagraphStyle::Heading1)
     );
     assert_eq!(app.session.editor.document.text(), "Text");
+}
+
+#[test]
+fn modify_style_draft_cancel_invalid_parent_apply_and_history_are_modal() {
+    let (ctx, mut app) = setup();
+    let size = [1366., 900.];
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Paste(
+            "Normal\nHeading café Україна Русский".into(),
+        )],
+        size,
+        1.,
+    );
+    app.session
+        .editor
+        .apply_paragraph_style(7, 7, ParagraphStyle::Heading1)
+        .unwrap();
+    app.session.editor.selection = (0, 6);
+    app.sync_view();
+    let before = app.session.editor.document.clone();
+    let depth = app.session.editor.undo_stack.len();
+    app.execute(Action::ModifyStyle, &ctx);
+    frame(&ctx, &mut app, vec![], size, 1.);
+    let dialog = app.style_dialog.as_mut().unwrap();
+    dialog.definition.parent = Some(ParagraphStyle::Heading1);
+    dialog.size = "16".into();
+    frame(&ctx, &mut app, vec![key(Key::Enter, false)], size, 1.);
+    assert!(app.style_dialog.is_some());
+    let mut close_input = egui::RawInput {
+        screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(1366., 900.))),
+        ..Default::default()
+    };
+    close_input
+        .viewports
+        .get_mut(&egui::ViewportId::ROOT)
+        .unwrap()
+        .events
+        .push(egui::ViewportEvent::Close);
+    let closed = ctx.run(close_input, |ctx| app.update_ui(ctx));
+    assert!(
+        closed.viewport_output[&egui::ViewportId::ROOT]
+            .commands
+            .contains(&ViewportCommand::CancelClose)
+    );
+    assert!(app.style_dialog.is_some());
+
+    assert_eq!(app.session.editor.document, before);
+    assert!(!app.enabled(Action::Undo) && !app.enabled(Action::New));
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Z, true), egui::Event::Paste("blocked".into())],
+        size,
+        1.,
+    );
+    assert_eq!(app.session.editor.document, before);
+    frame(&ctx, &mut app, vec![key(Key::Escape, false)], size, 1.);
+    assert!(app.style_dialog.is_none());
+    assert_eq!(app.session.editor.undo_stack.len(), depth);
+    assert_eq!(app.session.editor.document, before);
+    app.execute(Action::ModifyStyle, &ctx);
+    let dialog = app.style_dialog.as_mut().unwrap();
+    dialog.size = "16".into();
+    dialog.definition.character.italic = Some(true);
+    dialog.line = "150".into();
+    dialog.after = "8.5".into();
+    frame(&ctx, &mut app, vec![], size, 1.);
+    click_region(&ctx, &mut app, "style-dialog-ok");
+    assert!(app.style_dialog.is_none());
+    assert_eq!(app.session.editor.undo_stack.len(), depth + 1);
+    let after = app.session.editor.document.clone();
+    assert_eq!(after.paragraphs, before.paragraphs);
+    assert!(
+        after
+            .style_catalog
+            .resolve(ParagraphStyle::Heading1)
+            .character
+            .italic
+    );
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.document, before);
+    app.execute(Action::Redo, &ctx);
+    assert_eq!(app.session.editor.document, after);
+    assert_eq!(
+        storage::decode(&storage::encode(&after).unwrap()).unwrap(),
+        after
+    );
+}
+
+#[test]
+fn modify_style_keytips_minimum_bounds_keyboard_and_composition_guards() {
+    for dpi in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        let screen = [640. * dpi, 480. * dpi];
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![], screen, dpi);
+        }
+        app.composing = true;
+        app.execute(Action::ModifyStyle, &ctx);
+        assert!(app.style_dialog.is_none());
+        app.composing = false;
+        app.pending = Some(Pending::New);
+        app.execute(Action::ModifyStyle, &ctx);
+        assert!(app.style_dialog.is_none());
+        app.pending = None;
+        // F10, Home, More, Modify. No selection or paragraph-style application needed.
+        for k in [Key::F10, Key::H, Key::E, Key::M] {
+            frame(&ctx, &mut app, vec![key(k, false)], screen, dpi);
+        }
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![], screen, dpi);
+        }
+        assert!(app.style_dialog.is_some());
+        let bounds = app
+            .regions
+            .iter()
+            .find(|r| r.name == "style-dialog")
+            .unwrap()
+            .rect;
+        assert!(
+            Rect::from_min_size(Pos2::ZERO, vec2(640., 480.)).contains_rect(bounds),
+            "{bounds:?}"
+        );
+        for region in app
+            .regions
+            .iter()
+            .filter(|r| r.name.starts_with("style-dialog-"))
+        {
+            assert!(
+                bounds.contains_rect(region.rect),
+                "{} {:?}",
+                region.name,
+                region.rect
+            );
+        }
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::Text("14.5".into())],
+            screen,
+            dpi,
+        );
+        frame(&ctx, &mut app, vec![key(Key::Enter, false)], screen, dpi);
+        assert!(app.style_dialog.is_none());
+        assert_eq!(
+            app.session
+                .editor
+                .document
+                .style_catalog
+                .resolve(ParagraphStyle::Normal)
+                .character
+                .font_size
+                .to_string(),
+            "14.5"
+        );
+        assert_eq!(app.session.editor.undo_stack.len(), 1);
+        app.execute(Action::Undo, &ctx);
+        assert!(!app.session.dirty());
+    }
+}
+
+#[test]
+fn modified_catalog_drives_layout_and_selection_without_flattening_direct_values() {
+    let (ctx, mut app) = setup();
+    app.session
+        .editor
+        .replace(0, 0, "Body\nHeading", "Input")
+        .unwrap();
+    app.session
+        .editor
+        .apply_paragraph_style(5, 5, ParagraphStyle::Heading1)
+        .unwrap();
+    let doc = app.session.editor.document.clone();
+    let before = layout::galley(
+        &ctx,
+        &doc,
+        &doc.text(),
+        CharacterFormat::default(),
+        0,
+        500.,
+        15.,
+    );
+    let mut definition = doc.style_catalog.normal;
+    definition.character.font_size = Some("30".parse().unwrap());
+    definition.space_after_half_points = Some(60);
+    app.session
+        .editor
+        .modify_style(ParagraphStyle::Normal, definition)
+        .unwrap();
+    let doc = &app.session.editor.document;
+    let after = layout::galley(
+        &ctx,
+        doc,
+        &doc.text(),
+        CharacterFormat::default(),
+        0,
+        500.,
+        15.,
+    );
+    assert!(after.rows[0].size.y > before.rows[0].size.y * 2.);
+    assert!(after.rows[1].pos.y > before.rows[1].pos.y + 30.);
+    app.session.editor.selection = (0, 4);
+    assert_eq!(
+        app.session.editor.selected_font_size().unwrap().to_string(),
+        "30"
+    );
+    app.session.editor.clear_character_formatting(0, 4).unwrap();
+    assert!(
+        app.session.editor.document.paragraphs[0]
+            .styles
+            .iter()
+            .all(|s| *s == CharacterFormat::default())
+    );
+}
+
+#[test]
+fn style_parent_combo_closes_after_selection_and_escape_only_closes_open_combo() {
+    let (ctx, mut app) = setup();
+    app.open_style_dialog(ParagraphStyle::Heading1, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    click_region(&ctx, &mut app, "style-dialog-parent");
+    assert!(egui::Popup::is_any_open(&ctx));
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Escape, false)],
+        [1366., 900.],
+        1.,
+    );
+    assert!(!egui::Popup::is_any_open(&ctx));
+    assert!(app.style_dialog.is_some());
+    click_region(&ctx, &mut app, "style-dialog-parent");
+    click_region(&ctx, &mut app, "style-parent-NoSpacing");
+    assert!(!egui::Popup::is_any_open(&ctx));
+    assert!(app.style_dialog.is_some());
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Enter, false)],
+        [1366., 900.],
+        1.,
+    );
+    assert!(app.style_dialog.is_none());
+    assert_eq!(
+        app.session.editor.document.style_catalog.heading1.parent,
+        Some(ParagraphStyle::NoSpacing)
+    );
+    assert_eq!(app.session.editor.undo_stack.len(), 1);
+    app.execute(Action::Undo, &ctx);
+    assert!(!app.session.dirty());
 }

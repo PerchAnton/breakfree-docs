@@ -150,7 +150,10 @@ impl Editor {
         for &unit in &units[offset..] {
             append(&mut paragraphs, unit);
         }
-        let result = Document { paragraphs };
+        let result = Document {
+            paragraphs,
+            style_catalog: self.document.style_catalog.clone(),
+        };
         result.validate()?;
         // Inserted marks/joiners can combine with neighboring source text.
         caret = boundaries(&result.text())

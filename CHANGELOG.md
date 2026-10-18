@@ -3,7 +3,29 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
-## 0.1.0-alpha.18 — Unreleased; submitted for owner approval
+## 0.1.0-alpha.19 — Unreleased; submitted for owner approval
+
+Prepared 2026-10-18. The owner approved alpha.18 in the project chat.
+
+- Add Modify Style for Normal, No Spacing and Heading 1: parent selection,
+  inheritable bold/italic/underline, size, line spacing and space after. A validated
+  draft previews character appearance; Cancel/Escape leaves the document intact.
+- Apply all definition changes with one undo/redo, preserving direct formatting,
+  text, alignment, selection and pending input. Reject parent cycles and invalid
+  values. Descendants and Home previews resolve the document's current catalog.
+- Open through Styles menus, card context menus, command search or KeyTips.
+  Preserve the approved palette, original icons and responsive Home gutters.
+- Save document-owned definitions in native content v4; retain strict v1/v2/v3
+  readers, frozen legacy defaults, source-byte preservation and checked saves.
+  Earlier builds reject v4; use Save As to keep the original older file.
+- Cover graph validation, exact history, edit/batch preservation, stale previews,
+  malformed catalogs, save failures and actual-widget/layout/modal behavior.
+
+No dependency, process/settings protocol or license change. Custom/character
+styles, templates, Windows/reference/DPI/IME acceptance remain separate gates.
+No merge, tag or release is authorized.
+
+## 0.1.0-alpha.18 — Unreleased; version approved 2026-10-18
 
 Prepared 2026-10-17. The owner approved alpha.17 in the project chat.
 

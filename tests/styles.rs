@@ -201,7 +201,7 @@ fn v3_rejects_unknown_styles_and_bad_overrides_legacy_import_keeps_appearance() 
     let encoded = storage::encode(&e.document).unwrap();
     let json: serde_json::Value = serde_json::from_slice(&encoded).unwrap();
     for (pointer, value) in [
-        ("/content_version", serde_json::json!(4)),
+        ("/content_version", serde_json::json!(5)),
         ("/format", serde_json::json!("breakfree.sheets.native")),
         ("/paragraphs/0/paragraph_style", serde_json::json!("custom")),
         ("/paragraphs/0/runs/0/direct/bold", serde_json::json!(1)),
@@ -250,4 +250,266 @@ fn v3_rejects_unknown_styles_and_bad_overrides_legacy_import_keeps_appearance() 
             e.document
         );
     }
+}
+
+#[test]
+fn modify_parent_and_properties_updates_descendants_in_one_exact_undo() {
+    let mut e = Editor::default();
+    e.replace(0, 0, "Normal\nУкраїна café\nРусский", "Input")
+        .unwrap();
+    e.apply_paragraph_style(7, 20, ParagraphStyle::NoSpacing)
+        .unwrap();
+    e.apply_paragraph_style(21, 21, ParagraphStyle::Heading1)
+        .unwrap();
+    e.emphasize(0, 1, true, false).unwrap();
+    e.selection = (7, 20);
+    let before = e.document.clone();
+    let typing = e.typing_style;
+    let depth = e.undo_stack.len();
+    let definition = StyleDefinition {
+        character: CharacterFormat {
+            bold: Some(true),
+            italic: Some(true),
+            font_size: Some("16".parse().unwrap()),
+            ..Default::default()
+        },
+        line_height_percent: Some(150),
+        space_after_half_points: Some(20),
+        ..Default::default()
+    };
+    e.modify_style(ParagraphStyle::Normal, definition).unwrap();
+    let after = e.document.clone();
+    assert_eq!(after.paragraphs, before.paragraphs);
+    assert_eq!(e.selection, (7, 20));
+    assert_eq!(e.typing_style, typing);
+    assert_eq!(e.undo_stack.len(), depth + 1);
+    let body = after.style_catalog.resolve(ParagraphStyle::NoSpacing);
+    assert!(body.character.bold && body.character.italic);
+    assert_eq!(body.character.font_size.to_string(), "16");
+    assert_eq!(
+        (body.line_height_percent, body.space_after_half_points),
+        (100, 0)
+    );
+    let heading = after.style_catalog.resolve(ParagraphStyle::Heading1);
+    assert_eq!(heading.character.font_size.to_string(), "18");
+    assert!(heading.character.italic);
+    assert_eq!(
+        (heading.line_height_percent, heading.space_after_half_points),
+        (150, 20)
+    );
+    assert!(
+        !after.paragraphs[0].styles[0]
+            .resolve(
+                after
+                    .style_catalog
+                    .resolve(ParagraphStyle::Normal)
+                    .character
+            )
+            .bold
+    );
+    e.undo();
+    assert_eq!(e.document, before);
+    assert_eq!(e.selection, (7, 20));
+    e.redo();
+    assert_eq!(e.document, after);
+    assert_eq!(e.typing_style, typing);
+    let definition = StyleDefinition {
+        parent: Some(ParagraphStyle::NoSpacing),
+        character: CharacterFormat {
+            bold: Some(false),
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    e.modify_style(ParagraphStyle::Heading1, definition)
+        .unwrap();
+    let resolved = e.document.style_catalog.resolve(ParagraphStyle::Heading1);
+    assert!(!resolved.character.bold);
+    assert!(resolved.character.italic);
+    assert_eq!(resolved.character.font_size.to_string(), "16");
+    assert_eq!(
+        (
+            resolved.line_height_percent,
+            resolved.space_after_half_points
+        ),
+        (100, 0)
+    );
+    e.undo();
+    assert_eq!(e.document, after);
+}
+
+#[test]
+fn invalid_cycles_and_noop_definitions_preserve_document_selection_and_redo() {
+    let mut e = Editor::default();
+    e.replace(0, 0, "Test", "Input").unwrap();
+    e.undo();
+    let before = e.document.clone();
+    for (id, parent) in [
+        (ParagraphStyle::Normal, ParagraphStyle::Normal),
+        (ParagraphStyle::Normal, ParagraphStyle::Heading1),
+    ] {
+        let mut definition = *before.style_catalog.get(id);
+        definition.parent = Some(parent);
+        assert!(
+            e.modify_style(id, definition)
+                .unwrap_err()
+                .contains("inherit")
+        );
+        assert_eq!(e.document, before);
+        assert!(e.undo_stack.is_empty());
+        assert_eq!(e.redo_stack.len(), 1);
+    }
+    e.modify_style(ParagraphStyle::Normal, before.style_catalog.normal)
+        .unwrap();
+    assert!(e.undo_stack.is_empty());
+    assert_eq!(e.redo_stack.len(), 1);
+    let mut catalog = before.style_catalog.clone();
+    catalog.normal.parent = Some(ParagraphStyle::Heading1);
+    catalog.heading1.parent = Some(ParagraphStyle::NoSpacing);
+    assert!(catalog.validate().is_err());
+    // A valid non-default root is permitted, including reparenting Normal.
+    catalog.no_spacing.parent = None;
+    assert!(catalog.validate().is_ok());
+}
+
+#[test]
+fn editable_catalog_survives_text_bulk_edits_and_invalidates_old_preview() {
+    let mut e = Editor::default();
+    e.replace(0, 0, "one\none", "Input").unwrap();
+    let plan = e.preview_replace_all(&[(0, 3), (4, 7)], "two").unwrap();
+    let definition = StyleDefinition {
+        character: CharacterFormat {
+            italic: Some(true),
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    e.modify_style(ParagraphStyle::Normal, definition).unwrap();
+    assert!(e.apply_replace_all(plan).is_err());
+    let catalog = e.document.style_catalog.clone();
+    e.replace(0, 0, "new\n", "Input").unwrap();
+    assert_eq!(e.document.style_catalog, catalog);
+    let plan = e
+        .preview_replace_all(&[(4, 7), (8, 11)], "two\nthree")
+        .unwrap();
+    e.apply_replace_all(plan).unwrap();
+    assert_eq!(e.document.style_catalog, catalog);
+    assert_eq!(
+        storage::decode(&storage::encode(&e.document).unwrap()).unwrap(),
+        e.document
+    );
+}
+
+#[test]
+fn v4_catalog_validation_and_failed_save_preserve_previous_document() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("styles.bfdoc");
+    let mut e = Editor::default();
+    e.modify_style(
+        ParagraphStyle::Heading1,
+        StyleDefinition {
+            parent: Some(ParagraphStyle::NoSpacing),
+            character: CharacterFormat {
+                underline: Some(true),
+                bold: Some(false),
+                font_size: Some("12.5".parse().unwrap()),
+                ..Default::default()
+            },
+            line_height_percent: Some(175),
+            space_after_half_points: Some(1),
+        },
+    )
+    .unwrap();
+    storage::save(&e.document, &path).unwrap();
+    let bytes = std::fs::read(&path).unwrap();
+    assert_eq!(storage::load(&path).unwrap(), e.document);
+    let json: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    for (pointer, value) in [
+        (
+            "/style_catalog/normal/parent",
+            serde_json::json!("heading1"),
+        ),
+        (
+            "/style_catalog/heading1/parent",
+            serde_json::json!("unknown"),
+        ),
+        (
+            "/style_catalog/no_spacing/line_height_percent",
+            serde_json::json!(99),
+        ),
+        (
+            "/style_catalog/normal/space_after_half_points",
+            serde_json::json!(401),
+        ),
+        (
+            "/style_catalog/normal/character/font_size",
+            serde_json::json!(0),
+        ),
+        ("/style_catalog", serde_json::json!({})),
+    ] {
+        let mut bad = json.clone();
+        *bad.pointer_mut(pointer).unwrap() = value;
+        assert!(
+            storage::decode(&serde_json::to_vec(&bad).unwrap()).is_err(),
+            "{pointer}"
+        );
+    }
+    for (from, to) in [
+        ("\"normal\": {", "\"normal\": {}, \"normal\": {"),
+        ("\"parent\": null", "\"parent\": null, \"parent\": null"),
+        (
+            "\"style_catalog\": {",
+            "\"style_catalog\": {\"custom\": {},",
+        ),
+    ] {
+        assert!(
+            storage::decode(
+                String::from_utf8(bytes.clone())
+                    .unwrap()
+                    .replacen(from, to, 1)
+                    .as_bytes()
+            )
+            .is_err()
+        );
+    }
+    let mut bad = json.clone();
+    bad.as_object_mut().unwrap().remove("style_catalog");
+    assert!(storage::decode(&serde_json::to_vec(&bad).unwrap()).is_err());
+    e.document.style_catalog.normal.character.italic = Some(true);
+    for stage in [
+        storage::SaveStage::Write,
+        storage::SaveStage::Sync,
+        storage::SaveStage::Replace,
+    ] {
+        assert!(
+            storage::save_checked(&e.document, &path, |at| if at == stage {
+                Err("Injected failure".into())
+            } else {
+                Ok(())
+            })
+            .is_err()
+        );
+        assert_eq!(std::fs::read(&path).unwrap(), bytes);
+    }
+    e.document.style_catalog.normal.parent = Some(ParagraphStyle::Normal);
+    assert!(storage::save(&e.document, &path).is_err());
+    assert_eq!(std::fs::read(&path).unwrap(), bytes);
+}
+
+#[test]
+fn v3_import_freezes_defaults_and_does_not_modify_source_bytes() {
+    let bytes = include_bytes!("../examples/Styles.bfdoc");
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("v3.bfdoc");
+    std::fs::write(&path, bytes).unwrap();
+    let doc = storage::load(&path).unwrap();
+    assert_eq!(doc.style_catalog, StyleCatalog::default());
+    assert_eq!(std::fs::read(&path).unwrap(), bytes);
+    let mut v3: serde_json::Value = serde_json::from_slice(bytes).unwrap();
+    v3["style_catalog"] = serde_json::json!({});
+    assert!(storage::decode(&serde_json::to_vec(&v3).unwrap()).is_err());
+    assert_eq!(
+        storage::decode(&storage::encode(&doc).unwrap()).unwrap(),
+        doc
+    );
 }
