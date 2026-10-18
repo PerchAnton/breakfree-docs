@@ -486,6 +486,7 @@ impl Editor {
             after,
             left,
             right,
+            first_line,
         } = patch;
         validate_range(&self.document.text(), start, end)?;
         let (first, _) = self.document.locate(start)?;
@@ -495,6 +496,9 @@ impl Editor {
         }
         let mut result = self.document.clone();
         for p in &mut result.paragraphs[first..=last] {
+            if let Some(value) = first_line {
+                p.spacing.first_line_half_points = value;
+            }
             if let Some(value) = left {
                 p.spacing.left_indent_half_points = value;
             }
@@ -733,4 +737,5 @@ pub struct ParagraphGeometryPatch {
     pub after: Option<Option<u16>>,
     pub left: Option<Option<u16>>,
     pub right: Option<Option<u16>>,
+    pub first_line: Option<Option<i16>>,
 }

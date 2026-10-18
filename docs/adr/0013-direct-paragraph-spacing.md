@@ -71,3 +71,23 @@ rendered glyphs and cursor geometry by the left indent and alignment offset. On
 narrow viewports, scale indents proportionally to reserve up to 32 DIP for text,
 without editing the model. First-line/hanging indents, negative outdents, ruler
 handles and page-layout width constraints require separate decisions and tests.
+
+## Alpha.44 extension: first-line and hanging indents
+
+Add one signed optional `first_line_half_points` property to style/direct geometry,
+range -288…288. Positive insets only the first row; negative insets continuation
+rows, keeping the first at the left indent. Left marks the outermost edge. A blank
+amount inherits both type/magnitude, zero cancels them. This representation avoids
+conflicting first-line and hanging values. One validated partial command includes
+the property; reset/history and editing preservation follow the existing policy.
+Native v13 adds the key and v1–v12 reject it even when null.
+
+Shape the paragraph at the first-row width to find its initial wrap boundary, keep
+that row, and shape its suffix at continuation width. Keep run formats and scalar
+indices; concatenate without synthesizing a newline between these portions. Use
+the real first/continuation widths for alignment and justification. Rebuild first
+portion metrics and retain only its real mesh counts. Scale all horizontal insets
+proportionally in narrow views. This does not add page layout or ruler handles.
+
+The type/amount UI and continuous-layout geometry are original implementations.
+Matched native Windows/Word acceptance remains deferred; no equivalence claim.

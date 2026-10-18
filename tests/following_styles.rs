@@ -148,10 +148,10 @@ fn migration_is_strict_and_deleted_successor_is_remapped_and_undoable() {
     assert_eq!(e.document, before);
     let bytes = storage::encode(&before).unwrap();
     let mut json: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
-    assert_eq!(json["content_version"], 12);
+    assert_eq!(json["content_version"], 13);
     json["content_version"] = 5.into();
     assert!(storage::decode(&serde_json::to_vec(&json).unwrap()).is_err());
-    json["content_version"] = 12.into();
+    json["content_version"] = 13.into();
     json["style_catalog"]["normal"]["next_style"] = serde_json::json!({"custom":999});
     assert!(storage::decode(&serde_json::to_vec(&json).unwrap()).is_err());
     let dir = tempfile::tempdir().unwrap();

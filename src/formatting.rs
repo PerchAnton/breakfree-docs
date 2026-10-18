@@ -198,6 +198,19 @@ pub fn inspect_paragraph(
             value: format!("{} pt", f32::from(resolved.right_indent_half_points) / 2.),
             source: "Document default".into(),
         },
+        PropertyInfo {
+            name: "Special indent",
+            value: format!(
+                "{} {} pt",
+                if resolved.first_line_half_points < 0 {
+                    "Hanging"
+                } else {
+                    "First line"
+                },
+                f32::from(resolved.first_line_half_points.unsigned_abs()) / 2.
+            ),
+            source: "Document default".into(),
+        },
     ];
     let mut found = [
         paragraph.spacing.line_height_percent.is_some(),
@@ -205,6 +218,7 @@ pub fn inspect_paragraph(
         paragraph.spacing.space_before_half_points.is_some(),
         paragraph.spacing.left_indent_half_points.is_some(),
         paragraph.spacing.right_indent_half_points.is_some(),
+        paragraph.spacing.first_line_half_points.is_some(),
     ];
     for (i, direct) in found.iter().enumerate() {
         if *direct {
@@ -232,6 +246,7 @@ pub fn inspect_paragraph(
             definition.space_before_half_points.is_some(),
             definition.left_indent_half_points.is_some(),
             definition.right_indent_half_points.is_some(),
+            definition.first_line_half_points.is_some(),
         ]
         .into_iter()
         .enumerate()

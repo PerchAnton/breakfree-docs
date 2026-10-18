@@ -27,6 +27,8 @@ pub(super) struct StyleDialog {
     pub before: String,
     pub left: String,
     pub right: String,
+    pub first_line: String,
+    pub hanging: bool,
     focus: bool,
 }
 impl StyleDialog {
@@ -69,6 +71,11 @@ impl StyleDialog {
                 .right_indent_half_points
                 .map(|v| (f32::from(v) / 2.).to_string())
                 .unwrap_or_default(),
+            first_line: definition
+                .first_line_half_points
+                .map(|v| (f32::from(v.unsigned_abs()) / 2.).to_string())
+                .unwrap_or_default(),
+            hanging: definition.first_line_half_points.is_some_and(|v| v < 0),
             focus: true,
         }
     }
@@ -91,6 +98,8 @@ impl StyleDialog {
         dialog.before.clear();
         dialog.left.clear();
         dialog.right.clear();
+        dialog.first_line.clear();
+        dialog.hanging = false;
         dialog.character_styles = document.character_styles.clone();
         dialog.preview_base = document.style_catalog.resolve(paragraph).character;
         dialog
@@ -154,6 +163,8 @@ impl StyleDialog {
         };
         definition.left_indent_half_points = crate::model::parse_indent(&self.left)?;
         definition.right_indent_half_points = crate::model::parse_indent(&self.right)?;
+        definition.first_line_half_points = crate::model::parse_indent(&self.first_line)?
+            .map(|v| (v as i16) * if self.hanging { -1 } else { 1 });
         let mut catalog = self.catalog.clone();
         if self.character {
             let mut document = Document {
@@ -218,7 +229,7 @@ impl StyleDialog {
                 ui.separator();
                 egui::Grid::new("style-properties")
                     .num_columns(2)
-                    .spacing([14., if compact { 3. } else { 7. }])
+                    .spacing([14., if compact { 1. } else { 7. }])
                     .show(ui, |ui| {
                         ui.label("Name:");
                         if self.creating
@@ -440,8 +451,31 @@ impl StyleDialog {
                             ("after", "Space after (pt):", &mut self.after),
                             ("left", "Left indent (pt):", &mut self.left),
                             ("right", "Right indent (pt):", &mut self.right),
+                            ("first", "Special indent (pt):", &mut self.first_line),
                         ] {
                             if self.character && name != "size" {
+                                continue;
+                            }
+                            if name == "first" {
+                                ui.label(label);
+                                ui.horizontal(|ui| {
+                                    let r = ui.add(
+                                        egui::TextEdit::singleline(&mut *value)
+                                            .id_salt(("style-input", name))
+                                            .desired_width(80.)
+                                            .hint_text("Inherit")
+                                            .char_limit(8),
+                                    );
+                                    record(regions, "style-dialog-first", r.rect);
+                                    for (v, label, key) in [
+                                        (false, "First line", "first-line"),
+                                        (true, "Hanging", "hanging"),
+                                    ] {
+                                        let r = ui.selectable_value(&mut self.hanging, v, label);
+                                        record(regions, &format!("style-dialog-{key}"), r.rect);
+                                    }
+                                });
+                                ui.end_row();
                                 continue;
                             }
                             ui.label(label);

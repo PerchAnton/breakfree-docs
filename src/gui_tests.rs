@@ -3998,6 +3998,8 @@ fn modify_style_draft_cancel_invalid_parent_apply_and_history_are_modal() {
     dialog.after = "8.5".into();
     dialog.left = "18".into();
     dialog.right = "12.5".into();
+    dialog.first_line = "18.5".into();
+    dialog.hanging = true;
     frame(&ctx, &mut app, vec![], size, 1.);
     click_region(&ctx, &mut app, "style-dialog-ok");
     assert!(app.style_dialog.is_none());
@@ -6242,6 +6244,15 @@ fn paragraph_spacing_dialog_real_input_history_reset_and_layout() {
             1.,
         );
     }
+    click_region(&ctx, &mut app, "paragraph-first");
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("18.5".into())],
+        [1366., 900.],
+        1.,
+    );
+    click_region(&ctx, &mut app, "paragraph-hanging");
     app.execute(Action::New, &ctx); // Modal must guard background commands.
     assert_eq!(app.session.editor.document, before);
     click_region(&ctx, &mut app, "paragraph-ok");
@@ -6264,6 +6275,10 @@ fn paragraph_spacing_dialog_real_input_history_reset_and_layout() {
     assert_eq!(
         after.paragraphs[0].spacing.right_indent_half_points,
         Some(25)
+    );
+    assert_eq!(
+        after.paragraphs[0].spacing.first_line_half_points,
+        Some(-37)
     );
     assert_eq!(after.paragraphs[1], before.paragraphs[1]);
     let layout_after = layout::galley(
@@ -6357,6 +6372,8 @@ fn paragraph_spacing_keytips_and_scaled_modal_bounds() {
                 "paragraph-before",
                 "paragraph-left",
                 "paragraph-right",
+                "paragraph-first",
+                "paragraph-hanging",
                 "paragraph-after",
                 "paragraph-ok",
                 "paragraph-cancel",
@@ -6498,4 +6515,72 @@ fn paragraph_indent_invalid_widget_input_is_transactional() {
     click_region(&ctx, &mut app, "paragraph-cancel");
     assert!(app.paragraph_dialog.is_none());
     assert_eq!(app.session.editor.document, before);
+}
+
+#[test]
+fn special_indents_shape_first_and_continuation_rows_without_fake_newlines() {
+    use unicode_segmentation::UnicodeSegmentation;
+    let (ctx, mut app) = setup();
+    app.session.editor.replace(0,0,"English words wrap here and continue. Україна e\u{301} Русский. More words wrap here.\n\nLast", "Fixture").unwrap();
+    // Mixed runs must retain their formats after the first-row/suffix split.
+    app.session.editor.emphasize(8, 18, true, true).unwrap();
+    let mut doc = app.session.editor.document.clone();
+    for value in [36, -36, 0, 288, -288] {
+        doc.style_catalog.normal.first_line_half_points = Some(value);
+        for alignment in [
+            Alignment::Left,
+            Alignment::Center,
+            Alignment::Right,
+            Alignment::Justify,
+        ] {
+            for p in &mut doc.paragraphs {
+                p.alignment = alignment;
+            }
+            let g = layout::galley(
+                &ctx,
+                &doc,
+                &doc.text(),
+                CharacterFormat::default(),
+                0,
+                145.,
+                11.,
+            );
+            assert_eq!(g.text(), doc.text());
+            assert_eq!(g.rows.iter().filter(|r| r.ends_with_newline).count(), 2);
+            assert_eq!(
+                g.rows
+                    .iter()
+                    .map(|r| r.char_count_excluding_newline())
+                    .sum::<usize>(),
+                doc.text().chars().filter(|c| *c != '\n').count()
+            );
+            assert!(g.rows.iter().all(|r| r.size.x <= 145.5 && r.height() > 0.));
+            if alignment == Alignment::Left && value.abs() == 36 {
+                assert!((g.rows[0].x_offset(0) - if value > 0 { 18. } else { 0. }).abs() < 0.5);
+                assert!((g.rows[1].x_offset(0) - if value < 0 { 18. } else { 0. }).abs() < 0.5);
+            }
+            let text = doc.text();
+            let mut boundaries: Vec<usize> = text
+                .grapheme_indices(true)
+                .map(|(byte, _)| text[..byte].chars().count())
+                .collect();
+            boundaries.push(text.chars().count());
+            let mut end = 0;
+            for row in &g.rows {
+                end += row.char_count_excluding_newline();
+                assert!(boundaries.contains(&end), "Split grapheme at {end}");
+                if row.ends_with_newline {
+                    end += 1;
+                }
+            }
+            for i in [0, 3, 8, 15, 20, 35] {
+                let pos = g.pos_from_cursor(CCursor::new(i));
+                assert_eq!(
+                    g.cursor_from_pos(pos.center().to_vec2()).index,
+                    i,
+                    "{value} {alignment:?} {i}"
+                );
+            }
+        }
+    }
 }

@@ -250,7 +250,7 @@ fn rejects_corrupt_foreign_unknown_and_duplicate_fields() {
             .unwrap();
     for (key, value) in [
         ("format", serde_json::json!("breakfree.sheets.native")),
-        ("content_version", serde_json::json!(13)),
+        ("content_version", serde_json::json!(14)),
         ("content_version", serde_json::json!(true)),
         ("unknown", serde_json::json!("preserve")),
         ("paragraphs", serde_json::json!([])),
@@ -261,8 +261,8 @@ fn rejects_corrupt_foreign_unknown_and_duplicate_fields() {
     }
     let mut duplicate = String::from_utf8(storage::encode(&sample().document).unwrap()).unwrap();
     duplicate = duplicate.replacen(
-        "\"content_version\": 12",
-        "\"content_version\": 12, \"content_version\": 12",
+        "\"content_version\": 13",
+        "\"content_version\": 13, \"content_version\": 13",
         1,
     );
     assert!(storage::decode(duplicate.as_bytes()).is_err());
@@ -497,7 +497,7 @@ fn v1_load_is_read_only_and_v8_roundtrip_preserves_new_styles() {
     s.save(&path).unwrap();
     let new = fs::read(&path).unwrap();
     let json: serde_json::Value = serde_json::from_slice(&new).unwrap();
-    assert_eq!(json["content_version"], 12);
+    assert_eq!(json["content_version"], 13);
     assert_eq!(storage::load(&path).unwrap(), s.editor.document);
     assert!(!s.dirty());
 }

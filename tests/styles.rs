@@ -201,7 +201,7 @@ fn native_rejects_unknown_styles_and_bad_overrides_legacy_import_keeps_appearanc
     let encoded = storage::encode(&e.document).unwrap();
     let json: serde_json::Value = serde_json::from_slice(&encoded).unwrap();
     for (pointer, value) in [
-        ("/content_version", serde_json::json!(13)),
+        ("/content_version", serde_json::json!(14)),
         ("/format", serde_json::json!("breakfree.sheets.native")),
         ("/paragraphs/0/paragraph_style", serde_json::json!("custom")),
         ("/paragraphs/0/runs/0/direct/bold", serde_json::json!(1)),
@@ -419,6 +419,7 @@ fn catalog_validation_and_failed_save_preserve_previous_document() {
             space_before_half_points: None,
             left_indent_half_points: None,
             right_indent_half_points: None,
+            first_line_half_points: None,
             space_after_half_points: Some(1),
             next_style: None,
         },

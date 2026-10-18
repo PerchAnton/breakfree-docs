@@ -1,12 +1,12 @@
 # Native BreakFree Docs document format
 
-Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v12.
+Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v13.
 This is not a DOCX container. Process protocol and file-content versions are independent.
 
 ```json
 {
   "format": "breakfree.docs.native",
-  "content_version": 12,
+  "content_version": 13,
   "character_styles": [],
   "style_catalog": {
     "custom": [],
@@ -73,9 +73,9 @@ Opening performs only in-memory conversion and does not dirty/write the file.
 V3 uses its frozen built-in catalog from [ADR 0006](adr/0006-built-in-paragraph-styles.md);
 it rejects embedded definitions. V4 reads its original three-definition catalog
 with no custom array and preserves its graph. V5 retains its custom catalog. Legacy definitions receive Same style in memory.
-Every explicit save writes v12, even
+Every explicit save writes v13, even
 for an unchanged older document. Use Save As
-to retain the original. **Alpha.42 and earlier cannot open v12 saves.** No downgrade or
+to retain the original. **Alpha.43 and earlier cannot open v13 saves.** No downgrade or
 lossy export is provided. Header/full-schema parsing preserves duplicate rejection.
 
 Empty paragraphs retain their named style. Pending direct formatting at a caret
@@ -201,3 +201,17 @@ stable. Writer v12 omits unset indent fields. Every v1–v11 reader rejects the 
 keys even when null, before strict typed validation. Imports therefore inherit zero
 without changing their source bytes. Protocol/settings remain v1. There is no
 first-line or hanging indent field in v12.
+
+## Special indent (v13)
+
+Paragraph style definitions and paragraph `spacing` accept optional signed integer
+`first_line_half_points`, range -288…288. Absent/null inherits; positive means
+first-line inset, negative means hanging continuation inset, zero explicitly
+disables either. Resolve the nearest style/ancestor, default zero, then direct
+override. Type and magnitude are one property and one history update.
+
+The left indent remains the outermost edge: positive adds to the first row only,
+negative adds its magnitude to continuation rows only. This is the project's
+continuous-layout policy, not a claim of document-format equivalence. Writer v13
+omits unset values. Every v1–v12 reader rejects the key even when null before
+strict typed validation; old imports inherit zero. Process/settings stay v1.

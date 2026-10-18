@@ -238,3 +238,25 @@ unchanged. This is continuous layout, not pagination. Enter/join/Replace All fol
 the existing paragraph geometry copying policy. Native v12 preserves both indents;
 v1–v11 imports use zero. First-line/hanging indents, negative outdents and interactive
 ruler handles remain separate increments. Windows acceptance remains deferred.
+
+## First-line and hanging indents (alpha.44)
+
+Home → Paragraph spacing → Special indent changes only the checked property.
+Choose First line or Hanging and enter 0–144 pt in 0.5 pt steps. First line moves
+the first row right from the left indent; Hanging leaves the first row at the left
+indent and moves continuation rows right by the amount. The left indent denotes
+the outermost edge in this continuous-layout policy. Right indent is unchanged.
+
+A checked blank inherits the nearest paragraph style/ancestor; explicit zero
+disables the inherited special indent. Use style spacing and indents resets all
+six properties together. Style creation/modification has the same type and amount.
+A blank style amount inherits both type and magnitude regardless of the displayed
+type choice. Document default is zero. Apply/reset/parent changes each use one
+Undo/Redo. Formatting inspection reports type, amount and source.
+
+Wrapping uses distinct first-row/continuation widths without inserting characters
+or paragraph breaks. Narrow views proportionally reduce visual left/right/special
+indents to retain up to 32 DIP of text width; saved values do not change. Enter,
+joins and Replace All retain the established geometry copying policy. Native v13
+preserves the signed property; older imports inherit zero. Interactive ruler handles,
+negative outer-edge outdents and pagination remain future work. Windows is deferred.

@@ -262,9 +262,9 @@ to the replacement and rejects a descendant replacement that would create a cycl
 [Character-style rules](docs/adr/0011-character-style-precedence.md).
 [Style rules](docs/adr/0008-custom-named-styles.md) · [Deletion rules](docs/adr/0009-delete-custom-styles.md).
 
-This build reads native content v1/v2/v3/v4/v5/v6/v7/v8/v9/v10/v11/v12 and **saves v12**. Opening an older file
-does not change it; an explicit save converts it to v12. Earlier builds cannot
-open new v12 saves. Use Save As to keep an older copy. See [format details](docs/NATIVE_FORMAT.md).
+This build reads native content v1/v2/v3/v4/v5/v6/v7/v8/v9/v10/v11/v12/v13 and **saves v13**. Opening an older file
+does not change it; an explicit save converts it to v13. Earlier builds cannot
+open new v13 saves. Use Save As to keep an older copy. See [format details](docs/NATIVE_FORMAT.md).
 File provides New/Open/Save/Save As, unsaved Save/Discard/Cancel and view settings;
 Print is disabled. Navigation and the formatting pane operate on real model ranges.
 The white canvas is continuous; pagination, page numbers and print layout are absent.
@@ -585,3 +585,25 @@ unchanged. This is continuous layout, not pagination. Enter/join/Replace All fol
 the existing paragraph geometry copying policy. Native v12 preserves both indents;
 v1–v11 imports use zero. First-line/hanging indents, negative outdents and interactive
 ruler handles remain separate increments. Windows acceptance remains deferred.
+
+## First-line and hanging indents (alpha.44)
+
+Home → Paragraph spacing → Special indent changes only the checked property.
+Choose First line or Hanging and enter 0–144 pt in 0.5 pt steps. First line moves
+the first row right from the left indent; Hanging leaves the first row at the left
+indent and moves continuation rows right by the amount. The left indent denotes
+the outermost edge in this continuous-layout policy. Right indent is unchanged.
+
+A checked blank inherits the nearest paragraph style/ancestor; explicit zero
+disables the inherited special indent. Use style spacing and indents resets all
+six properties together. Style creation/modification has the same type and amount.
+A blank style amount inherits both type and magnitude regardless of the displayed
+type choice. Document default is zero. Apply/reset/parent changes each use one
+Undo/Redo. Formatting inspection reports type, amount and source.
+
+Wrapping uses distinct first-row/continuation widths without inserting characters
+or paragraph breaks. Narrow views proportionally reduce visual left/right/special
+indents to retain up to 32 DIP of text width; saved values do not change. Enter,
+joins and Replace All retain the established geometry copying policy. Native v13
+preserves the signed property; older imports inherit zero. Interactive ruler handles,
+negative outer-edge outdents and pagination remain future work. Windows is deferred.

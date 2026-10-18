@@ -102,14 +102,19 @@ pub fn galley(
         let mut job = LayoutJob::default();
         let mut left = f32::from(resolved.left_indent_half_points) * size / 22.;
         let mut right = f32::from(resolved.right_indent_half_points) * size / 22.;
+        let mut special = f32::from(resolved.first_line_half_points) * size / 22.;
         // Preserve a usable text column on very narrow viewports without changing model values.
         let available = (width - 32.).max(0.);
-        if left + right > available {
-            let scale = available / (left + right);
+        if left + right + special.abs() > available {
+            let scale = available / (left + right + special.abs());
             left *= scale;
             right *= scale;
+            special *= scale;
         }
-        let text_width = (width - left - right).max(1.);
+        let first_left = left + special.max(0.);
+        let body_left = left + (-special).max(0.);
+        let first_width = (width - first_left - right).max(1.);
+        let text_width = (width - body_left - right).max(1.);
         job.wrap.max_width = text_width;
         job.justify = p.alignment == Alignment::Justify;
         // Sections use UTF-8 byte ranges internally; editor positions remain scalar indices.
@@ -149,16 +154,24 @@ pub fn galley(
             };
             job.append("", 0., format(style, size, resolved.line_height()));
         }
-        let mut paragraph = ctx.fonts_mut(|f| f.layout_job(job)).as_ref().clone();
-        for placed in &mut paragraph.rows {
+        let mut paragraph = layout_first_line(ctx, job, first_width, text_width);
+        for (row_index, placed) in paragraph.rows.iter_mut().enumerate() {
             let row = Arc::make_mut(&mut placed.row);
-            let extra = (text_width - row.size.x).max(0.);
-            let shift = left
-                + match p.alignment {
-                    Alignment::Center => extra / 2.,
-                    Alignment::Right => extra,
-                    _ => 0.,
-                };
+            let row_width = if row_index == 0 {
+                first_width
+            } else {
+                text_width
+            };
+            let extra = (row_width - row.size.x).max(0.);
+            let shift = if row_index == 0 {
+                first_left
+            } else {
+                body_left
+            } + match p.alignment {
+                Alignment::Center => extra / 2.,
+                Alignment::Right => extra,
+                _ => 0.,
+            };
             if shift > 0. {
                 for glyph in &mut row.glyphs {
                     glyph.pos.x += shift;
@@ -211,4 +224,76 @@ pub fn galley(
     merged.rect.min.x = 0.;
     merged.rect.max.x = width;
     Arc::new(merged)
+}
+
+/// Shape the first row at its own width, then shape the untouched suffix at the
+/// continuation width. Concatenation must not introduce a paragraph delimiter.
+fn layout_first_line(
+    ctx: &egui::Context,
+    job: LayoutJob,
+    first_width: f32,
+    body_width: f32,
+) -> Galley {
+    if (first_width - body_width).abs() < f32::EPSILON {
+        return ctx.fonts_mut(|f| f.layout_job(job)).as_ref().clone();
+    }
+    let mut first_job = job.clone();
+    first_job.wrap.max_width = first_width;
+    let mut first = ctx.fonts_mut(|f| f.layout_job(first_job)).as_ref().clone();
+    if first.rows.len() <= 1 {
+        return first;
+    }
+    let count = first.rows[0].char_count_excluding_newline();
+    let cut = job
+        .text
+        .char_indices()
+        .nth(count)
+        .map_or(job.text.len(), |(i, _)| i);
+    let mut rest_job = job.clone();
+    rest_job.text = job.text[cut..].to_owned();
+    rest_job.wrap.max_width = body_width;
+    rest_job.sections = job
+        .sections
+        .iter()
+        .filter_map(|section| {
+            if section.byte_range.end <= cut {
+                return None;
+            }
+            let mut section = section.clone();
+            section.byte_range =
+                section.byte_range.start.saturating_sub(cut)..section.byte_range.end - cut;
+            section.leading_space = 0.;
+            Some(section)
+        })
+        .collect();
+    let rest = ctx.fonts_mut(|f| f.layout_job(rest_job));
+    let first_row = first.rows[0].clone();
+    let mut prefix_job = job.clone();
+    prefix_job.text = job.text[..cut].to_owned();
+    prefix_job.wrap.max_width = first_width;
+    prefix_job.sections = job
+        .sections
+        .iter()
+        .filter_map(|section| {
+            if section.byte_range.start >= cut {
+                return None;
+            }
+            let mut section = section.clone();
+            section.byte_range.end = section.byte_range.end.min(cut);
+            Some(section)
+        })
+        .collect();
+    first = ctx.fonts_mut(|f| f.layout_job(prefix_job)).as_ref().clone();
+    first.rows = vec![first_row];
+    first.rect = first.rows[0].rect();
+    first.mesh_bounds = first.rows[0].visuals.mesh_bounds;
+    first.num_vertices = first.rows[0].visuals.mesh.vertices.len();
+    first.num_indices = first.rows[0].visuals.mesh.indices.len();
+    let mut merged = Galley::concat(
+        Arc::new(job),
+        &[Arc::new(first), rest],
+        ctx.pixels_per_point(),
+    );
+    Arc::make_mut(&mut merged.rows[0].row).ends_with_newline = false;
+    merged
 }

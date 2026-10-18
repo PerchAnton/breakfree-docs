@@ -1203,3 +1203,29 @@ keyboard and synthetic size/scale tests now pass. Native capture-harness images
 are recorded in UI_SPEC. Ordinary native keyboard/IME input was not repeated;
 Windows 100/125/150% and matched Word reference checks remain deferred. Server CI
 is recorded separately in the journal. No merge/tag/release.
+
+## Alpha44 special-indent validation
+
+2026-10-18, macOS arm64 / Rust 1.99.1: **258 full tests / 133 core-only tests**
+passed. fmt, normal/capture all-target Clippy with warnings denied, release/capture
+builds, repository/artwork/YAML/whitespace checks passed. CLI reports alpha.44 and
+protocol v1. No new dependency or sibling checkout requirement.
+
+Coverage includes inherited first-line/hanging values, direct zero, reset, parent
+modification, mixed/empty selection, exclusive range boundaries, one Undo/Redo,
+no-op redo preservation, out-of-range rejection, Enter/join/Replace All, v13
+roundtrip, v12 migration, old-key rejection and injected save-failure preservation.
+Widget input combines special and other geometry fields into one operation; type
+selection/reset and style modification retain history semantics.
+
+Layout tests cover both signs, zero/extreme values, mixed character formats, empty
+paragraphs and all four alignment modes. Row character totals and paragraph-break
+counts remain exact; selected scalar positions hit-test back correctly. Tested
+English/Ukrainian/Russian/combining examples retain grapheme boundaries at wraps.
+This is not a claim of complete script/shaping support. Distinct first/suffix
+layout retains real row metrics and mesh counts without a synthetic newline.
+
+Three native capture-harness images inspected (UI_SPEC). Existing minimum-window
+and synthetic 100/125/150% scale checks pass. Ordinary native keyboard/IME input
+not repeated; Windows/reference acceptance remains deferred. CI is recorded
+separately in the journal; no merge/tag/release.

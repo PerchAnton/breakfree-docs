@@ -1,4 +1,4 @@
-//! Strict .bfdoc v1–v12 reading, v12 writing and checked temporary-file replacement.
+//! Strict .bfdoc v1–v13 reading, v13 writing and checked temporary-file replacement.
 use crate::{Result, model::*};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -8,7 +8,7 @@ use std::{
 };
 
 pub const FORMAT_ID: &str = "breakfree.docs.native";
-pub const CONTENT_VERSION: u32 = 12;
+pub const CONTENT_VERSION: u32 = 13;
 pub const MAX_FILE_BYTES: usize = 16 * 1024 * 1024;
 
 #[derive(Serialize, Deserialize)]
@@ -194,6 +194,7 @@ impl From<LegacyDefinition> for StyleDefinition {
             space_before_half_points: None,
             left_indent_half_points: None,
             right_indent_half_points: None,
+            first_line_half_points: None,
         }
     }
 }
@@ -375,6 +376,21 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
             return Err("Paragraph indents require native content v12.".into());
         }
     }
+    if file.content_version < 13 {
+        fn has_special(value: &serde_json::Value) -> bool {
+            match value {
+                serde_json::Value::Object(map) => {
+                    map.contains_key("first_line_half_points") || map.values().any(has_special)
+                }
+                serde_json::Value::Array(items) => items.iter().any(has_special),
+                _ => false,
+            }
+        }
+        let value = serde_json::from_slice(bytes).map_err(|e| e.to_string())?;
+        if has_special(&value) {
+            return Err("Special indent requires native content v13.".into());
+        }
+    }
     let native_paragraphs = match file.content_version {
         1 => serde_json::from_slice::<Native<RunV1>>(bytes)
             .map_err(|e| format!("Invalid native v1 document: {e}"))?
@@ -431,7 +447,7 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
                 .map_err(|e| format!("Invalid native v6 document: {e}"))?;
             return decode_styled(file.paragraphs, file.style_catalog);
         }
-        10 | 11 | CONTENT_VERSION => {
+        10 | 11 | 12 | CONTENT_VERSION => {
             let file: NativeSpacing = serde_json::from_slice(bytes)
                 .map_err(|e| format!("Invalid native spacing document: {e}"))?;
             let (paragraphs, spacing): (Vec<_>, Vec<_>) = file

@@ -1396,3 +1396,33 @@ SHA-256: `be09ca74db2d4a7df1175c2e48484d3ad48966ab3696d308fcec742a3ebe2e56`.
 ![Paragraph indents](screenshots/rust-style-indents-alpha43-compact-macos.png)
 
 SHA-256: `b62b2524f335c5ce8607394feffdbe467df346f3b2a866c75a5f76033c4e85d9`.
+
+## Alpha44 first-line and hanging indents
+
+The paragraph draft retains the 370 DIP content width and 82 × 27 DIP actions.
+Add a sixth checked field, Special indent (90 DIP), and First line/Hanging type
+choices. The style dialog places its 80 DIP amount field and type choices in one
+row; at window heights below 600 DIP, grid gaps are 1 DIP and preview remains
+24 DIP. Existing palette and icons remain unchanged.
+
+Type and magnitude inherit as one property; blank inherits and zero disables.
+The left indent marks the outermost edge: First line moves the initial row right;
+Hanging moves continuation rows right. This documented continuous-layout policy
+is not a matched reference claim. Formatting inspection displays the source.
+
+Three native macOS capture-harness images below were inspected. All controls fit
+wide/minimum windows without clipped labels or overlap. Synthetic keyboard/scale
+checks passed. Ordinary native input was not repeated; native Windows and matched
+Word comparison remain deferred. The existing emoji fallback limitation remains.
+
+![Special indent](screenshots/rust-special-indent-alpha44-macos.png)
+
+SHA-256: `0306bd3a709d90c624fcbe7c84074ec4be25f116f4eeb3f3cc5f22068856ab48`.
+
+![Special indent](screenshots/rust-special-indent-alpha44-compact-macos.png)
+
+SHA-256: `22311fb89163fb3f029d59bca17046948fc45930b9e0d8f01e1dde8d1651bb84`.
+
+![Special indent](screenshots/rust-style-special-indent-alpha44-compact-macos.png)
+
+SHA-256: `b041c02ca00c9de3a2e40516a226613184d746eac98e634edd2865dbf22b8124`.

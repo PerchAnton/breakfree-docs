@@ -13,6 +13,9 @@ pub(super) struct ParagraphDialog {
     before: String,
     left: String,
     right: String,
+    first_line: String,
+    hanging: bool,
+    change_first_line: bool,
     change_left: bool,
     change_right: bool,
     change_line: bool,
@@ -99,6 +102,14 @@ impl ParagraphDialog {
             after,
             left,
             right,
+            first_line: if self.change_first_line {
+                Some(
+                    crate::model::parse_indent(&self.first_line)?
+                        .map(|v| (v as i16) * if self.hanging { -1 } else { 1 }),
+                )
+            } else {
+                None
+            },
         })
     }
     pub fn show(&mut self, ctx: &egui::Context, regions: &mut Vec<Region>) -> ParagraphOutcome {
@@ -168,9 +179,49 @@ impl ParagraphDialog {
                         }
                     });
                 }
+                ui.horizontal(|ui| {
+                    let check = ui.add_sized(
+                        [155., 24.],
+                        egui::Checkbox::new(&mut self.change_first_line, "Special indent"),
+                    );
+                    record(regions, "paragraph-first-change", check.rect);
+                    let input = ui.add(
+                        egui::TextEdit::singleline(&mut self.first_line)
+                            .id_salt("paragraph-first")
+                            .desired_width(90.)
+                            .char_limit(8)
+                            .hint_text(if self.change_first_line {
+                                "From style"
+                            } else {
+                                "Unchanged"
+                            }),
+                    );
+                    record(regions, "paragraph-first", input.rect);
+                    if input.changed() {
+                        self.change_first_line = true;
+                        self.error = None;
+                    }
+                });
+                ui.horizontal(|ui| {
+                    ui.label("Type:");
+                    for (value, label, key) in [
+                        (false, "First line", "first-line"),
+                        (true, "Hanging", "hanging"),
+                    ] {
+                        let r = ui.selectable_value(&mut self.hanging, value, label);
+                        record(regions, &format!("paragraph-{key}"), r.rect);
+                        if r.changed() {
+                            self.change_first_line = true;
+                            self.error = None;
+                        }
+                    }
+                    ui.small("Amount in pt");
+                });
                 let reset = ui.button("Use style spacing and indents");
                 record(regions, "paragraph-reset", reset.rect);
                 if reset.clicked() {
+                    self.change_first_line = true;
+                    self.first_line.clear();
                     self.change_left = true;
                     self.change_right = true;
                     self.left.clear();
@@ -184,7 +235,7 @@ impl ParagraphDialog {
                     self.error = None;
                 }
                 ui.small("Line: 100–300%. Before/after: 0–200 pt, in 0.5 pt steps.");
-                ui.small("Left/right: 0–144 pt, in 0.5 pt steps.");
+                ui.small("Indents: 0–144 pt, in 0.5 pt steps.");
                 if let Some(error) = &self.error {
                     ui.colored_label(Color32::from_rgb(165, 30, 30), error);
                 }

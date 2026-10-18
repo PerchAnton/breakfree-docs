@@ -3,6 +3,13 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.44 — 2026-10-18
+
+- Add inherited first-line/hanging indents, explicit direct zero and reset in one Undo/Redo with paragraph geometry. Paragraph/style dialogs expose type and amount; source inspection reports the supplying style/override.
+- Shape the first row and continuation at their own widths, preserving text, mixed runs, cursor indices and paragraph delimiters. Keep narrow-view scaling and compact dialog bounds.
+- Write native v13; read v1–v13. Older files inherit no special indent; older schemas reject the new key even when null. Alpha.43 and earlier reject v13 saves; use Save As to retain an older copy.
+- Preserve palette/icons and dependencies. Alpha.43 approved; alpha.44 awaits approval. Native Windows acceptance remains deferred; ruler handles and pagination are not implemented.
+
 ## 0.1.0-alpha.43 — 2026-10-18
 
 - Add left/right paragraph indents (0–144 pt, half-point steps) inherited independently from paragraph styles. Direct zero overrides inheritance; partial edits and reset use one Undo/Redo with spacing.

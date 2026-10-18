@@ -353,4 +353,5 @@ Use public specifications and original test cases, not copied application code. 
 
 - [x] Alpha.42: inherited/direct space-before, partial/reset dialog, provenance, one Undo/Redo, v11 persistence and wrapped-line layout; depends on alpha.41.
 - [x] Alpha.43: left/right paragraph indents with style/direct resolution, transactional dialog/reset, provenance, v12 persistence and indented wrapping/alignment.
-- [ ] Next: first-line/hanging indents with inherited values, wrap/hit-testing and one history operation.
+- [x] Alpha.44: first-line/hanging indents with inherited values, explicit zero/reset, one history operation, distinct row widths/hit-testing and strict v13 persistence.
+- [ ] Next: broaden mixed-format, long-paragraph and narrow-view indent layout regression coverage before interactive ruler handles.

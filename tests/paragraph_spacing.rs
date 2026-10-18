@@ -106,7 +106,7 @@ fn v10_spacing_roundtrip_migration_strictness_and_failed_write() {
     let bytes = storage::encode(&e.document).unwrap();
     assert_eq!(storage::decode(&bytes).unwrap(), e.document);
     let json: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
-    assert_eq!(json["content_version"], 12);
+    assert_eq!(json["content_version"], 13);
     for value in [
         serde_json::json!({"line_height_percent":99}),
         serde_json::json!({"space_after_half_points":401}),
@@ -359,7 +359,7 @@ fn legacy_spacing_migrates_with_zero_before_and_rejects_new_fields() {
     }
     let mut current: serde_json::Value =
         serde_json::from_slice(&storage::encode(&doc).unwrap()).unwrap();
-    assert_eq!(current["content_version"], 12);
+    assert_eq!(current["content_version"], 13);
     current["paragraphs"][0]["spacing"]["space_before_half_points"] = 401.into();
     assert!(storage::decode(&serde_json::to_vec(&current).unwrap()).is_err());
     current["paragraphs"][0]["spacing"]["space_before_half_points"] = 0.into();
