@@ -11,6 +11,7 @@ pub mod layout;
 pub mod model;
 pub mod preferences;
 pub mod presentation;
+pub mod ruler;
 pub mod search;
 pub mod session;
 pub mod storage;

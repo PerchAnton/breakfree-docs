@@ -584,7 +584,7 @@ shrink proportionally to retain up to 32 DIP of text width; document values rema
 unchanged. This is continuous layout, not pagination. Enter/join/Replace All follow
 the existing paragraph geometry copying policy. Native v12 preserves both indents;
 v1–v11 imports use zero. First-line/hanging indents, negative outdents and interactive
-ruler handles remain separate increments. Windows acceptance remains deferred.
+ruler keyboard nudging remains a separate increment. Windows acceptance remains deferred.
 
 ## First-line and hanging indents (alpha.44)
 
@@ -605,8 +605,7 @@ Wrapping uses distinct first-row/continuation widths without inserting character
 or paragraph breaks. Narrow views proportionally reduce visual left/right/special
 indents to retain up to 32 DIP of text width; saved values do not change. Enter,
 joins and Replace All retain the established geometry copying policy. Native v13
-preserves the signed property; older imports inherit zero. Interactive ruler handles,
-negative outer-edge outdents and pagination remain future work. Windows is deferred.
+preserves the signed property; older imports inherit zero. Negative outer-edge outdents and pagination remain future work. Windows is deferred.
 
 ## Indent layout hardening (alpha.45)
 
@@ -616,5 +615,20 @@ whitespace beyond the visible justified edge. This avoids moving the caret befor
 a stored space at a soft wrap. Tests cover long mixed-format Unicode paragraphs,
 empty/trailing paragraphs, narrow views, synthetic scale and zoom/edit/history.
 Compact style creation reserves extra room for differing interface-font metrics.
-Native content stays v13; interactive ruler handles and native Windows acceptance
-remain pending.
+Native content stays v13; native Windows acceptance remains pending.
+
+## Interactive ruler prototype (alpha.46)
+
+With View → Ruler enabled, drag the upper triangle for the first line, the lower
+triangle for continuation lines, the rectangle for the overall left indent, or
+the right triangle for the right indent. The first selected paragraph supplies
+starting values; changed properties apply to selected paragraphs, excluding an
+exclusive end at the next paragraph start. Values snap to 0.5 pt within existing
+0–144 pt indent / ±144 pt special-indent limits. Other properties stay inherited.
+
+Motion previews without editing the document. Release commits one “Ruler indent”
+Undo/Redo. Escape, focus/pointer loss or a changed canvas/window transform cancels;
+returning to the original value preserves inheritance and redo. Text/shortcuts
+are blocked during dragging. Home → Paragraph spacing remains the keyboard
+alternative. This is a continuous-canvas prototype: no margins, tab stops,
+vertical ruler, pagination or direct keyboard nudging of handles yet.

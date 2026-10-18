@@ -1260,3 +1260,24 @@ the journal; no native Windows acceptance is inferred.
 Three native capture-harness images inspected (UI_SPEC); ordinary native keyboard,
 IME, accessibility and matched Windows/reference comparison remain unverified or
 deferred. Interactive ruler handles are not implemented. No merge/tag/release.
+
+## Alpha.46 interactive ruler validation
+
+2026-10-18, macOS arm64, Rust 1.99.1: 269 full tests / 137 without GUI passed.
+The seven new cases cover draft isolation, one transaction/history/save/reopen,
+no-op and cancellation preserving inheritance/redo, all four handles and bounds
+with first/hanging/zero indents, half-open paragraph ranges, stale-source rejection,
+and actual-widget pointer press/move/release/Escape. Widget cases exercise zoom
+50/100/200% × synthetic DPI 100/125/150%, focus loss, resize, PointerGone, release
+outside the ruler and blocked input. A regression prevents a held button from
+restarting a cancelled drag. Existing Unicode/layout/format/storage suites pass.
+
+fmt, normal/capture all-target Clippy with warnings denied, release/capture builds,
+repository/artwork/contract checks, workflow YAML and diff whitespace passed.
+Isolated executable `--version` and JSON `--capabilities` report alpha.46, protocol
+1 and breakfree.docs without opening GUI or relying on a neighboring repository.
+Two native capture-harness images were inspected (UI_SPEC). Ordinary native
+pointer/keyboard/IME input was not repeated. Windows/manual display-scale and
+matched-reference acceptance remain explicitly deferred. Alpha.45 code/journal
+CI succeeded, including Windows jobs; alpha.46 server CI is separate from these
+local results. No merge, tag or release.

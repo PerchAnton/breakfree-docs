@@ -6844,3 +6844,207 @@ fn compact_style_creation_reserves_room_for_taller_interface_font_metrics() {
         assert!(app.session.editor.undo_stack.is_empty());
     }
 }
+
+fn ruler_pointer(pos: Pos2, pressed: bool) -> egui::Event {
+    egui::Event::PointerButton {
+        pos,
+        button: egui::PointerButton::Primary,
+        pressed,
+        modifiers: Modifiers::NONE,
+    }
+}
+
+#[test]
+fn ruler_pointer_preview_release_and_escape_preserve_history() {
+    for dpi in [1., 1.25, 1.5] {
+        for zoom in [50., 100., 200.] {
+            let (ctx, mut app) = setup();
+            app.zoom = zoom;
+            app.session
+                .editor
+                .replace(0, 0, "English cafe\u{301}\nУкраїна\nРусский", "Fixture")
+                .unwrap();
+            app.session.editor.selection = (0, app.session.editor.document.text().chars().count());
+            app.sync_view();
+            let size = [1366. * dpi, 900. * dpi];
+            for _ in 0..3 {
+                frame(&ctx, &mut app, vec![], size, dpi);
+            }
+            let original = app.session.editor.document.clone();
+            let count = app.session.editor.undo_stack.len();
+            let pos = app
+                .regions
+                .iter()
+                .find(|r| r.name == "ruler-first")
+                .unwrap()
+                .rect
+                .center();
+            frame(
+                &ctx,
+                &mut app,
+                vec![egui::Event::PointerMoved(pos), ruler_pointer(pos, true)],
+                size,
+                dpi,
+            );
+            assert!(app.ruler_drag.is_some(), "dpi={dpi}, zoom={zoom}");
+            let to = pos + vec2(48. * zoom / 100., 0.);
+            frame(
+                &ctx,
+                &mut app,
+                vec![egui::Event::PointerMoved(to)],
+                size,
+                dpi,
+            );
+            assert_eq!(app.session.editor.document, original);
+            assert_eq!(app.session.editor.undo_stack.len(), count);
+            assert_ne!(app.ruler_drag.as_ref().unwrap().draft.preview, original);
+            frame(&ctx, &mut app, vec![ruler_pointer(to, false)], size, dpi);
+            assert!(app.ruler_drag.is_none());
+            assert_eq!(app.session.editor.undo_stack.len(), count + 1);
+            let after = app.session.editor.document.clone();
+            assert!(
+                after
+                    .paragraphs
+                    .iter()
+                    .all(|p| p.spacing.first_line_half_points == Some(72))
+            );
+            app.execute(Action::Undo, &ctx);
+            assert_eq!(app.session.editor.document, original);
+            app.execute(Action::Redo, &ctx);
+            assert_eq!(app.session.editor.document, after);
+            for _ in 0..2 {
+                frame(&ctx, &mut app, vec![], size, dpi);
+            }
+            let pos = app
+                .regions
+                .iter()
+                .find(|r| r.name == "ruler-body")
+                .unwrap()
+                .rect
+                .center();
+            frame(
+                &ctx,
+                &mut app,
+                vec![egui::Event::PointerMoved(pos), ruler_pointer(pos, true)],
+                size,
+                dpi,
+            );
+            frame(
+                &ctx,
+                &mut app,
+                vec![egui::Event::PointerMoved(pos + vec2(30., 0.))],
+                size,
+                dpi,
+            );
+            frame(&ctx, &mut app, vec![key(Key::Escape, false)], size, dpi);
+            assert!(app.ruler_drag.is_none());
+            assert_eq!(app.session.editor.document, after);
+            frame(&ctx, &mut app, vec![ruler_pointer(pos, false)], size, dpi);
+            assert_eq!(app.session.editor.undo_stack.len(), count + 1);
+        }
+    }
+}
+
+#[test]
+fn ruler_cancels_on_focus_loss_resize_and_blocks_input() {
+    for resize in [false, true] {
+        let (ctx, mut app) = setup();
+        let original = app.session.editor.document.clone();
+        let pos = app
+            .regions
+            .iter()
+            .find(|r| r.name == "ruler-left")
+            .unwrap()
+            .rect
+            .center();
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::PointerMoved(pos), ruler_pointer(pos, true)],
+            [1366., 900.],
+            1.,
+        );
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                egui::Event::PointerMoved(pos + vec2(40., 0.)),
+                egui::Event::Text("bad".into()),
+                key(Key::S, true),
+            ],
+            [1366., 900.],
+            1.,
+        );
+        assert!(app.ruler_drag.is_some());
+        assert_eq!(app.session.editor.document, original);
+        if resize {
+            frame(&ctx, &mut app, vec![], [1000., 800.], 1.);
+        } else {
+            let mut input = egui::RawInput {
+                focused: false,
+                ..Default::default()
+            };
+            input.events.push(egui::Event::WindowFocused(false));
+            let _ = ctx.run(input, |ctx| app.update_ui(ctx));
+        }
+        assert!(app.ruler_drag.is_none());
+        assert_eq!(app.session.editor.document, original);
+        assert!(app.session.editor.undo_stack.is_empty());
+    }
+}
+
+#[test]
+fn ruler_lost_pointer_cancels_and_release_outside_commits_once() {
+    for gone in [false, true] {
+        let (ctx, mut app) = setup();
+        let original = app.session.editor.document.clone();
+        let pos = app
+            .regions
+            .iter()
+            .find(|r| r.name == "ruler-right")
+            .unwrap()
+            .rect
+            .center();
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::PointerMoved(pos), ruler_pointer(pos, true)],
+            [1366., 900.],
+            1.,
+        );
+        let to = pos + vec2(-48., 120.);
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::PointerMoved(to)],
+            [1366., 900.],
+            1.,
+        );
+        frame(
+            &ctx,
+            &mut app,
+            vec![if gone {
+                egui::Event::PointerGone
+            } else {
+                ruler_pointer(to, false)
+            }],
+            [1366., 900.],
+            1.,
+        );
+        assert!(app.ruler_drag.is_none());
+        if gone {
+            assert_eq!(app.session.editor.document, original);
+            assert!(app.session.editor.undo_stack.is_empty());
+        } else {
+            assert_eq!(app.session.editor.undo_stack.len(), 1);
+            assert_eq!(
+                app.session.editor.document.paragraphs[0]
+                    .spacing
+                    .right_indent_half_points,
+                Some(72)
+            );
+            app.execute(Action::Undo, &ctx);
+            assert_eq!(app.session.editor.document, original);
+        }
+    }
+}

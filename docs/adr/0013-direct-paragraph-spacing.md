@@ -101,3 +101,20 @@ Do not move or remove glyphs, edit document text or change file semantics. Logic
 caret/selection extent may exceed the visible justified edge through whitespace.
 The regression matrix checks text reconstruction, grapheme boundaries in tested
 examples, real paragraph delimiters, mesh counts, heights and cursor mapping.
+
+## Alpha.46 extension: interactive ruler draft
+
+The toolkit-independent ruler draft owns a source snapshot and preview, never the
+live editor. Each absolute pointer displacement is rounded to a half point and
+projected with the same narrow-column scale as text. A completed drag calls the
+existing geometry command once; no-op/cancellation preserves inheritance and redo.
+The GUI cancels on Escape, focus/pointer loss and geometry changes, and blocks
+text/shortcuts during a draft. Commit rejects a changed source or selection.
+
+First-line and continuation handles preserve the opposite line origin, storing
+outer-left = min(first, continuation) and special = first − continuation. Moving
+the overall-left handle preserves special; right is independent. Existing bounds
+apply. The first selected paragraph supplies values; changed properties apply to
+the original half-open paragraph selection. Unchanged properties remain inherited.
+No native format, dependency or license change. Direct handle keyboard navigation,
+tab stops, margins and pagination remain separate work.

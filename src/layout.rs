@@ -103,14 +103,10 @@ pub fn galley(
         let mut left = f32::from(resolved.left_indent_half_points) * size / 22.;
         let mut right = f32::from(resolved.right_indent_half_points) * size / 22.;
         let mut special = f32::from(resolved.first_line_half_points) * size / 22.;
-        // Preserve a usable text column on very narrow viewports without changing model values.
-        let available = (width - 32.).max(0.);
-        if left + right + special.abs() > available {
-            let scale = available / (left + right + special.abs());
-            left *= scale;
-            right *= scale;
-            special *= scale;
-        }
+        let scale = crate::ruler::indent_scale(resolved, size / 22., width);
+        left *= scale;
+        right *= scale;
+        special *= scale;
         let first_left = left + special.max(0.);
         let body_left = left + (-special).max(0.);
         let first_width = (width - first_left - right).max(1.);

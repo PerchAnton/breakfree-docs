@@ -3,6 +3,12 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.46 — 2026-10-18
+
+- Add prototype horizontal ruler handles for first/continuation lines and left/right indents. Drag previews through the shared validated geometry command; release commits one Undo/Redo, Escape or focus/geometry loss cancels without changing history.
+- Keep selection, style inheritance, direct formatting and redo on no-op/cancellation. Clamp to existing limits, use half-point steps and share narrow-column scaling with text layout. Reject stale drafts; block editing/shortcuts during drag.
+- Preserve palette/icons, native v13, protocol/settings v1 and dependencies. Native Windows and matched reference acceptance remain deferred. Alpha.45 approved; alpha.46 awaits approval.
+
 ## 0.1.0-alpha.45 — 2026-10-18
 
 - Fix caret hit testing at soft-wrap ends with justified trailing spaces: logical row width now includes stored whitespace after visible ink, preventing the cursor from jumping before the final space.

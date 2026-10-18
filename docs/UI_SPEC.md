@@ -43,7 +43,7 @@ measurements taken from Word**. Source constants are in `src/presentation.rs`; o
 | Workspace | Neutral #ebebeb; white continuous canvas, border #c5c5c5; soft canvas shadow; 10-DIP workspace top gap; centered when space allows; horizontal/vertical scrolling when required |
 | Canvas | 816 DIP wide at 100% document zoom, 96-DIP side/top margins, content-driven height; **no page segmentation** |
 | Text | Host Arial/DejaVu or embedded fallback; default 11 pt (14.667 DIP), per-run 1–400 pt in half-points and underline; 1.25 line height, default-size 0.5-em paragraph gap; model styles/alignment projected into hit-testable text |
-| Ruler | 22-DIP-high horizontal canvas ruler with shaded margins, 96 DIP per inch, eighth-inch ticks; zoom scales with document; no draggable margins or vertical/page ruler yet |
+| Ruler | 36-DIP-high horizontal canvas ruler with shaded margins, 96 DIP per inch, eighth-inch ticks; zoom scales with document; no draggable margins or vertical/page ruler yet |
 | Panes | Navigation left 240 DIP (195–320); Formatting right 220 DIP (195–300); visible on request |
 | Status | 24 DIP; real Unicode word count and paragraph count, saved state, continuous-layout label and 50–200% zoom; ±10% buttons and click percentage to reset to 100% |
 | File | 180-DIP left action rail and scrollable Home/Options body; 158 × 160 blank-document tile, real current-file properties; New/Open/Save/Save As active, Print disabled with explanation |
@@ -1456,3 +1456,27 @@ SHA-256: `345c8c67e1501d430d3e4c7802d2a8a7257760df3b9fe5cf4a6363e8e35e8038`.
 ![Indent layout verification](screenshots/rust-style-create-alpha45-compact-macos.png)
 
 SHA-256: `d559abfab7b0d511b0302b8db794e56e8c064464f4db311661389016de7a0570`.
+
+## Alpha.46 interactive ruler prototype
+
+The canvas ruler is 36 DIP high; ticks remain at eighth-inch steps with 96 DIP per
+inch before zoom. Four 12 × 10 DIP hit regions separate first-line (y=5),
+continuation (y=19), outer-left (y=31) and right (y=19) handles. White/gray markers
+use the existing purple accent for hover/drag; all other palette/icons stay.
+Markers follow actual resolved paragraph geometry, including narrow-view scaling.
+Motion previews; release commits one command. Escape/focus/pointer loss or changed
+window/canvas transform cancels. No movement preserves inherited values and redo.
+The first selected paragraph supplies marker values; tooltips explain selection
+scope and the Home paragraph dialog keyboard alternative. Direct marker keyboard
+navigation, margin/tab-stop editing and vertical/page rulers remain unimplemented.
+Matched Word/Windows and native Windows DPI acceptance are deferred.
+
+![Ruler at 1366 × 900 DIP / 100% zoom](screenshots/rust-ruler-alpha46-macos.png)
+
+SHA-256: `1ae6234be342e630e5ced5889ffb0c2eb6cec0f8db1537c3bca8633f8ece1607`.
+
+![Ruler at 640 × 480 DIP / 50% zoom](screenshots/rust-ruler-alpha46-compact-macos.png)
+
+SHA-256: `40e2599ddac7e42ac7e0221f54337ae96e6b9f4b716508f9c820e5a8b8e7c302`.
+
+Both native macOS capture-harness images were inspected: marker lanes remain separate and text geometry is preserved. These captures do not verify physical pointer/keyboard/IME input or matched Windows behavior.

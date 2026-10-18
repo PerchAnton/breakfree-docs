@@ -52,6 +52,8 @@ use quick_order::{OrderOutcome, QuickOrderDialog};
 mod navigation;
 #[path = "quick_access.rs"]
 mod quick_access;
+#[path = "ruler_ui.rs"]
+mod ruler_ui;
 #[path = "view_ribbon.rs"]
 mod view_ribbon;
 
@@ -243,6 +245,7 @@ pub struct DocsApp {
     formatting_focus: Option<Id>,
     pub navigation: bool,
     pub rulers: bool,
+    ruler_drag: Option<ruler_ui::Drag>,
     pub zoom: f32,
     pub regions: Vec<Region>,
     buffer: String,
@@ -363,6 +366,7 @@ impl DocsApp {
             formatting_focus: None,
             navigation: false,
             rulers: true,
+            ruler_drag: None,
             zoom: 100.,
             regions: Vec::new(),
             buffer,
@@ -419,7 +423,8 @@ impl DocsApp {
         });
     }
     fn enabled(&self, action: Action) -> bool {
-        if self.replace_all_dialog.is_some()
+        if self.ruler_drag.is_some()
+            || self.replace_all_dialog.is_some()
             || self.font_dialog.is_some()
             || self.paragraph_dialog.is_some()
             || self.style_dialog.is_some()
@@ -2780,39 +2785,6 @@ impl DocsApp {
         self.record("formatting", panel.response.rect);
     }
 
-    fn ruler(ui: &mut Ui, width: f32, zoom: f32) {
-        let (rect, _) = ui.allocate_exact_size(vec2(width, 22.), Sense::hover());
-        let margin = CANVAS_MARGIN * zoom;
-        ui.painter().rect_filled(rect, 0., Color32::from_gray(214));
-        ui.painter().rect_filled(
-            Rect::from_min_max(rect.min + vec2(margin, 0.), rect.max - vec2(margin, 0.)),
-            0.,
-            Color32::from_gray(250),
-        );
-        let left = rect.left() + margin;
-        let right = rect.right() - margin;
-        for tick in 0..=((right - left) / (12. * zoom)) as usize {
-            let x = left + tick as f32 * 12. * zoom;
-            let large = tick % 8 == 0;
-            ui.painter().line_segment(
-                [
-                    pos2(x, rect.bottom() - if large { 11. } else { 5. }),
-                    pos2(x, rect.bottom() - 1.),
-                ],
-                Stroke::new(1.0_f32, Color32::from_gray(115)),
-            );
-            if large {
-                ui.painter().text(
-                    pos2(x, rect.top() + 6.),
-                    Align2::CENTER_CENTER,
-                    (tick / 8).to_string(),
-                    FontId::proportional(10.),
-                    Color32::from_gray(90),
-                );
-            }
-        }
-    }
-
     fn document(&mut self, ui: &mut Ui) {
         if self.zoom_width {
             let fit = ((ui.available_width() - 48.) / CANVAS_WIDTH * 100.).clamp(50., 200.);
@@ -2826,7 +2798,12 @@ impl DocsApp {
         let margin = CANVAS_MARGIN * zoom;
         let text_width = width - 2. * margin;
         let font_size = 14.6667 * zoom;
-        let model = self.session.editor.document.clone();
+        let model = self
+            .ruler_drag
+            .as_ref()
+            .map(|drag| &drag.draft.preview)
+            .unwrap_or(&self.session.editor.document)
+            .clone();
         let typing = self.session.editor.typing_style;
         let typing_position = self.session.editor.selection.0;
         let natural = layout::galley(
@@ -2849,13 +2826,14 @@ impl DocsApp {
             ui.horizontal_top(|ui|{
                 ui.add_space(space);
                 ui.vertical(|ui|{
-                    if self.rulers {Self::ruler(ui,width,zoom);ui.add_space(7.);}
+                    if self.rulers {self.ruler(ui,width,zoom);ui.add_space(7.);}
                     let frame=egui::Frame::new().fill(Color32::WHITE).stroke(Stroke::new(1.0_f32,Color32::from_gray(197))).shadow(egui::epaint::Shadow{offset:[0,2],blur:5,spread:0,color:Color32::from_black_alpha(24)}).inner_margin(0).show(ui,|ui|{
                         ui.set_min_size(vec2(width,min_height));
                         ui.add_space(margin);
                         ui.horizontal_top(|ui|{
                             ui.add_space(margin);
                             ui.allocate_ui_with_layout(vec2(text_width,natural.max(40.)),Layout::top_down(Align::Min),|ui|{
+                                if self.ruler_drag.is_some() {ui.disable();}
                                 let id=Id::new(EDIT_ID);
                                 let mut state=egui::TextEdit::load_state(ui.ctx(),id).unwrap_or_default();state.clear_undoer();
                                 if let Some(range)=self.cursor_override.take(){state.cursor.set_char_range(Some(range));}state.store(ui.ctx(),id);
@@ -3370,6 +3348,7 @@ impl DocsApp {
     }
 
     pub fn update_ui(&mut self, ctx: &egui::Context) {
+        self.prepare_ruler_input(ctx);
         let mut close_requested = ctx.input(|i| i.viewport().close_requested());
         if close_requested
             && (self.replace_all_dialog.is_some()
