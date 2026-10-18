@@ -313,6 +313,37 @@ impl StyleCatalog {
         *self = candidate;
         Ok(())
     }
+    /// Validate all replacement references and return a catalog without one custom style.
+    pub fn without_custom_style(
+        &self,
+        id: ParagraphStyle,
+        paragraph_replacement: ParagraphStyle,
+        parent_replacement: Option<ParagraphStyle>,
+    ) -> Result<Self> {
+        let ParagraphStyle::Custom(custom_id) = id else {
+            return Err("Built-in styles cannot be deleted.".into());
+        };
+        if self.get(id).is_none() {
+            return Err("Unknown custom style.".into());
+        }
+        if paragraph_replacement == id || self.get(paragraph_replacement).is_none() {
+            return Err("Choose an existing replacement for paragraphs.".into());
+        }
+        if parent_replacement.is_some_and(|parent| parent == id || self.get(parent).is_none()) {
+            return Err("Choose an existing parent or No style for child styles.".into());
+        }
+        let mut candidate = self.clone();
+        candidate.custom.retain(|s| s.id != custom_id);
+        for style in candidate.ids() {
+            let definition = candidate.get_mut(style).ok_or("Unknown paragraph style.")?;
+            if definition.parent == Some(id) {
+                definition.parent = parent_replacement;
+            }
+        }
+        candidate.validate()?;
+        Ok(candidate)
+    }
+
     pub fn validate(&self) -> Result<()> {
         if self.custom.len() > MAX_CUSTOM_STYLES {
             return Err("A document supports up to 64 custom styles.".into());

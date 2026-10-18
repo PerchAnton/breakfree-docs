@@ -192,11 +192,14 @@ Rust selection is complete; this gate evaluates GUI behavior and visual fidelity
   references or layout; validate names and combined definition edits in one undo.
   Save/reopen, failed-write retention, unchanged redo and unused-style targeting
   have regressions. Depends on alpha.20; [ADR 0008](docs/adr/0008-custom-named-styles.md#alpha21-renaming).
-- [ ] Extend paragraph/character styles with deletion and character-style rules.
-  Next small increment: specify and implement a transactional custom-style delete
-  with an explicit replacement for paragraph references and descendant parents;
-  reject cycles, preserve direct overrides, and prove exact undo/save/reopen.
-  Complete the broader item only with character-style fixtures.
+- [x] Alpha.22: delete custom styles with separate paragraph/direct-child-parent
+  replacements, cycle validation, one undo and exact v5 roundtrip. Direct overrides,
+  selection, unused survivors and failed-write retention are covered. Depends on
+  alpha.21; [ADR 0009](docs/adr/0009-delete-custom-styles.md).
+- [ ] Extend style rules with following-paragraph and character styles. Next small
+  increment: specify the next-paragraph style and Enter behavior, preserving direct
+  overrides and proving one undo/save/reopen. Any new persisted field needs a
+  versioned migration. Complete the broader item only with character-style fixtures.
 - [ ] Add lists, indentation, tabs, spacing, links and Unicode-aware search/replace.
 - [ ] Add table editing and images with explicit sizing and anchoring semantics.
 - [ ] Add navigation, command search and understandable tool states.

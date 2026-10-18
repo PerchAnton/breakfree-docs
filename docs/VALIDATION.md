@@ -8,20 +8,20 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.21**. Earlier capture/CI evidence retains its
+Current local checkpoint: **0.1.0-alpha.22**. Earlier capture/CI evidence retains its
 original scope; this iteration does not establish native Windows behavior.
 
 | Local check | Observed result |
 | :--- | :--- |
-| `cargo test --locked` | 163 passed: 26 engine/storage/presentation, 22 styles/inheritance, 8 search, 7 batch replacement, 9 preferences, 4 CLI subprocess and 87 actual egui widget event tests; no skipped tests |
-| `cargo test --locked --no-default-features` | 76 passed; preferences, core/styles/search/batch replacement and CLI build without GUI dependencies |
+| `cargo test --locked` | 172 passed: 26 engine/storage/presentation, 27 styles/inheritance, 8 search, 7 batch replacement, 9 preferences, 4 CLI subprocess and 91 actual egui widget event tests; no skipped tests |
+| `cargo test --locked --no-default-features` | 81 passed; preferences, core/styles/search/batch replacement and CLI build without GUI dependencies |
 | `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
 | `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
-| Copied executable outside checkout | Alpha.21 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that identical copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
+| Copied executable outside checkout | Alpha.22 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that identical copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
 | Repository references, contract and artwork | `python3 tools/check_repository.py` passed; approved logo embedded directly and archive copy byte-identical |
 | Workflow YAML / whitespace | Ruby YAML parse and `git diff --check` passed |
-| Native rendering | Alpha.21 Modify Style rename draft at 1366 × 900 / 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha21-native-captures). Earlier evidence retains its version context |
-| Native macOS interaction | Alpha.21 F10/H/L/M, Unicode name paste, one Undo/Redo, parent context-menu rename, duplicate error and Cancel; Save, exact v5 readback, fresh-process `--open` and parent-name display passed (details below) |
+| Native rendering | Alpha.22 Delete Style at 1366 × 900 / 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha22-native-captures). Earlier evidence retains its version context |
+| Native macOS interaction | Alpha.22 F10/H/L/D, initial Cancel/Enter, context target, indirect-cycle rejection, separate replacements, Delete/Save/one Undo/Redo, exact v5 readback and fresh-process `--open` passed (details below) |
 | Synthetic DPI | Actual widgets at 1/1.25/1.5 scale and 960/1366/1920 physical widths; ribbon/group/workspace/status bounds and collapse assertions passed; 27 additional width/scale combinations check individual Home control containment/nonoverlap and title/search/window bounds |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
@@ -735,3 +735,46 @@ Two final native renders were inspected separately (see UI_SPEC). Unicode native
 input used clipboard paste; physical IME/AltGr, Windows 100/125/150%, screen-reader
 acceptance and matched Word 2024 Windows comparison were unavailable. No broad
 script-support, exact reference-parity or power-loss guarantees are inferred.
+
+## Alpha.22 deletion validation
+
+Five new core regressions cover independent paragraph and child-parent replacements;
+indirect descendants; built-in children and No style; replacing paragraphs with a
+surviving descendant; text/Unicode/direct overrides/alignment/selection/pending
+input; unknown/self/cyclic references preserving history/redo; unused-style removal
+at capacity and ID reuse; dirty checkpoints; stale Replace All plans; exact v5
+roundtrip and injected write/sync/replace failures preserving the old file.
+
+Four new widget regressions drive both actual selectors and Delete; check one
+undo/redo, disabled invalid drafts, modal edit/file/history/close guards, layered
+Escape and existing redo; cover long-name containment at minimum size and synthetic
+1/1.25/1.5 scales; verify initial Cancel focus, keyboard commit, Home KeyTips,
+unused-style context targeting, command search and composition/pending guards.
+All 172 full / 81 core-only tests pass. fmt, normal/capture Clippy with warnings
+denied, release/capture builds, repository/artwork/YAML and whitespace checks pass.
+
+Native macOS verification used the final ordinary release copied outside the
+checkout, SHA-256 `9ecc3d36a4df8e329dc57c1829bc039ed527047d1bae2a5c053b027c41885e93`.
+F10/H/L/D opened the selected style's draft and showed two paragraphs/one child;
+Enter activated the initially focused Cancel without mutation. The Styles-list
+context menu then targeted Report Heading without applying it to text, showing
+one paragraph/one direct child. Choosing its indirect descendant Report Note as
+the new parent visibly rejected a cycle and disabled Delete. Choosing No Spacing
+for paragraphs and Heading 1 for children, then Delete and Command+S, succeeded.
+
+Independent JSON comparison checked the complete semantic document after Delete,
+one Command+Z plus Save, and one Command+Shift+Z plus Save. Only the requested
+custom definition and direct references changed; all text, English/Ukrainian/Russian
+with combining accent, direct run overrides, alignment, surviving IDs and indirect
+parent links were preserved. Comparison treats absent/null optional inherited
+properties as equivalent; native serialization writes explicit null values.
+Undo restored the complete original catalog and paragraphs, with Undo disabled.
+
+A fresh process opened the result through `--open` with a clean state and no undo
+history. Modify Style showed the surviving child based on Heading 1; moving to
+the first paragraph showed No Spacing, regular 11 pt. Both processes closed
+normally. The identical copied binary reported alpha.22/protocol v1 with clean
+stderr for isolated `--version`/`--capabilities`. Native Save As and new text input
+were not repeated; earlier evidence retains its scope. Two final native captures
+were inspected separately; native Windows DPI, physical IME/AltGr, full assistive
+technology and controlled Word 2024 Windows comparison remain unverified.

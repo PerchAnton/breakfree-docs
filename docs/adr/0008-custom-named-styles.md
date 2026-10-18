@@ -23,7 +23,8 @@ missing parents and direct/indirect cycles; never substitute an unrelated style.
 Resolution remains root → parent → child → direct overrides, with the ADR 0007
 fallback and numeric limits. Normal may inherit from a custom style only if the
 graph remains acyclic. Delete and character styles are not implemented.
-Alpha.21 adds renaming as described below.
+Alpha.21 adds renaming as described below. Alpha.22 adds deletion through
+[ADR 0009](0009-delete-custom-styles.md), superseding the deletion deferral here.
 
 ## Command and interface
 

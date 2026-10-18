@@ -1,0 +1,107 @@
+{
+  "format": "breakfree.docs.native",
+  "content_version": 5,
+  "paragraphs": [
+    {
+      "alignment": "left",
+      "paragraph_style": {
+        "custom": 1
+      },
+      "runs": [
+        {
+          "text": "A named style",
+          "direct": {}
+        }
+      ]
+    },
+    {
+      "alignment": "left",
+      "paragraph_style": {
+        "custom": 2
+      },
+      "runs": [
+        {
+          "text": "English, Україна, Русский, café.",
+          "direct": {}
+        }
+      ]
+    },
+    {
+      "alignment": "center",
+      "paragraph_style": {
+        "custom": 2
+      },
+      "runs": [
+        {
+          "text": "Direct bold stays independent.",
+          "direct": {
+            "bold": true
+          }
+        }
+      ]
+    }
+  ],
+  "style_catalog": {
+    "normal": {
+      "parent": null,
+      "character": {},
+      "line_height_percent": null,
+      "space_after_half_points": null
+    },
+    "no_spacing": {
+      "parent": "normal",
+      "character": {},
+      "line_height_percent": 100,
+      "space_after_half_points": 0
+    },
+    "heading1": {
+      "parent": "normal",
+      "character": {
+        "bold": true,
+        "font_size": 36
+      },
+      "line_height_percent": null,
+      "space_after_half_points": null
+    },
+    "custom": [
+      {
+        "id": 1,
+        "name": "Report Heading",
+        "definition": {
+          "parent": "heading1",
+          "character": {},
+          "line_height_percent": null,
+          "space_after_half_points": null
+        }
+      },
+      {
+        "id": 2,
+        "name": "Report Body",
+        "definition": {
+          "parent": {
+            "custom": 1
+          },
+          "character": {
+            "italic": true
+          },
+          "line_height_percent": null,
+          "space_after_half_points": null
+        }
+      },
+      {
+        "id": 3,
+        "name": "Report Note",
+        "definition": {
+          "parent": {
+            "custom": 2
+          },
+          "character": {
+            "underline": true
+          },
+          "line_height_percent": null,
+          "space_after_half_points": null
+        }
+      }
+    ]
+  }
+}

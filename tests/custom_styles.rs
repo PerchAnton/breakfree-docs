@@ -544,3 +544,235 @@ fn rename_roundtrip_dirty_checkpoint_failed_write_and_stale_preview_keep_referen
     session.editor.undo();
     assert_eq!(session.editor.document, renamed);
 }
+
+fn deletion_fixture() -> Editor {
+    let mut e =
+        Editor::new(storage::decode(include_bytes!("../examples/CustomStyles.bfdoc")).unwrap());
+    let mut child = *e
+        .document
+        .style_catalog
+        .get(ParagraphStyle::Custom(2))
+        .unwrap();
+    child.parent = Some(ParagraphStyle::Custom(1));
+    e.modify_style(ParagraphStyle::Custom(2), child).unwrap();
+    e.create_style(
+        "Онук café Русский",
+        based_on(ParagraphStyle::Custom(2)),
+        false,
+    )
+    .unwrap();
+    e
+}
+
+#[test]
+fn delete_replaces_paragraphs_and_direct_children_separately_in_one_exact_undo() {
+    let mut e = deletion_fixture();
+    e.selection = (0, e.document.character_count());
+    e.typing_style.underline = Some(true);
+    let before = e.document.clone();
+    let selection = e.selection;
+    let pending = e.typing_style;
+    let depth = e.undo_stack.len();
+    e.delete_custom_style(
+        ParagraphStyle::Custom(1),
+        ParagraphStyle::Heading1,
+        Some(ParagraphStyle::NoSpacing),
+    )
+    .unwrap();
+    let after = e.document.clone();
+    let mut expected = before.clone();
+    expected.style_catalog.custom.remove(0);
+    expected.style_catalog.custom[0].definition.parent = Some(ParagraphStyle::NoSpacing);
+    expected.paragraphs[0].paragraph_style = ParagraphStyle::Heading1;
+    assert_eq!(after, expected);
+    assert_eq!(
+        after.style_catalog.custom[1].definition.parent,
+        Some(ParagraphStyle::Custom(2))
+    );
+    assert_eq!(e.undo_stack.len(), depth + 1);
+    assert_eq!((e.selection, e.typing_style), (selection, pending));
+    e.undo();
+    assert_eq!(e.document, before);
+    assert_eq!((e.selection, e.typing_style), (selection, pending));
+    e.redo();
+    assert_eq!(e.document, after);
+    assert_eq!((e.selection, e.typing_style), (selection, pending));
+}
+
+#[test]
+fn deletion_detaches_builtin_children_and_can_replace_paragraphs_with_a_descendant() {
+    let mut e = Editor::default();
+    e.replace(0, 0, "Україна café\nРусский", "Input").unwrap();
+    e.selection = (0, e.document.character_count());
+    let id = e
+        .create_style("Root", StyleDefinition::default(), true)
+        .unwrap();
+    e.modify_style(ParagraphStyle::Normal, based_on(id))
+        .unwrap();
+    let child = e.create_style("Child", based_on(id), false).unwrap();
+    let before = e.document.clone();
+    e.delete_custom_style(id, child, None).unwrap();
+    assert_eq!(e.document.style_catalog.normal.parent, None);
+    assert_eq!(e.document.style_catalog.get(child).unwrap().parent, None);
+    assert_eq!(e.document.paragraphs[0].paragraph_style, child);
+    assert_eq!(
+        e.document.style_catalog.heading1.parent,
+        Some(ParagraphStyle::Normal)
+    );
+    assert_eq!(e.document.text(), before.text());
+    e.document.validate().unwrap();
+    e.undo();
+    assert_eq!(e.document, before);
+}
+
+#[test]
+fn deletion_rejects_unknown_self_and_cyclic_replacements_without_losing_redo() {
+    let mut e = deletion_fixture();
+    e.replace(0, 0, "x", "Input").unwrap();
+    e.undo();
+    let before = e.document.clone();
+    let depth = e.undo_stack.len();
+    let selection = e.selection;
+    let pending = e.typing_style;
+    for (target, paragraphs, parent) in [
+        (ParagraphStyle::Normal, ParagraphStyle::NoSpacing, None),
+        (ParagraphStyle::Custom(999), ParagraphStyle::Normal, None),
+        (ParagraphStyle::Custom(1), ParagraphStyle::Custom(1), None),
+        (ParagraphStyle::Custom(1), ParagraphStyle::Custom(999), None),
+        (
+            ParagraphStyle::Custom(1),
+            ParagraphStyle::Normal,
+            Some(ParagraphStyle::Custom(1)),
+        ),
+        (
+            ParagraphStyle::Custom(1),
+            ParagraphStyle::Normal,
+            Some(ParagraphStyle::Custom(999)),
+        ),
+        (
+            ParagraphStyle::Custom(1),
+            ParagraphStyle::Normal,
+            Some(ParagraphStyle::Custom(2)),
+        ),
+        (
+            ParagraphStyle::Custom(1),
+            ParagraphStyle::Normal,
+            Some(ParagraphStyle::Custom(3)),
+        ),
+    ] {
+        assert!(e.delete_custom_style(target, paragraphs, parent).is_err());
+        assert_eq!(e.document, before);
+        assert_eq!(e.undo_stack.len(), depth);
+        assert_eq!(e.redo_stack.len(), 1);
+        assert_eq!((e.selection, e.typing_style), (selection, pending));
+    }
+    e.redo();
+    assert!(e.document.text().starts_with('x'));
+}
+
+#[test]
+fn deleting_unused_style_at_capacity_frees_identity_without_changing_survivors() {
+    let mut e = Editor::default();
+    for i in 1..=MAX_CUSTOM_STYLES {
+        e.create_style(
+            &format!("Style {i}"),
+            based_on(ParagraphStyle::Normal),
+            false,
+        )
+        .unwrap();
+    }
+    let before = e.document.clone();
+    let depth = e.undo_stack.len();
+    let id = ParagraphStyle::Custom(32);
+    e.delete_custom_style(id, ParagraphStyle::Normal, None)
+        .unwrap();
+    let after = e.document.clone();
+    assert_eq!(e.undo_stack.len(), depth + 1);
+    assert_eq!(after.paragraphs, before.paragraphs);
+    assert_eq!(after.style_catalog.custom.len(), 63);
+    for style in &after.style_catalog.custom {
+        assert_eq!(
+            Some(style),
+            before
+                .style_catalog
+                .custom
+                .iter()
+                .find(|s| s.id == style.id)
+        );
+    }
+    e.undo();
+    assert_eq!(e.document, before);
+    e.redo();
+    assert_eq!(e.document, after);
+    assert_eq!(
+        e.create_style("Style 32", based_on(ParagraphStyle::Heading1), false)
+            .unwrap(),
+        id
+    );
+    assert!(e.redo_stack.is_empty());
+    e.undo();
+    assert_eq!(e.document, after);
+    e.undo();
+    assert_eq!(e.document, before);
+}
+
+#[test]
+fn deletion_save_reopen_failed_writes_dirty_checkpoint_and_bulk_preview_are_safe() {
+    use breakfree_docs::session::Session;
+    let mut session = Session::new(deletion_fixture().document, None);
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("delete.bfdoc");
+    session.save(&path).unwrap();
+    let bytes = std::fs::read(&path).unwrap();
+    let before = session.editor.document.clone();
+    let stale = session.editor.preview_replace_all(&[(0, 1)], "X").unwrap();
+    session
+        .editor
+        .delete_custom_style(
+            ParagraphStyle::Custom(1),
+            ParagraphStyle::NoSpacing,
+            Some(ParagraphStyle::Heading1),
+        )
+        .unwrap();
+    let after = session.editor.document.clone();
+    assert!(session.dirty());
+    assert!(session.editor.apply_replace_all(stale).is_err());
+    session.editor.undo();
+    assert!(!session.dirty());
+    assert_eq!(session.editor.document, before);
+    session.editor.redo();
+    assert!(session.dirty());
+    for stage in [
+        storage::SaveStage::Write,
+        storage::SaveStage::Sync,
+        storage::SaveStage::Replace,
+    ] {
+        assert!(
+            storage::save_checked(&after, &path, |at| if at == stage {
+                Err("Injected failure".into())
+            } else {
+                Ok(())
+            })
+            .is_err()
+        );
+        assert_eq!(std::fs::read(&path).unwrap(), bytes);
+        assert!(session.dirty());
+    }
+    session.save(&path).unwrap();
+    assert!(!session.dirty());
+    assert_eq!(storage::load(&path).unwrap(), after);
+    let value: serde_json::Value = serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+    assert_eq!(value["content_version"], 5);
+    let plan = session
+        .editor
+        .preview_replace_all(&[(0, 1)], "café")
+        .unwrap();
+    session.editor.apply_replace_all(plan).unwrap();
+    assert_eq!(session.editor.document.style_catalog, after.style_catalog);
+    assert_eq!(
+        session.editor.document.paragraphs[0].paragraph_style,
+        ParagraphStyle::NoSpacing
+    );
+    session.editor.undo();
+    assert_eq!(session.editor.document, after);
+}

@@ -176,8 +176,7 @@ The ribbon and command search provide the same action without that chord.
 [Navigation details and evidence](docs/UI_SPEC.md#alpha15-search-options).
 The Font launcher opens a dialog for style, size and underline with a preview.
 Only OK applies the draft, together in one undo operation; Cancel/Escape discards
-it. Mixed properties stay unchanged unless edited. Unimplemented font-family,
-style-creation and list commands are disabled with explanations.
+it. Mixed properties stay unchanged unless edited. Unimplemented font-family and list commands are disabled with explanations.
 
 Home Styles applies Normal, No Spacing or Heading 1 to selected paragraphs in one
 undo. Direct formatting and alignment remain unchanged; Clear character formatting
@@ -206,7 +205,15 @@ Confirm name, parent and property changes together in one undo; IDs and all
 paragraph/descendant references stay intact. Built-in names remain fixed.
 Right-click a gallery card or any Styles-list row → Modify style to edit it
 without applying it to the document. Cancel/unchanged OK preserves redo history.
-Delete and character styles remain planned. [Style rules](docs/adr/0008-custom-named-styles.md).
+Delete style opens a draft with separate replacements for paragraphs and direct
+child styles (including a No style parent). Counts reflect actual references;
+inherited appearance may change, while direct formatting and text remain intact.
+Delete commits once; one Undo restores the definition and all references.
+Cancel/Escape changes nothing; built-ins cannot be deleted and cycles are rejected.
+Use the style's context menu to delete an unused definition without applying it.
+KeyTips H → L → D or narrow H → E → D opens the selected style's draft.
+Character styles and following-style rules remain planned.
+[Style rules](docs/adr/0008-custom-named-styles.md) · [Deletion rules](docs/adr/0009-delete-custom-styles.md).
 
 This build reads native content v1/v2/v3/v4/v5 and **saves v5**. Opening an older file
 does not change it; an explicit save converts it to v5. Earlier builds cannot

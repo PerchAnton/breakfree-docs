@@ -310,6 +310,30 @@ impl Editor {
         Ok(())
     }
 
+    /// Remove a custom definition and replace its direct references in one undo step.
+    pub fn delete_custom_style(
+        &mut self,
+        id: ParagraphStyle,
+        paragraph_replacement: ParagraphStyle,
+        parent_replacement: Option<ParagraphStyle>,
+    ) -> Result<()> {
+        let catalog = self.document.style_catalog.without_custom_style(
+            id,
+            paragraph_replacement,
+            parent_replacement,
+        )?;
+        let mut result = self.document.clone();
+        result.style_catalog = catalog;
+        for paragraph in &mut result.paragraphs {
+            if paragraph.paragraph_style == id {
+                paragraph.paragraph_style = paragraph_replacement;
+            }
+        }
+        result.validate()?;
+        self.commit(result, "Delete style", self.selection, self.typing_style);
+        Ok(())
+    }
+
     /// Create and optionally apply a named definition in one history transaction.
     pub fn create_style(
         &mut self,

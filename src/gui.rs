@@ -21,6 +21,9 @@ mod font_dialog;
 #[path = "style_dialog.rs"]
 mod style_dialog;
 use style_dialog::{StyleDialog, StyleOutcome};
+#[path = "delete_style_dialog.rs"]
+mod delete_style_dialog;
+use delete_style_dialog::{DeleteStyleDialog, DeleteStyleOutcome};
 #[path = "replace_all_dialog.rs"]
 mod replace_all_dialog;
 use font_dialog::{FontDialog, FontDialogOutcome};
@@ -78,6 +81,7 @@ pub enum Action {
     FontDialog,
     ModifyStyle,
     CreateStyle,
+    DeleteStyle,
     GrowFont,
     ShrinkFont,
     Left,
@@ -117,6 +121,7 @@ impl Action {
             Self::FontDialog => "Font dialog",
             Self::ModifyStyle => "Modify style…",
             Self::CreateStyle => "Create style…",
+            Self::DeleteStyle => "Delete style…",
             Self::GrowFont => "Grow font",
             Self::ShrinkFont => "Shrink font",
             Self::Left => "Align left",
@@ -158,6 +163,7 @@ const COMMANDS: &[Action] = &[
     Action::FontDialog,
     Action::ModifyStyle,
     Action::CreateStyle,
+    Action::DeleteStyle,
     Action::GrowFont,
     Action::ShrinkFont,
     Action::Left,
@@ -228,6 +234,7 @@ pub struct DocsApp {
     font_size_dirty: bool,
     font_dialog: Option<FontDialog>,
     style_dialog: Option<StyleDialog>,
+    delete_style_dialog: Option<DeleteStyleDialog>,
     style_context: Option<(ParagraphStyle, egui::Pos2, egui::LayerId)>,
     pending: Option<Pending>,
     error: Option<String>,
@@ -339,6 +346,7 @@ impl DocsApp {
             font_size_dirty: false,
             font_dialog: None,
             style_dialog: None,
+            delete_style_dialog: None,
             style_context: None,
             pending: None,
             error: None,
@@ -376,6 +384,7 @@ impl DocsApp {
         if self.replace_all_dialog.is_some()
             || self.font_dialog.is_some()
             || self.style_dialog.is_some()
+            || self.delete_style_dialog.is_some()
             || self.zoom_dialog.is_some()
             || self.quick_reset
             || self.quick_order.is_some()
@@ -384,7 +393,11 @@ impl DocsApp {
         }
         if matches!(
             action,
-            Action::FontDialog | Action::ModifyStyle | Action::CreateStyle | Action::Zoom
+            Action::FontDialog
+                | Action::ModifyStyle
+                | Action::CreateStyle
+                | Action::DeleteStyle
+                | Action::Zoom
         ) && (self.pending.is_some() || self.error.is_some())
         {
             return false;
@@ -393,6 +406,7 @@ impl DocsApp {
             return matches!(action, Action::Copy | Action::Ribbon | Action::Rulers);
         }
         match action {
+            Action::DeleteStyle => matches!(self.target_style(), ParagraphStyle::Custom(_)),
             Action::CreateStyle => {
                 self.session.editor.document.style_catalog.custom.len()
                     < crate::model::MAX_CUSTOM_STYLES
@@ -517,7 +531,11 @@ impl DocsApp {
         }
         if matches!(
             action,
-            Action::ClearFormatting | Action::Style(_) | Action::ModifyStyle | Action::CreateStyle
+            Action::ClearFormatting
+                | Action::Style(_)
+                | Action::ModifyStyle
+                | Action::CreateStyle
+                | Action::DeleteStyle
         ) && (self.pending.is_some()
             || self.error.is_some()
             || ctx.input(|i| i.events.iter().any(|e| matches!(e, egui::Event::Ime(_)))))
@@ -608,6 +626,7 @@ impl DocsApp {
                 self.focus_font_size = true;
                 self.focus_document = false;
             }
+            Action::DeleteStyle => self.open_delete_style_dialog(self.target_style(), ctx),
             Action::ModifyStyle | Action::CreateStyle => {
                 let id = self
                     .session
@@ -698,6 +717,7 @@ impl DocsApp {
                     | Action::FontDialog
                     | Action::ModifyStyle
                     | Action::CreateStyle
+                    | Action::DeleteStyle
                     | Action::Zoom
                     | Action::File
             ) {
@@ -804,6 +824,10 @@ impl DocsApp {
         }
         let tip = if self.composing && !enabled {
             "Finish text composition first."
+        } else if action == Action::DeleteStyle
+            && !matches!(self.target_style(), ParagraphStyle::Custom(_))
+        {
+            "Built-in styles cannot be deleted. Choose a custom style."
         } else {
             self.command_name(action)
         };
@@ -1776,9 +1800,48 @@ impl DocsApp {
                     self.open_style_dialog(id, ui.ctx());
                     egui::Popup::close_all(ui.ctx());
                 }
+                let delete = ui
+                    .add_enabled(
+                        self.enabled(Action::ModifyStyle)
+                            && matches!(id, ParagraphStyle::Custom(_)),
+                        Button::new("Delete style…"),
+                    )
+                    .on_disabled_hover_text("Built-in styles cannot be deleted.");
+                self.record(&format!("style-delete-{id:?}"), delete.rect);
+                if delete.clicked() {
+                    self.open_delete_style_dialog(id, ui.ctx());
+                    egui::Popup::close_all(ui.ctx());
+                }
             });
         if !egui::Popup::is_id_open(ctx, Id::new("style-context")) {
             self.style_context = None;
+        }
+    }
+
+    fn target_style(&self) -> ParagraphStyle {
+        self.session
+            .editor
+            .document
+            .locate(self.session.editor.selection.0)
+            .map(|(p, _)| self.session.editor.document.paragraphs[p].paragraph_style)
+            .unwrap_or_default()
+    }
+
+    fn open_delete_style_dialog(&mut self, id: ParagraphStyle, ctx: &egui::Context) {
+        if !self.enabled(Action::ModifyStyle)
+            || !matches!(id, ParagraphStyle::Custom(_))
+            || ctx.input(|i| i.events.iter().any(|e| matches!(e, egui::Event::Ime(_))))
+        {
+            return;
+        }
+        if let Some(dialog) =
+            DeleteStyleDialog::new(id, &self.session.editor.document.style_catalog)
+        {
+            self.delete_style_dialog = Some(dialog);
+            self.focus_document = false;
+            self.focus_font_size = false;
+            self.palette = false;
+            ctx.memory_mut(|m| m.surrender_focus(Id::new(EDIT_ID)));
         }
     }
 
@@ -1814,6 +1877,7 @@ impl DocsApp {
         ui.small("Direct formatting takes precedence.");
         self.command(ui, "Modify style…", Action::ModifyStyle, vec2(210., 27.));
         self.command(ui, "Create style…", Action::CreateStyle, vec2(210., 27.));
+        self.command(ui, "Delete style…", Action::DeleteStyle, vec2(210., 27.));
         if self.session.editor.document.style_catalog.custom.len()
             >= crate::model::MAX_CUSTOM_STYLES
         {
@@ -1951,6 +2015,7 @@ impl DocsApp {
         if self.replace_all_dialog.is_some()
             || self.font_dialog.is_some()
             || self.style_dialog.is_some()
+            || self.delete_style_dialog.is_some()
             || self.zoom_dialog.is_some()
             || self.quick_reset
             || self.quick_order.is_some()
@@ -2593,6 +2658,21 @@ impl DocsApp {
                 }
             }
         }
+        if let Some(mut dialog) = self.delete_style_dialog.take() {
+            match dialog.show(ctx, &self.session.editor.document, &mut self.regions) {
+                DeleteStyleOutcome::Open => self.delete_style_dialog = Some(dialog),
+                DeleteStyleOutcome::Cancel => self.sync_view(),
+                DeleteStyleOutcome::Apply => {
+                    let result = self.session.editor.delete_custom_style(
+                        dialog.id,
+                        dialog.paragraph_replacement,
+                        dialog.parent_replacement,
+                    );
+                    self.fail(result);
+                    self.sync_view();
+                }
+            }
+        }
         if let Some(mut dialog) = self.style_dialog.take() {
             match dialog.show(ctx, &mut self.regions) {
                 StyleOutcome::Open => self.style_dialog = Some(dialog),
@@ -2750,6 +2830,7 @@ impl DocsApp {
             && (self.replace_all_dialog.is_some()
                 || self.font_dialog.is_some()
                 || self.style_dialog.is_some()
+                || self.delete_style_dialog.is_some()
                 || self.zoom_dialog.is_some()
                 || self.quick_reset
                 || self.quick_order.is_some())

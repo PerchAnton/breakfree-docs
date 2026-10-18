@@ -948,3 +948,46 @@ BREAKFREE_CAPTURE_TO="$PWD/docs/screenshots/rust-rename-style-alpha21-macos-narr
 
 ![Modify Style with editable custom name](screenshots/rust-rename-style-alpha21-macos.png)
 ![Rename draft at minimum window size](screenshots/rust-rename-style-alpha21-macos-narrow.png)
+
+## Alpha.22 Delete Style
+
+Home Styles/More → Delete style, command search and provisional H → L → D or
+narrow H → E → D KeyTips open a modal for the first selected paragraph's style.
+A gallery/list context menu can target an unused or unselected custom definition
+without applying it. Built-in targets are disabled with an explanation.
+
+| Component | Implemented bounds/behavior |
+| :--- | :--- |
+| Dialog | 460-DIP content width; target name truncates with full tooltip; actual directly affected paragraph and child-definition counts |
+| Replacements | Two 280-DIP selectors in a two-column grid with 14 × 10 gaps. Lists have 150-DIP maximum height and exclude the target. Child parent additionally offers No style |
+| Validation | Whole surviving graph checked, including built-in children and indirect cycles. Invalid selections show an error and disable Delete |
+| Actions/focus | 82 × 27 Delete/Cancel. Cancel starts focused; Enter activates the focused control. Escape dismisses a selector before the draft. Tab reaches Delete; confirmation commits one undo |
+| Model effect | Paragraphs and immediate child parents use independent choices. Indirect parent links, text, alignment and direct formatting stay. Inherited appearance may change, as the visible note explains |
+
+This is an explicit Docs reference-replacement policy, not a claim that Word uses
+this exact deletion dialog. The light palette, violet accents, original colored
+icons, logo and Home gutters stay unchanged. Single replacement for all direct
+children is intentional; per-child remapping, templates, character/following
+styles, pagination and complete native reference parity remain outside scope.
+
+### Alpha.22 native captures
+
+Final alpha.22 capture executable, macOS arm64, light theme, English UI, 100%
+document zoom, backing scale 2. The synthetic [deletion example](../examples/StyleDeletion.bfdoc)
+contains a parent, child and indirect descendant. Both inspected native renders
+fit the name, counts, choices, explanation and actions inside 1366 × 900 and
+640 × 480 DIP windows without unintended overlap. The background document remains
+unchanged while the draft is open. These capture inputs are synthetic; actual
+keyboard/pointer/Save/reopen checks are separate in [validation](VALIDATION.md#alpha22-deletion-validation).
+
+```sh
+cargo build --locked --release --features capture --example capture_ui
+BREAKFREE_CAPTURE_TO="$PWD/docs/screenshots/rust-delete-style-alpha22-macos.png" target/release/examples/capture_ui 1366 900 styles-delete
+BREAKFREE_CAPTURE_TO="$PWD/docs/screenshots/rust-delete-style-alpha22-macos-narrow.png" target/release/examples/capture_ui 640 480 styles-delete
+```
+
+![Delete Style and replacement choices](screenshots/rust-delete-style-alpha22-macos.png)
+![Delete Style at minimum width](screenshots/rust-delete-style-alpha22-macos-narrow.png)
+
+Native Windows 100/125/150%, physical IME/AltGr, screen-reader acceptance and matched
+Word 2024 Windows captures remain unavailable. No similarity percentage is claimed.

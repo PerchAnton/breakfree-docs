@@ -4672,3 +4672,237 @@ fn unused_style_list_context_menu_renames_without_applying_to_document() {
     app.execute(Action::Undo, &ctx);
     assert_eq!(app.session.editor.document, before);
 }
+
+fn delete_style_setup() -> (egui::Context, DocsApp) {
+    let (ctx, mut app) = setup();
+    let mut doc = storage::decode(include_bytes!("../examples/CustomStyles.bfdoc")).unwrap();
+    doc.style_catalog.custom[1].definition.parent = Some(ParagraphStyle::Custom(1));
+    app.session = Session::new(doc, None);
+    app.sync_view();
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    (ctx, app)
+}
+
+#[test]
+fn delete_style_widgets_replace_distinct_references_and_undo_once() {
+    let (ctx, mut app) = delete_style_setup();
+    let before = app.session.editor.document.clone();
+    app.execute(Action::DeleteStyle, &ctx);
+    click_region(&ctx, &mut app, "delete-style-paragraphs");
+    click_region(&ctx, &mut app, "delete-style-paragraphs-NoSpacing");
+    click_region(&ctx, &mut app, "delete-style-children");
+    click_region(&ctx, &mut app, "delete-style-children-Heading1");
+    assert_eq!(app.session.editor.document, before);
+    assert!(!egui::Popup::is_any_open(&ctx));
+    click_region(&ctx, &mut app, "delete-style-apply");
+    assert!(app.delete_style_dialog.is_none());
+    let after = app.session.editor.document.clone();
+    assert_eq!(
+        after.paragraphs[0].paragraph_style,
+        ParagraphStyle::NoSpacing
+    );
+    assert_eq!(after.style_catalog.custom[0].id, 2);
+    assert_eq!(
+        after.style_catalog.custom[0].definition.parent,
+        Some(ParagraphStyle::Heading1)
+    );
+    assert_eq!(app.session.editor.undo_stack.len(), 1);
+    assert_eq!(
+        app.session.editor.selected_paragraph_style(),
+        Some(ParagraphStyle::NoSpacing)
+    );
+    assert_eq!(
+        storage::decode(&storage::encode(&after).unwrap()).unwrap(),
+        after
+    );
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.document, before);
+    app.execute(Action::Redo, &ctx);
+    assert_eq!(app.session.editor.document, after);
+}
+
+#[test]
+fn delete_style_cycle_cancel_and_modal_guards_preserve_redo() {
+    let (ctx, mut app) = delete_style_setup();
+    let screen = [1366., 900.];
+    app.session.editor.replace(0, 0, "x", "Input").unwrap();
+    app.session.editor.undo();
+    let before = app.session.editor.document.clone();
+    app.execute(Action::DeleteStyle, &ctx);
+    click_region(&ctx, &mut app, "delete-style-children");
+    click_region(&ctx, &mut app, "delete-style-children-Custom(2)");
+    click_region(&ctx, &mut app, "delete-style-apply"); // invalid self-parent remains a draft
+    assert!(app.delete_style_dialog.is_some());
+    for action in [
+        Action::New,
+        Action::Save,
+        Action::Undo,
+        Action::CreateStyle,
+        Action::ModifyStyle,
+        Action::DeleteStyle,
+    ] {
+        assert!(!app.enabled(action));
+        app.execute(action, &ctx);
+    }
+    frame(
+        &ctx,
+        &mut app,
+        vec![
+            key(Key::S, true),
+            key(Key::N, true),
+            egui::Event::Text("blocked".into()),
+        ],
+        screen,
+        1.,
+    );
+    let mut input = egui::RawInput {
+        screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(1366., 900.))),
+        ..Default::default()
+    };
+    input
+        .viewports
+        .get_mut(&egui::ViewportId::ROOT)
+        .unwrap()
+        .events
+        .push(egui::ViewportEvent::Close);
+    let output = ctx.run(input, |ctx| app.update_ui(ctx));
+    assert!(
+        output.viewport_output[&egui::ViewportId::ROOT]
+            .commands
+            .contains(&ViewportCommand::CancelClose)
+    );
+    assert!(app.pending.is_none());
+    click_region(&ctx, &mut app, "delete-style-children");
+    frame(&ctx, &mut app, vec![key(Key::Escape, false)], screen, 1.);
+    assert!(app.delete_style_dialog.is_some());
+    frame(&ctx, &mut app, vec![key(Key::Escape, false)], screen, 1.);
+    assert!(app.delete_style_dialog.is_none());
+    assert_eq!(app.session.editor.document, before);
+    assert_eq!(app.session.editor.redo_stack.len(), 1);
+    app.execute(Action::Redo, &ctx);
+    assert!(app.session.editor.document.text().starts_with('x'));
+}
+
+#[test]
+fn delete_style_keytips_long_name_bounds_cancel_and_keyboard_commit_at_three_scales() {
+    for dpi in [1., 1.25, 1.5] {
+        let (ctx, mut app) = delete_style_setup();
+        app.session.editor.document.style_catalog.custom[0].name = "Ї".repeat(64);
+        let before = app.session.editor.document.clone();
+        let screen = [640. * dpi, 480. * dpi];
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![], screen, dpi);
+        }
+        for keypress in [Key::F10, Key::H, Key::E, Key::D] {
+            frame(&ctx, &mut app, vec![key(keypress, false)], screen, dpi);
+        }
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![], screen, dpi);
+        }
+        assert!(app.delete_style_dialog.is_some());
+        let bounds = app
+            .regions
+            .iter()
+            .find(|r| r.name == "delete-style-dialog")
+            .unwrap()
+            .rect;
+        assert!(
+            Rect::from_min_size(Pos2::ZERO, vec2(640., 480.)).contains_rect(bounds),
+            "{bounds:?}"
+        );
+        for r in app
+            .regions
+            .iter()
+            .filter(|r| r.name.starts_with("delete-style-"))
+        {
+            assert!(bounds.contains_rect(r.rect), "{} {:?}", r.name, r.rect);
+        }
+        // Cancel is initially focused: the opening Enter must not delete anything.
+        frame(&ctx, &mut app, vec![key(Key::Enter, false)], screen, dpi);
+        assert!(app.delete_style_dialog.is_none());
+        assert_eq!(app.session.editor.document, before);
+        app.execute(Action::DeleteStyle, &ctx);
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![], screen, dpi);
+        }
+        // Cancel precedes Delete in the modal focus order; Tab selects Delete.
+        frame(&ctx, &mut app, vec![key(Key::Tab, false)], screen, dpi);
+        frame(&ctx, &mut app, vec![key(Key::Enter, false)], screen, dpi);
+        assert!(app.delete_style_dialog.is_none());
+        assert_eq!(app.session.editor.document.style_catalog.custom.len(), 1);
+        app.execute(Action::Undo, &ctx);
+        assert_eq!(app.session.editor.document, before);
+    }
+}
+
+#[test]
+fn delete_unused_style_context_target_search_and_composition_guards() {
+    let (ctx, mut app) = setup();
+    let screen = [1366., 900.];
+    assert!(!app.enabled(Action::DeleteStyle));
+    app.execute(Action::DeleteStyle, &ctx);
+    assert!(app.delete_style_dialog.is_none());
+    let id = app
+        .session
+        .editor
+        .create_style("Unused", crate::model::StyleDefinition::default(), false)
+        .unwrap();
+    let before = app.session.editor.document.clone();
+    app.composing = true;
+    app.open_delete_style_dialog(id, &ctx);
+    assert!(app.delete_style_dialog.is_none());
+    app.composing = false;
+    app.pending = Some(Pending::New);
+    app.open_delete_style_dialog(id, &ctx);
+    assert!(app.delete_style_dialog.is_none());
+    app.pending = None;
+    click_region(&ctx, &mut app, "home-menu-Styles");
+    for _ in 0..3 {
+        frame(&ctx, &mut app, vec![], screen, 1.);
+    }
+    let pos = app
+        .regions
+        .iter()
+        .find(|r| r.name == "command-Style(Custom(1))")
+        .unwrap()
+        .rect
+        .center();
+    for pressed in [true, false] {
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                egui::Event::PointerMoved(pos),
+                egui::Event::PointerButton {
+                    pos,
+                    button: egui::PointerButton::Secondary,
+                    pressed,
+                    modifiers: Modifiers::NONE,
+                },
+            ],
+            screen,
+            1.,
+        );
+    }
+    click_region(&ctx, &mut app, "style-delete-Custom(1)");
+    assert_eq!(app.delete_style_dialog.as_ref().unwrap().id, id);
+    click_region(&ctx, &mut app, "delete-style-apply");
+    assert!(app.session.editor.document.style_catalog.custom.is_empty());
+    assert_eq!(app.session.editor.document.paragraphs, before.paragraphs);
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.document, before);
+    app.execute(Action::Style(id), &ctx);
+    frame(&ctx, &mut app, vec![], screen, 1.);
+    click_region(&ctx, &mut app, "command-search");
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("Delete style".into())],
+        screen,
+        1.,
+    );
+    frame(&ctx, &mut app, vec![key(Key::Enter, false)], screen, 1.);
+    assert!(app.delete_style_dialog.is_some());
+    frame(&ctx, &mut app, vec![key(Key::Escape, false)], screen, 1.);
+    assert!(app.delete_style_dialog.is_none());
+}

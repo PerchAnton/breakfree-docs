@@ -3,7 +3,27 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
-## 0.1.0-alpha.21 — Unreleased; submitted for owner approval
+## 0.1.0-alpha.22 — Unreleased; submitted for owner approval
+
+Prepared 2026-10-18. The owner approved alpha.21 in the project chat.
+
+- Delete custom styles with separate choices for paragraph replacement and the
+  new parent of direct child styles. Show real affected counts and warn that
+  inherited appearance may change. Keep direct formatting, text and alignment.
+- Remove the definition and replace all direct references in one undo/redo,
+  including references from built-in definitions. Keep indirect parent links and
+  surviving IDs. Reject invalid IDs, self references and cycles without mutation.
+- Add a Delete Style draft through Home, command search, KeyTips and gallery/list
+  context menus. Cancel has initial focus; invalid drafts disable Delete. Guard
+  background editing, file actions, close requests and text composition.
+- Add model/storage/widget regressions, a deletion fixture and native captures.
+  Preserve the light palette, original icons, logo and Home gutters.
+
+Content remains v5; protocol/preferences remain v1. No dependency/license change.
+Character styles, following-style rules and Windows/Word/DPI/physical IME acceptance
+remain open. No merge, tag or release is authorized.
+
+## 0.1.0-alpha.21 — Unreleased; version approved 2026-10-18
 
 Prepared 2026-10-18. The owner approved alpha.20 in the project chat.
 

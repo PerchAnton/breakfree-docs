@@ -164,6 +164,7 @@ impl DocsApp {
                 Tip::action("H", Action::Style(ParagraphStyle::Heading1)),
                 Tip::action("M", Action::ModifyStyle),
                 Tip::action("C", Action::CreateStyle),
+                Tip::action("D", Action::DeleteStyle),
             ],
             Level::Editing => vec![
                 Tip::action("N", Action::Style(ParagraphStyle::Normal)),
@@ -171,6 +172,7 @@ impl DocsApp {
                 Tip::action("H", Action::Style(ParagraphStyle::Heading1)),
                 Tip::action("M", Action::ModifyStyle),
                 Tip::action("C", Action::CreateStyle),
+                Tip::action("D", Action::DeleteStyle),
                 Tip::action("FD", Action::Find),
                 Tip::action("R", Action::Replace),
                 Tip::action("A", Action::SelectAll),
@@ -301,6 +303,7 @@ impl DocsApp {
             || self.replace_all_dialog.is_some()
             || self.font_dialog.is_some()
             || self.style_dialog.is_some()
+            || self.delete_style_dialog.is_some()
             || self.zoom_dialog.is_some()
             || self.quick_reset
             || self.quick_order.is_some()
@@ -522,6 +525,7 @@ impl DocsApp {
         if self.replace_all_dialog.is_some()
             || self.font_dialog.is_some()
             || self.style_dialog.is_some()
+            || self.delete_style_dialog.is_some()
             || self.zoom_dialog.is_some()
             || self.quick_reset
             || self.quick_order.is_some()
