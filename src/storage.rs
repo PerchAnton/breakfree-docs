@@ -1,4 +1,4 @@
-//! Strict .bfdoc v1–v7 reading, v7 writing and checked temporary-file replacement.
+//! Strict .bfdoc v1–v8 reading, v8 writing and checked temporary-file replacement.
 use crate::{Result, model::*};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -8,7 +8,7 @@ use std::{
 };
 
 pub const FORMAT_ID: &str = "breakfree.docs.native";
-pub const CONTENT_VERSION: u32 = 7;
+pub const CONTENT_VERSION: u32 = 8;
 pub const MAX_FILE_BYTES: usize = 16 * 1024 * 1024;
 
 #[derive(Serialize, Deserialize)]
@@ -128,6 +128,16 @@ struct RunV7 {
     direct: CharacterFormat,
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NativeV8 {
+    format: String,
+    content_version: u32,
+    style_catalog: StyleCatalog,
+    character_styles: Vec<NamedCharacterStyle>,
+    paragraphs: Vec<ParagraphV7>,
+}
+
 // Frozen v4/v5 definitions reject v6 fields instead of silently accepting them.
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -197,10 +207,11 @@ pub fn encode(document: &Document) -> Result<Vec<u8>> {
             }
         })
         .collect();
-    let mut bytes = serde_json::to_vec_pretty(&NativeV7 {
+    let mut bytes = serde_json::to_vec_pretty(&NativeV8 {
         format: FORMAT_ID.into(),
         content_version: CONTENT_VERSION,
         style_catalog: document.style_catalog.clone(),
+        character_styles: document.character_styles.clone(),
         paragraphs,
     })
     .map_err(|e| e.to_string())?;
@@ -212,6 +223,13 @@ pub fn encode(document: &Document) -> Result<Vec<u8>> {
 }
 
 fn decode_styled(paragraphs: Vec<ParagraphV3>, style_catalog: StyleCatalog) -> Result<Document> {
+    decode_catalog(paragraphs, style_catalog, Vec::new())
+}
+fn decode_catalog(
+    paragraphs: Vec<ParagraphV3>,
+    style_catalog: StyleCatalog,
+    character_styles: Vec<NamedCharacterStyle>,
+) -> Result<Document> {
     style_catalog.validate()?;
     let native_paragraphs = paragraphs;
     let mut paragraphs = Vec::new();
@@ -241,6 +259,7 @@ fn decode_styled(paragraphs: Vec<ParagraphV3>, style_catalog: StyleCatalog) -> R
     let result = Document {
         paragraphs,
         style_catalog,
+        character_styles,
     };
     result.validate()?;
     Ok(result)
@@ -311,11 +330,17 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
                 .map_err(|e| format!("Invalid native v6 document: {e}"))?;
             return decode_styled(file.paragraphs, file.style_catalog);
         }
-        CONTENT_VERSION => {
-            let file: NativeV7 = serde_json::from_slice(bytes)
-                .map_err(|e| format!("Invalid native v7 document: {e}"))?;
-            let paragraphs = file
-                .paragraphs
+        7 | CONTENT_VERSION => {
+            let (paragraphs, catalog, character_styles) = if file.content_version == 7 {
+                let file: NativeV7 = serde_json::from_slice(bytes)
+                    .map_err(|e| format!("Invalid native v7 document: {e}"))?;
+                (file.paragraphs, file.style_catalog, Vec::new())
+            } else {
+                let file: NativeV8 = serde_json::from_slice(bytes)
+                    .map_err(|e| format!("Invalid native v8 document: {e}"))?;
+                (file.paragraphs, file.style_catalog, file.character_styles)
+            };
+            let paragraphs = paragraphs
                 .into_iter()
                 .map(|p| ParagraphV3 {
                     alignment: p.alignment,
@@ -333,7 +358,7 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
                         .collect(),
                 })
                 .collect();
-            return decode_styled(paragraphs, file.style_catalog);
+            return decode_catalog(paragraphs, catalog, character_styles);
         }
         2 => {
             serde_json::from_slice::<Native<Run>>(bytes)
@@ -377,6 +402,7 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
     let result = Document {
         paragraphs,
         style_catalog: StyleCatalog::default(),
+        character_styles: Vec::new(),
     };
     result.validate()?;
     Ok(result)

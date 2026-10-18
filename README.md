@@ -224,13 +224,26 @@ properties. Select text to change it in one Undo/Redo, or use a caret to set an
 undoable insertion style without dirtying the document until text is entered.
 After F10/Alt → H → L (narrow: H → E), B/I/Z applies Strong/Emphasis/removes the
 character style. Arrow navigation scrolls the Styles list; command search also
-finds these actions. Built-ins are fixed; custom character styles remain planned.
+finds these actions. Built-ins remain fixed.
+
+Home Styles → Create character style opens a local draft with a unique name,
+optional Bold/Italic/Underline (Inherit/On/Off), font size and a preview based on
+the active paragraph. Blank size inherits. Apply to selection / future typing is
+checked initially; definition creation and application share one Undo/Redo.
+Uncheck it to create an unused definition. Cancel/Escape changes nothing.
+Names are 1–64 Unicode scalars, unique ignoring case within character styles;
+up to 64 custom character styles are stored per document. They appear in the
+scrollable Character styles list and command search after reopening. KeyTips
+H → L → K (narrow: H → E → K) opens creation. Paragraph and character names are
+separate namespaces. Direct formatting is preserved and may mask the new style.
+Character-style parents and modification/deletion remain future work.
+[Named character styles](docs/adr/0012-named-character-styles.md).
 [Character-style rules](docs/adr/0011-character-style-precedence.md).
 [Style rules](docs/adr/0008-custom-named-styles.md) · [Deletion rules](docs/adr/0009-delete-custom-styles.md).
 
-This build reads native content v1/v2/v3/v4/v5/v6/v7 and **saves v7**. Opening an older file
-does not change it; an explicit save converts it to v7. Earlier builds cannot
-open new v7 saves. Use Save As to keep an older copy. See [format details](docs/NATIVE_FORMAT.md).
+This build reads native content v1/v2/v3/v4/v5/v6/v7/v8 and **saves v8**. Opening an older file
+does not change it; an explicit save converts it to v8. Earlier builds cannot
+open new v8 saves. Use Save As to keep an older copy. See [format details](docs/NATIVE_FORMAT.md).
 File provides New/Open/Save/Save As, unsaved Save/Discard/Cancel and view settings;
 Print is disabled. Navigation and the formatting pane operate on real model ranges.
 The white canvas is continuous; pagination, page numbers and print layout are absent.

@@ -55,7 +55,10 @@ impl eframe::App for Capture {
                 }
             }
         }
-        if self.frames == 2 && ["styles-create", "styles-rename"].contains(&self.mode.as_str()) {
+        if self.frames == 2
+            && ["styles-create", "styles-rename", "styles-character-create"]
+                .contains(&self.mode.as_str())
+        {
             input.events.push(egui::Event::Text("Report Note".into()));
         }
         if self.frames == 2 && self.mode == "styles-menu" {
@@ -221,6 +224,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "styles",
             "styles-menu",
             "styles-character",
+            "styles-character-create",
+            "styles-character-custom",
             "styles-modify",
             "styles-following",
             "styles-create",
@@ -265,8 +270,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if !(640.0..=1920.0).contains(&width) || !(480.0..=1080.0).contains(&height) {
         return Err("Capture dimensions outside 640–1920 × 480–1080 DIP".into());
     }
-    let fixture =
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(if args[2] == "styles-character" {
+    let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(
+        if args[2] == "styles-character-custom" {
+            "examples/NamedCharacterStyles.bfdoc"
+        } else if args[2] == "styles-character" || args[2] == "styles-character-create" {
             "examples/CharacterStyles.bfdoc"
         } else if args[2] == "styles-following" {
             "examples/FollowingStyles.bfdoc"
@@ -280,7 +287,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "examples/Formatting.bfdoc"
         } else {
             "examples/Welcome.bfdoc"
-        });
+        },
+    );
     let session = if args[2] == "replace-all" {
         let mut session = Session::default();
         session.editor.replace(0, 0, "BreakFree Docs\nBreakFree writes locally.\nBreakFree preserves Unicode: Україна Русский e\u{301}.", "Fixture")?;
@@ -364,6 +372,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 "styles-modify" | "styles-rename" | "styles-following" => {
                     app.execute(Action::ModifyStyle, &cc.egui_ctx)
+                }
+                "styles-character-create" => {
+                    app.execute(Action::CreateCharacterStyle, &cc.egui_ctx)
                 }
                 "styles-create" => app.execute(Action::CreateStyle, &cc.egui_ctx),
                 "styles-delete" => app.execute(Action::DeleteStyle, &cc.egui_ctx),

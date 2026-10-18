@@ -140,6 +140,7 @@ impl Editor {
         let result = Document {
             paragraphs,
             style_catalog: self.document.style_catalog.clone(),
+            character_styles: self.document.character_styles.clone(),
         };
         result.validate()?;
         let after = start + text.chars().count();
@@ -190,6 +191,31 @@ impl Editor {
         })
     }
 
+    /// Create and optionally apply a document-owned definition in one transaction.
+    pub fn create_character_style(
+        &mut self,
+        name: &str,
+        format: CharacterFormat,
+        apply: bool,
+    ) -> Result<CharacterStyle> {
+        let (start, end) = self.selection;
+        validate_range(&self.document.text(), start, end)?;
+        let mut candidate = Editor::new(self.document.clone());
+        candidate.selection = self.selection;
+        candidate.typing_style = self.typing_style;
+        let id = candidate.document.add_character_style(name, format)?;
+        if apply {
+            candidate.apply_character_style(start, end, Some(id))?;
+        }
+        self.commit(
+            candidate.document,
+            "Create character style",
+            self.selection,
+            candidate.typing_style,
+        );
+        Ok(id)
+    }
+
     /// Apply/remove a semantic character style, retaining all direct overrides.
     pub fn apply_character_style(
         &mut self,
@@ -197,6 +223,9 @@ impl Editor {
         end: usize,
         style: Option<CharacterStyle>,
     ) -> Result<()> {
+        if style.is_some_and(|id| !self.document.character_style_exists(id)) {
+            return Err("Unknown character style reference.".into());
+        }
         validate_range(&self.document.text(), start, end)?;
         if start == end {
             let typing = CharacterFormat {
@@ -274,12 +303,13 @@ impl Editor {
     }
 
     pub fn step_font_size(&mut self, start: usize, end: usize, grow: bool) -> Result<()> {
+        let catalog = self.document.character_styles.clone();
         self.format_range(
             start,
             end,
             if grow { "Grow font" } else { "Shrink font" },
             |style, _base| {
-                style.font_size = Some(style.resolve(_base).font_size.stepped(grow));
+                style.font_size = Some(style.resolve_with(_base, &catalog).font_size.stepped(grow));
             },
         )
     }
@@ -487,11 +517,12 @@ impl Editor {
         if start == end {
             let p = self.document.locate(start).ok()?.0;
             return Some(value(
-                self.typing_style.resolve(
+                self.typing_style.resolve_with(
                     self.document
                         .style_catalog
                         .resolve(self.document.paragraphs[p].paragraph_style)
                         .character,
+                    &self.document.character_styles,
                 ),
             ));
         }
@@ -508,7 +539,7 @@ impl Editor {
                     .iter()
                     .enumerate()
                     .filter(|(i, _)| (start..end).contains(&(offset + i)))
-                    .map(|(_, s)| value(s.resolve(base))),
+                    .map(|(_, s)| value(s.resolve_with(base, &self.document.character_styles))),
             );
             offset += p.styles.len() + 1;
         }

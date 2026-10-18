@@ -204,8 +204,12 @@ Rust selection is complete; this gate evaluates GUI behavior and visual fidelity
   paragraph → character → direct cascade, selection/pending Undo/Redo and native v7
   roundtrip. Home/KeyTips use the shared engine; Unicode and failed saves are tested.
   Depends on alpha.23; [ADR 0011](docs/adr/0011-character-style-precedence.md).
-- [ ] Next small increment: document-owned custom character-style definitions and
-  validated naming, retaining the alpha.24 cascade and single-operation history.
+- [x] Alpha.25: document-owned named character styles, optional properties and
+  creation/application in one undo. Validated names/IDs, v8 save/reopen, invalid
+  files/failed saves and native GUI creation are covered; palette/icons retained.
+  [ADR 0012](docs/adr/0012-named-character-styles.md); depends on alpha.24.
+- [ ] Next small increment: modify custom character-style properties without
+  changing IDs/references, with one undo and exact save/reopen; parent graphs later.
 - [ ] Add lists, indentation, tabs, spacing, links and Unicode-aware search/replace.
 - [ ] Add table editing and images with explicit sizing and anchoring semantics.
 - [ ] Add navigation, command search and understandable tool states.

@@ -108,18 +108,21 @@ pub struct Style {
 pub enum CharacterStyle {
     Strong,
     Emphasis,
+    Custom(u32),
 }
 impl CharacterStyle {
     pub fn name(self) -> &'static str {
         match self {
             Self::Strong => "Strong",
             Self::Emphasis => "Emphasis",
+            Self::Custom(_) => "Custom character style",
         }
     }
     fn resolve(self, mut base: Style) -> Style {
         match self {
             Self::Strong => base.bold = true,
             Self::Emphasis => base.italic = true,
+            Self::Custom(_) => {}
         }
         base
     }
@@ -138,6 +141,7 @@ pub struct CharacterFormat {
     pub font_size: Option<FontSize>,
 }
 impl CharacterFormat {
+    /// Resolve direct/built-in properties; text runs use resolve_with for document-owned styles.
     pub fn resolve(self, base: Style) -> Style {
         let base = self
             .character_style
@@ -149,6 +153,17 @@ impl CharacterFormat {
             font_size: self.font_size.unwrap_or(base.font_size),
         }
     }
+    /// Resolve document-owned character definitions before direct properties.
+    pub fn resolve_with(self, base: Style, catalog: &[NamedCharacterStyle]) -> Style {
+        let base = match self.character_style {
+            Some(CharacterStyle::Custom(id)) => catalog
+                .iter()
+                .find(|s| s.id == id)
+                .map_or(base, |s| s.format.resolve(base)),
+            _ => base,
+        };
+        self.resolve(base)
+    }
     /// Legacy files contain resolved values, with no reliable authored inheritance.
     pub fn explicit(style: Style) -> Self {
         Self {
@@ -159,6 +174,15 @@ impl CharacterFormat {
             font_size: Some(style.font_size),
         }
     }
+}
+
+/// Document-owned character definitions. No character-parent graph in v8.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct NamedCharacterStyle {
+    pub id: u32,
+    pub name: String,
+    pub format: CharacterFormat,
 }
 
 /// Stable paragraph-style identifiers. Definitions belong to each document.
@@ -497,6 +521,7 @@ pub struct Paragraph {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Document {
+    pub character_styles: Vec<NamedCharacterStyle>,
     pub style_catalog: StyleCatalog,
     pub paragraphs: Vec<Paragraph>,
 }
@@ -505,6 +530,7 @@ impl Default for Document {
     fn default() -> Self {
         Self {
             paragraphs: vec![Paragraph::default()],
+            character_styles: Vec::new(),
             style_catalog: StyleCatalog::default(),
         }
     }
@@ -551,6 +577,88 @@ pub fn slice(text: &str, start: usize, end: usize) -> String {
 }
 
 impl Document {
+    pub fn character_style_exists(&self, style: CharacterStyle) -> bool {
+        match style {
+            CharacterStyle::Custom(id) => self.character_styles.iter().any(|s| s.id == id),
+            _ => true,
+        }
+    }
+    pub fn character_style_name(&self, style: CharacterStyle) -> &str {
+        match style {
+            CharacterStyle::Custom(id) => self
+                .character_styles
+                .iter()
+                .find(|s| s.id == id)
+                .map_or("Unknown character style", |s| s.name.as_str()),
+            _ => style.name(),
+        }
+    }
+    pub fn add_character_style(
+        &mut self,
+        name: &str,
+        format: CharacterFormat,
+    ) -> Result<CharacterStyle> {
+        let id = self
+            .character_styles
+            .iter()
+            .map(|s| s.id)
+            .max()
+            .unwrap_or(0)
+            .checked_add(1)
+            .ok_or("Character style IDs exhausted.")?;
+        let mut candidate = self.clone();
+        candidate.character_styles.push(NamedCharacterStyle {
+            id,
+            name: name.into(),
+            format,
+        });
+        candidate.validate()?;
+        self.character_styles = candidate.character_styles;
+        Ok(CharacterStyle::Custom(id))
+    }
+    fn validate_character_styles(&self) -> Result<()> {
+        if self.character_styles.len() > MAX_CUSTOM_STYLES {
+            return Err("A document supports up to 64 custom character styles.".into());
+        }
+        let mut names = vec![
+            "strong".to_owned(),
+            "emphasis".to_owned(),
+            "default paragraph font".to_owned(),
+        ];
+        let mut ids = Vec::new();
+        for s in &self.character_styles {
+            if s.id == 0 || ids.contains(&s.id) {
+                return Err("Character style IDs must be positive and unique.".into());
+            }
+            ids.push(s.id);
+            if s.name.is_empty()
+                || s.name.trim() != s.name
+                || s.name.chars().count() > 64
+                || s.name
+                    .chars()
+                    .any(|c| c.is_control() || matches!(c, '\u{2028}' | '\u{2029}'))
+            {
+                return Err(
+                    "Use a name of 1–64 characters without outer spaces or control characters."
+                        .into(),
+                );
+            }
+            let name = s.name.to_lowercase();
+            if names.contains(&name) {
+                return Err(
+                    "A character style with this name already exists (ignoring case).".into(),
+                );
+            }
+            names.push(name);
+            if s.format.character_style.is_some() {
+                return Err(
+                    "Character definitions cannot reference another character style.".into(),
+                );
+            }
+        }
+        Ok(())
+    }
+
     pub fn text(&self) -> String {
         self.paragraphs
             .iter()
@@ -561,12 +669,19 @@ impl Document {
 
     pub fn validate(&self) -> Result<()> {
         self.style_catalog.validate()?;
+        self.validate_character_styles()?;
         if self.paragraphs.is_empty() {
             return Err("A document needs a paragraph.".into());
         }
         for p in &self.paragraphs {
             if self.style_catalog.get(p.paragraph_style).is_none() {
                 return Err("Unknown paragraph style reference.".into());
+            }
+            if p.styles.iter().any(|f| {
+                f.character_style
+                    .is_some_and(|id| !self.character_style_exists(id))
+            }) {
+                return Err("Unknown character style reference.".into());
             }
             validate_text(&p.text)?;
             if p.text.contains('\n') || p.styles.len() != p.text.chars().count() {

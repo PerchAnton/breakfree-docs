@@ -1,12 +1,13 @@
 # Native BreakFree Docs document format
 
-Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v7.
+Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v8.
 This is not a DOCX container. Process protocol and file-content versions are independent.
 
 ```json
 {
   "format": "breakfree.docs.native",
-  "content_version": 7,
+  "content_version": 8,
+  "character_styles": [],
   "style_catalog": {
     "custom": [],
     "normal": {"parent": null, "character": {}, "line_height_percent": null, "space_after_half_points": null},
@@ -71,9 +72,9 @@ Opening performs only in-memory conversion and does not dirty/write the file.
 V3 uses its frozen built-in catalog from [ADR 0006](adr/0006-built-in-paragraph-styles.md);
 it rejects embedded definitions. V4 reads its original three-definition catalog
 with no custom array and preserves its graph. V5 retains its custom catalog. Legacy definitions receive Same style in memory.
-Every explicit save writes v7, even
+Every explicit save writes v8, even
 for an unchanged older document. Use Save As
-to retain the original. **Alpha.23 and earlier cannot open v7 saves.** No downgrade or
+to retain the original. **Alpha.24 and earlier cannot open v8 saves.** No downgrade or
 lossy export is provided. Header/full-schema parsing preserves duplicate rejection.
 
 Empty paragraphs retain their named style. Pending direct formatting at a caret
@@ -130,3 +131,26 @@ Legacy imports receive no character reference, without guessing from appearance.
 Distinct references are never merged just because their current appearance matches.
 Pending caret style is session state, not persisted before insertion. See
 [ADR 0011](adr/0011-character-style-precedence.md).
+
+## Named character definitions (v8)
+
+V8 requires a top-level `character_styles` array (empty if unused), separate from
+`style_catalog`. Each entry is `{ "id": 1, "name": "Annotation", "format": {
+"italic": true, "font_size": 28 } }`. A run references it using
+`"character_style": { "custom": 1 }`; built-in strings/null retain v7 meaning.
+
+IDs are positive unique u32 values. The writer allocates max ID + 1, rejects
+exhaustion, and never renumbers surviving entries. Names contain 1–64 Unicode
+scalars without outer spaces/control characters/U+2028/U+2029, unique after Unicode
+lowercasing against character styles, Strong, Emphasis and Default paragraph font.
+No normalization/full case folding. Paragraph names are a separate namespace.
+Up to 64 custom character definitions are allowed, including unused entries.
+
+The format object accepts only the four optional direct properties, with the same
+boolean/font-size validation as runs. It cannot reference another style. Unset
+properties inherit the resolved paragraph; run direct overrides apply last.
+All references and unused definitions are validated before accepting the document.
+Unknown/duplicate fields and IDs are rejected, without lossy fallback. Strict v7
+rejects custom references/catalog fields; older imports receive an empty catalog.
+Creation/history/typing/replacement preserve semantic IDs and definitions. See
+[ADR 0012](adr/0012-named-character-styles.md).

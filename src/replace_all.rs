@@ -153,6 +153,7 @@ impl Editor {
         let result = Document {
             paragraphs,
             style_catalog: self.document.style_catalog.clone(),
+            character_styles: self.document.character_styles.clone(),
         };
         result.validate()?;
         // Inserted marks/joiners can combine with neighboring source text.

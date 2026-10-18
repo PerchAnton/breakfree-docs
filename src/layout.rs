@@ -115,7 +115,7 @@ pub fn galley(
                 &text,
                 0.,
                 format(
-                    p.styles[start].resolve(resolved.character),
+                    p.styles[start].resolve_with(resolved.character, &source.character_styles),
                     size,
                     resolved.line_height(),
                 ),
@@ -124,7 +124,7 @@ pub fn galley(
                 &text,
                 0.,
                 format(
-                    p.styles[start].resolve(resolved.character),
+                    p.styles[start].resolve_with(resolved.character, &source.character_styles),
                     size,
                     resolved.line_height(),
                 ),
@@ -133,7 +133,7 @@ pub fn galley(
         }
         if chars.is_empty() {
             let style = if active_paragraph == Some(index) {
-                typing_style.resolve(resolved.character)
+                typing_style.resolve_with(resolved.character, &source.character_styles)
             } else {
                 resolved.character
             };

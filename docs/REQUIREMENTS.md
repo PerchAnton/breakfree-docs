@@ -64,3 +64,6 @@ following styles, transactional Enter and strict v6 migration. D01–D09 remain.
 Alpha.24 adds built-in character styles with explicit precedence and one-operation
 history, specified in [ADR 0011](adr/0011-character-style-precedence.md). Native v7
 stores references independently of direct properties; earlier readers stay strict.
+
+Alpha.25 adds named character-style creation, optional one-step application and
+strict v8 storage under [ADR 0012](adr/0012-named-character-styles.md).

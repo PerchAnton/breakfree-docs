@@ -3,6 +3,22 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.25 — Unreleased; submitted for owner approval
+
+Prepared 2026-10-18. The owner approved alpha.24 in the project chat.
+
+- Create document-owned named character styles with optional bold, italic,
+  underline and size. Unset properties inherit the paragraph; direct overrides win.
+- Validate names, stable IDs and a separate 64-style character catalog. Creation
+  and optional selection/pending application use one Undo/Redo transaction.
+- Add a Create Character Style draft with preview, Cancel, validation, Home Styles,
+  command search and K KeyTip; retain the approved palette and original icons.
+- Write native v8 and read v1–v8 without flattening definitions/references. Earlier
+  builds reject v8 saves; use Save As to retain an older copy.
+- Add engine, migration, failure-retention, actual layout and widget regressions.
+  Character-style parents, modifying/renaming/deleting these definitions and native
+  Windows acceptance remain separate follow-ups.
+
 ## 0.1.0-alpha.24 — Unreleased; submitted for owner approval
 
 Prepared 2026-10-18. The owner approved alpha.23 in the project chat.

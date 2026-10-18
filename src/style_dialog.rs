@@ -1,6 +1,6 @@
 //! A local definition draft. Only OK submits one model command.
 use super::*;
-use crate::model::{StyleCatalog, StyleDefinition};
+use crate::model::{Document, NamedCharacterStyle, Style, StyleCatalog, StyleDefinition};
 
 pub(super) enum StyleOutcome {
     Open,
@@ -10,6 +10,9 @@ pub(super) enum StyleOutcome {
 pub(super) struct StyleDialog {
     pub id: ParagraphStyle,
     pub creating: bool,
+    pub character: bool,
+    character_styles: Vec<NamedCharacterStyle>,
+    preview_base: Style,
     pub name: String,
     pub apply: bool,
     catalog: StyleCatalog,
@@ -25,6 +28,9 @@ impl StyleDialog {
         Self {
             id,
             creating: false,
+            character: false,
+            character_styles: Vec::new(),
+            preview_base: Style::default(),
             name: catalog.name(id).into(),
             apply: true,
             catalog: catalog.clone(),
@@ -50,6 +56,19 @@ impl StyleDialog {
         dialog.creating = true;
         dialog.name.clear();
         dialog.definition.parent = Some(parent);
+        dialog
+    }
+    pub fn create_character(document: &Document, paragraph: ParagraphStyle) -> Self {
+        let mut dialog = Self::new(ParagraphStyle::Normal, &document.style_catalog);
+        dialog.creating = true;
+        dialog.character = true;
+        dialog.name.clear();
+        dialog.definition = StyleDefinition::default();
+        dialog.size.clear();
+        dialog.line.clear();
+        dialog.after.clear();
+        dialog.character_styles = document.character_styles.clone();
+        dialog.preview_base = document.style_catalog.resolve(paragraph).character;
         dialog
     }
     fn draft(&self) -> Result<(StyleDefinition, StyleCatalog)> {
@@ -79,7 +98,13 @@ impl StyleDialog {
             Some(u16::from(self.after.parse::<FontSize>()?))
         };
         let mut catalog = self.catalog.clone();
-        if self.creating {
+        if self.character {
+            let mut document = Document {
+                character_styles: self.character_styles.clone(),
+                ..Default::default()
+            };
+            document.add_character_style(&self.name, definition.character)?;
+        } else if self.creating {
             catalog.add(&self.name, definition)?;
         } else if matches!(self.id, ParagraphStyle::Custom(_)) {
             catalog.update_custom(self.id, &self.name, definition)?;
@@ -105,7 +130,9 @@ impl StyleDialog {
             .show(ctx, |ui| {
                 ui.set_width(460.);
                 ui.horizontal(|ui| {
-                    ui.heading(if self.creating {
+                    ui.heading(if self.character {
+                        "Create Character Style"
+                    } else if self.creating {
                         "Create Style"
                     } else {
                         "Modify Style"
@@ -164,88 +191,90 @@ impl StyleDialog {
                             .on_hover_text(&self.name);
                         }
                         ui.end_row();
-                        ui.label("Style based on:");
-                        let parent = egui::ComboBox::from_id_salt("style-parent")
-                            .width(290.)
-                            .height(150.)
-                            .truncate()
-                            .selected_text(
-                                self.definition
-                                    .parent
-                                    .map(|id| self.catalog.name(id))
-                                    .unwrap_or("(No style)"),
-                            )
-                            .show_ui(ui, |ui| {
-                                let root = ui.selectable_value(
-                                    &mut self.definition.parent,
-                                    None,
-                                    "(No style)",
-                                );
-                                record(regions, "style-parent-none", root.rect);
-                                if root.clicked() {
-                                    ui.close();
-                                }
-                                ui.set_max_width(290.);
-                                ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Truncate);
-                                for parent in self.catalog.ids() {
-                                    if parent != self.id {
-                                        let response = ui.selectable_value(
-                                            &mut self.definition.parent,
-                                            Some(parent),
-                                            self.catalog.name(parent),
-                                        );
-                                        record(
-                                            regions,
-                                            &format!("style-parent-{parent:?}"),
-                                            response.rect,
-                                        );
-                                        if response.clicked() {
-                                            ui.close();
+                        if !self.character {
+                            ui.label("Style based on:");
+                            let parent = egui::ComboBox::from_id_salt("style-parent")
+                                .width(290.)
+                                .height(150.)
+                                .truncate()
+                                .selected_text(
+                                    self.definition
+                                        .parent
+                                        .map(|id| self.catalog.name(id))
+                                        .unwrap_or("(No style)"),
+                                )
+                                .show_ui(ui, |ui| {
+                                    let root = ui.selectable_value(
+                                        &mut self.definition.parent,
+                                        None,
+                                        "(No style)",
+                                    );
+                                    record(regions, "style-parent-none", root.rect);
+                                    if root.clicked() {
+                                        ui.close();
+                                    }
+                                    ui.set_max_width(290.);
+                                    ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Truncate);
+                                    for parent in self.catalog.ids() {
+                                        if parent != self.id {
+                                            let response = ui.selectable_value(
+                                                &mut self.definition.parent,
+                                                Some(parent),
+                                                self.catalog.name(parent),
+                                            );
+                                            record(
+                                                regions,
+                                                &format!("style-parent-{parent:?}"),
+                                                response.rect,
+                                            );
+                                            if response.clicked() {
+                                                ui.close();
+                                            }
                                         }
                                     }
-                                }
-                            })
-                            .response;
-                        record(regions, "style-dialog-parent", parent.rect);
-                        ui.end_row();
-                        ui.label("Following paragraph:");
-                        let next = egui::ComboBox::from_id_salt("style-next")
-                            .width(290.)
-                            .height(150.)
-                            .truncate()
-                            .selected_text(
-                                self.definition
-                                    .next_style
-                                    .map(|id| self.catalog.name(id))
-                                    .unwrap_or("(Same style)"),
-                            )
-                            .show_ui(ui, |ui| {
-                                let r = ui.selectable_value(
-                                    &mut self.definition.next_style,
-                                    None,
-                                    "(Same style)",
-                                );
-                                record(regions, "style-next-same", r.rect);
-                                if r.clicked() {
-                                    ui.close();
-                                }
-                                ui.set_max_width(290.);
-                                ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Truncate);
-                                for id in self.catalog.ids() {
+                                })
+                                .response;
+                            record(regions, "style-dialog-parent", parent.rect);
+                            ui.end_row();
+                            ui.label("Following paragraph:");
+                            let next = egui::ComboBox::from_id_salt("style-next")
+                                .width(290.)
+                                .height(150.)
+                                .truncate()
+                                .selected_text(
+                                    self.definition
+                                        .next_style
+                                        .map(|id| self.catalog.name(id))
+                                        .unwrap_or("(Same style)"),
+                                )
+                                .show_ui(ui, |ui| {
                                     let r = ui.selectable_value(
                                         &mut self.definition.next_style,
-                                        Some(id),
-                                        self.catalog.name(id),
+                                        None,
+                                        "(Same style)",
                                     );
-                                    record(regions, &format!("style-next-{id:?}"), r.rect);
+                                    record(regions, "style-next-same", r.rect);
                                     if r.clicked() {
                                         ui.close();
                                     }
-                                }
-                            })
-                            .response;
-                        record(regions, "style-dialog-next", next.rect);
-                        ui.end_row();
+                                    ui.set_max_width(290.);
+                                    ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Truncate);
+                                    for id in self.catalog.ids() {
+                                        let r = ui.selectable_value(
+                                            &mut self.definition.next_style,
+                                            Some(id),
+                                            self.catalog.name(id),
+                                        );
+                                        record(regions, &format!("style-next-{id:?}"), r.rect);
+                                        if r.clicked() {
+                                            ui.close();
+                                        }
+                                    }
+                                })
+                                .response;
+                            record(regions, "style-dialog-next", next.rect);
+                            ui.end_row();
+                        }
                         ui.label("Formatting:");
                         ui.horizontal(|ui| {
                             for (name, value) in [
@@ -288,6 +317,9 @@ impl StyleDialog {
                             ("line", "Line spacing (%):", &mut self.line),
                             ("after", "Space after (pt):", &mut self.after),
                         ] {
+                            if self.character && name != "size" {
+                                continue;
+                            }
                             ui.label(label);
                             let output = egui::TextEdit::singleline(&mut *value)
                                 .id_salt(("style-input", name))
@@ -314,7 +346,11 @@ impl StyleDialog {
                         }
                     });
                 ui.add_space(6.);
-                ui.small("Blank fields inherit. No parent uses regular 11 pt, 125%, 5.5 pt after.");
+                ui.small(if self.character {
+                    "Unset properties inherit the paragraph style. Direct formatting wins."
+                } else {
+                    "Blank fields inherit. No parent uses regular 11 pt, 125%, 5.5 pt after."
+                });
                 let draft = self.draft();
                 egui::Frame::new()
                     .fill(Color32::WHITE)
@@ -322,8 +358,12 @@ impl StyleDialog {
                     .inner_margin(6)
                     .show(ui, |ui| {
                         let (rect, _) = ui.allocate_exact_size(vec2(448., 48.), Sense::hover());
-                        if let Ok((_, catalog)) = &draft {
-                            let style = catalog.resolve(self.id).character;
+                        if let Ok((definition, catalog)) = &draft {
+                            let style = if self.character {
+                                definition.character.resolve(self.preview_base)
+                            } else {
+                                catalog.resolve(self.id).character
+                            };
                             let mut text =
                                 RichText::new("AaBbCc Україна Русский café").font(FontId::new(
                                     style.font_size.points() * 4. / 3.,
@@ -352,7 +392,14 @@ impl StyleDialog {
                         record(regions, "style-dialog-preview", rect);
                     });
                 if self.creating {
-                    let apply = ui.checkbox(&mut self.apply, "Apply to selected paragraphs");
+                    let apply = ui.checkbox(
+                        &mut self.apply,
+                        if self.character {
+                            "Apply to selection / future typing"
+                        } else {
+                            "Apply to selected paragraphs"
+                        },
+                    );
                     record(regions, "style-dialog-apply", apply.rect);
                     ui.small("This document only. Creation and application use one undo step.");
                 } else if matches!(self.id, ParagraphStyle::Custom(_)) {

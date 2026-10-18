@@ -1052,3 +1052,25 @@ Reproduce with `cargo build --locked --release --features capture --example capt
 then `BREAKFREE_CAPTURE_TO=/absolute/output.png target/release/examples/capture_ui
 1366 900 styles-character` (or `640 480 styles-menu`). The harness is a developer
 utility, not an integration command.
+
+## Alpha.25 native captures
+
+Create Character Style reuses the 460-DIP style-draft content width, 290-DIP name
+and size fields, existing three property combos and clipped 448 × 48-DIP preview.
+Paragraph-only parent/following/spacing controls are absent. Apply to selection /
+future typing, OK and Cancel retain the existing visual language. Home's 150-DIP
+scroll list contains custom names and Create character style; K enters creation
+inside Styles or narrow Editing KeyTips. Direct overrides are explicitly preserved.
+
+Native macOS, English/light theme, 100% zoom, backing scale 2; not paired with a
+Windows reference. Text and controls fit the inspected minimum-size dialog.
+
+| Capture | Viewport | SHA-256 |
+| --- | --- | --- |
+| [Creation draft](screenshots/rust-named-character-alpha25-macos.png) | 1366 × 900 DIP | `05dbd215518b7a8eeb9d0bbafaf426449a8aaf231110a02f1f0a315ce08ff395` |
+| [Minimum-window draft](screenshots/rust-named-character-alpha25-macos-narrow.png) | 640 × 480 DIP | `4cf81aca92eb3d5c5b25d480452249a94bea0654cc04c6b691f987d49c5838d7` |
+
+Reproduce using the existing capture build and mode `styles-character-create`.
+`styles-character-custom` opens the v8 NamedCharacterStyles fixture. Brand differences
+and Windows/Word/DPI/physical IME limitations remain as documented above; no numeric
+similarity claim. Keyboard Tab was used for native text-field focus verification.

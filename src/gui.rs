@@ -82,6 +82,7 @@ pub enum Action {
     FontDialog,
     ModifyStyle,
     CreateStyle,
+    CreateCharacterStyle,
     DeleteStyle,
     GrowFont,
     ShrinkFont,
@@ -125,6 +126,7 @@ impl Action {
             Self::FontDialog => "Font dialog",
             Self::ModifyStyle => "Modify style…",
             Self::CreateStyle => "Create style…",
+            Self::CreateCharacterStyle => "Create character style…",
             Self::DeleteStyle => "Delete style…",
             Self::GrowFont => "Grow font",
             Self::ShrinkFont => "Shrink font",
@@ -170,6 +172,7 @@ const COMMANDS: &[Action] = &[
     Action::FontDialog,
     Action::ModifyStyle,
     Action::CreateStyle,
+    Action::CreateCharacterStyle,
     Action::DeleteStyle,
     Action::GrowFont,
     Action::ShrinkFont,
@@ -403,6 +406,7 @@ impl DocsApp {
             Action::FontDialog
                 | Action::ModifyStyle
                 | Action::CreateStyle
+                | Action::CreateCharacterStyle
                 | Action::DeleteStyle
                 | Action::Zoom
         ) && (self.pending.is_some() || self.error.is_some())
@@ -414,6 +418,10 @@ impl DocsApp {
         }
         match action {
             Action::DeleteStyle => matches!(self.target_style(), ParagraphStyle::Custom(_)),
+            Action::CreateCharacterStyle => {
+                self.session.editor.document.character_styles.len()
+                    < crate::model::MAX_CUSTOM_STYLES
+            }
             Action::CreateStyle => {
                 self.session.editor.document.style_catalog.custom.len()
                     < crate::model::MAX_CUSTOM_STYLES
@@ -546,6 +554,7 @@ impl DocsApp {
                 | Action::CharacterStyle(_)
                 | Action::ModifyStyle
                 | Action::CreateStyle
+                | Action::CreateCharacterStyle
                 | Action::DeleteStyle
         ) && (self.pending.is_some()
             || self.error.is_some()
@@ -642,6 +651,14 @@ impl DocsApp {
                 self.focus_font_size = true;
                 self.focus_document = false;
             }
+            Action::CreateCharacterStyle => {
+                let id = self.target_style();
+                self.open_style_dialog(id, ctx);
+                self.style_dialog = Some(StyleDialog::create_character(
+                    &self.session.editor.document,
+                    id,
+                ));
+            }
             Action::DeleteStyle => self.open_delete_style_dialog(self.target_style(), ctx),
             Action::ModifyStyle | Action::CreateStyle => {
                 let id = self
@@ -733,6 +750,7 @@ impl DocsApp {
                     | Action::FontDialog
                     | Action::ModifyStyle
                     | Action::CreateStyle
+                    | Action::CreateCharacterStyle
                     | Action::DeleteStyle
                     | Action::Zoom
                     | Action::File
@@ -745,6 +763,9 @@ impl DocsApp {
     fn command_name(&self, action: Action) -> &str {
         match action {
             Action::Style(id) => self.session.editor.document.style_catalog.name(id),
+            Action::CharacterStyle(Some(id)) => {
+                self.session.editor.document.character_style_name(id)
+            }
             _ => action.label(),
         }
     }
@@ -848,6 +869,8 @@ impl DocsApp {
         }
         let tip = if self.composing && !enabled {
             "Finish text composition first."
+        } else if action == Action::CreateCharacterStyle && !enabled {
+            "Limit: 64 custom character styles per document."
         } else if action == Action::CharacterStyle(None) {
             "Remove the named character style; retain direct formatting."
         } else if action == Action::ClearFormatting {
@@ -1910,6 +1933,21 @@ impl DocsApp {
                     let action = Action::CharacterStyle(style);
                     self.command(ui, action.label(), action, vec2(210., 27.));
                 }
+                let styles = self.session.editor.document.character_styles.clone();
+                for style in styles {
+                    self.command(
+                        ui,
+                        &style.name,
+                        Action::CharacterStyle(Some(CharacterStyle::Custom(style.id))),
+                        vec2(210., 27.),
+                    );
+                }
+                self.command(
+                    ui,
+                    "Create character style…",
+                    Action::CreateCharacterStyle,
+                    vec2(210., 27.),
+                );
             });
         ui.separator();
         ui.small("Direct formatting takes precedence.");
@@ -2722,7 +2760,16 @@ impl DocsApp {
                 StyleOutcome::Open => self.style_dialog = Some(dialog),
                 StyleOutcome::Cancel => self.sync_view(),
                 StyleOutcome::Apply(definition) => {
-                    let result = if dialog.creating {
+                    let result = if dialog.character {
+                        self.session
+                            .editor
+                            .create_character_style(
+                                &dialog.name,
+                                definition.character,
+                                dialog.apply,
+                            )
+                            .map(|_| ())
+                    } else if dialog.creating {
                         self.session
                             .editor
                             .create_style(&dialog.name, definition, dialog.apply)
@@ -2840,6 +2887,16 @@ impl DocsApp {
                                 .custom
                                 .iter()
                                 .map(|s| Action::Style(ParagraphStyle::Custom(s.id))),
+                        )
+                        .chain(
+                            self.session
+                                .editor
+                                .document
+                                .character_styles
+                                .iter()
+                                .map(|s| {
+                                    Action::CharacterStyle(Some(CharacterStyle::Custom(s.id)))
+                                }),
                         )
                         .filter(|a| self.command_name(*a).to_lowercase().contains(&query))
                         .collect();

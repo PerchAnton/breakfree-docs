@@ -5185,3 +5185,157 @@ fn styles_scrolled_rows_do_not_paint_keytips_over_other_commands() {
         );
     }
 }
+
+#[test]
+fn create_character_style_draft_applies_named_properties_and_one_undo() {
+    let (ctx, mut app) = setup();
+    app.session
+        .editor
+        .replace(0, 0, "Україна e\u{301} English", "Input")
+        .unwrap();
+    app.sync_view();
+    app.execute(Action::SelectAll, &ctx);
+    let before = app.session.editor.document.clone();
+    let n = app.session.editor.undo_stack.len();
+    tip_sequence(
+        &ctx,
+        &mut app,
+        &[Key::F10, Key::H, Key::L, Key::K],
+        [1366., 900.],
+    );
+    assert!(app.style_dialog.as_ref().unwrap().character);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("Annotation".into())],
+        [1366., 900.],
+        1.,
+    );
+    let draft = app.style_dialog.as_mut().unwrap();
+    draft.definition.character.italic = Some(true);
+    draft.size = "24".into();
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    click_region(&ctx, &mut app, "style-dialog-ok");
+    assert!(app.style_dialog.is_none());
+    assert_eq!(app.session.editor.undo_stack.len(), n + 1);
+    assert_eq!(
+        app.session.editor.document.character_styles[0].name,
+        "Annotation"
+    );
+    assert!(app.checked(Action::Italic));
+    assert_eq!(
+        app.session.editor.selected_font_size().unwrap().to_string(),
+        "24"
+    );
+    assert_eq!(
+        app.command_name(Action::CharacterStyle(Some(CharacterStyle::Custom(1)))),
+        "Annotation"
+    );
+    let after = app.session.editor.document.clone();
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.document, before);
+    app.execute(Action::Redo, &ctx);
+    assert_eq!(app.session.editor.document, after);
+    assert_eq!(
+        storage::decode(&storage::encode(&after).unwrap()).unwrap(),
+        after
+    );
+}
+
+#[test]
+fn character_creation_invalid_cancel_and_modal_guards_preserve_redo() {
+    let (ctx, mut app) = setup();
+    app.session.editor.replace(0, 0, "x", "Input").unwrap();
+    app.session.editor.undo();
+    app.sync_view();
+    let before = app.session.editor.document.clone();
+    app.execute(Action::CreateCharacterStyle, &ctx);
+    frame(&ctx, &mut app, vec![], [640., 480.], 1.);
+    app.style_dialog.as_mut().unwrap().name = "Strong".into();
+    frame(&ctx, &mut app, vec![], [640., 480.], 1.);
+    click_region_at(&ctx, &mut app, "style-dialog-ok", [640., 480.]);
+    assert!(app.style_dialog.is_some());
+    app.execute(Action::New, &ctx);
+    assert_eq!(app.session.editor.document, before);
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Escape, false)],
+        [640., 480.],
+        1.,
+    );
+    assert!(app.style_dialog.is_none());
+    assert_eq!(app.session.editor.redo_stack.len(), 1);
+    app.composing = true;
+    app.execute(Action::CreateCharacterStyle, &ctx);
+    assert!(app.style_dialog.is_none());
+}
+
+#[test]
+fn character_creation_dialog_bounds_at_minimum_width_and_scales() {
+    for scale in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        app.execute(Action::CreateCharacterStyle, &ctx);
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![], [640. * scale, 480. * scale], scale);
+        }
+        let screen = Rect::from_min_size(Pos2::ZERO, vec2(640., 480.));
+        for r in app
+            .regions
+            .iter()
+            .filter(|r| r.name.starts_with("style-dialog"))
+        {
+            assert!(screen.contains_rect(r.rect), "{} {:?}", r.name, r.rect);
+        }
+        assert!(
+            !app.regions
+                .iter()
+                .any(|r| r.name == "style-dialog-parent" || r.name == "style-dialog-next")
+        );
+    }
+}
+
+#[test]
+fn custom_character_style_changes_actual_layout_and_named_search_action() {
+    let (ctx, mut app) = setup();
+    app.session.editor.replace(0, 0, "Named", "Input").unwrap();
+    app.session.editor.selection = (0, 5);
+    let id = app
+        .session
+        .editor
+        .create_character_style(
+            "Annotation",
+            CharacterFormat {
+                italic: Some(true),
+                font_size: Some("24".parse().unwrap()),
+                ..Default::default()
+            },
+            true,
+        )
+        .unwrap();
+    app.sync_view();
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    let d = &app.session.editor.document;
+    let galley = layout::galley(
+        &ctx,
+        d,
+        &d.text(),
+        app.session.editor.typing_style,
+        0,
+        500.,
+        11.,
+    );
+    assert!(galley.job.sections[0].format.italics);
+    assert_eq!(galley.job.sections[0].format.font_id.size, 24.);
+    app.command_search = "Annotation".into();
+    app.palette = true;
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    assert_eq!(
+        app.command_name(Action::CharacterStyle(Some(id))),
+        "Annotation"
+    );
+    app.palette = false;
+    app.execute(Action::CharacterStyle(None), &ctx);
+    app.execute(Action::CharacterStyle(Some(id)), &ctx);
+    assert!(app.checked(Action::CharacterStyle(Some(id))));
+}
