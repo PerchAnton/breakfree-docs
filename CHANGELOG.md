@@ -3,6 +3,11 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.34 — 2026-10-18
+
+- Distinguish Direct use, Parent dependency and Not used beneath style names in Home menus. Direct assignment wins when a style is also a parent; filtering and undo history remain unchanged.
+- Preserve the approved palette/icons, native v9 and protocol/settings v1. Alpha.33 approved; alpha.34 awaits owner approval.
+
 ## 0.1.0-alpha.33 — 2026-10-18
 
 - Add Used in document filtering, intersected with name/category filters. Include empty-paragraph styles, text references and transitive parent dependencies.

@@ -1988,6 +1988,25 @@ impl DocsApp {
             self.style_dialog = Some(dialog);
         }
     }
+    fn style_menu_command(
+        &mut self,
+        ui: &mut Ui,
+        name: &str,
+        action: Action,
+        usage: crate::style_filter::Usage,
+    ) {
+        self.command(ui, name, action, vec2(210., 27.));
+        let label = ui.small(usage.label()).on_hover_text(match usage {
+            crate::style_filter::Usage::Direct => "Assigned to document content. May also be a parent of another used style.",
+            crate::style_filter::Usage::Parent => "Used only through inheritance by a style assigned to document content.",
+            crate::style_filter::Usage::Unused => "Neither assigned to document content nor required as a parent. Future typing and next-style links do not count.",
+        });
+        self.record(
+            &format!("style-usage-{action:?}-{}", usage.label()),
+            label.rect,
+        );
+    }
+
     fn styles_menu(&mut self, ui: &mut Ui) {
         ui.set_width(220.);
         let filter = ui.add(
@@ -2026,9 +2045,7 @@ impl DocsApp {
             self.ribbon_menu_index = None;
         }
         used_toggle.on_hover_text("Document text and empty paragraphs, plus parent styles. Excludes future typing and next-style links.");
-        let used = self
-            .style_used_only
-            .then(|| crate::style_filter::UsedStyles::collect(&self.session.editor.document));
+        let used = crate::style_filter::UsedStyles::collect(&self.session.editor.document);
         let mut matches = 0;
         egui::ScrollArea::vertical()
             .id_salt("style-list")
@@ -2047,10 +2064,15 @@ impl DocsApp {
                         &name,
                         false,
                         matches!(style, ParagraphStyle::Custom(_)),
-                    ) && used.as_ref().is_none_or(|u| u.paragraphs.contains(&style))
+                    ) && (!self.style_used_only || used.paragraphs.contains(&style))
                     {
                         matches += 1;
-                        self.command(ui, &name, Action::Style(style), vec2(210., 27.));
+                        self.style_menu_command(
+                            ui,
+                            &name,
+                            Action::Style(style),
+                            used.paragraph_usage(style),
+                        );
                     }
                 }
                 ui.separator();
@@ -2064,10 +2086,15 @@ impl DocsApp {
                     if self
                         .style_scope
                         .matches(&self.style_filter, action.label(), true, false)
-                        && used.as_ref().is_none_or(|u| u.character(style))
+                        && (!self.style_used_only || used.character(style))
                     {
                         matches += 1;
-                        self.command(ui, action.label(), action, vec2(210., 27.));
+                        self.style_menu_command(
+                            ui,
+                            action.label(),
+                            action,
+                            used.character_usage(style),
+                        );
                     }
                 }
                 let styles = self.session.editor.document.character_styles.clone();
@@ -2075,18 +2102,17 @@ impl DocsApp {
                     if !self
                         .style_scope
                         .matches(&self.style_filter, &style.name, true, true)
-                        || used
-                            .as_ref()
-                            .is_some_and(|u| !u.character(Some(CharacterStyle::Custom(style.id))))
+                        || (self.style_used_only
+                            && !used.character(Some(CharacterStyle::Custom(style.id))))
                     {
                         continue;
                     }
                     matches += 1;
-                    self.command(
+                    self.style_menu_command(
                         ui,
                         &style.name,
                         Action::CharacterStyle(Some(CharacterStyle::Custom(style.id))),
-                        vec2(210., 27.),
+                        used.character_usage(Some(CharacterStyle::Custom(style.id))),
                     );
                 }
                 if matches == 0 {

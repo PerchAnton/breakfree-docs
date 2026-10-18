@@ -470,3 +470,13 @@ links and pending typing alone do not count. Default paragraph font is shown for
 text without a character style or an empty paragraph. Reset clears all filters.
 Usage is recomputed from the current model, so edits and Undo/Redo update the list;
 filtering itself never modifies content/history/settings. Native v9 is unchanged.
+
+## Style usage labels (alpha.34)
+
+Home style menus show Direct use, Parent dependency or Not used beneath each
+name, including when the used-only filter is off. Direct assignment wins if a
+style is also an ancestor. Parent dependency means inheritance-only use, not
+direct formatting. Empty paragraphs and default character formatting retain the
+alpha.33 rules; pending typing and next-style links do not count. Search matches
+style names, not these labels. Labels are read-only, recomputed after edits and
+Undo/Redo, and do not change stable IDs, ordering, storage or settings.

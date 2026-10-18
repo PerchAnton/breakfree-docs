@@ -4626,6 +4626,8 @@ fn unused_style_list_context_menu_renames_without_applying_to_document() {
     let screen = [1366., 900.];
     app.sync_view();
     frame(&ctx, &mut app, vec![], screen, 1.);
+    // Filter the target into view; usage captions make each scroll-list entry taller.
+    app.style_filter = "Unused".into();
     click_region(&ctx, &mut app, "home-menu-Styles");
     for _ in 0..3 {
         frame(&ctx, &mut app, vec![], screen, 1.);
@@ -4862,6 +4864,8 @@ fn delete_unused_style_context_target_search_and_composition_guards() {
     app.open_delete_style_dialog(id, &ctx);
     assert!(app.delete_style_dialog.is_none());
     app.pending = None;
+    // Filter the target into view; usage captions make each scroll-list entry taller.
+    app.style_filter = "Unused".into();
     click_region(&ctx, &mut app, "home-menu-Styles");
     for _ in 0..3 {
         frame(&ctx, &mut app, vec![], screen, 1.);
@@ -5728,6 +5732,16 @@ fn used_style_filter_intersects_scope_and_reset_preserves_document() {
     click_region_at(&ctx, &mut app, "style-filter-used", size);
     frame(&ctx, &mut app, vec![], size, 1.);
     assert!(app.style_used_only);
+    assert!(
+        app.regions
+            .iter()
+            .any(|r| r.name == "style-usage-Style(Normal)-Parent dependency")
+    );
+    assert!(
+        app.regions
+            .iter()
+            .any(|r| r.name == "style-usage-Style(Heading1)-Direct use")
+    );
     assert!(app.ribbon_menu_targets.iter().any(|t| matches!(
         t.kind,
         TargetKind::Action(Action::Style(ParagraphStyle::Normal))

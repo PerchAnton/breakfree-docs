@@ -333,7 +333,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "examples/Welcome.bfdoc"
         },
     );
-    let session = if args[2] == "replace-all" {
+    let session = if args[2] == "styles-menu" {
+        let mut session = Session::default();
+        session.editor.apply_paragraph_style(
+            0,
+            0,
+            breakfree_docs::model::ParagraphStyle::Heading1,
+        )?;
+        session
+    } else if args[2] == "replace-all" {
         let mut session = Session::default();
         session.editor.replace(0, 0, "BreakFree Docs\nBreakFree writes locally.\nBreakFree preserves Unicode: Україна Русский e\u{301}.", "Fixture")?;
         session.editor.emphasize(0, 9, true, true)?;

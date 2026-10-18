@@ -119,3 +119,75 @@ fn empty_paragraphs_pending_typing_and_undo_have_explicit_usage_rules() {
             .contains(&ParagraphStyle::NoSpacing)
     );
 }
+
+#[test]
+fn usage_classification_handles_direct_parents_and_history() {
+    use breakfree_docs::{
+        commands::Editor,
+        model::*,
+        style_filter::{Usage, UsedStyles},
+    };
+    let mut doc = Document::default();
+    let child = doc
+        .add_character_style("Child", CharacterFormat::default())
+        .unwrap();
+    doc.set_character_parent(child, Some(CharacterStyle::Strong))
+        .unwrap();
+    doc.paragraphs[0].paragraph_style = ParagraphStyle::Heading1;
+    doc.paragraphs[0].text = "ab".into();
+    doc.paragraphs[0].styles = vec![
+        CharacterFormat {
+            character_style: Some(child),
+            ..Default::default()
+        };
+        2
+    ];
+    let mut editor = Editor::new(doc);
+    let initial = UsedStyles::collect(&editor.document);
+    assert_eq!(
+        initial.paragraph_usage(ParagraphStyle::Heading1),
+        Usage::Direct
+    );
+    assert_eq!(
+        initial.paragraph_usage(ParagraphStyle::Normal),
+        Usage::Parent
+    );
+    assert_eq!(
+        initial.paragraph_usage(ParagraphStyle::NoSpacing),
+        Usage::Unused
+    );
+    assert_eq!(initial.character_usage(Some(child)), Usage::Direct);
+    assert_eq!(
+        initial.character_usage(Some(CharacterStyle::Strong)),
+        Usage::Parent
+    );
+    assert_eq!(initial.character_usage(None), Usage::Unused);
+    editor
+        .apply_paragraph_style(0, 0, ParagraphStyle::Normal)
+        .unwrap();
+    assert_eq!(
+        UsedStyles::collect(&editor.document).paragraph_usage(ParagraphStyle::Normal),
+        Usage::Direct
+    );
+    editor.undo();
+    assert_eq!(UsedStyles::collect(&editor.document), initial);
+    editor.redo();
+    assert_eq!(
+        UsedStyles::collect(&editor.document).paragraph_usage(ParagraphStyle::Heading1),
+        Usage::Unused
+    );
+    // Parent was encountered through the child first; a later direct reference still wins.
+    editor.document.paragraphs[0].styles[1].character_style = Some(CharacterStyle::Strong);
+    assert_eq!(
+        UsedStyles::collect(&editor.document).character_usage(Some(CharacterStyle::Strong)),
+        Usage::Direct
+    );
+    let reopened = breakfree_docs::storage::decode(
+        &breakfree_docs::storage::encode(&editor.document).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        UsedStyles::collect(&reopened),
+        UsedStyles::collect(&editor.document)
+    );
+}

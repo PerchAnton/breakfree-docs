@@ -1212,3 +1212,22 @@ Light theme, English, 100% document zoom, macOS backing scale 2:
 | [Used styles](screenshots/rust-used-styles-alpha33-macos-narrow.png) | 640 × 480 DIP | `c1d8a830a445d319bea2232c9e9c84ad4ba779700b2949b3588aaab0e0266b20` |
 
 Both harness captures inspected: checkbox and commands fit; narrow popup relocates upward. Ordinary native menu acceptance remains incomplete after automation lost its window. No matched Word/Windows DPI comparison was available.
+
+## Alpha.34 style usage captions
+
+Each style command retains its 210 × 27 DIP button and existing action ID. A
+secondary small-text line immediately below says Direct use, Parent dependency
+or Not used. The tooltip explains direct-plus-parent precedence. Labels use the
+existing text palette, not new color or icon meanings. The 125-DIP scroll area
+and management controls stay bounded; fewer complete entries fit at once.
+Name matching, keyboard targets and context commands still use style IDs/names.
+
+Light theme, English, 100% document zoom, macOS backing scale 2. The fixture is
+an empty Heading 1 paragraph: Normal is a parent dependency, Heading 1 is direct.
+
+| Capture | Window | SHA-256 |
+| --- | --- | --- |
+| [Usage captions](screenshots/rust-style-usage-alpha34-macos.png) | 1366 × 900 DIP | `a572ae57d24a2f2512412607e2a79719bee6e90aaddcf6e6cf551d0fc32188e9` |
+| [Usage captions](screenshots/rust-style-usage-alpha34-macos-narrow.png) | 640 × 480 DIP | `0e860f2d7c19dce2b0a1a9f72679acf831edb886d622465535269c07ae5447c9` |
+
+Both native harness captures inspected: captions do not overlap and the compact popup stays inside the window. Partially visible bottom rows require scrolling. Normal native input was not repeated; matched Word/Windows DPI validation remains unavailable.

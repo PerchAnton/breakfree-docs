@@ -8,17 +8,17 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.33**. Historical evidence retains its scope.
+Current local checkpoint: **0.1.0-alpha.34**. Historical evidence retains its scope.
 
 | Local check | Observed result |
 | --- | --- |
-| Full / no-default-features tests | 227 / 115 passed; two used-style core tests and one actual-widget regression added |
+| Full / no-default-features tests | 228 / 116 passed; usage precedence/history/roundtrip test added and widget caption assertions extended |
 | fmt / Clippy | Passed; normal/capture all-target checks with warnings denied |
 | Release builds | Native binary and capture harness passed without Office/sibling inputs |
-| CLI | Version/capabilities report alpha.33; existing CLI subprocess tests pass |
+| CLI | Version/capabilities report alpha.34; existing CLI subprocess tests pass |
 | Repository/artwork/YAML/whitespace | Passed |
-| Native rendering | Used Styles menu at 1366 × 900 / 640 × 480 DIP, backing scale 2, inspected |
-| Native macOS input | Ordinary app launched and Heading 1 applied; menu input verification incomplete after automation lost the window. Actual-widget tests cover used filtering/reset/history |
+| Native rendering | Usage captions at 1366 × 900 / 640 × 480 DIP, backing scale 2 |
+| Native input | Not repeated this iteration; previous automation lost its window. CPU widget events are separate evidence |
 | Existing regressions | Home geometry, minimum-width 64-style keyboard scrolling, history, storage and synthetic scaling checks retained |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
@@ -1035,3 +1035,17 @@ Native used-filter keyboard acceptance is therefore incomplete; the harness and
 CPU widget checks are not a substitute. No new native Save/Open claim is made.
 Windows 100%/125%/150%, matched Word comparison, physical IME and full accessibility
 remain unverified. Protocol/settings v1 and document writer v9 are unchanged.
+
+## Alpha.34 usage-caption validation
+
+Core tests distinguish direct, parent-only and unused paragraph/character styles,
+including an ancestor encountered before a later direct reference, Undo/Redo and
+v9 roundtrip. The existing minimum-window widget regression now asserts both
+Direct use and Parent dependency captions without changing document/history.
+Two context-menu tests filter their target into view because secondary captions
+make list entries taller; their rename/delete assertions remain. The 64-style
+keyboard scrolling regression remains unchanged.
+
+No native keyboard acceptance or matched Word/Windows DPI/IME/accessibility claim
+is made. This changes only derived usage reporting and presentation; writer v9,
+protocol/settings v1, palette, icons and dependencies are unchanged.

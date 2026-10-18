@@ -43,12 +43,17 @@ pub struct UsedStyles {
     pub paragraphs: Vec<crate::model::ParagraphStyle>,
     pub characters: Vec<crate::model::CharacterStyle>,
     pub default_character: bool,
+    pub direct_paragraphs: Vec<crate::model::ParagraphStyle>,
+    pub direct_characters: Vec<crate::model::CharacterStyle>,
 }
 impl UsedStyles {
     pub fn collect(document: &crate::model::Document) -> Self {
         use crate::model::CharacterStyle;
         let mut used = Self::default();
         for paragraph in &document.paragraphs {
+            if !used.direct_paragraphs.contains(&paragraph.paragraph_style) {
+                used.direct_paragraphs.push(paragraph.paragraph_style);
+            }
             let mut next = Some(paragraph.paragraph_style);
             while let Some(id) = next {
                 if used.paragraphs.contains(&id) {
@@ -63,6 +68,11 @@ impl UsedStyles {
             for format in &paragraph.styles {
                 if format.character_style.is_none() {
                     used.default_character = true;
+                }
+                if let Some(id) = format.character_style
+                    && !used.direct_characters.contains(&id)
+                {
+                    used.direct_characters.push(id);
                 }
                 let mut next = format.character_style;
                 while let Some(id) = next {
@@ -85,5 +95,44 @@ impl UsedStyles {
     }
     pub fn character(&self, id: Option<crate::model::CharacterStyle>) -> bool {
         id.map_or(self.default_character, |id| self.characters.contains(&id))
+    }
+}
+
+/// Direct assignment takes precedence when a style is also another style's parent.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Usage {
+    Direct,
+    Parent,
+    Unused,
+}
+impl Usage {
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Direct => "Direct use",
+            Self::Parent => "Parent dependency",
+            Self::Unused => "Not used",
+        }
+    }
+}
+impl UsedStyles {
+    pub fn paragraph_usage(&self, id: crate::model::ParagraphStyle) -> Usage {
+        if self.direct_paragraphs.contains(&id) {
+            Usage::Direct
+        } else if self.paragraphs.contains(&id) {
+            Usage::Parent
+        } else {
+            Usage::Unused
+        }
+    }
+    pub fn character_usage(&self, id: Option<crate::model::CharacterStyle>) -> Usage {
+        if id.map_or(self.default_character, |id| {
+            self.direct_characters.contains(&id)
+        }) {
+            Usage::Direct
+        } else if self.character(id) {
+            Usage::Parent
+        } else {
+            Usage::Unused
+        }
     }
 }
