@@ -161,3 +161,14 @@ direct formatting. Empty paragraphs and default character formatting retain the
 alpha.33 rules; pending typing and next-style links do not count. Search matches
 style names, not these labels. Labels are read-only, recomputed after edits and
 Undo/Redo, and do not change stable IDs, ordering, storage or settings.
+
+## Dependency consumers (alpha.35)
+
+Style rows with assigned descendants show Required by followed by their names.
+Consumers are unique directly assigned styles in document encounter order; the
+walk includes every transitive parent, excludes self and unassigned intermediate
+styles, and is bounded for invalid external cycles. Paragraph and character
+style namespaces remain separate. Direct-use parents also show their consumers.
+Names wrap inside the existing scroll area; filtering does not hide dependency
+evidence. Renaming, editing and Undo/Redo are reflected from the current model.
+No document, history, settings, palette, icons or native format changes.

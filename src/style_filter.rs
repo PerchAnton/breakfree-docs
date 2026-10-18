@@ -136,3 +136,62 @@ impl UsedStyles {
         }
     }
 }
+
+// Walk each directly assigned style independently: shared ancestors must retain
+// every consumer, and invalid external cycles must not hang the inspector.
+fn depends_on<T: Copy + PartialEq>(source: T, target: T, parent: impl Fn(T) -> Option<T>) -> bool {
+    if source == target {
+        return false;
+    }
+    let mut seen = vec![source];
+    let mut next = parent(source);
+    while let Some(id) = next {
+        if seen.contains(&id) {
+            break;
+        }
+        if id == target {
+            return true;
+        }
+        seen.push(id);
+        next = parent(id);
+    }
+    false
+}
+impl UsedStyles {
+    /// Unique directly assigned consumers, in document encounter order.
+    pub fn paragraph_consumers(
+        &self,
+        document: &crate::model::Document,
+        parent: crate::model::ParagraphStyle,
+    ) -> Vec<crate::model::ParagraphStyle> {
+        self.direct_paragraphs
+            .iter()
+            .copied()
+            .filter(|&id| {
+                depends_on(id, parent, |id| {
+                    document.style_catalog.get(id).and_then(|s| s.parent)
+                })
+            })
+            .collect()
+    }
+    pub fn character_consumers(
+        &self,
+        document: &crate::model::Document,
+        parent: crate::model::CharacterStyle,
+    ) -> Vec<crate::model::CharacterStyle> {
+        self.direct_characters
+            .iter()
+            .copied()
+            .filter(|&id| {
+                depends_on(id, parent, |id| match id {
+                    crate::model::CharacterStyle::Custom(key) => document
+                        .character_styles
+                        .iter()
+                        .find(|s| s.id == key)
+                        .and_then(|s| s.parent),
+                    _ => None,
+                })
+            })
+            .collect()
+    }
+}

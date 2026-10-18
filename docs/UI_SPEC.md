@@ -1231,3 +1231,20 @@ an empty Heading 1 paragraph: Normal is a parent dependency, Heading 1 is direct
 | [Usage captions](screenshots/rust-style-usage-alpha34-macos-narrow.png) | 640 × 480 DIP | `0e860f2d7c19dce2b0a1a9f72679acf831edb886d622465535269c07ae5447c9` |
 
 Both native harness captures inspected: captions do not overlap and the compact popup stays inside the window. Partially visible bottom rows require scrolling. Normal native input was not repeated; matched Word/Windows DPI validation remains unavailable.
+
+## Alpha.35 dependency consumers
+
+Below the usage caption, a wrapping small-text Required by line lists unique
+directly assigned descendants, including transitive ones. It is visible without
+hover, uses the existing text palette and remains inside the 125-DIP scroll area.
+Style buttons remain 210 × 27 DIP; long consumer lists require vertical scrolling.
+This line is information only; navigation by consumer name is not implemented.
+
+Light theme, English, 100% document zoom, macOS backing scale 2:
+
+| Capture | Window | SHA-256 |
+| --- | --- | --- |
+| [Dependency consumers](screenshots/rust-style-consumers-alpha35-macos.png) | 1366 × 900 DIP | `8b3119c732d090b697dcf28e09ec42adc5aa46da03b21abb20f514ec0903a7f7` |
+| [Dependency consumers](screenshots/rust-style-consumers-alpha35-macos-narrow.png) | 640 × 480 DIP | `49afa6ea85d1af19cffdc2414afda39b8d30a2ee9aa90d3bd1dea6a8d1983ba8` |
+
+Both harness captures inspected: Normal shows Required by: Heading 1, with no overlap. Compact popup remains in bounds; lower rows require scrolling. Native keyboard input and matched Word/Windows DPI validation were not performed in this iteration.

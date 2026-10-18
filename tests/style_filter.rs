@@ -171,10 +171,20 @@ fn usage_classification_handles_direct_parents_and_history() {
     );
     editor.undo();
     assert_eq!(UsedStyles::collect(&editor.document), initial);
+    assert_eq!(
+        UsedStyles::collect(&editor.document)
+            .paragraph_consumers(&editor.document, ParagraphStyle::Normal),
+        vec![ParagraphStyle::Heading1]
+    );
     editor.redo();
     assert_eq!(
         UsedStyles::collect(&editor.document).paragraph_usage(ParagraphStyle::Heading1),
         Usage::Unused
+    );
+    assert!(
+        UsedStyles::collect(&editor.document)
+            .paragraph_consumers(&editor.document, ParagraphStyle::Normal)
+            .is_empty()
     );
     // Parent was encountered through the child first; a later direct reference still wins.
     editor.document.paragraphs[0].styles[1].character_style = Some(CharacterStyle::Strong);
@@ -189,5 +199,98 @@ fn usage_classification_handles_direct_parents_and_history() {
     assert_eq!(
         UsedStyles::collect(&reopened),
         UsedStyles::collect(&editor.document)
+    );
+}
+
+#[test]
+fn consumers_include_transitive_direct_users_only_and_survive_roundtrip() {
+    use breakfree_docs::{model::*, style_filter::UsedStyles};
+    let mut doc = Document::default();
+    let middle = doc
+        .style_catalog
+        .add(
+            "Middle",
+            StyleDefinition {
+                parent: Some(ParagraphStyle::Heading1),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    let leaf = doc
+        .style_catalog
+        .add(
+            "Український e\u{301}",
+            StyleDefinition {
+                parent: Some(middle),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    doc.paragraphs[0].paragraph_style = leaf;
+    let mut second = doc.paragraphs[0].clone();
+    second.paragraph_style = ParagraphStyle::Heading1;
+    doc.paragraphs.push(second);
+    doc.paragraphs.push(doc.paragraphs[0].clone());
+    let cm = doc
+        .add_character_style("Middle", CharacterFormat::default())
+        .unwrap();
+    doc.set_character_parent(cm, Some(CharacterStyle::Strong))
+        .unwrap();
+    let cl = doc
+        .add_character_style("Leaf", CharacterFormat::default())
+        .unwrap();
+    doc.set_character_parent(cl, Some(cm)).unwrap();
+    doc.paragraphs[0].text = "abc".into();
+    doc.paragraphs[0].styles = vec![
+        CharacterFormat {
+            character_style: Some(cl),
+            ..Default::default()
+        },
+        CharacterFormat {
+            character_style: Some(CharacterStyle::Strong),
+            ..Default::default()
+        },
+        CharacterFormat {
+            character_style: Some(cl),
+            ..Default::default()
+        },
+    ];
+    let used = UsedStyles::collect(&doc);
+    assert_eq!(
+        used.paragraph_consumers(&doc, ParagraphStyle::Normal),
+        vec![leaf, ParagraphStyle::Heading1]
+    );
+    assert_eq!(
+        used.paragraph_consumers(&doc, ParagraphStyle::Heading1),
+        vec![leaf]
+    );
+    assert_eq!(used.paragraph_consumers(&doc, middle), vec![leaf]);
+    assert!(used.paragraph_consumers(&doc, leaf).is_empty());
+    assert!(
+        used.paragraph_consumers(&doc, ParagraphStyle::NoSpacing)
+            .is_empty()
+    );
+    assert_eq!(
+        used.character_consumers(&doc, CharacterStyle::Strong),
+        vec![cl]
+    );
+    assert_eq!(used.character_consumers(&doc, cm), vec![cl]);
+    assert!(used.character_consumers(&doc, cl).is_empty());
+    let reopened =
+        breakfree_docs::storage::decode(&breakfree_docs::storage::encode(&doc).unwrap()).unwrap();
+    assert_eq!(
+        UsedStyles::collect(&reopened).paragraph_consumers(&reopened, ParagraphStyle::Normal),
+        vec![leaf, ParagraphStyle::Heading1]
+    );
+    // An invalid external cycle is bounded even when the requested target is absent.
+    doc.set_character_parent(cm, None).unwrap();
+    assert!(
+        used.character_consumers(&doc, CharacterStyle::Strong)
+            .is_empty()
+    );
+    doc.style_catalog.heading1.parent = Some(middle);
+    assert!(
+        used.paragraph_consumers(&doc, ParagraphStyle::NoSpacing)
+            .is_empty()
     );
 }

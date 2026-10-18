@@ -1994,6 +1994,7 @@ impl DocsApp {
         name: &str,
         action: Action,
         usage: crate::style_filter::Usage,
+        used: &crate::style_filter::UsedStyles,
     ) {
         self.command(ui, name, action, vec2(210., 27.));
         let label = ui.small(usage.label()).on_hover_text(match usage {
@@ -2005,6 +2006,25 @@ impl DocsApp {
             &format!("style-usage-{action:?}-{}", usage.label()),
             label.rect,
         );
+        let document = &self.session.editor.document;
+        let consumers: Vec<String> = match action {
+            Action::Style(id) => used
+                .paragraph_consumers(document, id)
+                .into_iter()
+                .map(|id| document.style_catalog.name(id).to_owned())
+                .collect(),
+            Action::CharacterStyle(Some(id)) => used
+                .character_consumers(document, id)
+                .into_iter()
+                .map(|id| document.character_style_name(id).to_owned())
+                .collect(),
+            _ => Vec::new(),
+        };
+        if !consumers.is_empty() {
+            let text = format!("Required by: {}", consumers.join(", "));
+            let response = ui.add(egui::Label::new(RichText::new(&text).small()).wrap());
+            self.record(&format!("style-consumers-{action:?}-{text}"), response.rect);
+        }
     }
 
     fn styles_menu(&mut self, ui: &mut Ui) {
@@ -2072,6 +2092,7 @@ impl DocsApp {
                             &name,
                             Action::Style(style),
                             used.paragraph_usage(style),
+                            &used,
                         );
                     }
                 }
@@ -2094,6 +2115,7 @@ impl DocsApp {
                             action.label(),
                             action,
                             used.character_usage(style),
+                            &used,
                         );
                     }
                 }
@@ -2113,6 +2135,7 @@ impl DocsApp {
                         &style.name,
                         Action::CharacterStyle(Some(CharacterStyle::Custom(style.id))),
                         used.character_usage(Some(CharacterStyle::Custom(style.id))),
+                        &used,
                     );
                 }
                 if matches == 0 {

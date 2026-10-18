@@ -8,16 +8,16 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.34**. Historical evidence retains its scope.
+Current local checkpoint: **0.1.0-alpha.35**. Historical evidence retains its scope.
 
 | Local check | Observed result |
 | --- | --- |
-| Full / no-default-features tests | 228 / 116 passed; usage precedence/history/roundtrip test added and widget caption assertions extended |
+| Full / no-default-features tests | 229 / 117 passed; transitive/shared consumer test added; history and filtered widget assertions extended |
 | fmt / Clippy | Passed; normal/capture all-target checks with warnings denied |
 | Release builds | Native binary and capture harness passed without Office/sibling inputs |
-| CLI | Version/capabilities report alpha.34; existing CLI subprocess tests pass |
+| CLI | Version/capabilities report alpha.35; existing CLI subprocess tests pass |
 | Repository/artwork/YAML/whitespace | Passed |
-| Native rendering | Usage captions at 1366 × 900 / 640 × 480 DIP, backing scale 2 |
+| Native rendering | Dependency consumers at 1366 × 900 / 640 × 480 DIP, backing scale 2 |
 | Native input | Not repeated this iteration; previous automation lost its window. CPU widget events are separate evidence |
 | Existing regressions | Home geometry, minimum-width 64-style keyboard scrolling, history, storage and synthetic scaling checks retained |
 
@@ -1049,3 +1049,14 @@ keyboard scrolling regression remains unchanged.
 No native keyboard acceptance or matched Word/Windows DPI/IME/accessibility claim
 is made. This changes only derived usage reporting and presentation; writer v9,
 protocol/settings v1, palette, icons and dependencies are unchanged.
+
+## Alpha.35 dependency-consumer validation
+
+The new core fixture covers transitive/shared paragraph and character ancestors,
+direct-use parents, self exclusion, deduplication, unassigned intermediates, Unicode
+names, v9 roundtrip and bounded invalid cycles. History assertions verify consumer
+changes through Undo/Redo. The minimum-window widget test keeps Required by visible
+when a name filter hides the consuming style, without document/history changes.
+Existing 64-style keyboard scrolling, context commands and synthetic scale tests
+remain. Native keyboard input is not repeated this iteration; harness captures
+are rendering evidence only. Windows/Word/DPI/IME/accessibility gates remain open.

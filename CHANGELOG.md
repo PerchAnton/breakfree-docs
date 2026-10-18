@@ -3,6 +3,11 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.35 — 2026-10-18
+
+- Show Required by with every directly assigned paragraph/character style that needs an ancestor, including transitive parents and styles hidden by name/category filters. Direct-plus-parent styles keep both their status and consumers.
+- Preserve palette/icons, native v9 and protocol/settings v1. Alpha.34 approved; alpha.35 awaits owner approval.
+
 ## 0.1.0-alpha.34 — 2026-10-18
 
 - Distinguish Direct use, Parent dependency and Not used beneath style names in Home menus. Direct assignment wins when a style is also a parent; filtering and undo history remain unchanged.

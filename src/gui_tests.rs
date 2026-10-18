@@ -5735,6 +5735,11 @@ fn used_style_filter_intersects_scope_and_reset_preserves_document() {
     assert!(
         app.regions
             .iter()
+            .any(|r| r.name == "style-consumers-Style(Normal)-Required by: Heading 1")
+    );
+    assert!(
+        app.regions
+            .iter()
             .any(|r| r.name == "style-usage-Style(Normal)-Parent dependency")
     );
     assert!(
@@ -5749,6 +5754,17 @@ fn used_style_filter_intersects_scope_and_reset_preserves_document() {
     assert!(!app.ribbon_menu_targets.iter().any(|t| matches!(
         t.kind,
         TargetKind::Action(Action::Style(ParagraphStyle::NoSpacing))
+    )));
+    app.style_filter = "Normal".into();
+    frame(&ctx, &mut app, vec![], size, 1.);
+    assert!(
+        app.regions
+            .iter()
+            .any(|r| r.name == "style-consumers-Style(Normal)-Required by: Heading 1")
+    );
+    assert!(!app.ribbon_menu_targets.iter().any(|t| matches!(
+        t.kind,
+        TargetKind::Action(Action::Style(ParagraphStyle::Heading1))
     )));
     click_region_at(&ctx, &mut app, "style-filter-reset", size);
     assert!(!app.style_used_only);
