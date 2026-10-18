@@ -196,10 +196,12 @@ Rust selection is complete; this gate evaluates GUI behavior and visual fidelity
   replacements, cycle validation, one undo and exact v5 roundtrip. Direct overrides,
   selection, unused survivors and failed-write retention are covered. Depends on
   alpha.21; [ADR 0009](docs/adr/0009-delete-custom-styles.md).
-- [ ] Extend style rules with following-paragraph and character styles. Next small
-  increment: specify the next-paragraph style and Enter behavior, preserving direct
-  overrides and proving one undo/save/reopen. Any new persisted field needs a
-  versioned migration. Complete the broader item only with character-style fixtures.
+- [x] Alpha.23: following-style selection and transactional Enter, independent of
+  inheritance, with exact undo/redo and native v6 migration. Shared engine and widget
+  regressions cover references and keyboard input; native-platform gates stay open.
+  [ADR 0010](docs/adr/0010-following-paragraph-styles.md).
+- [ ] Extend style rules with character styles. Next small increment: define their
+  precedence over paragraph styles and direct overrides before adding UI/schema.
 - [ ] Add lists, indentation, tabs, spacing, links and Unicode-aware search/replace.
 - [ ] Add table editing and images with explicit sizing and anchoring semantics.
 - [ ] Add navigation, command search and understandable tool states.

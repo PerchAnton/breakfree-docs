@@ -2393,10 +2393,16 @@ impl DocsApp {
                                     ui.memory_mut(|m|m.set_focus_lock_filter(id,egui::EventFilter{horizontal_arrows:true,vertical_arrows:true,..Default::default()}));
                                     self.focus_document=false;
                                 }
+                                let keyboard_enter = !commit && events.iter().any(|e| matches!(e, egui::Event::Key { key: Key::Enter, pressed: true, .. })) && !events.iter().any(|e| matches!(e, egui::Event::Paste(_) | egui::Event::Ime(_)));
+                                let selected_break = keyboard_enter && {
+                                    let (a,b)=self.session.editor.selection;
+                                    b == a + 1 && self.session.editor.document.text().chars().nth(a)==Some('\n')
+                                };
                                 if cancel&&!commit||output.response.lost_focus()&&self.composing {self.composing=false;self.sync_view();}
-                                else if output.response.changed()&&!self.composing&&self.buffer!=self.session.editor.document.text(){
-                                    let(a,b,text)=text_change(&self.session.editor.document.text(),&self.buffer);
-                                    let result=self.session.editor.replace(a,b,&text,if commit{"Input method commit"}else{"Text input"});self.fail(result);self.sync_view();
+                                else if output.response.changed()&&!self.composing&&(self.buffer!=self.session.editor.document.text() || selected_break){
+                                    let(a,b,text)=if keyboard_enter {text_change_from_selection(&self.session.editor.document.text(),&self.buffer,self.session.editor.selection)} else {text_change(&self.session.editor.document.text(),&self.buffer)};
+                                    let paragraph_enter = keyboard_enter && text.contains('\n');
+                                    let result=if paragraph_enter {self.session.editor.replace_keyboard_text(a,b,&text)} else {self.session.editor.replace(a,b,&text,if commit{"Input method commit"}else{"Text input"})};self.fail(result);self.sync_view();
                                 }else if !self.composing&&output.response.has_focus() && let Some(range)=output.cursor_range {
                                         let range=range.as_sorted_char_range();let selection=snap(&self.buffer,range.start,range.end);
                                         if selection!=self.session.editor.selection {self.session.editor.selection=selection;self.session.editor.typing_style=self.session.editor.document.style_at(selection.0);}
@@ -2623,7 +2629,7 @@ impl DocsApp {
                     ui.add_space(18.);
 
                     ui.small("Local document format: BreakFree Docs (.bfdoc)");
-                    ui.small("Saves use format v5. Earlier builds cannot open new saves.");
+                    ui.small("Saves use format v6. Earlier builds cannot open new saves.");
 
                     ui.small("Continuous layout. Pagination and printing are planned.");
                 }

@@ -208,6 +208,44 @@ impl StyleDialog {
                             .response;
                         record(regions, "style-dialog-parent", parent.rect);
                         ui.end_row();
+                        ui.label("Following paragraph:");
+                        let next = egui::ComboBox::from_id_salt("style-next")
+                            .width(290.)
+                            .height(150.)
+                            .truncate()
+                            .selected_text(
+                                self.definition
+                                    .next_style
+                                    .map(|id| self.catalog.name(id))
+                                    .unwrap_or("(Same style)"),
+                            )
+                            .show_ui(ui, |ui| {
+                                let r = ui.selectable_value(
+                                    &mut self.definition.next_style,
+                                    None,
+                                    "(Same style)",
+                                );
+                                record(regions, "style-next-same", r.rect);
+                                if r.clicked() {
+                                    ui.close();
+                                }
+                                ui.set_max_width(290.);
+                                ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Truncate);
+                                for id in self.catalog.ids() {
+                                    let r = ui.selectable_value(
+                                        &mut self.definition.next_style,
+                                        Some(id),
+                                        self.catalog.name(id),
+                                    );
+                                    record(regions, &format!("style-next-{id:?}"), r.rect);
+                                    if r.clicked() {
+                                        ui.close();
+                                    }
+                                }
+                            })
+                            .response;
+                        record(regions, "style-dialog-next", next.rect);
+                        ui.end_row();
                         ui.label("Formatting:");
                         ui.horizontal(|ui| {
                             for (name, value) in [

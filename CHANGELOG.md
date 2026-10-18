@@ -3,7 +3,20 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
-## 0.1.0-alpha.22 — Unreleased; submitted for owner approval
+## 0.1.0-alpha.23 — Unreleased; submitted for owner approval
+
+Prepared 2026-10-18. The owner approved alpha.22 in the project chat.
+
+- Choose a following paragraph style in Create/Modify Style, independently of
+  inheritance. Enter inserts the break and applies the successor in one Undo/Redo.
+- Preserve direct formatting and Unicode; paste/IME commits retain ordinary
+  replacement behavior. Remap following references when deleting custom styles.
+- Write native v6; retain strict v1–v5 readers with Same style migration. Older
+  applications reject new saves; use Save As to retain an older document.
+- Add shared-engine and actual-widget regressions, a following-style fixture and
+  documentation. Retain the approved palette/icons; Windows acceptance stays open.
+
+## 0.1.0-alpha.22 — Unreleased; version approved by owner
 
 Prepared 2026-10-18. The owner approved alpha.21 in the project chat.
 

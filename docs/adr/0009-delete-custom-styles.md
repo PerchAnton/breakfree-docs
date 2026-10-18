@@ -67,3 +67,7 @@ direct overrides, one exact undo/redo, dirty checkpoints, failed saves and nativ
 roundtrip. Exercise actual controls, unused-style context targeting, keyboard,
 Cancel/modal/IME guards and minimum-window geometry. Native Windows/DPI/IME and
 matched reference acceptance remain separate gates.
+
+Alpha.23 extension: [ADR 0010](0010-following-paragraph-styles.md) adds v6
+following links; deletion remaps them to the paragraph replacement in the same
+transaction, with counts and disclosure in the dialog. Earlier v5 text is historical.

@@ -57,3 +57,6 @@ DOCX round-trip compatibility, tables, images, pagination, PDF export, printing,
 A reproducible build and test command, automated persistence and undo tests, synthetic fixtures, manual keyboard checks on the declared operating system and a list of known limitations. Only actual checks may be reported as passed.
 
 [Back to roadmap](../ROADMAP.md)
+
+Alpha.23 extends style behavior with [ADR 0010](adr/0010-following-paragraph-styles.md):
+following styles, transactional Enter and strict v6 migration. D01–D09 remain.

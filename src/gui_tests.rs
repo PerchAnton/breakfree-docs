@@ -4906,3 +4906,144 @@ fn delete_unused_style_context_target_search_and_composition_guards() {
     frame(&ctx, &mut app, vec![key(Key::Escape, false)], screen, 1.);
     assert!(app.delete_style_dialog.is_none());
 }
+
+#[test]
+fn following_style_selector_enter_keyboard_batches_and_paste_history() {
+    let (ctx, mut app) = setup();
+    app.open_style_dialog(ParagraphStyle::Normal, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    click_region(&ctx, &mut app, "style-dialog-next");
+    click_region(&ctx, &mut app, "style-next-Heading1");
+    click_region(&ctx, &mut app, "style-dialog-ok");
+    assert_eq!(
+        app.session.editor.document.style_catalog.normal.next_style,
+        Some(ParagraphStyle::Heading1)
+    );
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(
+        app.session.editor.document.style_catalog.normal.next_style,
+        None
+    );
+    app.execute(Action::Redo, &ctx);
+    app.focus_document = true;
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    let before = app.session.editor.document.clone();
+    let depth = app.session.editor.undo_stack.len();
+    frame(
+        &ctx,
+        &mut app,
+        vec![
+            egui::Event::Text("Україна café".into()),
+            key(Key::Enter, false),
+        ],
+        [1366., 900.],
+        1.,
+    );
+    assert_eq!(app.session.editor.document.paragraphs.len(), 2);
+    assert_eq!(
+        app.session.editor.document.paragraphs[1].paragraph_style,
+        ParagraphStyle::Heading1
+    );
+    assert_eq!(app.session.editor.undo_stack.len(), depth + 1);
+    let after = app.session.editor.document.clone();
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.document, before);
+    app.execute(Action::Redo, &ctx);
+    assert_eq!(app.session.editor.document, after);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Paste("x\ny".into())],
+        [1366., 900.],
+        1.,
+    );
+    assert_eq!(
+        app.session
+            .editor
+            .document
+            .paragraphs
+            .last()
+            .unwrap()
+            .paragraph_style,
+        ParagraphStyle::Heading1
+    );
+    assert_eq!(
+        storage::decode(&storage::encode(&app.session.editor.document).unwrap()).unwrap(),
+        app.session.editor.document
+    );
+}
+
+#[test]
+fn following_style_draft_cancel_and_unknown_reference_preserve_redo() {
+    let (ctx, mut app) = setup();
+    app.session.editor.replace(0, 0, "abc", "Input").unwrap();
+    app.session.editor.undo();
+    app.sync_view();
+    let before = app.session.editor.document.clone();
+    app.open_style_dialog(ParagraphStyle::Normal, &ctx);
+    app.style_dialog.as_mut().unwrap().definition.next_style = Some(ParagraphStyle::Custom(999));
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    click_region(&ctx, &mut app, "style-dialog-ok");
+    assert!(app.style_dialog.is_some());
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Escape, false)],
+        [1366., 900.],
+        1.,
+    );
+    assert!(app.style_dialog.is_none());
+    assert_eq!(app.session.editor.document, before);
+    assert_eq!(app.session.editor.redo_stack.len(), 1);
+}
+
+#[test]
+fn enter_before_existing_separator_uses_caret_not_ambiguous_diff() {
+    let (ctx, mut app) = setup();
+    app.session
+        .editor
+        .replace(0, 0, "Heading\nBody", "Input")
+        .unwrap();
+    app.session
+        .editor
+        .apply_paragraph_style(0, 0, ParagraphStyle::Heading1)
+        .unwrap();
+    let mut d = *app
+        .session
+        .editor
+        .document
+        .style_catalog
+        .get(ParagraphStyle::Heading1)
+        .unwrap();
+    d.next_style = Some(ParagraphStyle::NoSpacing);
+    app.session
+        .editor
+        .modify_style(ParagraphStyle::Heading1, d)
+        .unwrap();
+    for selection in [(7, 7), (7, 8)] {
+        app.session.editor.selection = selection;
+        app.sync_view();
+        app.focus_document = true;
+        frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+        let before = app.session.editor.document.clone();
+        frame(
+            &ctx,
+            &mut app,
+            vec![key(Key::Enter, false)],
+            [1366., 900.],
+            1.,
+        );
+        assert_eq!(
+            app.session.editor.document.paragraphs[1].paragraph_style,
+            ParagraphStyle::NoSpacing
+        );
+        let after = app.session.editor.document.clone();
+        app.execute(Action::Undo, &ctx);
+        assert_eq!(app.session.editor.document, before);
+        assert_eq!(app.session.editor.selection, selection);
+        app.execute(Action::Redo, &ctx);
+        assert_eq!(app.session.editor.document, after);
+        app.execute(Action::Undo, &ctx);
+    }
+}

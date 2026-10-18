@@ -82,3 +82,29 @@ pub fn group_widths(width: f32) -> [f32; 5] {
 pub fn selected_text(document: &Document, range: (usize, usize)) -> String {
     crate::model::slice(&document.text(), range.0, range.1)
 }
+
+/// Prefer the actual edit selection when equal adjacent characters make a diff ambiguous.
+/// Fall back if navigation/deletion in the same batch changed the affected range.
+pub fn text_change_from_selection(
+    old: &str,
+    new: &str,
+    selection: (usize, usize),
+) -> (usize, usize, String) {
+    let (start, end) = selection;
+    if crate::model::validate_range(old, start, end).is_ok() {
+        let prefix = crate::model::slice(old, 0, start);
+        let suffix = crate::model::slice(old, end, old.chars().count());
+        if new.len() >= prefix.len() + suffix.len()
+            && new.starts_with(&prefix)
+            && new.ends_with(&suffix)
+        {
+            let inserted = &new[prefix.len()..new.len() - suffix.len()];
+            let stop = start + inserted.chars().count();
+            let edges = boundaries(new);
+            if edges.contains(&start) && edges.contains(&stop) {
+                return (start, end, inserted.into());
+            }
+        }
+    }
+    text_change(old, new)
+}

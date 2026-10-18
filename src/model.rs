@@ -170,6 +170,8 @@ impl ParagraphStyle {
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct StyleDefinition {
+    /// None repeats this style; this behavior is not inherited.
+    pub next_style: Option<ParagraphStyle>,
     pub parent: Option<ParagraphStyle>,
     pub character: CharacterFormat,
     pub line_height_percent: Option<u16>,
@@ -336,6 +338,9 @@ impl StyleCatalog {
         candidate.custom.retain(|s| s.id != custom_id);
         for style in candidate.ids() {
             let definition = candidate.get_mut(style).ok_or("Unknown paragraph style.")?;
+            if definition.next_style == Some(id) {
+                definition.next_style = Some(paragraph_replacement);
+            }
             if definition.parent == Some(id) {
                 definition.parent = parent_replacement;
             }
@@ -379,6 +384,12 @@ impl StyleCatalog {
         }
         for id in self.ids() {
             let definition = self.get(id).ok_or("Unknown paragraph style.")?;
+            if definition
+                .next_style
+                .is_some_and(|next| self.get(next).is_none())
+            {
+                return Err("Unknown following paragraph style.".into());
+            }
             if definition
                 .line_height_percent
                 .is_some_and(|v| !(100..=300).contains(&v))

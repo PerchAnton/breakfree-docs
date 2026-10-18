@@ -991,3 +991,33 @@ BREAKFREE_CAPTURE_TO="$PWD/docs/screenshots/rust-delete-style-alpha22-macos-narr
 
 Native Windows 100/125/150%, physical IME/AltGr, screen-reader acceptance and matched
 Word 2024 Windows captures remain unavailable. No similarity percentage is claimed.
+
+## Alpha.23 following paragraph styles
+
+Create/Modify Style adds Following paragraph immediately after Based on. The
+existing 460-DIP content width, 290-DIP selector, 150-DIP popup cap and 14 × 7-DIP
+property-grid gaps are retained. Same style is the explicit default, independent
+of inheritance. All built-in/custom names appear in a bounded menu; long labels
+truncate. The document stays unchanged until OK. Palette, original icons, preview,
+keyboard/modal guards and Home gutters remain unchanged.
+
+Delete Style additionally counts following references and explains their remapping
+to the chosen paragraph replacement. These controls perform real shared commands.
+No new tab or decorative action is introduced. See
+[ADR 0010](adr/0010-following-paragraph-styles.md) for Enter and migration policy.
+
+### Alpha.23 native captures
+
+macOS arm64, English/light, 100% document zoom, backing scale 2; 1366 × 900 and
+640 × 480 DIP. Both inspected: the added row, formatting controls and buttons stay
+inside the modal and viewport. No matched Word/Windows comparison or percentage
+similarity is claimed. Native Windows 100/125/150%, physical IME and accessibility
+remain separate gates. Existing synthetic scale tests include the enlarged dialog.
+
+```sh
+BREAKFREE_CAPTURE_TO="$PWD/docs/screenshots/rust-following-style-alpha23-macos.png" target/release/examples/capture_ui 1366 900 styles-following
+BREAKFREE_CAPTURE_TO="$PWD/docs/screenshots/rust-following-style-alpha23-macos-narrow.png" target/release/examples/capture_ui 640 480 styles-following
+```
+
+![Following paragraph selector](screenshots/rust-following-style-alpha23-macos.png)
+![Following paragraph at minimum width](screenshots/rust-following-style-alpha23-macos-narrow.png)

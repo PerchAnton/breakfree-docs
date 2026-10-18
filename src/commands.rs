@@ -65,6 +65,27 @@ impl Editor {
     }
 
     pub fn replace(&mut self, start: usize, end: usize, text: &str, label: &str) -> Result<()> {
+        self.replace_inner(start, end, text, label, false)
+    }
+
+    /// Insert a paragraph break and apply the source style's explicit successor.
+    pub fn insert_paragraph_break(&mut self, start: usize, end: usize) -> Result<()> {
+        self.replace_inner(start, end, "\n", "Paragraph break", true)
+    }
+
+    /// A widget keyboard batch may contain text and more than one Enter.
+    pub fn replace_keyboard_text(&mut self, start: usize, end: usize, text: &str) -> Result<()> {
+        self.replace_inner(start, end, text, "Paragraph break", true)
+    }
+
+    fn replace_inner(
+        &mut self,
+        start: usize,
+        end: usize,
+        text: &str,
+        label: &str,
+        following: bool,
+    ) -> Result<()> {
         validate_range(&self.document.text(), start, end)?;
         validate_text(text)?;
         let (first, left) = self.document.locate(start)?;
@@ -85,13 +106,22 @@ impl Editor {
             .collect();
         let mut paragraphs = self.document.paragraphs[..first].to_vec();
         let mut offset = 0;
-        for part in joined.split('\n') {
+        let mut paragraph_style = a.paragraph_style;
+        for (index, part) in joined.split('\n').enumerate() {
+            if following && index > 0 {
+                paragraph_style = self
+                    .document
+                    .style_catalog
+                    .get(paragraph_style)
+                    .and_then(|d| d.next_style)
+                    .unwrap_or(paragraph_style);
+            }
             let len = part.chars().count();
             paragraphs.push(Paragraph {
                 text: part.into(),
                 styles: styles[offset..offset + len].to_vec(),
                 alignment: a.alignment,
-                paragraph_style: a.paragraph_style,
+                paragraph_style,
             });
             offset += len + 1;
         }

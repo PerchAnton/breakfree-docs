@@ -181,8 +181,8 @@ it. Mixed properties stay unchanged unless edited. Unimplemented font-family and
 Home Styles applies Normal, No Spacing or Heading 1 to selected paragraphs in one
 undo. Direct formatting and alignment remain unchanged; Clear character formatting
 returns the selected text to its paragraph style. No Spacing changes real spacing.
-Older files retain their explicit formatting until cleared. New paragraphs inherit
-the current style, including headings. Compact layouts offer all styles through
+Older files retain their explicit formatting until cleared. New paragraphs repeat
+the current style unless a following style is explicitly selected. Compact layouts offer all styles through
 More styles or More. [Inheritance rules](docs/adr/0006-built-in-paragraph-styles.md).
 
 Modify an existing definition through Home → More styles → Modify style, or
@@ -212,12 +212,16 @@ Delete commits once; one Undo restores the definition and all references.
 Cancel/Escape changes nothing; built-ins cannot be deleted and cycles are rejected.
 Use the style's context menu to delete an unused definition without applying it.
 KeyTips H → L → D or narrow H → E → D opens the selected style's draft.
-Character styles and following-style rules remain planned.
+Following paragraph in Create/Modify Style selects Same style or a built-in/custom
+style. Enter applies it to the new right paragraph in one Undo/Redo; paste does not.
+This choice is independent of the parent. Deletion remaps following references to
+the paragraph replacement. [Following-style rules](docs/adr/0010-following-paragraph-styles.md).
+Character styles remain planned.
 [Style rules](docs/adr/0008-custom-named-styles.md) · [Deletion rules](docs/adr/0009-delete-custom-styles.md).
 
-This build reads native content v1/v2/v3/v4/v5 and **saves v5**. Opening an older file
-does not change it; an explicit save converts it to v5. Earlier builds cannot
-open new v5 saves. Use Save As to keep an older copy. See [format details](docs/NATIVE_FORMAT.md).
+This build reads native content v1/v2/v3/v4/v5/v6 and **saves v6**. Opening an older file
+does not change it; an explicit save converts it to v6. Earlier builds cannot
+open new v6 saves. Use Save As to keep an older copy. See [format details](docs/NATIVE_FORMAT.md).
 File provides New/Open/Save/Save As, unsaved Save/Discard/Cancel and view settings;
 Print is disabled. Navigation and the formatting pane operate on real model ranges.
 The white canvas is continuous; pagination, page numbers and print layout are absent.

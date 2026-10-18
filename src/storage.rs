@@ -1,4 +1,4 @@
-//! Strict .bfdoc v1–v5 reading, v5 writing and checked temporary-file replacement.
+//! Strict .bfdoc v1–v6 reading, v6 writing and checked temporary-file replacement.
 use crate::{Result, model::*};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -8,7 +8,7 @@ use std::{
 };
 
 pub const FORMAT_ID: &str = "breakfree.docs.native";
-pub const CONTENT_VERSION: u32 = 5;
+pub const CONTENT_VERSION: u32 = 6;
 pub const MAX_FILE_BYTES: usize = 16 * 1024 * 1024;
 
 #[derive(Serialize, Deserialize)]
@@ -79,13 +79,13 @@ struct NativeV4 {
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct CatalogV4 {
-    normal: StyleDefinition,
-    no_spacing: StyleDefinition,
-    heading1: StyleDefinition,
+    normal: LegacyDefinition,
+    no_spacing: LegacyDefinition,
+    heading1: LegacyDefinition,
 }
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct NativeV5 {
+struct NativeV6 {
     format: String,
     content_version: u32,
     style_catalog: StyleCatalog,
@@ -103,6 +103,50 @@ struct ParagraphV3 {
 struct RunV3 {
     text: String,
     direct: CharacterFormat,
+}
+
+// Frozen v4/v5 definitions reject v6 fields instead of silently accepting them.
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct LegacyDefinition {
+    parent: Option<ParagraphStyle>,
+    character: CharacterFormat,
+    line_height_percent: Option<u16>,
+    space_after_half_points: Option<u16>,
+}
+impl From<LegacyDefinition> for StyleDefinition {
+    fn from(d: LegacyDefinition) -> Self {
+        Self {
+            next_style: None,
+            parent: d.parent,
+            character: d.character,
+            line_height_percent: d.line_height_percent,
+            space_after_half_points: d.space_after_half_points,
+        }
+    }
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct LegacyCustom {
+    id: u32,
+    name: String,
+    definition: LegacyDefinition,
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CatalogV5 {
+    normal: LegacyDefinition,
+    no_spacing: LegacyDefinition,
+    heading1: LegacyDefinition,
+    custom: Vec<LegacyCustom>,
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NativeV5 {
+    format: String,
+    content_version: u32,
+    style_catalog: CatalogV5,
+    paragraphs: Vec<ParagraphV3>,
 }
 
 pub fn encode(document: &Document) -> Result<Vec<u8>> {
@@ -129,7 +173,7 @@ pub fn encode(document: &Document) -> Result<Vec<u8>> {
             }
         })
         .collect();
-    let mut bytes = serde_json::to_vec_pretty(&NativeV5 {
+    let mut bytes = serde_json::to_vec_pretty(&NativeV6 {
         format: FORMAT_ID.into(),
         content_version: CONTENT_VERSION,
         style_catalog: document.style_catalog.clone(),
@@ -208,16 +252,39 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
             return decode_styled(
                 file.paragraphs,
                 StyleCatalog {
-                    normal: file.style_catalog.normal,
-                    no_spacing: file.style_catalog.no_spacing,
-                    heading1: file.style_catalog.heading1,
+                    normal: file.style_catalog.normal.into(),
+                    no_spacing: file.style_catalog.no_spacing.into(),
+                    heading1: file.style_catalog.heading1.into(),
                     custom: Vec::new(),
                 },
             );
         }
-        CONTENT_VERSION => {
+        5 => {
             let file: NativeV5 = serde_json::from_slice(bytes)
                 .map_err(|e| format!("Invalid native v5 document: {e}"))?;
+            let _ = (&file.format, file.content_version);
+            let c = file.style_catalog;
+            return decode_styled(
+                file.paragraphs,
+                StyleCatalog {
+                    normal: c.normal.into(),
+                    no_spacing: c.no_spacing.into(),
+                    heading1: c.heading1.into(),
+                    custom: c
+                        .custom
+                        .into_iter()
+                        .map(|s| CustomStyle {
+                            id: s.id,
+                            name: s.name,
+                            definition: s.definition.into(),
+                        })
+                        .collect(),
+                },
+            );
+        }
+        CONTENT_VERSION => {
+            let file: NativeV6 = serde_json::from_slice(bytes)
+                .map_err(|e| format!("Invalid native v6 document: {e}"))?;
             return decode_styled(file.paragraphs, file.style_catalog);
         }
         2 => {

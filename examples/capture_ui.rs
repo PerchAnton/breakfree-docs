@@ -221,6 +221,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "styles",
             "styles-menu",
             "styles-modify",
+            "styles-following",
             "styles-create",
             "styles-rename",
             "styles-delete",
@@ -251,7 +252,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ]
         .contains(&args[2].as_str())
     {
-        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|styles-modify|styles-create|styles-rename|styles-delete|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
+        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|styles-modify|styles-following|styles-create|styles-rename|styles-delete|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
     }
     let path = std::env::var("BREAKFREE_CAPTURE_TO")
         .map_err(|_| "Set BREAKFREE_CAPTURE_TO to an output PNG path")?;
@@ -264,7 +265,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Err("Capture dimensions outside 640–1920 × 480–1080 DIP".into());
     }
     let fixture =
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(if args[2] == "styles-delete" {
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(if args[2] == "styles-following" {
+            "examples/FollowingStyles.bfdoc"
+        } else if args[2] == "styles-delete" {
             "examples/StyleDeletion.bfdoc"
         } else if ["styles-create", "styles-rename"].contains(&args[2].as_str()) {
             "examples/CustomStyles.bfdoc"
@@ -356,7 +359,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     app.ribbon_collapsed = true;
                     app.ribbon_temporary = true;
                 }
-                "styles-modify" | "styles-rename" => app.execute(Action::ModifyStyle, &cc.egui_ctx),
+                "styles-modify" | "styles-rename" | "styles-following" => {
+                    app.execute(Action::ModifyStyle, &cc.egui_ctx)
+                }
                 "styles-create" => app.execute(Action::CreateStyle, &cc.egui_ctx),
                 "styles-delete" => app.execute(Action::DeleteStyle, &cc.egui_ctx),
                 "font" => {

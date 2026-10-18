@@ -1,12 +1,12 @@
 # Native BreakFree Docs document format
 
-Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v5.
+Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v6.
 This is not a DOCX container. Process protocol and file-content versions are independent.
 
 ```json
 {
   "format": "breakfree.docs.native",
-  "content_version": 5,
+  "content_version": 6,
   "style_catalog": {
     "custom": [],
     "normal": {"parent": null, "character": {}, "line_height_percent": null, "space_after_half_points": null},
@@ -70,9 +70,10 @@ these values; Clear character formatting makes the text inherit its paragraph.
 Opening performs only in-memory conversion and does not dirty/write the file.
 V3 uses its frozen built-in catalog from [ADR 0006](adr/0006-built-in-paragraph-styles.md);
 it rejects embedded definitions. V4 reads its original three-definition catalog
-with no custom array and preserves its graph. Every explicit save writes v5, even
+with no custom array and preserves its graph. V5 retains its custom catalog. Legacy definitions receive Same style in memory.
+Every explicit save writes v6, even
 for an unchanged older document. Use Save As
-to retain the original. **Alpha.19 and earlier cannot open v5 saves.** No downgrade or
+to retain the original. **Alpha.22 and earlier cannot open v6 saves.** No downgrade or
 lossy export is provided. Header/full-schema parsing preserves duplicate rejection.
 
 Empty paragraphs retain their named style. Pending direct formatting at a caret
@@ -106,3 +107,10 @@ Layout note: alpha.18 also fixes a previously ignored paragraph gap. Legacy
 character values and alignment are preserved; corrected spacing can change the
 vertical positions compared with an earlier renderer. This is a layout bug fix,
 not a stored-text conversion.
+
+## Following paragraph styles (v6)
+
+Each definition accepts `next_style`: null/absent means Same style, otherwise an
+existing style ID. This is not inherited. Self and reciprocal following links are
+valid; missing IDs are rejected. The writer emits this field, while frozen v4/v5
+readers reject it. See [ADR 0010](adr/0010-following-paragraph-styles.md).

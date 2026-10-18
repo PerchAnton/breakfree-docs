@@ -54,7 +54,8 @@ impl DeleteStyleDialog {
                 ui.separator();
                 let paragraphs = document.paragraphs.iter().filter(|p| p.paragraph_style == self.id).count();
                 let children = catalog.ids().into_iter().filter(|id| catalog.get(*id).is_some_and(|d| d.parent == Some(self.id))).count();
-                let counts = ui.label(format!("Paragraphs: {paragraphs} · Direct child styles: {children}"));
+                let following = catalog.ids().into_iter().filter(|id| catalog.get(*id).is_some_and(|d| d.next_style == Some(self.id))).count();
+                let counts = ui.label(format!("Paragraphs: {paragraphs} · Direct child styles: {children} · Following: {following}"));
                 record(regions, "delete-style-counts", counts.rect);
                 ui.add_space(6.);
                 egui::Grid::new("delete-style-replacements").num_columns(2).spacing([14., 10.]).show(ui, |ui| {
@@ -90,7 +91,7 @@ impl DeleteStyleDialog {
                     }
                 });
                 ui.add_space(10.);
-                ui.label("Inherited appearance may change. Text, alignment and direct formatting stay. Indirect descendants keep their parent links.");
+                ui.label("Inherited appearance may change. Text, alignment and direct formatting stay. Following-style references use the paragraph replacement.");
                 ui.small("This document only. One Undo restores the style and all references.");
                 let validation = catalog.without_custom_style(self.id, self.paragraph_replacement, self.parent_replacement);
                 if let Err(error) = &validation { ui.colored_label(Color32::from_rgb(165, 30, 30), error); }

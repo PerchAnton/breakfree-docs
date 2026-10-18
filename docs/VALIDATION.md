@@ -8,20 +8,20 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.22**. Earlier capture/CI evidence retains its
+Current local checkpoint: **0.1.0-alpha.23**. Earlier capture/CI evidence retains its
 original scope; this iteration does not establish native Windows behavior.
 
 | Local check | Observed result |
 | :--- | :--- |
-| `cargo test --locked` | 172 passed: 26 engine/storage/presentation, 27 styles/inheritance, 8 search, 7 batch replacement, 9 preferences, 4 CLI subprocess and 91 actual egui widget event tests; no skipped tests |
-| `cargo test --locked --no-default-features` | 81 passed; preferences, core/styles/search/batch replacement and CLI build without GUI dependencies |
+| `cargo test --locked` | 180 passed: 26 engine/storage/presentation, 32 styles/inheritance, 8 search, 7 batch replacement, 9 preferences, 4 CLI subprocess and 94 actual egui widget event tests; no skipped tests |
+| `cargo test --locked --no-default-features` | 86 passed; preferences, core/styles/search/batch replacement and CLI build without GUI dependencies |
 | `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
 | `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
-| Copied executable outside checkout | Alpha.22 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that identical copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
+| Copied executable outside checkout | Alpha.23 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that identical copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
 | Repository references, contract and artwork | `python3 tools/check_repository.py` passed; approved logo embedded directly and archive copy byte-identical |
 | Workflow YAML / whitespace | Ruby YAML parse and `git diff --check` passed |
-| Native rendering | Alpha.22 Delete Style at 1366 × 900 / 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha22-native-captures). Earlier evidence retains its version context |
-| Native macOS interaction | Alpha.22 F10/H/L/D, initial Cancel/Enter, context target, indirect-cycle rejection, separate replacements, Delete/Save/one Undo/Redo, exact v5 readback and fresh-process `--open` passed (details below) |
+| Native rendering | Alpha.23 Following paragraph at 1366 × 900 / 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha23-native-captures). Earlier evidence retains its version context |
+| Native macOS interaction | Alpha.23 F10/H/L/M, Following paragraph selector, Enter before an existing separator, one Undo/Redo, Save, exact v6 readback and fresh-process `--open` passed (details below) |
 | Synthetic DPI | Actual widgets at 1/1.25/1.5 scale and 960/1366/1920 physical widths; ribbon/group/workspace/status bounds and collapse assertions passed; 27 additional width/scale combinations check individual Home control containment/nonoverlap and title/search/window bounds |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
@@ -778,3 +778,48 @@ stderr for isolated `--version`/`--capabilities`. Native Save As and new text in
 were not repeated; earlier evidence retains its scope. Two final native captures
 were inspected separately; native Windows DPI, physical IME/AltGr, full assistive
 technology and controlled Word 2024 Windows comparison remain unverified.
+
+## Alpha.23 following-style validation
+
+All 180 full tests and 86 without GUI pass. Five new core cases cover start/middle/
+end/selected/empty/cross-paragraph Enter, reciprocal successors without inheritance,
+missing references preserving redo, combining-boundary rejection, paste isolation,
+deletion remapping, strict v5-to-v6 migration, dirty checkpoints and injected
+write/sync/replace failures. Three actual-widget cases cover the selector,
+combined typing/Enter, cancel/invalid drafts and Enter next to an existing separator.
+The last regression also replaces a selected separator without changing plain
+text: the semantic style still changes and one Undo restores exact selection.
+
+A native check exposed an ambiguous text diff around equal adjacent newlines.
+`text_change_from_selection` now uses the actual original edit range when the
+unchanged prefix/suffix match, rather than moving an Enter to a neighboring
+paragraph. The final native run and widget regression verify this correction.
+
+fmt, normal/capture Clippy with warnings denied, locked full/core tests, normal/
+capture release builds, repository/artwork checks, YAML parsing and whitespace
+checks passed. Two final captures at 1366 × 900 and 640 × 480 DIP were inspected;
+existing synthetic 1/1.25/1.5 dialog/ribbon regressions also pass.
+
+### Native macOS final-binary check
+
+Copied ordinary release SHA-256:
+`d187198af52cfbb43b060d7b60c399a247b7daa892bc8187a4996a138e5487ab`.
+The app-bundle executable matched the release bytes. From a temporary working
+directory it reported alpha.23 and clean protocol-v1 capabilities without Office.
+
+On a temporary copy of FollowingStyles.bfdoc, moved to Heading 1 and opened Modify
+Style via F10/H/L/M. Changed Following paragraph from Normal to No Spacing through
+the actual selector, accepted and saved. Enter at the heading end before an
+existing paragraph separator created an empty No Spacing paragraph. Saved, then
+performed one Undo/Save and one Redo/Save. Independent complete JSON comparison
+confirmed exactly the configured successor and expected inserted paragraph, with
+all other catalog/paragraph/text/Unicode/direct-format data unchanged. Comparison
+normalizes absent versus null optional properties, not document semantics.
+
+Fresh-process --open restored six paragraphs with clean history; reopening Modify
+Style showed No Spacing as the saved successor. Escape left the file clean. No
+physical IME/AltGr or new Unicode typing certification follows from fixture
+preservation. Native Windows 100/125/150%, matched Word build, full accessibility,
+soft line breaks and unusual mixed paste/IME/keyboard batches remain unverified.
+Content v6 changes compatibility: alpha.22 and earlier reject new saves; use Save
+As to retain older documents. No new save atomicity/recovery claim is made.
