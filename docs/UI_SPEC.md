@@ -789,7 +789,7 @@ BREAKFREE_CAPTURE_TO="$PWD/docs/screenshots/rust-styles-alpha18-macos-narrow.png
 
 ## Remaining differences and reproducible comparison gate
 
-Current gaps include print pagination and page rulers, vertical ruler, font-family/color controls, lists/custom styles, contextual object tabs, KeyTips for future commands,
+Current gaps include print pagination and page rulers, vertical ruler, font-family/color controls, lists/character styles, contextual object tabs, KeyTips for future commands,
 view-mode buttons, additional File operations and complete native window/accessibility
 behavior. Metrics are provisional until measured against the named reference.
 
@@ -864,3 +864,48 @@ Native macOS interaction and synthetic 1/1.25/1.5 geometry are documented in
 matched reference captures, native Windows DPI and physical IME were unavailable;
 no visual equivalence percentage is inferred. Brand differences remain the Docs
 logo/title, violet selection accents and restrained original multicolor icons.
+
+## Alpha.20 Create Style
+
+Home Styles/More → Create style and command search now open a local Create Style
+draft. Provisional KeyTips are H → L → C at wide/compact widths or H → E → C at
+minimum width. Name receives initial focus and retains focus after invalid Enter.
+Choose a built-in/custom parent or No style, supported properties and whether to
+apply to the selected paragraphs (initially checked). Creation/application share
+one undo; Cancel/Escape leaves the model intact. Names and parent graphs validate
+before OK is enabled. Custom definitions also use Modify Style.
+
+| Component | Implemented bounds/behavior |
+| :--- | :--- |
+| Draft | 460-DIP content width, two-column grid, 14 × 7-DIP gaps, 290-DIP name/numeric fields and parent selector; stays inside 640 × 480 at synthetic 1/1.25/1.5 scales |
+| Parent choices | Scrollable, 150-DIP maximum list height; target excluded during Modify; names truncate without expanding the window |
+| Preview/actions | Existing 448 × 48-DIP character preview, 82 × 27-DIP OK/Cancel; spacing remains a property, not a simulated paragraph preview |
+| Styles menu | 220-DIP content width; 210 × 27-DIP rows inside a 150-DIP maximum scroll area; directional navigation scrolls the focused entry into view |
+| Gallery | Selected custom style replaces the third wide card or the sole compact card; bounded 12–20-DIP preview, end ellipsis for long names, full-name tooltip/AX label |
+| Limits | Up to 64 custom styles; creation disables at the limit with a visible explanation. Duplicate names use Unicode lowercasing, not canonical normalization |
+
+The [official styles guide](https://support.microsoft.com/en-us/word/customize-or-create-new-styles)
+was checked on 2026-10-18. It supports the named gallery workflow, but does not
+establish matched measurements. This draft starts from an explicit parent instead
+of copying direct formatting from selected text; mini-toolbar, templates, character
+styles, rename/delete and following-style transitions are deferred. Existing light
+palette, violet accents, original colored icons, logo and 8-DIP Home gutters stay.
+There is no claim of exact Windows keyboard or visual parity.
+
+### Alpha.20 native captures
+
+Final alpha.20 capture binary, macOS arm64, light theme, English UI, 100% document
+zoom; backing scale 2. Captures use the synthetic [v5 example](../examples/CustomStyles.bfdoc).
+Inspected both: no unintended dialog/control overlap; long gallery names end with
+an ellipsis; the narrow dialog's buttons remain inside the window. Native Word 2024
+Windows is unavailable here, so matched reference captures and Windows 100/125/150%
+verification remain unperformed. Historical captures retain their versions.
+
+```sh
+cargo build --locked --release --features capture --example capture_ui
+BREAKFREE_CAPTURE_TO="$PWD/docs/screenshots/rust-create-style-alpha20-macos.png" target/release/examples/capture_ui 1366 900 styles-create
+BREAKFREE_CAPTURE_TO="$PWD/docs/screenshots/rust-create-style-alpha20-macos-narrow.png" target/release/examples/capture_ui 640 480 styles-create
+```
+
+![Create Style at full width](screenshots/rust-create-style-alpha20-macos.png)
+![Create Style at minimum width](screenshots/rust-create-style-alpha20-macos-narrow.png)

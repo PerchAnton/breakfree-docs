@@ -9,6 +9,9 @@ pub(super) enum StyleOutcome {
 }
 pub(super) struct StyleDialog {
     pub id: ParagraphStyle,
+    pub creating: bool,
+    pub name: String,
+    pub apply: bool,
     catalog: StyleCatalog,
     pub definition: StyleDefinition,
     pub size: String,
@@ -18,9 +21,12 @@ pub(super) struct StyleDialog {
 }
 impl StyleDialog {
     pub fn new(id: ParagraphStyle, catalog: &StyleCatalog) -> Self {
-        let definition = *catalog.get(id);
+        let definition = catalog.get(id).copied().unwrap_or_default();
         Self {
             id,
+            creating: false,
+            name: catalog.name(id).into(),
+            apply: true,
             catalog: catalog.clone(),
             definition,
             size: definition
@@ -38,6 +44,13 @@ impl StyleDialog {
                 .unwrap_or_default(),
             focus: true,
         }
+    }
+    pub fn create(parent: ParagraphStyle, catalog: &StyleCatalog) -> Self {
+        let mut dialog = Self::new(ParagraphStyle::Custom(catalog.next_custom_id()), catalog);
+        dialog.creating = true;
+        dialog.name.clear();
+        dialog.definition.parent = Some(parent);
+        dialog
     }
     fn draft(&self) -> Result<(StyleDefinition, StyleCatalog)> {
         let mut definition = self.definition;
@@ -66,7 +79,11 @@ impl StyleDialog {
             Some(u16::from(self.after.parse::<FontSize>()?))
         };
         let mut catalog = self.catalog.clone();
-        *catalog.get_mut(self.id) = definition;
+        if self.creating {
+            catalog.add(&self.name, definition)?;
+        } else {
+            *catalog.get_mut(self.id).ok_or("Unknown paragraph style.")? = definition;
+        }
         catalog.validate()?;
         Ok((definition, catalog))
     }
@@ -86,7 +103,11 @@ impl StyleDialog {
             .show(ctx, |ui| {
                 ui.set_width(460.);
                 ui.horizontal(|ui| {
-                    ui.heading("Modify Style");
+                    ui.heading(if self.creating {
+                        "Create Style"
+                    } else {
+                        "Modify Style"
+                    });
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                         if ui
                             .button("×")
@@ -103,15 +124,45 @@ impl StyleDialog {
                     .spacing([14., 7.])
                     .show(ui, |ui| {
                         ui.label("Name:");
-                        ui.strong(self.id.name());
+                        if self.creating {
+                            let response = ui.add(
+                                egui::TextEdit::singleline(&mut self.name)
+                                    .id_salt("style-name")
+                                    .desired_width(290.)
+                                    .hint_text("Style name"),
+                            );
+                            response.widget_info(|| {
+                                egui::WidgetInfo::labeled(
+                                    egui::WidgetType::TextEdit,
+                                    true,
+                                    "Style name",
+                                )
+                            });
+                            record(regions, "style-dialog-name", response.rect);
+                            if self.focus
+                                || (response.lost_focus()
+                                    && ctx.input(|i| i.key_pressed(Key::Enter)))
+                            {
+                                response.request_focus();
+                                self.focus = false;
+                            }
+                        } else {
+                            ui.add_sized(
+                                [290., 20.],
+                                egui::Label::new(RichText::new(&self.name).strong()).truncate(),
+                            )
+                            .on_hover_text(&self.name);
+                        }
                         ui.end_row();
                         ui.label("Style based on:");
                         let parent = egui::ComboBox::from_id_salt("style-parent")
                             .width(290.)
+                            .height(150.)
+                            .truncate()
                             .selected_text(
                                 self.definition
                                     .parent
-                                    .map(ParagraphStyle::name)
+                                    .map(|id| self.catalog.name(id))
                                     .unwrap_or("(No style)"),
                             )
                             .show_ui(ui, |ui| {
@@ -124,12 +175,14 @@ impl StyleDialog {
                                 if root.clicked() {
                                     ui.close();
                                 }
-                                for parent in ParagraphStyle::ALL {
+                                ui.set_max_width(290.);
+                                ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Truncate);
+                                for parent in self.catalog.ids() {
                                     if parent != self.id {
                                         let response = ui.selectable_value(
                                             &mut self.definition.parent,
                                             Some(parent),
-                                            parent.name(),
+                                            self.catalog.name(parent),
                                         );
                                         record(
                                             regions,
@@ -250,7 +303,13 @@ impl StyleDialog {
                         }
                         record(regions, "style-dialog-preview", rect);
                     });
-                ui.small("This document only. Updates descendants; direct formatting stays.");
+                if self.creating {
+                    let apply = ui.checkbox(&mut self.apply, "Apply to selected paragraphs");
+                    record(regions, "style-dialog-apply", apply.rect);
+                    ui.small("This document only. Creation and application use one undo step.");
+                } else {
+                    ui.small("This document only. Updates descendants; direct formatting stays.");
+                }
                 if let Err(error) = &draft {
                     ui.colored_label(Color32::from_rgb(165, 30, 30), error);
                 }

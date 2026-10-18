@@ -1,13 +1,14 @@
 # Native BreakFree Docs document format
 
-Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v4.
+Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v5.
 This is not a DOCX container. Process protocol and file-content versions are independent.
 
 ```json
 {
   "format": "breakfree.docs.native",
-  "content_version": 4,
+  "content_version": 5,
   "style_catalog": {
+    "custom": [],
     "normal": {"parent": null, "character": {}, "line_height_percent": null, "space_after_half_points": null},
     "no_spacing": {"parent": "normal", "character": {}, "line_height_percent": 100, "space_after_half_points": 0},
     "heading1": {"parent": "normal", "character": {"bold": true, "font_size": 36}, "line_height_percent": null, "space_after_half_points": null}
@@ -24,12 +25,22 @@ This is not a DOCX container. Process protocol and file-content versions are ind
 ```
 
 A document has at least one paragraph; an empty paragraph has `runs: []`.
-`paragraph_style` is required: `normal`, `no_spacing` or `heading1`. The required
-`style_catalog` holds exactly those three definitions. Each requires a `character`
+`paragraph_style` is required: `normal`, `no_spacing`, `heading1` or `{ "custom": 1 }`.
+The required `style_catalog` holds the three built-in definitions and a required
+`custom` array (empty when unused). Each built-in definition requires a `character`
 object; optional/null parent, character properties and spacing inherit. Validate
 all parents/cycles before accepting the file. Line height is 100–300 percent;
 space after is 0–400 half points. Root fallback is regular 11 pt, 125%, 5.5 pt after.
 See [ADR 0007](adr/0007-editable-style-definitions.md).
+
+Each custom entry is `{ "id": 1, "name": "Report", "definition": { "parent":
+"normal", "character": {} } }`, using the same optional properties and limits.
+IDs are positive unique u32 values, names 1–64 Unicode scalars with no outer
+whitespace, controls or U+2028/U+2029. Names are unique after Unicode lowercasing
+against all custom and built-in display names; no normalization/full case folding.
+Up to 64 custom entries are permitted, including unused definitions. Validate all
+references and cycles, including built-in/custom parent chains. See
+[ADR 0008](adr/0008-custom-named-styles.md).
 Each nonempty run requires text and a `direct` object. Its four properties are
 optional or null for inheritance; explicit booleans override bold/italic/underline.
 `font_size`, when present and non-null, is an integer from 2 through 800 half points
@@ -58,8 +69,10 @@ appearance without guessing authored inheritance. Applying a named style retains
 these values; Clear character formatting makes the text inherit its paragraph.
 Opening performs only in-memory conversion and does not dirty/write the file.
 V3 uses its frozen built-in catalog from [ADR 0006](adr/0006-built-in-paragraph-styles.md);
-it rejects embedded definitions. Every explicit save writes v4, even for an unchanged older document. Use Save As
-to retain the original. **Earlier builds cannot open v4 saves.** No downgrade or
+it rejects embedded definitions. V4 reads its original three-definition catalog
+with no custom array and preserves its graph. Every explicit save writes v5, even
+for an unchanged older document. Use Save As
+to retain the original. **Alpha.19 and earlier cannot open v5 saves.** No downgrade or
 lossy export is provided. Header/full-schema parsing preserves duplicate rejection.
 
 Empty paragraphs retain their named style. Pending direct formatting at a caret

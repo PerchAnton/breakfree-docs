@@ -55,6 +55,9 @@ impl eframe::App for Capture {
                 }
             }
         }
+        if self.frames == 2 && self.mode == "styles-create" {
+            input.events.push(egui::Event::Text("Report Note".into()));
+        }
         if self.frames == 2 && self.mode == "styles-menu" {
             for key in [egui::Key::F10, egui::Key::H, egui::Key::E] {
                 for pressed in [true, false] {
@@ -218,6 +221,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "styles",
             "styles-menu",
             "styles-modify",
+            "styles-create",
             "file",
             "navigation",
             "navigation-options",
@@ -245,7 +249,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ]
         .contains(&args[2].as_str())
     {
-        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|styles-modify|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
+        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|styles-modify|styles-create|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
     }
     let path = std::env::var("BREAKFREE_CAPTURE_TO")
         .map_err(|_| "Set BREAKFREE_CAPTURE_TO to an output PNG path")?;
@@ -258,7 +262,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Err("Capture dimensions outside 640–1920 × 480–1080 DIP".into());
     }
     let fixture =
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(if args[2].starts_with("styles") {
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(if args[2] == "styles-create" {
+            "examples/CustomStyles.bfdoc"
+        } else if args[2].starts_with("styles") {
             "examples/Styles.bfdoc"
         } else if ["formatting", "font"].contains(&args[2].as_str()) {
             "examples/Formatting.bfdoc"
@@ -347,6 +353,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     app.ribbon_temporary = true;
                 }
                 "styles-modify" => app.execute(Action::ModifyStyle, &cc.egui_ctx),
+                "styles-create" => app.execute(Action::CreateStyle, &cc.egui_ctx),
                 "font" => {
                     app.execute(Action::SelectAll, &cc.egui_ctx);
                     app.execute(Action::FontDialog, &cc.egui_ctx);

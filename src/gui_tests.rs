@@ -1653,7 +1653,7 @@ fn ribbon_menus_escape_overflow_and_keyboard_resize_retain_focus() {
         [640., 480.],
     );
     assert!(egui::Popup::is_any_open(&ctx));
-    for _ in 0..4 {
+    for _ in 0..5 {
         ribbon_key(
             &ctx,
             &mut app,
@@ -4174,4 +4174,214 @@ fn style_parent_combo_closes_after_selection_and_escape_only_closes_open_combo()
     assert_eq!(app.session.editor.undo_stack.len(), 1);
     app.execute(Action::Undo, &ctx);
     assert!(!app.session.dirty());
+}
+
+#[test]
+fn create_style_keytips_name_input_parent_choice_cancel_and_one_undo_at_three_scales() {
+    for dpi in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        let screen = [640. * dpi, 480. * dpi];
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![], screen, dpi);
+        }
+        app.composing = true;
+        app.execute(Action::CreateStyle, &ctx);
+        assert!(app.style_dialog.is_none());
+        app.composing = false;
+        for k in [Key::F10, Key::H, Key::E, Key::C] {
+            frame(&ctx, &mut app, vec![key(k, false)], screen, dpi);
+        }
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![], screen, dpi);
+        }
+        assert!(app.style_dialog.as_ref().unwrap().creating);
+        let bounds = app
+            .regions
+            .iter()
+            .find(|r| r.name == "style-dialog")
+            .unwrap()
+            .rect;
+        assert!(
+            Rect::from_min_size(Pos2::ZERO, vec2(640., 480.)).contains_rect(bounds),
+            "{bounds:?}"
+        );
+        for region in app
+            .regions
+            .iter()
+            .filter(|r| r.name.starts_with("style-dialog-"))
+        {
+            assert!(
+                bounds.contains_rect(region.rect),
+                "{} {:?}",
+                region.name,
+                region.rect
+            );
+        }
+        frame(&ctx, &mut app, vec![key(Key::Enter, false)], screen, dpi);
+        assert!(app.style_dialog.is_some()); // empty name cannot accept
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::Text("Україна café".into())],
+            screen,
+            dpi,
+        );
+        assert_eq!(app.style_dialog.as_ref().unwrap().name, "Україна café");
+        assert!(!app.enabled(Action::Undo));
+        frame(&ctx, &mut app, vec![key(Key::Enter, false)], screen, dpi);
+        assert!(app.style_dialog.is_none());
+        assert_eq!(app.session.editor.undo_stack.len(), 1);
+        assert_eq!(
+            app.session.editor.selected_paragraph_style(),
+            Some(ParagraphStyle::Custom(1))
+        );
+        let saved = app.session.editor.document.clone();
+        app.execute(Action::Undo, &ctx);
+        assert!(!app.session.dirty());
+        app.execute(Action::CreateStyle, &ctx);
+        frame(&ctx, &mut app, vec![], screen, dpi);
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::Text("Cancelled".into())],
+            screen,
+            dpi,
+        );
+        frame(&ctx, &mut app, vec![key(Key::Escape, false)], screen, dpi);
+        assert!(!app.session.dirty());
+        assert_eq!(app.session.editor.redo_stack.len(), 1);
+        app.execute(Action::Redo, &ctx);
+        assert_eq!(app.session.editor.document, saved);
+    }
+}
+
+#[test]
+fn create_style_custom_parent_duplicate_name_preview_and_search_are_real() {
+    let (ctx, mut app) = setup();
+    let parent = app
+        .session
+        .editor
+        .create_style(
+            "Parent",
+            crate::model::StyleDefinition {
+                parent: Some(ParagraphStyle::Heading1),
+                ..Default::default()
+            },
+            false,
+        )
+        .unwrap();
+    app.sync_view();
+    app.execute(Action::CreateStyle, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    app.style_dialog.as_mut().unwrap().name = "parent".into();
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Enter, false)],
+        [1366., 900.],
+        1.,
+    );
+    assert!(app.style_dialog.is_some());
+    app.style_dialog.as_mut().unwrap().name = "Child".into();
+    click_region(&ctx, &mut app, "style-dialog-parent");
+    click_region(&ctx, &mut app, "style-parent-Custom(1)");
+    assert_eq!(
+        app.style_dialog.as_ref().unwrap().definition.parent,
+        Some(parent)
+    );
+    assert!(!egui::Popup::is_any_open(&ctx));
+    click_region(&ctx, &mut app, "style-dialog-apply");
+    click_region(&ctx, &mut app, "style-dialog-ok");
+    assert!(app.style_dialog.is_none());
+    assert_eq!(
+        app.session.editor.selected_paragraph_style(),
+        Some(ParagraphStyle::Normal)
+    );
+    assert_eq!(app.session.editor.undo_stack.len(), 2);
+    app.palette = true;
+    app.command_search = "Child".into();
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Enter, false)],
+        [1366., 900.],
+        1.,
+    );
+    assert_eq!(
+        app.session.editor.selected_paragraph_style(),
+        Some(ParagraphStyle::Custom(2))
+    );
+    assert!(app.session.editor.emphasis_selected(true));
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    assert!(
+        app.regions
+            .iter()
+            .any(|r| r.name == "command-Style(Custom(2))")
+    );
+    app.execute(Action::ModifyStyle, &ctx);
+    assert_eq!(app.style_dialog.as_ref().unwrap().name, "Child");
+}
+
+#[test]
+fn custom_style_long_names_and_scrollable_menu_stay_bounded_and_keyboard_reachable() {
+    let (ctx, mut app) = setup();
+    for i in 1..=crate::model::MAX_CUSTOM_STYLES {
+        app.session
+            .editor
+            .create_style(
+                &format!("{i:02} {}", "W".repeat(61)),
+                crate::model::StyleDefinition::default(),
+                true,
+            )
+            .unwrap();
+    }
+    assert!(!app.enabled(Action::CreateStyle));
+    app.sync_view();
+    let size = [640., 480.];
+    for _ in 0..3 {
+        frame(&ctx, &mut app, vec![], size, 1.);
+    }
+    for k in [Key::F10, Key::H, Key::E] {
+        frame(&ctx, &mut app, vec![key(k, false)], size, 1.);
+    }
+    assert!(egui::Popup::is_any_open(&ctx));
+    // The first Down enters Normal; walk through all built-ins and custom entries.
+    for _ in 0..67 {
+        ribbon_key(&ctx, &mut app, Key::ArrowDown, Modifiers::NONE, size);
+    }
+    for _ in 0..3 {
+        frame(&ctx, &mut app, vec![], size, 1.);
+    }
+    let last = app
+        .regions
+        .iter()
+        .find(|r| r.name == "command-Style(Custom(64))")
+        .unwrap()
+        .rect;
+    assert!(
+        Rect::from_min_size(Pos2::ZERO, vec2(640., 480.)).contains_rect(last),
+        "{last:?}"
+    );
+    ribbon_key(&ctx, &mut app, Key::Enter, Modifiers::NONE, size);
+    assert_eq!(
+        app.session.editor.selected_paragraph_style(),
+        Some(ParagraphStyle::Custom(64))
+    );
+    assert!(!egui::Popup::is_any_open(&ctx));
+    app.open_style_dialog(ParagraphStyle::Custom(64), &ctx);
+    app.style_dialog.as_mut().unwrap().definition.parent = Some(ParagraphStyle::Custom(63));
+    for _ in 0..3 {
+        frame(&ctx, &mut app, vec![], size, 1.);
+    }
+    let bounds = app
+        .regions
+        .iter()
+        .find(|r| r.name == "style-dialog")
+        .unwrap()
+        .rect;
+    assert!(
+        Rect::from_min_size(Pos2::ZERO, vec2(640., 480.)).contains_rect(bounds),
+        "{bounds:?}"
+    );
 }

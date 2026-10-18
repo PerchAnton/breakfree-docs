@@ -256,6 +256,9 @@ impl Editor {
         end: usize,
         style: ParagraphStyle,
     ) -> Result<()> {
+        if self.document.style_catalog.get(style).is_none() {
+            return Err("Unknown paragraph style.".into());
+        }
         validate_range(&self.document.text(), start, end)?;
         let (first, _) = self.document.locate(start)?;
         let (mut last, offset) = self.document.locate(end)?;
@@ -279,10 +282,39 @@ impl Editor {
     /// Replace a definition and its parent together, without flattening descendants.
     pub fn modify_style(&mut self, id: ParagraphStyle, definition: StyleDefinition) -> Result<()> {
         let mut result = self.document.clone();
-        *result.style_catalog.get_mut(id) = definition;
+        *result
+            .style_catalog
+            .get_mut(id)
+            .ok_or("Unknown paragraph style.")? = definition;
         result.validate()?;
         self.commit(result, "Modify style", self.selection, self.typing_style);
         Ok(())
+    }
+
+    /// Create and optionally apply a named definition in one history transaction.
+    pub fn create_style(
+        &mut self,
+        name: &str,
+        definition: StyleDefinition,
+        apply: bool,
+    ) -> Result<ParagraphStyle> {
+        let (start, end) = self.selection;
+        validate_range(&self.document.text(), start, end)?;
+        let mut result = self.document.clone();
+        let id = result.style_catalog.add(name, definition)?;
+        if apply {
+            let (first, _) = result.locate(start)?;
+            let (mut last, offset) = result.locate(end)?;
+            if end > start && offset == 0 && last > first {
+                last -= 1;
+            }
+            for p in &mut result.paragraphs[first..=last] {
+                p.paragraph_style = id;
+            }
+        }
+        result.validate()?;
+        self.commit(result, "Create style", self.selection, self.typing_style);
+        Ok(id)
     }
 
     pub fn selected_paragraph_style(&self) -> Option<ParagraphStyle> {

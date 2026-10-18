@@ -77,6 +77,7 @@ pub enum Action {
     FontSize,
     FontDialog,
     ModifyStyle,
+    CreateStyle,
     GrowFont,
     ShrinkFont,
     Left,
@@ -115,6 +116,7 @@ impl Action {
             Self::FontSize => "Font size",
             Self::FontDialog => "Font dialog",
             Self::ModifyStyle => "Modify style…",
+            Self::CreateStyle => "Create style…",
             Self::GrowFont => "Grow font",
             Self::ShrinkFont => "Shrink font",
             Self::Left => "Align left",
@@ -155,6 +157,7 @@ const COMMANDS: &[Action] = &[
     Action::FontSize,
     Action::FontDialog,
     Action::ModifyStyle,
+    Action::CreateStyle,
     Action::GrowFont,
     Action::ShrinkFont,
     Action::Left,
@@ -379,7 +382,7 @@ impl DocsApp {
         }
         if matches!(
             action,
-            Action::FontDialog | Action::ModifyStyle | Action::Zoom
+            Action::FontDialog | Action::ModifyStyle | Action::CreateStyle | Action::Zoom
         ) && (self.pending.is_some() || self.error.is_some())
         {
             return false;
@@ -388,6 +391,10 @@ impl DocsApp {
             return matches!(action, Action::Copy | Action::Ribbon | Action::Rulers);
         }
         match action {
+            Action::CreateStyle => {
+                self.session.editor.document.style_catalog.custom.len()
+                    < crate::model::MAX_CUSTOM_STYLES
+            }
             Action::Undo => !self.session.editor.undo_stack.is_empty(),
             Action::Redo => !self.session.editor.redo_stack.is_empty(),
             Action::Cut | Action::Copy => {
@@ -508,7 +515,7 @@ impl DocsApp {
         }
         if matches!(
             action,
-            Action::ClearFormatting | Action::Style(_) | Action::ModifyStyle
+            Action::ClearFormatting | Action::Style(_) | Action::ModifyStyle | Action::CreateStyle
         ) && (self.pending.is_some()
             || self.error.is_some()
             || ctx.input(|i| i.events.iter().any(|e| matches!(e, egui::Event::Ime(_)))))
@@ -599,7 +606,7 @@ impl DocsApp {
                 self.focus_font_size = true;
                 self.focus_document = false;
             }
-            Action::ModifyStyle => {
+            Action::ModifyStyle | Action::CreateStyle => {
                 let id = self
                     .session
                     .editor
@@ -608,6 +615,12 @@ impl DocsApp {
                     .map(|(p, _)| self.session.editor.document.paragraphs[p].paragraph_style)
                     .unwrap_or_default();
                 self.open_style_dialog(id, ctx);
+                if action == Action::CreateStyle {
+                    self.style_dialog = Some(StyleDialog::create(
+                        id,
+                        &self.session.editor.document.style_catalog,
+                    ));
+                }
             }
             Action::FontDialog => {
                 self.font_dialog = Some(FontDialog::new(self.session.editor.selected_font()));
@@ -682,6 +695,7 @@ impl DocsApp {
                     | Action::Replace
                     | Action::FontDialog
                     | Action::ModifyStyle
+                    | Action::CreateStyle
                     | Action::Zoom
                     | Action::File
             ) {
@@ -690,6 +704,12 @@ impl DocsApp {
         }
     }
 
+    fn command_name(&self, action: Action) -> &str {
+        match action {
+            Action::Style(id) => self.session.editor.document.style_catalog.name(id),
+            _ => action.label(),
+        }
+    }
     fn command(&mut self, ui: &mut Ui, label: &str, action: Action, size: Vec2) {
         let enabled = self.enabled(action);
         let glyph = matches!(
@@ -708,7 +728,7 @@ impl DocsApp {
         } else {
             RichText::new(label)
         };
-        let button = Button::new(text).selected(self.checked(action));
+        let button = Button::new(text).truncate().selected(self.checked(action));
         let response = ui
             .add_enabled_ui(enabled, |ui| ui.add_sized(size, button))
             .inner;
@@ -1599,15 +1619,26 @@ impl DocsApp {
                 let styles = if count == 1 {
                     vec![selected.unwrap_or_default()]
                 } else {
-                    ParagraphStyle::ALL.to_vec()
+                    let mut styles = ParagraphStyle::ALL.to_vec();
+                    if let Some(id @ ParagraphStyle::Custom(_)) = selected {
+                        styles[2] = id;
+                    }
+                    styles
                 };
                 for (i, style) in styles.into_iter().enumerate() {
+                    let name = self
+                        .session
+                        .editor
+                        .document
+                        .style_catalog
+                        .name(style)
+                        .to_owned();
                     let action = Action::Style(style);
                     let rect = r(2. + i as f32 * card, 5., card - 3., 59.);
                     let response = chrome::button(
                         ui,
                         rect,
-                        style.name(),
+                        &name,
                         self.enabled(action),
                         selected == Some(style),
                     );
@@ -1624,7 +1655,7 @@ impl DocsApp {
                         .style_catalog
                         .resolve(style)
                         .character;
-                    let mut preview = RichText::new(style.name()).font(FontId::new(
+                    let mut preview = RichText::new(&name).font(FontId::new(
                         resolved.font_size.points().clamp(12., 20.),
                         egui::FontFamily::Name(
                             if resolved.bold { "body-bold" } else { "body" }.into(),
@@ -1638,8 +1669,8 @@ impl DocsApp {
                     }
                     let galley = egui::WidgetText::from(preview).into_galley(
                         ui,
-                        Some(egui::TextWrapMode::Extend),
-                        f32::INFINITY,
+                        Some(egui::TextWrapMode::Truncate),
+                        (rect.width() - 8.).max(1.),
                         egui::TextStyle::Body,
                     );
                     ui.painter().with_clip_rect(rect).galley(
@@ -1663,7 +1694,7 @@ impl DocsApp {
                             ui.close();
                         }
                     });
-                    if response.on_hover_text(format!("Apply {} to the selected paragraphs. Direct font formatting and alignment stay unchanged.", style.name()))
+                    if response.on_hover_text(format!("Apply {} to the selected paragraphs. Direct font formatting and alignment stay unchanged.", name))
                         .on_disabled_hover_text("Finish the current dialog or text composition first.").clicked() {
                         self.execute(action, ui.ctx());
                     }
@@ -1731,12 +1762,31 @@ impl DocsApp {
     }
 
     fn styles_menu(&mut self, ui: &mut Ui) {
-        for style in ParagraphStyle::ALL {
-            self.command(ui, style.name(), Action::Style(style), vec2(160., 27.));
-        }
+        ui.set_width(220.);
+        egui::ScrollArea::vertical()
+            .id_salt("style-list")
+            .max_height(150.)
+            .show(ui, |ui| {
+                for style in self.session.editor.document.style_catalog.ids() {
+                    let name = self
+                        .session
+                        .editor
+                        .document
+                        .style_catalog
+                        .name(style)
+                        .to_owned();
+                    self.command(ui, &name, Action::Style(style), vec2(210., 27.));
+                }
+            });
         ui.separator();
         ui.small("Direct formatting takes precedence.");
-        self.command(ui, "Modify style…", Action::ModifyStyle, vec2(160., 27.));
+        self.command(ui, "Modify style…", Action::ModifyStyle, vec2(210., 27.));
+        self.command(ui, "Create style…", Action::CreateStyle, vec2(210., 27.));
+        if self.session.editor.document.style_catalog.custom.len()
+            >= crate::model::MAX_CUSTOM_STYLES
+        {
+            ui.small("Limit: 64 custom styles per document.");
+        }
     }
 
     fn ribbon_contents(&mut self, ui: &mut Ui) {
@@ -2515,7 +2565,14 @@ impl DocsApp {
                 StyleOutcome::Open => self.style_dialog = Some(dialog),
                 StyleOutcome::Cancel => self.sync_view(),
                 StyleOutcome::Apply(definition) => {
-                    let result = self.session.editor.modify_style(dialog.id, definition);
+                    let result = if dialog.creating {
+                        self.session
+                            .editor
+                            .create_style(&dialog.name, definition, dialog.apply)
+                            .map(|_| ())
+                    } else {
+                        self.session.editor.modify_style(dialog.id, definition)
+                    };
                     self.fail(result);
                     self.sync_view();
                 }
@@ -2614,11 +2671,23 @@ impl DocsApp {
                     let actions: Vec<_> = COMMANDS
                         .iter()
                         .copied()
-                        .filter(|a| a.label().to_lowercase().contains(&query))
+                        .chain(
+                            self.session
+                                .editor
+                                .document
+                                .style_catalog
+                                .custom
+                                .iter()
+                                .map(|s| Action::Style(ParagraphStyle::Custom(s.id))),
+                        )
+                        .filter(|a| self.command_name(*a).to_lowercase().contains(&query))
                         .collect();
                     for action in actions.iter().take(12) {
                         if ui
-                            .add_enabled(self.enabled(*action), Button::new(action.label()))
+                            .add_enabled(
+                                self.enabled(*action),
+                                Button::new(self.command_name(*action)).truncate(),
+                            )
                             .clicked()
                         {
                             self.execute(*action, ctx);

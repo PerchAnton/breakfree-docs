@@ -195,13 +195,13 @@ fn styles_survive_preview_replacement_and_save_failure_without_loss() {
 }
 
 #[test]
-fn v3_rejects_unknown_styles_and_bad_overrides_legacy_import_keeps_appearance() {
+fn native_rejects_unknown_styles_and_bad_overrides_legacy_import_keeps_appearance() {
     let mut e = Editor::default();
     e.replace(0, 0, "Text", "Input").unwrap();
     let encoded = storage::encode(&e.document).unwrap();
     let json: serde_json::Value = serde_json::from_slice(&encoded).unwrap();
     for (pointer, value) in [
-        ("/content_version", serde_json::json!(5)),
+        ("/content_version", serde_json::json!(6)),
         ("/format", serde_json::json!("breakfree.sheets.native")),
         ("/paragraphs/0/paragraph_style", serde_json::json!("custom")),
         ("/paragraphs/0/runs/0/direct/bold", serde_json::json!(1)),
@@ -348,7 +348,7 @@ fn invalid_cycles_and_noop_definitions_preserve_document_selection_and_redo() {
         (ParagraphStyle::Normal, ParagraphStyle::Normal),
         (ParagraphStyle::Normal, ParagraphStyle::Heading1),
     ] {
-        let mut definition = *before.style_catalog.get(id);
+        let mut definition = *before.style_catalog.get(id).unwrap();
         definition.parent = Some(parent);
         assert!(
             e.modify_style(id, definition)
@@ -401,7 +401,7 @@ fn editable_catalog_survives_text_bulk_edits_and_invalidates_old_preview() {
 }
 
 #[test]
-fn v4_catalog_validation_and_failed_save_preserve_previous_document() {
+fn catalog_validation_and_failed_save_preserve_previous_document() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("styles.bfdoc");
     let mut e = Editor::default();

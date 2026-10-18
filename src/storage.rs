@@ -1,4 +1,4 @@
-//! Strict .bfdoc v1/v2/v3/v4 reading, v4 writing and checked temporary-file replacement.
+//! Strict .bfdoc v1–v5 reading, v5 writing and checked temporary-file replacement.
 use crate::{Result, model::*};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -8,7 +8,7 @@ use std::{
 };
 
 pub const FORMAT_ID: &str = "breakfree.docs.native";
-pub const CONTENT_VERSION: u32 = 4;
+pub const CONTENT_VERSION: u32 = 5;
 pub const MAX_FILE_BYTES: usize = 16 * 1024 * 1024;
 
 #[derive(Serialize, Deserialize)]
@@ -73,6 +73,21 @@ struct NativeV3 {
 struct NativeV4 {
     format: String,
     content_version: u32,
+    style_catalog: CatalogV4,
+    paragraphs: Vec<ParagraphV3>,
+}
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CatalogV4 {
+    normal: StyleDefinition,
+    no_spacing: StyleDefinition,
+    heading1: StyleDefinition,
+}
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NativeV5 {
+    format: String,
+    content_version: u32,
     style_catalog: StyleCatalog,
     paragraphs: Vec<ParagraphV3>,
 }
@@ -114,7 +129,7 @@ pub fn encode(document: &Document) -> Result<Vec<u8>> {
             }
         })
         .collect();
-    let mut bytes = serde_json::to_vec_pretty(&NativeV4 {
+    let mut bytes = serde_json::to_vec_pretty(&NativeV5 {
         format: FORMAT_ID.into(),
         content_version: CONTENT_VERSION,
         style_catalog: document.style_catalog.clone(),
@@ -187,9 +202,22 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
                 .map_err(|e| format!("Invalid native v3 document: {e}"))?;
             return decode_styled(file.paragraphs, StyleCatalog::default());
         }
-        CONTENT_VERSION => {
+        4 => {
             let file: NativeV4 = serde_json::from_slice(bytes)
                 .map_err(|e| format!("Invalid native v4 document: {e}"))?;
+            return decode_styled(
+                file.paragraphs,
+                StyleCatalog {
+                    normal: file.style_catalog.normal,
+                    no_spacing: file.style_catalog.no_spacing,
+                    heading1: file.style_catalog.heading1,
+                    custom: Vec::new(),
+                },
+            );
+        }
+        CONTENT_VERSION => {
+            let file: NativeV5 = serde_json::from_slice(bytes)
+                .map_err(|e| format!("Invalid native v5 document: {e}"))?;
             return decode_styled(file.paragraphs, file.style_catalog);
         }
         2 => {

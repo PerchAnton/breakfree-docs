@@ -3,7 +3,28 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
-## 0.1.0-alpha.19 — Unreleased; submitted for owner approval
+## 0.1.0-alpha.20 — Unreleased; submitted for owner approval
+
+Prepared 2026-10-18. The owner approved alpha.19 in the project chat.
+
+- Create custom named paragraph styles with a built-in/custom parent or no parent,
+  inherited formatting, live validation and a character preview. Optionally apply
+  to the selection; creation and application are one undo/redo operation.
+- Keep Unicode names and stable document-local IDs; reject duplicate names, missing
+  parents, cycles and invalid values. Preserve direct overrides and selection.
+- Expose creation through Styles/More, command search and KeyTips. Show custom
+  styles in the bounded keyboard-scrollable menu, search and selected gallery card.
+  Keep the palette, original icons and Home spacing. Fix name focus after invalid Enter.
+- Write native content v5 and retain strict v1–v4 readers; opening older files
+  preserves bytes. Earlier builds reject v5 saves. Use Save As for an older copy.
+- Add model/storage/widget regressions for creation, optional application, parent
+  inheritance, exact undo, errors, save failure, Unicode, long names and menu traversal.
+
+No new dependency, protocol/settings or license change. Rename/delete, character
+styles, templates and native Windows/Word/DPI/IME acceptance remain separate work.
+No merge, tag or release is authorized.
+
+## 0.1.0-alpha.19 — Unreleased; version approved 2026-10-18
 
 Prepared 2026-10-18. The owner approved alpha.18 in the project chat.
 

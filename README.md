@@ -193,9 +193,19 @@ parent. Invalid cycles disable OK. Cancel/Escape changes nothing; OK updates
 inheriting paragraphs and descendants in one Undo, preserving direct formatting.
 These settings belong only to the current document. [Definition rules](docs/adr/0007-editable-style-definitions.md).
 
-This build reads native content v1/v2/v3/v4 and **saves v4**. Opening an older file
-does not change it; an explicit save converts it to v4. Earlier builds cannot
-open new v4 saves. Use Save As to keep an older copy. See [format details](docs/NATIVE_FORMAT.md).
+Home Styles → Create style opens a named-style draft. Choose a built-in/custom
+parent or No style, enter a unique name and optionally adjust supported properties.
+Apply to selected paragraphs is checked initially; creation and application use
+one Undo. Uncheck it to create the definition only. Cancel/Escape changes nothing.
+The current document supports up to 64 custom styles; names are 1–64 Unicode
+characters, without outer whitespace/control characters, unique after Unicode
+lowercasing. Styles remain available in More styles and command search after reopen.
+KeyTips H → L → C (wide/compact) or H → E → C (minimum width) opens creation.
+Rename/delete and character styles remain planned. [Creation rules](docs/adr/0008-custom-named-styles.md).
+
+This build reads native content v1/v2/v3/v4/v5 and **saves v5**. Opening an older file
+does not change it; an explicit save converts it to v5. Earlier builds cannot
+open new v5 saves. Use Save As to keep an older copy. See [format details](docs/NATIVE_FORMAT.md).
 File provides New/Open/Save/Save As, unsaved Save/Discard/Cancel and view settings;
 Print is disabled. Navigation and the formatting pane operate on real model ranges.
 The white canvas is continuous; pagination, page numbers and print layout are absent.

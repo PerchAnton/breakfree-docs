@@ -98,3 +98,8 @@ Alpha.19 introduces native content v4 for document-owned style definitions and
 parent graphs. It reads v1/v2/v3/v4 and saves v4; earlier builds reject v4. Process
 protocol and preferences remain v1. Version approval does not imply file-format
 backward compatibility or authorize a release.
+
+Alpha.20 adds native content v5 for named custom style IDs/definitions. It reads
+v1–v5 and saves v5; alpha.19 and earlier reject new saves. The application candidate
+is `0.1.0-alpha.20`; process/settings remain v1. Alpha.19 was approved in chat on
+2026-10-18; alpha.20 awaits explicit owner approval.

@@ -8,20 +8,20 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.19**. Earlier capture/CI evidence retains its
+Current local checkpoint: **0.1.0-alpha.20**. Earlier capture/CI evidence retains its
 original scope; this iteration does not establish native Windows behavior.
 
 | Local check | Observed result |
 | :--- | :--- |
-| `cargo test --locked` | 145 passed: 26 engine/storage/presentation, 11 styles/inheritance, 8 search, 7 batch replacement, 9 preferences, 4 CLI subprocess and 80 actual egui widget event tests; no skipped tests |
-| `cargo test --locked --no-default-features` | 65 passed; preferences, core/styles/search/batch replacement and CLI build without GUI dependencies |
+| `cargo test --locked` | 155 passed: 26 engine/storage/presentation, 18 styles/inheritance, 8 search, 7 batch replacement, 9 preferences, 4 CLI subprocess and 83 actual egui widget event tests; no skipped tests |
+| `cargo test --locked --no-default-features` | 72 passed; preferences, core/styles/search/batch replacement and CLI build without GUI dependencies |
 | `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
 | `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
-| Copied executable outside checkout | Alpha.19 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
+| Copied executable outside checkout | Alpha.20 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that identical copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
 | Repository references, contract and artwork | `python3 tools/check_repository.py` passed; approved logo embedded directly and archive copy byte-identical |
 | Workflow YAML / whitespace | Ruby YAML parse and `git diff --check` passed |
-| Native rendering | Alpha.19 Modify Style at 1366 × 900 / 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha19-native-captures). Earlier evidence retains its version context |
-| Native macOS interaction | Alpha.19 F10/H/L/M, Unicode input, numeric drafts, one Undo/Redo, cycle error, Cancel, gallery context menu and system Save; exact v4 Normal definition/text readback. Corrected-dropdown selection, Enter, undo/redo, Save/Open, exact parent/size readback and clean close also passed (details below) |
+| Native rendering | Alpha.20 Create Style at 1366 × 900 / 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha20-native-captures). Earlier evidence retains its version context |
+| Native macOS interaction | Alpha.20 F10/H/L/C, Unicode paste/name, parent selection, one Undo/Redo, custom child, duplicate-name error and Cancel; system Save, independent v5 readback, copied binary `--open` and clean close passed (details below) |
 | Synthetic DPI | Actual widgets at 1/1.25/1.5 scale and 960/1366/1920 physical widths; ribbon/group/workspace/status bounds and collapse assertions passed; 27 additional width/scale combinations check individual Home control containment/nonoverlap and title/search/window bounds |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
@@ -658,3 +658,38 @@ Cancel and clean close exited successfully. `--version`/`--capabilities` from th
 same copied binary reported alpha.19 and unchanged protocol v1 with clean stderr.
 The earlier native cycle/Cancel/context-menu check was repeated in widget tests;
 Windows and full accessibility are not established by this scoped macOS exercise.
+
+## Alpha.20 custom style validation
+
+Seven new core tests cover definition-only and apply creation, empty paragraphs,
+exclusive selection ends, direct overrides, exact undo/redo/selection/pending input,
+custom descendants and reparenting, invalid IDs/names/parents/cycles, Unicode and
+64-style/name limits. Reject invalid commands without losing redo. V5 roundtrip,
+missing/duplicate/foreign/unknown data, write/sync/replace failure retention, strict
+v4 migration without source rewrites, bulk edit preservation/stale previews and
+the checked-in custom-style fixture pass. Existing v1–v3 tests remain passing.
+
+Three new widget tests cover F10/H/E/C, focused Unicode name input, empty/duplicate
+name rejection, invalid Enter focus, Cancel/redo preservation, optional application,
+custom parent choice, command search, gallery/Modify targeting, 64 long names and
+keyboard scrolling. Create modal/control containment passes at 640 × 480 logical
+pixels at scales 1/1.25/1.5; long selected names/parents do not expand Modify.
+The existing overflow test was updated for the real additional Create command.
+Full result: 155 tests; 72 without GUI. Both Clippy configurations, fmt, release and
+capture builds, repository/artwork checks, YAML and whitespace checks passed.
+
+Native macOS smoke used the final release executable copied outside the checkout
+(SHA256 `def7312523e8c6237d9ff6c5e2317a931fac36c8a16b1ccdfd7b312948f4cafd`).
+`--new`, F10/H/L/C, a Heading 1 parent and `Звіт café` created/applied a style to
+three paragraphs. One Command+Z restored Normal/11 pt; one Shift+Command+Z restored
+bold/18 pt and the named style. A second style `Дочірній` inherited the custom
+parent. Duplicate creation showed an error, disabled OK and retained name focus;
+Escape left the saved document clean. System Save wrote v5. Independent JSON
+readback matched `English café\nУкраїна\nРусский`, both exact names/IDs/parents,
+and all three paragraph references. `--open` in a fresh process restored the child,
+bold/18 pt, three paragraphs and Saved locally; clean close passed. Information
+commands report alpha.20 and protocol v1 with clean stderr outside the checkout.
+The automation's key-based `typeText` did not transmit Cyrillic/combining text;
+the verified Unicode scenario used native clipboard paste. This is not a physical
+IME/keyboard-layout certification. Windows/native DPI, paired Word reference,
+AltGr/IME, accessibility and complex-script gates remain open.

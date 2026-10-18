@@ -139,6 +139,7 @@ pub enum ParagraphStyle {
     Normal,
     NoSpacing,
     Heading1,
+    Custom(u32),
 }
 impl ParagraphStyle {
     pub const ALL: [Self; 3] = [Self::Normal, Self::NoSpacing, Self::Heading1];
@@ -147,11 +148,12 @@ impl ParagraphStyle {
             Self::Normal => "Normal",
             Self::NoSpacing => "No Spacing",
             Self::Heading1 => "Heading 1",
+            Self::Custom(_) => "Custom style",
         }
     }
     /// Frozen v3 baseline. Use the document catalog for actual editing/layout.
     pub fn parent(self) -> Option<Self> {
-        StyleCatalog::default().get(self).parent
+        StyleCatalog::default().get(self).and_then(|d| d.parent)
     }
     pub fn character_style(self) -> Style {
         StyleCatalog::default().resolve(self).character
@@ -174,10 +176,21 @@ pub struct StyleDefinition {
     pub space_after_half_points: Option<u16>,
 }
 
-/// Fixed IDs avoid dangling references; definitions are editable and persisted.
+/// Bound catalog traversal and menu sizes independently of document length.
+pub const MAX_CUSTOM_STYLES: usize = 64;
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CustomStyle {
+    pub id: u32,
+    pub name: String,
+    pub definition: StyleDefinition,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct StyleCatalog {
+    pub custom: Vec<CustomStyle>,
     pub normal: StyleDefinition,
     pub no_spacing: StyleDefinition,
     pub heading1: StyleDefinition,
@@ -185,6 +198,7 @@ pub struct StyleCatalog {
 impl Default for StyleCatalog {
     fn default() -> Self {
         Self {
+            custom: Vec::new(),
             normal: StyleDefinition::default(),
             no_spacing: StyleDefinition {
                 parent: Some(ParagraphStyle::Normal),
@@ -219,23 +233,99 @@ impl ResolvedParagraphStyle {
     }
 }
 impl StyleCatalog {
-    pub fn get(&self, id: ParagraphStyle) -> &StyleDefinition {
+    pub fn ids(&self) -> Vec<ParagraphStyle> {
+        ParagraphStyle::ALL
+            .into_iter()
+            .chain(self.custom.iter().map(|s| ParagraphStyle::Custom(s.id)))
+            .collect()
+    }
+    pub fn name(&self, id: ParagraphStyle) -> &str {
         match id {
-            ParagraphStyle::Normal => &self.normal,
-            ParagraphStyle::NoSpacing => &self.no_spacing,
-            ParagraphStyle::Heading1 => &self.heading1,
+            ParagraphStyle::Custom(id) => self
+                .custom
+                .iter()
+                .find(|s| s.id == id)
+                .map(|s| s.name.as_str())
+                .unwrap_or("(Missing style)"),
+            _ => id.name(),
         }
     }
-    pub fn get_mut(&mut self, id: ParagraphStyle) -> &mut StyleDefinition {
+    pub fn get(&self, id: ParagraphStyle) -> Option<&StyleDefinition> {
         match id {
-            ParagraphStyle::Normal => &mut self.normal,
-            ParagraphStyle::NoSpacing => &mut self.no_spacing,
-            ParagraphStyle::Heading1 => &mut self.heading1,
+            ParagraphStyle::Normal => Some(&self.normal),
+            ParagraphStyle::NoSpacing => Some(&self.no_spacing),
+            ParagraphStyle::Heading1 => Some(&self.heading1),
+            ParagraphStyle::Custom(id) => self
+                .custom
+                .iter()
+                .find(|s| s.id == id)
+                .map(|s| &s.definition),
         }
+    }
+    pub fn get_mut(&mut self, id: ParagraphStyle) -> Option<&mut StyleDefinition> {
+        match id {
+            ParagraphStyle::Normal => Some(&mut self.normal),
+            ParagraphStyle::NoSpacing => Some(&mut self.no_spacing),
+            ParagraphStyle::Heading1 => Some(&mut self.heading1),
+            ParagraphStyle::Custom(id) => self
+                .custom
+                .iter_mut()
+                .find(|s| s.id == id)
+                .map(|s| &mut s.definition),
+        }
+    }
+    pub fn next_custom_id(&self) -> u32 {
+        (1..=MAX_CUSTOM_STYLES as u32 + 1)
+            .find(|id| !self.custom.iter().any(|s| s.id == *id))
+            .unwrap_or(0)
+    }
+    pub fn add(&mut self, name: &str, definition: StyleDefinition) -> Result<ParagraphStyle> {
+        let id = self.next_custom_id();
+        let mut candidate = self.clone();
+        candidate.custom.push(CustomStyle {
+            id,
+            name: name.into(),
+            definition,
+        });
+        candidate.validate()?;
+        *self = candidate;
+        Ok(ParagraphStyle::Custom(id))
     }
     pub fn validate(&self) -> Result<()> {
-        for id in ParagraphStyle::ALL {
-            let definition = self.get(id);
+        if self.custom.len() > MAX_CUSTOM_STYLES {
+            return Err("A document supports up to 64 custom styles.".into());
+        }
+        let mut names: Vec<String> = ParagraphStyle::ALL
+            .iter()
+            .map(|s| s.name().to_lowercase())
+            .collect();
+        let mut ids = Vec::new();
+        for style in &self.custom {
+            if style.id == 0 || ids.contains(&style.id) {
+                return Err("Custom style IDs must be positive and unique.".into());
+            }
+            ids.push(style.id);
+            let name = &style.name;
+            if name.is_empty()
+                || name.trim() != name
+                || name.chars().count() > 64
+                || name
+                    .chars()
+                    .any(|c| c.is_control() || matches!(c, '\u{2028}' | '\u{2029}'))
+            {
+                return Err(
+                    "Use a name of 1–64 characters, without outer spaces or control characters."
+                        .into(),
+                );
+            }
+            let key = name.to_lowercase();
+            if names.contains(&key) {
+                return Err("A style with this name already exists (ignoring letter case).".into());
+            }
+            names.push(key);
+        }
+        for id in self.ids() {
+            let definition = self.get(id).ok_or("Unknown paragraph style.")?;
             if definition
                 .line_height_percent
                 .is_some_and(|v| !(100..=300).contains(&v))
@@ -252,7 +342,7 @@ impl StyleCatalog {
                     return Err("A style cannot inherit from itself or its descendants.".into());
                 }
                 seen.push(current);
-                next = self.get(current).parent;
+                next = self.get(current).ok_or("Unknown parent style.")?.parent;
             }
         }
         Ok(())
@@ -267,7 +357,7 @@ impl StyleCatalog {
                 break;
             }
             chain.push(current);
-            next = self.get(current).parent;
+            next = self.get(current).and_then(|d| d.parent);
         }
         let mut resolved = ResolvedParagraphStyle {
             character: Style::default(),
@@ -275,7 +365,9 @@ impl StyleCatalog {
             space_after_half_points: 11,
         };
         for id in chain.into_iter().rev() {
-            let definition = self.get(id);
+            let Some(definition) = self.get(id) else {
+                continue;
+            };
             resolved.character = definition.character.resolve(resolved.character);
             resolved.line_height_percent = definition
                 .line_height_percent
@@ -376,6 +468,9 @@ impl Document {
             return Err("A document needs a paragraph.".into());
         }
         for p in &self.paragraphs {
+            if self.style_catalog.get(p.paragraph_style).is_none() {
+                return Err("Unknown paragraph style reference.".into());
+            }
             validate_text(&p.text)?;
             if p.text.contains('\n') || p.styles.len() != p.text.chars().count() {
                 return Err("Invalid paragraph text/style mapping.".into());

@@ -18,7 +18,10 @@ v2 writing while preserving the D01–D09 scenarios.
 [ADR 0006](adr/0006-built-in-paragraph-styles.md) extends this with fixed paragraph
 styles, direct overrides and v3 writing while retaining strict v1/v2 readers.
 [ADR 0007](adr/0007-editable-style-definitions.md) adds editable definitions, parent
-validation and v4 writing with strict v1/v2/v3 readers. Follow the
+validation and v4 writing with strict v1/v2/v3 readers.
+[ADR 0008](adr/0008-custom-named-styles.md) adds named custom paragraph styles,
+validated IDs/parents, one-operation creation/application and v5 writing with
+strict v1–v4 readers. Follow the
 Word 2024 Windows reference in [UI_SPEC](UI_SPEC.md). GUI-library adoption, licensing
 and supported-platform decisions remain open.
 
