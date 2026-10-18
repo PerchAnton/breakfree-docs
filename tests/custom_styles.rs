@@ -170,7 +170,7 @@ fn native_v8_roundtrip_rejects_malformed_ids_names_graphs_and_preserves_previous
     let bytes = std::fs::read(&path).unwrap();
     assert_eq!(storage::load(&path).unwrap(), e.document);
     let json: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
-    assert_eq!(json["content_version"], 11);
+    assert_eq!(json["content_version"], 12);
     for (pointer, value) in [
         ("/style_catalog/custom/0/id", serde_json::json!(0)),
         ("/style_catalog/custom/0/name", serde_json::json!("Normal")),
@@ -186,7 +186,7 @@ fn native_v8_roundtrip_rejects_malformed_ids_names_graphs_and_preserves_previous
             "/paragraphs/0/paragraph_style",
             serde_json::json!({"custom":99}),
         ),
-        ("/content_version", serde_json::json!(12)),
+        ("/content_version", serde_json::json!(13)),
         ("/format", serde_json::json!("breakfree.sheets.native")),
     ] {
         let mut bad = json.clone();
@@ -479,6 +479,8 @@ fn rename_and_definition_change_are_one_transaction_and_work_at_catalog_capacity
         },
         line_height_percent: Some(175),
         space_before_half_points: None,
+        left_indent_half_points: None,
+        right_indent_half_points: None,
         space_after_half_points: Some(17),
         next_style: None,
     };
@@ -544,7 +546,7 @@ fn rename_roundtrip_dirty_checkpoint_failed_write_and_stale_preview_keep_referen
     assert!(!session.dirty());
     assert_eq!(storage::load(&path).unwrap(), renamed);
     let value: serde_json::Value = serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
-    assert_eq!(value["content_version"], 11);
+    assert_eq!(value["content_version"], 12);
     assert_eq!(renamed.paragraphs, old.paragraphs);
     let plan = session
         .editor
@@ -774,7 +776,7 @@ fn deletion_save_reopen_failed_writes_dirty_checkpoint_and_bulk_preview_are_safe
     assert!(!session.dirty());
     assert_eq!(storage::load(&path).unwrap(), after);
     let value: serde_json::Value = serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
-    assert_eq!(value["content_version"], 11);
+    assert_eq!(value["content_version"], 12);
     let plan = session
         .editor
         .preview_replace_all(&[(0, 1)], "café")

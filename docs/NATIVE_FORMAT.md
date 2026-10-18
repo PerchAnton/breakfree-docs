@@ -1,12 +1,12 @@
 # Native BreakFree Docs document format
 
-Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v11.
+Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v12.
 This is not a DOCX container. Process protocol and file-content versions are independent.
 
 ```json
 {
   "format": "breakfree.docs.native",
-  "content_version": 11,
+  "content_version": 12,
   "character_styles": [],
   "style_catalog": {
     "custom": [],
@@ -73,9 +73,9 @@ Opening performs only in-memory conversion and does not dirty/write the file.
 V3 uses its frozen built-in catalog from [ADR 0006](adr/0006-built-in-paragraph-styles.md);
 it rejects embedded definitions. V4 reads its original three-definition catalog
 with no custom array and preserves its graph. V5 retains its custom catalog. Legacy definitions receive Same style in memory.
-Every explicit save writes v11, even
+Every explicit save writes v12, even
 for an unchanged older document. Use Save As
-to retain the original. **Alpha.41 and earlier cannot open v11 saves.** No downgrade or
+to retain the original. **Alpha.42 and earlier cannot open v12 saves.** No downgrade or
 lossy export is provided. Header/full-schema parsing preserves duplicate rejection.
 
 Empty paragraphs retain their named style. Pending direct formatting at a caret
@@ -189,3 +189,15 @@ reject this key (including null) anywhere before their strict typed validation;
 legacy files import with inherited zero before. Writer v11 omits unset before
 values. Protocol/settings versions stay 1. Continuous layout adds before-current
 to after-previous and applies first-paragraph before; wrapped lines do not repeat it.
+
+## Left/right indents (v12)
+
+Paragraph style definitions and the existing paragraph `spacing` object accept
+optional `left_indent_half_points` and `right_indent_half_points`: absent/null
+inherits, integer 0–288 supplies an explicit value (0–144 pt). Each resolves
+independently through the nearest ancestor, default zero, then direct override.
+The spacing object now groups paragraph geometry; existing field names remain
+stable. Writer v12 omits unset indent fields. Every v1–v11 reader rejects the new
+keys even when null, before strict typed validation. Imports therefore inherit zero
+without changing their source bytes. Protocol/settings remain v1. There is no
+first-line or hanging indent field in v12.

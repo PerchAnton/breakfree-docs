@@ -232,8 +232,8 @@ Rust selection is complete; this gate evaluates GUI behavior and visual fidelity
 - [x] Alpha.39: test a 32-style reverse-order chain and repeated keyboard jumps; handle renamed/deleted/unused return destinations without stale focus or content/history changes.
 - [x] Alpha.40: add an 18-case synthetic dependency-keyboard/scale matrix, roundtripped 32-style fixture and reproducible Windows acceptance checklist/review-artifact workflow.
 - [x] Alpha.41: direct line-height/space-after overrides, partial/reset dialog, one undo, shared layout/provenance, Enter/Replace All preservation and strict v10 roundtrip; depends on alpha.31.
-- [ ] Execute native Windows dependency keyboard and 100/125/150% display-scaling acceptance using docs/WINDOWS_ACCEPTANCE.md; deferred by the owner until a Windows desktop is available. Linked styles and indentation remain separate increments.
-- [ ] Add lists, indentation, tabs, spacing, links and Unicode-aware search/replace.
+- [ ] Execute native Windows dependency keyboard and 100/125/150% display-scaling acceptance using docs/WINDOWS_ACCEPTANCE.md; deferred by the owner until a Windows desktop is available. Linked styles and first-line/hanging indents remain separate increments.
+- [ ] Complete lists, first-line/hanging indents, tabs and links; search/replace, intervals and left/right indents have incremental implementations above.
 - [ ] Add table editing and images with explicit sizing and anchoring semantics.
 - [ ] Add navigation, command search and understandable tool states.
 - [ ] Expand fixtures for English, Ukrainian, Russian, combining characters and mixed scripts; investigate CJK and right-to-left text explicitly.
@@ -352,4 +352,5 @@ Use public specifications and original test cases, not copied application code. 
 | 2026-10-17 | Alpha.13 refines icon accents and neutral shell/File colors from owner-supplied macOS captures | 95 full / 36 core-only tests and three native captures; native formatting/history/File/KeyTips verified. Alpha.12/13 approval and Windows/Word comparison remain open |
 
 - [x] Alpha.42: inherited/direct space-before, partial/reset dialog, provenance, one Undo/Redo, v11 persistence and wrapped-line layout; depends on alpha.41.
-- [ ] Next: paragraph indentation with shared style/direct resolution and validated history.
+- [x] Alpha.43: left/right paragraph indents with style/direct resolution, transactional dialog/reset, provenance, v12 persistence and indented wrapping/alignment.
+- [ ] Next: first-line/hanging indents with inherited values, wrap/hit-testing and one history operation.

@@ -25,6 +25,8 @@ pub(super) struct StyleDialog {
     pub line: String,
     pub after: String,
     pub before: String,
+    pub left: String,
+    pub right: String,
     focus: bool,
 }
 impl StyleDialog {
@@ -59,6 +61,14 @@ impl StyleDialog {
                 .space_after_half_points
                 .map(|v| format!("{}{}", v / 2, if v % 2 == 1 { ".5" } else { "" }))
                 .unwrap_or_default(),
+            left: definition
+                .left_indent_half_points
+                .map(|v| (f32::from(v) / 2.).to_string())
+                .unwrap_or_default(),
+            right: definition
+                .right_indent_half_points
+                .map(|v| (f32::from(v) / 2.).to_string())
+                .unwrap_or_default(),
             focus: true,
         }
     }
@@ -79,6 +89,8 @@ impl StyleDialog {
         dialog.line.clear();
         dialog.after.clear();
         dialog.before.clear();
+        dialog.left.clear();
+        dialog.right.clear();
         dialog.character_styles = document.character_styles.clone();
         dialog.preview_base = document.style_catalog.resolve(paragraph).character;
         dialog
@@ -140,6 +152,8 @@ impl StyleDialog {
         } else {
             Some(u16::from(self.before.parse::<FontSize>()?))
         };
+        definition.left_indent_half_points = crate::model::parse_indent(&self.left)?;
+        definition.right_indent_half_points = crate::model::parse_indent(&self.right)?;
         let mut catalog = self.catalog.clone();
         if self.character {
             let mut document = Document {
@@ -178,6 +192,7 @@ impl StyleDialog {
             .area(egui::Modal::default_area(id).fade_in(false))
             .show(ctx, |ui| {
                 ui.set_width(460.);
+                let compact = ctx.content_rect().height() < 600.;
                 ui.horizontal(|ui| {
                     ui.heading(if self.character {
                         if self.creating {
@@ -203,7 +218,7 @@ impl StyleDialog {
                 ui.separator();
                 egui::Grid::new("style-properties")
                     .num_columns(2)
-                    .spacing([14., 7.])
+                    .spacing([14., if compact { 3. } else { 7. }])
                     .show(ui, |ui| {
                         ui.label("Name:");
                         if self.creating
@@ -423,6 +438,8 @@ impl StyleDialog {
                             ("line", "Line spacing (%):", &mut self.line),
                             ("before", "Space before (pt):", &mut self.before),
                             ("after", "Space after (pt):", &mut self.after),
+                            ("left", "Left indent (pt):", &mut self.left),
+                            ("right", "Right indent (pt):", &mut self.right),
                         ] {
                             if self.character && name != "size" {
                                 continue;
@@ -464,7 +481,10 @@ impl StyleDialog {
                     .stroke(Stroke::new(1.0_f32, chrome::LINE))
                     .inner_margin(6)
                     .show(ui, |ui| {
-                        let (rect, _) = ui.allocate_exact_size(vec2(448., 48.), Sense::hover());
+                        let (rect, _) = ui.allocate_exact_size(
+                            vec2(448., if compact { 24. } else { 48. }),
+                            Sense::hover(),
+                        );
                         if let Ok((definition, catalog)) = &draft {
                             let style = if self.character {
                                 definition.character.resolve(

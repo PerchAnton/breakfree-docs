@@ -4,31 +4,26 @@ use super::*;
 pub(super) enum ParagraphOutcome {
     Open,
     Cancel,
-    Apply(
-        Option<Option<u16>>,
-        Option<Option<u16>>,
-        Option<Option<u16>>,
-    ),
+    Apply(crate::commands::ParagraphGeometryPatch),
 }
 #[derive(Default)]
 pub(super) struct ParagraphDialog {
     line: String,
     after: String,
     before: String,
+    left: String,
+    right: String,
+    change_left: bool,
+    change_right: bool,
     change_line: bool,
     change_after: bool,
     change_before: bool,
     focused: bool,
     error: Option<String>,
 }
-type SpacingValues = (
-    Option<Option<u16>>,
-    Option<Option<u16>>,
-    Option<Option<u16>>,
-);
 
 impl ParagraphDialog {
-    fn values(&self) -> Result<SpacingValues> {
+    fn values(&self) -> Result<crate::commands::ParagraphGeometryPatch> {
         let line = if !self.change_line {
             None
         } else if self.line.trim().is_empty() {
@@ -85,9 +80,26 @@ impl ParagraphDialog {
             line_height_percent: line.flatten(),
             space_after_half_points: after.flatten(),
             space_before_half_points: before.flatten(),
+            ..Default::default()
         }
         .validate()?;
-        Ok((line, before, after))
+        let left = if self.change_left {
+            Some(crate::model::parse_indent(&self.left)?)
+        } else {
+            None
+        };
+        let right = if self.change_right {
+            Some(crate::model::parse_indent(&self.right)?)
+        } else {
+            None
+        };
+        Ok(crate::commands::ParagraphGeometryPatch {
+            line,
+            before,
+            after,
+            left,
+            right,
+        })
     }
     pub fn show(&mut self, ctx: &egui::Context, regions: &mut Vec<Region>) -> ParagraphOutcome {
         let mut cancel = false;
@@ -103,7 +115,7 @@ impl ParagraphDialog {
             .area(egui::Modal::default_area(id).fade_in(false))
             .show(ctx, |ui| {
                 ui.set_width(370.);
-                ui.heading("Paragraph spacing");
+                ui.heading("Paragraph spacing and indents");
                 ui.separator();
                 ui.label("Change only the checked properties in selected paragraphs.");
                 ui.small("Leave a checked field blank to inherit from its paragraph style.");
@@ -126,6 +138,18 @@ impl ParagraphDialog {
                         &mut self.change_after,
                         &mut self.after,
                     ),
+                    (
+                        "left",
+                        "Left indent (pt)",
+                        &mut self.change_left,
+                        &mut self.left,
+                    ),
+                    (
+                        "right",
+                        "Right indent (pt)",
+                        &mut self.change_right,
+                        &mut self.right,
+                    ),
                 ] {
                     ui.horizontal(|ui| {
                         let check = ui.add_sized([155., 24.], egui::Checkbox::new(changed, label));
@@ -144,9 +168,13 @@ impl ParagraphDialog {
                         }
                     });
                 }
-                let reset = ui.button("Use style spacing");
+                let reset = ui.button("Use style spacing and indents");
                 record(regions, "paragraph-reset", reset.rect);
                 if reset.clicked() {
+                    self.change_left = true;
+                    self.change_right = true;
+                    self.left.clear();
+                    self.right.clear();
                     self.change_line = true;
                     self.change_after = true;
                     self.change_before = true;
@@ -156,6 +184,7 @@ impl ParagraphDialog {
                     self.error = None;
                 }
                 ui.small("Line: 100–300%. Before/after: 0–200 pt, in 0.5 pt steps.");
+                ui.small("Left/right: 0–144 pt, in 0.5 pt steps.");
                 if let Some(error) = &self.error {
                     ui.colored_label(Color32::from_rgb(165, 30, 30), error);
                 }
@@ -180,7 +209,7 @@ impl ParagraphDialog {
         // Standard focused-button Enter/Space activation; no global Enter override.
         if accept {
             match self.values() {
-                Ok((line, before, after)) => return ParagraphOutcome::Apply(line, before, after),
+                Ok(patch) => return ParagraphOutcome::Apply(patch),
                 Err(error) => self.error = Some(error),
             }
         }

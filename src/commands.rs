@@ -461,6 +461,32 @@ impl Editor {
         before: Option<Option<u16>>,
         after: Option<Option<u16>>,
     ) -> Result<()> {
+        self.set_paragraph_geometry(
+            start,
+            end,
+            ParagraphGeometryPatch {
+                line,
+                before,
+                after,
+                ..Default::default()
+            },
+        )
+    }
+
+    /// One atomic partial change for spacing and left/right indentation.
+    pub fn set_paragraph_geometry(
+        &mut self,
+        start: usize,
+        end: usize,
+        patch: ParagraphGeometryPatch,
+    ) -> Result<()> {
+        let ParagraphGeometryPatch {
+            line,
+            before,
+            after,
+            left,
+            right,
+        } = patch;
         validate_range(&self.document.text(), start, end)?;
         let (first, _) = self.document.locate(start)?;
         let (mut last, offset) = self.document.locate(end)?;
@@ -469,6 +495,12 @@ impl Editor {
         }
         let mut result = self.document.clone();
         for p in &mut result.paragraphs[first..=last] {
+            if let Some(value) = left {
+                p.spacing.left_indent_half_points = value;
+            }
+            if let Some(value) = right {
+                p.spacing.right_indent_half_points = value;
+            }
             if let Some(value) = line {
                 p.spacing.line_height_percent = value;
             }
@@ -691,4 +723,14 @@ impl Editor {
             self.undo_stack.push(op);
         }
     }
+}
+
+/// Outer None keeps a property; inner None restores style inheritance.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct ParagraphGeometryPatch {
+    pub line: Option<Option<u16>>,
+    pub before: Option<Option<u16>>,
+    pub after: Option<Option<u16>>,
+    pub left: Option<Option<u16>>,
+    pub right: Option<Option<u16>>,
 }

@@ -188,11 +188,23 @@ pub fn inspect_paragraph(
             value: format!("{} pt", resolved.space_before_points()),
             source: "Document default".into(),
         },
+        PropertyInfo {
+            name: "Left indent",
+            value: format!("{} pt", f32::from(resolved.left_indent_half_points) / 2.),
+            source: "Document default".into(),
+        },
+        PropertyInfo {
+            name: "Right indent",
+            value: format!("{} pt", f32::from(resolved.right_indent_half_points) / 2.),
+            source: "Document default".into(),
+        },
     ];
     let mut found = [
         paragraph.spacing.line_height_percent.is_some(),
         paragraph.spacing.space_after_half_points.is_some(),
         paragraph.spacing.space_before_half_points.is_some(),
+        paragraph.spacing.left_indent_half_points.is_some(),
+        paragraph.spacing.right_indent_half_points.is_some(),
     ];
     for (i, direct) in found.iter().enumerate() {
         if *direct {
@@ -218,6 +230,8 @@ pub fn inspect_paragraph(
             definition.line_height_percent.is_some(),
             definition.space_after_half_points.is_some(),
             definition.space_before_half_points.is_some(),
+            definition.left_indent_half_points.is_some(),
+            definition.right_indent_half_points.is_some(),
         ]
         .into_iter()
         .enumerate()

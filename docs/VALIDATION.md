@@ -1180,3 +1180,26 @@ paragraph and additive intervals. Nine synthetic scale/size modal checks pass.
 Two native capture-harness images inspected (UI_SPEC); ordinary native input not
 repeated. Native Windows and matched Word reference checks remain deferred.
 Server CI is reported separately in the project journal; no merge or release.
+
+## Alpha43 paragraph-indent validation
+
+2026-10-18, macOS arm64 / Rust 1.99.1: **254 full tests / 130 core-only tests**
+passed. fmt, normal/capture all-target Clippy with warnings denied, release/capture
+builds, repository/artwork/YAML/whitespace checks passed. CLI reports alpha.43 and
+protocol v1. No new runtime dependency or sibling repository requirement.
+
+Coverage includes independent inherited/direct left/right values, explicit zero,
+exclusive selection boundaries, reset, parent modification, one-step undo/redo,
+no-op redo preservation, invalid ranges/values, Enter/join preservation, v12
+roundtrip, legacy rejection/migration and write/sync/replace failure preservation.
+Widget tests type indents with spacing in one operation; invalid input and Cancel
+leave the model intact. Style dialog changes remain a single history transaction.
+Layout tests cover wrapped/empty paragraphs, all four alignment modes, Unicode
+scalar hit testing at grapheme boundaries and narrow viewport scaling.
+
+The extended style dialog initially exceeded the 640 × 480 DIP window; compact
+grid spacing and preview height corrected it. Existing create/modify/rename
+keyboard and synthetic size/scale tests now pass. Native capture-harness images
+are recorded in UI_SPEC. Ordinary native keyboard/IME input was not repeated;
+Windows 100/125/150% and matched Word reference checks remain deferred. Server CI
+is recorded separately in the journal. No merge/tag/release.

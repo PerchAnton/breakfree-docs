@@ -126,4 +126,6 @@ Historical alpha.41 checkpoint: alpha.40 approved; alpha.41 then awaited approva
 
 Alpha.41 writes native v10 direct paragraph spacing and reads v1–v10. Alpha.40 and earlier reject v10 saves; process/settings remain v1.
 
-Alpha.41 explicitly approved in chat; alpha.42 awaits approval. No merge/tag/release authorized. Alpha.42 writes native v11 and reads v1–v11; process/settings remain v1.
+Historical alpha.42 checkpoint: alpha.41 approved; alpha.42 then awaited approval. No merge/tag/release authorized. Alpha.42 writes native v11 and reads v1–v11; process/settings remain v1.
+
+Alpha.42 explicitly approved in chat; alpha.43 awaits approval. No merge/tag/release authorized. Alpha.43 writes native v12 and reads v1–v12; process/settings remain v1.

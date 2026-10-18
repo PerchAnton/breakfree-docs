@@ -100,7 +100,17 @@ pub fn galley(
     for (index, p) in source.paragraphs.iter().enumerate() {
         let resolved = source.resolved_paragraph(p);
         let mut job = LayoutJob::default();
-        job.wrap.max_width = width;
+        let mut left = f32::from(resolved.left_indent_half_points) * size / 22.;
+        let mut right = f32::from(resolved.right_indent_half_points) * size / 22.;
+        // Preserve a usable text column on very narrow viewports without changing model values.
+        let available = (width - 32.).max(0.);
+        if left + right > available {
+            let scale = available / (left + right);
+            left *= scale;
+            right *= scale;
+        }
+        let text_width = (width - left - right).max(1.);
+        job.wrap.max_width = text_width;
         job.justify = p.alignment == Alignment::Justify;
         // Sections use UTF-8 byte ranges internally; editor positions remain scalar indices.
         let chars: Vec<char> = p.text.chars().collect();
@@ -142,12 +152,13 @@ pub fn galley(
         let mut paragraph = ctx.fonts_mut(|f| f.layout_job(job)).as_ref().clone();
         for placed in &mut paragraph.rows {
             let row = Arc::make_mut(&mut placed.row);
-            let extra = (width - row.size.x).max(0.);
-            let shift = match p.alignment {
-                Alignment::Center => extra / 2.,
-                Alignment::Right => extra,
-                _ => 0.,
-            };
+            let extra = (text_width - row.size.x).max(0.);
+            let shift = left
+                + match p.alignment {
+                    Alignment::Center => extra / 2.,
+                    Alignment::Right => extra,
+                    _ => 0.,
+                };
             if shift > 0. {
                 for glyph in &mut row.glyphs {
                     glyph.pos.x += shift;

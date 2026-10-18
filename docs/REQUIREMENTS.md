@@ -221,3 +221,20 @@ Formatting inspection reports the source. Spacing applies once before each
 paragraph, including the first, and adds to the previous paragraph's space after.
 This continuous layout policy is not pagination. Native v11 preserves the property;
 v1–v10 imports resolve to zero before. Windows acceptance remains deferred.
+
+## Paragraph indents (alpha.43)
+
+Home → Paragraph spacing now includes Left indent and Right indent, in points
+(0–144, half-point steps). Each checkbox selects a property to change; unchecked
+fields keep existing values. A checked blank restores style inheritance. Use style
+spacing and indents resets all five properties in one Undo/Redo. Paragraph style
+creation/modification exposes the same fields; blank inherits the nearest ancestor,
+then document default zero. Direct zero explicitly cancels an inherited indent.
+Formatting inspection identifies each supplying style or direct override.
+
+Wrap and alignment use the indented column. On narrow views, horizontal indents
+shrink proportionally to retain up to 32 DIP of text width; document values remain
+unchanged. This is continuous layout, not pagination. Enter/join/Replace All follow
+the existing paragraph geometry copying policy. Native v12 preserves both indents;
+v1–v11 imports use zero. First-line/hanging indents, negative outdents and interactive
+ruler handles remain separate increments. Windows acceptance remains deferred.

@@ -56,3 +56,18 @@ reset now clears all three properties. Native v11 carries the new key; older
 readers reject it and retain their strict typed validation. Continuous layout adds
 before-current to after-previous, including before the first paragraph, once per
 paragraph regardless of wrapping. This does not establish pagination behavior.
+
+## Alpha.43 extension: horizontal indents
+
+Store left/right optional half-point indents alongside paragraph geometry in the
+existing spacing object and paragraph style definition. Limit each to 0–144 pt;
+resolve independently through ancestors/default zero/direct override. Keep/set/
+inherit patches share a validated command and one history transaction with spacing.
+Existing Enter, join and Replace All geometry copying includes these fields.
+Native v12 adds keys; v1–v11 reject them, even null. No dependency/license change.
+
+The layout adapter subtracts both indents before wrapping/justification, then shifts
+rendered glyphs and cursor geometry by the left indent and alignment offset. On
+narrow viewports, scale indents proportionally to reserve up to 32 DIP for text,
+without editing the model. First-line/hanging indents, negative outdents, ruler
+handles and page-layout width constraints require separate decisions and tests.

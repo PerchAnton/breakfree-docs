@@ -250,6 +250,10 @@ pub struct StyleDefinition {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub space_before_half_points: Option<u16>,
     pub space_after_half_points: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub left_indent_half_points: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub right_indent_half_points: Option<u16>,
 }
 
 /// Bound catalog traversal and menu sizes independently of document length.
@@ -300,6 +304,8 @@ pub struct ResolvedParagraphStyle {
     pub line_height_percent: u16,
     pub space_before_half_points: u16,
     pub space_after_half_points: u16,
+    pub left_indent_half_points: u16,
+    pub right_indent_half_points: u16,
 }
 impl ResolvedParagraphStyle {
     pub fn line_height(self) -> f32 {
@@ -483,6 +489,12 @@ impl StyleCatalog {
             if definition.space_after_half_points.is_some_and(|v| v > 400) {
                 return Err("Space after must be 0–200 pt in half-point steps.".into());
             }
+            if definition.left_indent_half_points.is_some_and(|v| v > 288) {
+                return Err("Indent must be 0–144 pt in half-point steps.".into());
+            }
+            if definition.right_indent_half_points.is_some_and(|v| v > 288) {
+                return Err("Indent must be 0–144 pt in half-point steps.".into());
+            }
             let mut seen = Vec::new();
             let mut next = Some(id);
             while let Some(current) = next {
@@ -512,11 +524,19 @@ impl StyleCatalog {
             line_height_percent: 125,
             space_before_half_points: 0,
             space_after_half_points: 11,
+            left_indent_half_points: 0,
+            right_indent_half_points: 0,
         };
         for id in chain.into_iter().rev() {
             let Some(definition) = self.get(id) else {
                 continue;
             };
+            resolved.left_indent_half_points = definition
+                .left_indent_half_points
+                .unwrap_or(resolved.left_indent_half_points);
+            resolved.right_indent_half_points = definition
+                .right_indent_half_points
+                .unwrap_or(resolved.right_indent_half_points);
             resolved.character = definition.character.resolve(resolved.character);
             resolved.line_height_percent = definition
                 .line_height_percent
@@ -550,6 +570,10 @@ pub struct ParagraphSpacing {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub space_before_half_points: Option<u16>,
     pub space_after_half_points: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub left_indent_half_points: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub right_indent_half_points: Option<u16>,
 }
 impl ParagraphSpacing {
     pub fn validate(self) -> Result<()> {
@@ -558,6 +582,12 @@ impl ParagraphSpacing {
             .is_some_and(|v| !(100..=300).contains(&v))
         {
             return Err("Line spacing must be 100–300 percent.".into());
+        }
+        if self.left_indent_half_points.is_some_and(|v| v > 288) {
+            return Err("Indent must be 0–144 pt in half-point steps.".into());
+        }
+        if self.right_indent_half_points.is_some_and(|v| v > 288) {
+            return Err("Indent must be 0–144 pt in half-point steps.".into());
         }
         if self.space_before_half_points.is_some_and(|v| v > 400) {
             return Err("Space before must be 0–200 pt in half-point steps.".into());
@@ -830,6 +860,14 @@ impl Document {
 
     pub fn resolved_paragraph(&self, paragraph: &Paragraph) -> ResolvedParagraphStyle {
         let mut resolved = self.style_catalog.resolve(paragraph.paragraph_style);
+        resolved.right_indent_half_points = paragraph
+            .spacing
+            .right_indent_half_points
+            .unwrap_or(resolved.right_indent_half_points);
+        resolved.left_indent_half_points = paragraph
+            .spacing
+            .left_indent_half_points
+            .unwrap_or(resolved.left_indent_half_points);
         resolved.line_height_percent = paragraph
             .spacing
             .line_height_percent
@@ -902,4 +940,25 @@ impl Document {
     pub fn character_count(&self) -> usize {
         self.text().chars().count()
     }
+}
+
+/// Parse an optional half-point indent without floating-point rounding.
+pub fn parse_indent(text: &str) -> Result<Option<u16>> {
+    let text = text.trim();
+    if text.is_empty() {
+        return Ok(None);
+    }
+    let (whole, fraction) = text.split_once('.').unwrap_or((text, "0"));
+    let half = match fraction {
+        "0" | "" => 0,
+        "5" => 1,
+        _ => return Err("Indent must be 0–144 pt in half-point steps.".into()),
+    };
+    let whole: u16 = whole
+        .parse()
+        .map_err(|_| "Indent must be 0–144 pt in half-point steps.")?;
+    if whole > 144 || (whole == 144 && half != 0) {
+        return Err("Indent must be 0–144 pt in half-point steps.".into());
+    }
+    Ok(Some(whole * 2 + half))
 }

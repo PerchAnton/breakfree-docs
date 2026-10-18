@@ -1369,3 +1369,30 @@ SHA-256: `baf4e00d4758ae90731aec4d447d04b5de9e8acea453c8d9e2023e5579438d8e`.
 ![Paragraph spacing](screenshots/rust-paragraph-before-alpha42-compact-macos.png)
 
 SHA-256: `8c8ae085a007329950df631a0bc2a4f8dfa06b085dfbf365e6bd1320c26fd9f3`.
+
+## Alpha43 paragraph indents
+
+Preserve the palette and original icons. The existing paragraph modal now has
+five independent checked fields: line/before/after/left/right. Content width stays
+370 DIP, fields 90 DIP and actions 82 × 27 DIP. The title and reset label explicitly
+include indents. Left/right use 0–144 pt in half-point steps, with blank inheritance.
+Formatting source inspection adds both resolved values and their sources.
+
+Style dialogs expose left/right under spacing. Below 600 DIP window height, grid
+vertical gaps reduce from 7 to 3 DIP and preview height from 48 to 24 DIP; all
+fields/actions remain visible at 640 × 480. The native images below were inspected
+for clipped labels and overlapping controls. These capture-harness renders do not
+establish ordinary native keyboard/IME or Windows/reference acceptance; those
+remain deferred. Existing emoji fallback limitation remains visible.
+
+![Paragraph indents](screenshots/rust-indents-alpha43-macos.png)
+
+SHA-256: `28fe4adb22d8f055fb15e980d6715abfd49b3b7277f25d2edbffdb0986b5831c`.
+
+![Paragraph indents](screenshots/rust-indents-alpha43-compact-macos.png)
+
+SHA-256: `be09ca74db2d4a7df1175c2e48484d3ad48966ab3696d308fcec742a3ebe2e56`.
+
+![Paragraph indents](screenshots/rust-style-indents-alpha43-compact-macos.png)
+
+SHA-256: `b62b2524f335c5ce8607394feffdbe467df346f3b2a866c75a5f76033c4e85d9`.

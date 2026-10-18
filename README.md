@@ -262,9 +262,9 @@ to the replacement and rejects a descendant replacement that would create a cycl
 [Character-style rules](docs/adr/0011-character-style-precedence.md).
 [Style rules](docs/adr/0008-custom-named-styles.md) · [Deletion rules](docs/adr/0009-delete-custom-styles.md).
 
-This build reads native content v1/v2/v3/v4/v5/v6/v7/v8/v9/v10/v11 and **saves v11**. Opening an older file
-does not change it; an explicit save converts it to v11. Earlier builds cannot
-open new v11 saves. Use Save As to keep an older copy. See [format details](docs/NATIVE_FORMAT.md).
+This build reads native content v1/v2/v3/v4/v5/v6/v7/v8/v9/v10/v11/v12 and **saves v12**. Opening an older file
+does not change it; an explicit save converts it to v12. Earlier builds cannot
+open new v12 saves. Use Save As to keep an older copy. See [format details](docs/NATIVE_FORMAT.md).
 File provides New/Open/Save/Save As, unsaved Save/Discard/Cancel and view settings;
 Print is disabled. Navigation and the formatting pane operate on real model ranges.
 The white canvas is continuous; pagination, page numbers and print layout are absent.
@@ -552,7 +552,7 @@ one undo operation; Cancel/Escape changes nothing. The selection uses the same
 half-open paragraph range as alignment. Direct spacing survives style changes,
 Enter, joins and Replace All. Formatting inspection identifies direct overrides.
 
-This is spacing only: alignment stays independent; indentation,
+Alignment stays independent; first-line/hanging indents,
 tabs and pagination remain deferred. [ADR 0013](docs/adr/0013-direct-paragraph-spacing.md)
 defines native v10 and editing policy. Windows acceptance is deferred by the owner.
 
@@ -568,3 +568,20 @@ Formatting inspection reports the source. Spacing applies once before each
 paragraph, including the first, and adds to the previous paragraph's space after.
 This continuous layout policy is not pagination. Native v11 preserves the property;
 v1–v10 imports resolve to zero before. Windows acceptance remains deferred.
+
+## Paragraph indents (alpha.43)
+
+Home → Paragraph spacing now includes Left indent and Right indent, in points
+(0–144, half-point steps). Each checkbox selects a property to change; unchecked
+fields keep existing values. A checked blank restores style inheritance. Use style
+spacing and indents resets all five properties in one Undo/Redo. Paragraph style
+creation/modification exposes the same fields; blank inherits the nearest ancestor,
+then document default zero. Direct zero explicitly cancels an inherited indent.
+Formatting inspection identifies each supplying style or direct override.
+
+Wrap and alignment use the indented column. On narrow views, horizontal indents
+shrink proportionally to retain up to 32 DIP of text width; document values remain
+unchanged. This is continuous layout, not pagination. Enter/join/Replace All follow
+the existing paragraph geometry copying policy. Native v12 preserves both indents;
+v1–v11 imports use zero. First-line/hanging indents, negative outdents and interactive
+ruler handles remain separate increments. Windows acceptance remains deferred.

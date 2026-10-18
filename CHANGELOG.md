@@ -3,6 +3,14 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.43 — 2026-10-18
+
+- Add left/right paragraph indents (0–144 pt, half-point steps) inherited independently from paragraph styles. Direct zero overrides inheritance; partial edits and reset use one Undo/Redo with spacing.
+- Extend paragraph/style dialogs and formatting source inspection. Wrap and align inside the indented column; proportionally reduce visual indents on narrow viewports to retain a 32 DIP text column, without changing saved values.
+- Keep compact style dialogs within the minimum window after adding fields. Preserve palette/icons and dependencies.
+- Write native v12; read v1–v12. Older files inherit zero indents and older schemas reject the new keys. Alpha.42 and earlier reject v12 saves; use Save As to retain an older copy.
+- Alpha.42 approved; alpha.43 awaits approval. Windows acceptance remains deferred. First-line/hanging indents and interactive ruler handles are future increments.
+
 ## 0.1.0-alpha.42 — 2026-10-18
 
 - Add paragraph space before (0–200 pt, half-point increments) to style inheritance and direct formatting. Explicit zero overrides inherited spacing; partial edits and reset share one Undo/Redo.

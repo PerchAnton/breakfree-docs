@@ -3996,6 +3996,8 @@ fn modify_style_draft_cancel_invalid_parent_apply_and_history_are_modal() {
     dialog.definition.character.italic = Some(true);
     dialog.line = "150".into();
     dialog.after = "8.5".into();
+    dialog.left = "18".into();
+    dialog.right = "12.5".into();
     frame(&ctx, &mut app, vec![], size, 1.);
     click_region(&ctx, &mut app, "style-dialog-ok");
     assert!(app.style_dialog.is_none());
@@ -6230,6 +6232,16 @@ fn paragraph_spacing_dialog_real_input_history_reset_and_layout() {
         [1366., 900.],
         1.,
     );
+    for (field, text) in [("paragraph-left", "18"), ("paragraph-right", "12.5")] {
+        click_region(&ctx, &mut app, field);
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::Text(text.into())],
+            [1366., 900.],
+            1.,
+        );
+    }
     app.execute(Action::New, &ctx); // Modal must guard background commands.
     assert_eq!(app.session.editor.document, before);
     click_region(&ctx, &mut app, "paragraph-ok");
@@ -6244,6 +6256,14 @@ fn paragraph_spacing_dialog_real_input_history_reset_and_layout() {
     assert_eq!(
         after.paragraphs[0].spacing.space_before_half_points,
         Some(15)
+    );
+    assert_eq!(
+        after.paragraphs[0].spacing.left_indent_half_points,
+        Some(36)
+    );
+    assert_eq!(
+        after.paragraphs[0].spacing.right_indent_half_points,
+        Some(25)
     );
     assert_eq!(after.paragraphs[1], before.paragraphs[1]);
     let layout_after = layout::galley(
@@ -6335,6 +6355,8 @@ fn paragraph_spacing_keytips_and_scaled_modal_bounds() {
             for name in [
                 "paragraph-line",
                 "paragraph-before",
+                "paragraph-left",
+                "paragraph-right",
                 "paragraph-after",
                 "paragraph-ok",
                 "paragraph-cancel",
@@ -6388,4 +6410,92 @@ fn space_before_offsets_first_wrapped_and_empty_paragraphs_once() {
         }
     }
     assert!((b.rect.height() - a.rect.height() - 66.).abs() < 0.01);
+}
+
+#[test]
+fn paragraph_indents_wrap_align_and_hit_test_without_changing_text() {
+    let (ctx, mut app) = setup();
+    app.session
+        .editor
+        .replace(
+            0,
+            0,
+            "English words wrap here and continue\n\nУкраїна e\u{301}\nРусский",
+            "Fixture",
+        )
+        .unwrap();
+    let mut doc = app.session.editor.document.clone();
+    doc.style_catalog.normal.left_indent_half_points = Some(36);
+    doc.style_catalog.normal.right_indent_half_points = Some(24);
+    for alignment in [
+        Alignment::Left,
+        Alignment::Center,
+        Alignment::Right,
+        Alignment::Justify,
+    ] {
+        for p in &mut doc.paragraphs {
+            p.alignment = alignment;
+        }
+        let g = layout::galley(
+            &ctx,
+            &doc,
+            &doc.text(),
+            CharacterFormat::default(),
+            0,
+            130.,
+            11.,
+        );
+        assert_eq!(g.text(), doc.text());
+        assert!(g.rows.len() > doc.paragraphs.len());
+        for row in &g.rows {
+            assert!(row.x_offset(0) >= 17.9);
+            assert!(row.size.x <= 118.5, "{:?}: {}", alignment, row.size.x);
+        }
+        for i in [0, 3, 36, 37, 40, 46, 48] {
+            let pos = g.pos_from_cursor(CCursor::new(i));
+            assert_eq!(
+                g.cursor_from_pos(pos.center().to_vec2()).index,
+                i,
+                "{alignment:?}, {i}"
+            );
+        }
+    }
+    for p in &mut doc.paragraphs {
+        p.alignment = Alignment::Left;
+    }
+    doc.style_catalog.normal.left_indent_half_points = Some(288);
+    doc.style_catalog.normal.right_indent_half_points = Some(288);
+    let g = layout::galley(
+        &ctx,
+        &doc,
+        &doc.text(),
+        CharacterFormat::default(),
+        0,
+        80.,
+        11.,
+    );
+    assert!(g.rows.iter().all(|r| r.size.x <= 56.5));
+    assert_eq!(doc.style_catalog.normal.left_indent_half_points, Some(288));
+}
+
+#[test]
+fn paragraph_indent_invalid_widget_input_is_transactional() {
+    let (ctx, mut app) = setup();
+    let before = app.session.editor.document.clone();
+    app.execute(Action::ParagraphSpacing, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    click_region(&ctx, &mut app, "paragraph-left");
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("144.5".into())],
+        [1366., 900.],
+        1.,
+    );
+    click_region(&ctx, &mut app, "paragraph-ok");
+    assert!(app.paragraph_dialog.is_some());
+    assert_eq!(app.session.editor.document, before);
+    click_region(&ctx, &mut app, "paragraph-cancel");
+    assert!(app.paragraph_dialog.is_none());
+    assert_eq!(app.session.editor.document, before);
 }
