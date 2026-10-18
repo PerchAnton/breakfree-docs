@@ -699,3 +699,13 @@ it preserves the direct left indent. Plain Delete still resets all three propert
 Enter/Tab accepts one Undo/Redo operation, Escape/F6 cancels. Other direct indents,
 spacing, alignment and content are preserved, including when the chosen property
 already inherits its value (no-op reset preserves redo).
+
+
+## Ruler value sources (alpha.52)
+
+Hover an indent marker to see whether its value comes from direct paragraph
+formatting, its paragraph style, an ancestor style (named), or the document default.
+Source groups include paragraph counts; equal values can still have Mixed sources.
+First-line/continuation markers show both left and special-indent provenance.
+The inspection follows the current reset/drag preview and undo/redo. It creates no
+overrides or history. Long source lists show three groups and a remaining count.

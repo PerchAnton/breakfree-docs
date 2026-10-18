@@ -79,6 +79,8 @@ pub struct SelectionValues {
     pub amounts: [ValueRange; 4],
     /// Overall left, first-line origin, continuation origin, right inset.
     pub positions: [ValueRange; 4],
+    /// Left, right and signed first-line/hanging provenance, grouped by source.
+    pub sources: [Vec<(String, usize)>; 3],
 }
 impl SelectionValues {
     pub fn read(document: &Document, selection: (usize, usize)) -> Result<Self> {
@@ -112,6 +114,7 @@ impl SelectionValues {
             count: last - first + 1,
             amounts: amounts.map(ValueRange::new),
             positions: positions.map(ValueRange::new),
+            sources: std::array::from_fn(|_| Vec::new()),
         };
         for paragraph in &document.paragraphs[first + 1..last + 1] {
             let (amounts, positions) = collect(document.resolved_paragraph(paragraph));
@@ -120,7 +123,57 @@ impl SelectionValues {
                 result.positions[i].include(positions[i]);
             }
         }
+        for paragraph in &document.paragraphs[first..=last] {
+            let properties = crate::formatting::inspect_paragraph(document, paragraph);
+            for (index, name) in ["Left indent", "Right indent", "Special indent"]
+                .into_iter()
+                .enumerate()
+            {
+                if let Some(property) = properties.iter().find(|p| p.name == name) {
+                    if let Some((_, count)) = result.sources[index]
+                        .iter_mut()
+                        .find(|(source, _)| source == &property.source)
+                    {
+                        *count += 1;
+                    } else {
+                        result.sources[index].push((property.source.clone(), 1));
+                    }
+                }
+            }
+        }
         Ok(result)
+    }
+    pub fn source_details(&self, handle: Handle) -> String {
+        let indices: &[usize] = match handle {
+            Handle::Left => &[0],
+            Handle::Right => &[1],
+            Handle::First | Handle::Body => &[0, 2],
+        };
+        indices
+            .iter()
+            .map(|&index| {
+                let sources = &self.sources[index];
+                let label = ["Left indent", "Right indent", "First-line/hanging"][index];
+                let mut detail = sources
+                    .iter()
+                    .take(3)
+                    .map(|(source, count)| format!("{source} ({count} paragraph(s))"))
+                    .collect::<Vec<_>>()
+                    .join("; ");
+                if sources.len() > 3 {
+                    detail.push_str(&format!("; {} more source(s)", sources.len() - 3));
+                }
+                format!(
+                    "{label} source: {}{detail}",
+                    if sources.len() > 1 {
+                        "Mixed sources — "
+                    } else {
+                        ""
+                    }
+                )
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
     }
     pub fn position(&self, handle: Handle) -> ValueRange {
         self.positions[match handle {
@@ -151,7 +204,7 @@ impl SelectionValues {
     }
     pub fn marker_details(&self, handle: Handle) -> String {
         format!(
-            "{} paragraph(s). {} Marker {}: {}. Markers are anchored to the first selected paragraph; editing applies changed properties to the selection.",
+            "{} paragraph(s). {} Marker {}: {}. Markers are anchored to the first selected paragraph; editing applies changed properties to the selection.\n{}",
             self.count,
             self.details(),
             if handle == Handle::Right {
@@ -159,7 +212,8 @@ impl SelectionValues {
             } else {
                 "origin from left"
             },
-            self.position(handle).detail()
+            self.position(handle).detail(),
+            self.source_details(handle)
         )
     }
 }
@@ -327,6 +381,93 @@ mod tests {
         e.selection = (0, e.document.text().chars().count());
         e.undo_stack.clear();
         e
+    }
+    #[test]
+    fn provenance_separates_equal_values_from_different_sources_and_exclusive_end() {
+        let mut e = editor();
+        e.document.style_catalog.normal.left_indent_half_points = Some(37);
+        e.document.paragraphs[0].paragraph_style = crate::model::ParagraphStyle::Heading1;
+        e.document.paragraphs[1].spacing.left_indent_half_points = Some(37);
+        let end = e.document.paragraphs[..2]
+            .iter()
+            .map(|p| p.text.chars().count() + 1)
+            .sum();
+        let before = e.document.clone();
+        let s = SelectionValues::read(&e.document, (0, end)).unwrap();
+        assert!(!s.amounts[0].mixed());
+        assert_eq!(s.count, 2);
+        let text = s.source_details(Handle::Left);
+        assert!(text.contains("Mixed sources"));
+        assert!(text.contains("Inherited paragraph style: Normal (1 paragraph(s))"));
+        assert!(text.contains("Direct paragraph formatting (1 paragraph(s))"));
+        assert!(!s.source_details(Handle::Right).contains("Left indent"));
+        assert!(s.source_details(Handle::First).contains("Left indent"));
+        assert!(
+            s.source_details(Handle::Body)
+                .contains("First-line/hanging")
+        );
+        assert_eq!(e.document, before);
+        assert!(e.undo_stack.is_empty());
+    }
+    #[test]
+    fn provenance_tracks_reset_preview_history_and_custom_style_names() {
+        let mut e = editor();
+        e.selection = (0, 0);
+        e.create_style(
+            "Body Україна",
+            crate::model::StyleDefinition {
+                first_line_half_points: Some(-31),
+                ..Default::default()
+            },
+            true,
+        )
+        .unwrap();
+        e.document.paragraphs[0].spacing.first_line_half_points = Some(31);
+        let before = e.document.clone();
+        let mut d = Draft::new(&e, Handle::First).unwrap();
+        d.reset_property(ResetIndent::FirstLine).unwrap();
+        let text = SelectionValues::read(&d.preview, e.selection)
+            .unwrap()
+            .source_details(Handle::First);
+        assert!(text.contains("Paragraph style: Body Україна"));
+        assert!(
+            SelectionValues::read(&e.document, e.selection)
+                .unwrap()
+                .source_details(Handle::First)
+                .contains("Direct paragraph formatting")
+        );
+        d.commit(&mut e).unwrap();
+        assert_eq!(
+            SelectionValues::read(&e.document, e.selection)
+                .unwrap()
+                .source_details(Handle::First),
+            text
+        );
+        e.undo();
+        assert_eq!(e.document, before);
+        e.redo();
+        assert_eq!(
+            SelectionValues::read(&e.document, e.selection)
+                .unwrap()
+                .source_details(Handle::First),
+            text
+        );
+    }
+    #[test]
+    fn provenance_reports_document_default_and_counts_common_sources() {
+        let mut e = editor();
+        e.document.style_catalog.normal.left_indent_half_points = None;
+        let s = SelectionValues::read(&e.document, e.selection).unwrap();
+        assert_eq!(
+            s.source_details(Handle::Left),
+            "Left indent source: Document default (3 paragraph(s))"
+        );
+        e.document.paragraphs[0].spacing.left_indent_half_points = Some(0);
+        let s = SelectionValues::read(&e.document, (0, 0)).unwrap();
+        assert!(
+            s.source_details(Handle::Left)
+                .contains("Direct paragraph formatting")
+        );
     }
     #[test]
     fn individual_resets_preserve_other_overrides_and_one_history_roundtrip() {

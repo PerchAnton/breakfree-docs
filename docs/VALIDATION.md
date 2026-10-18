@@ -8,16 +8,16 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.51**. Historical evidence retains its scope.
+Current local checkpoint: **0.1.0-alpha.52**. Historical evidence retains its scope.
 
 | Local check | Observed result |
 | --- | --- |
-| Full / no-default-features tests | 289 / 145 passed; individual reset preservation/history and all menu/marker mappings checked |
+| Full / no-default-features tests | 293 / 148 passed; source aggregation, preview/history and actual tooltip rendering checked |
 | fmt / Clippy | Passed; normal/capture all-target checks with warnings denied |
 | Release builds | Native binary and capture harness passed without Office/sibling inputs |
-| CLI | Version/capabilities report alpha.51; existing CLI subprocess tests pass |
+| CLI | Version/capabilities report alpha.52; existing CLI subprocess tests pass |
 | Repository/artwork/YAML/whitespace | Passed |
-| Native rendering | Individual ruler reset inspected at 1366 × 900 / 640 × 480 DIP |
+| Native rendering | Ruler source tooltip inspected at 1366 × 900 / 640 × 480 DIP |
 | Native input | Not repeated this iteration; previous automation lost its window. CPU widget events are separate evidence |
 | Existing regressions | Home geometry, minimum-width 64-style keyboard scrolling, history, storage and synthetic scaling checks retained |
 
@@ -1378,3 +1378,20 @@ fits. These use injected widget events; ordinary OS keyboard, Windows display
 scaling and matched Word reference checks were not performed. Native v13 and
 process/settings v1 are unchanged. Alpha.50 code/journal CI succeeded; alpha.51 CI
 is reported separately. No merge/tag/release.
+
+
+## Alpha.52 ruler provenance validation
+
+2026-10-18, macOS arm64 / Rust 1.99.1: **293 full / 148 core-only tests** passed.
+fmt, normal/capture all-target Clippy with warnings denied, release/capture builds,
+repository/artwork/YAML/whitespace and isolated executable CLI identity/capabilities
+passed. Four new cases cover equal values with different sources, direct/inherited/
+default attribution, half-open selection and counts, custom style names, reset
+preview/commit/undo/redo and real widget tooltip text without document/history edits.
+The capture fixture's formatting was corrected and capture Clippy repeated.
+
+Two native hover captures at 1366 × 900 / 640 × 480 DIP were inspected: mixed
+source groups and counts wrap within the window. Ordinary OS keyboard, Windows
+scaling and matched Word reference checks remain unperformed/deferred. The source
+inspector is shared with the Formatting pane; native v13 and process/settings v1
+are unchanged. Server CI is reported separately. No merge/tag/release.

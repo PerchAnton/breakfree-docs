@@ -7722,3 +7722,50 @@ fn ruler_shift_delete_resets_only_focused_property_with_cancel_and_history() {
         assert_eq!(app.session.editor.document, after);
     }
 }
+
+#[test]
+fn ruler_hover_displays_provenance_without_editing() {
+    fn has_source(shape: &egui::Shape) -> bool {
+        match shape {
+            egui::Shape::Text(t) => t.galley.job.text.contains("Direct paragraph formatting"),
+            egui::Shape::Vec(shapes) => shapes.iter().any(has_source),
+            _ => false,
+        }
+    }
+    let (ctx, mut app) = setup();
+    ctx.style_mut(|s| {
+        s.interaction.tooltip_delay = 0.;
+        s.interaction.tooltip_grace_time = 0.;
+    });
+    app.session.editor.document.paragraphs[0]
+        .spacing
+        .right_indent_half_points = Some(24);
+    for _ in 0..3 {
+        frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    }
+    let pos = app
+        .regions
+        .iter()
+        .find(|r| r.name == "ruler-right")
+        .unwrap()
+        .rect
+        .center();
+    let before = app.session.editor.document.clone();
+    let n = app.session.editor.undo_stack.len();
+    let mut found = false;
+    for i in 0..5 {
+        let output = ctx.run(
+            egui::RawInput {
+                screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(1366., 900.))),
+                time: Some(10. + i as f64),
+                events: vec![egui::Event::PointerMoved(pos)],
+                ..Default::default()
+            },
+            |ctx| app.update_ui(ctx),
+        );
+        found |= output.shapes.iter().any(|s| has_source(&s.shape));
+    }
+    assert!(found, "Ruler tooltip must render the source");
+    assert_eq!(app.session.editor.document, before);
+    assert_eq!(app.session.editor.undo_stack.len(), n);
+}

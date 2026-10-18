@@ -3,6 +3,12 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.52 — 2026-10-18
+
+- Show indent provenance in ruler marker tooltips and accessibility descriptions: direct paragraph formatting, supplying paragraph/ancestor style, or document default.
+- Aggregate source counts independently of common/mixed values across the same half-open paragraph selection. First-line/continuation tips include left and special-indent sources; long source lists show three entries plus a remainder count.
+- Reuse the existing formatting inspector; sources follow detached previews and Undo/Redo without adding edits. Preserve design, palette/icons and native v13. Alpha.51 approved; alpha.52 awaits approval. Windows remains deferred.
+
 ## 0.1.0-alpha.51 — 2026-10-18
 
 - Add separate ruler menu commands to reset left, right or first-line/hanging indentation to the paragraph style, preserving every other direct override.

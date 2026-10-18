@@ -1616,3 +1616,26 @@ SHA-256: `dc531254ace50203e942de028e44a9c4f6688c5f6840061550359aec636a11a4`.
 SHA-256: `939dc5ea8835a9aed50933f8deb708a1648db83e0632e970de7d74d60230f7f2`.
 
 Both native macOS capture fixtures were inspected: the special-indent reset retains left/right values, the scoped label fits at both widths and scale geometry is unchanged. Widget-injected events do not establish native OS keyboard or Windows/reference acceptance.
+
+
+## Alpha.52 ruler provenance tooltips
+
+Preserve scale/marker geometry, palette and icons. Existing marker tooltips and
+accessibility descriptions append source groups with paragraph counts. Left/right
+markers describe their own property; first-line and continuation markers describe
+left plus first-line/hanging, which jointly determine position. Sources come from
+the existing formatting inspector: direct paragraph formatting, named paragraph or
+inherited style, document default. Mixed sources are independent of Mixed amounts.
+Display at most three source groups per property and a remaining-group count;
+selection boundaries match edit commands. Preview snapshots drive provenance before
+commit; cancelling or Undo/Redo restores the corresponding source descriptions.
+
+![Mixed sources at 1366 × 900 DIP](screenshots/rust-ruler-sources-alpha52-macos.png)
+
+SHA-256: `7c33b2c4cef380a9e3f98cfbf41e91eb54fcef044e03e5ca32376c5b899ab585`.
+
+![Mixed sources at 640 × 480 DIP](screenshots/rust-ruler-sources-alpha52-compact-macos.png)
+
+SHA-256: `d1f797bb23e8a95665ced9c712cf78425544efa7a09ace4537a7949bb149753c`.
+
+Both native macOS capture fixtures were inspected: equal left amounts retain separate ancestor-style/direct groups with counts; special-indent provenance remains distinct. Tooltip text wraps within both windows. These are widget-injected hover fixtures, not native OS-input or Windows/reference validation.

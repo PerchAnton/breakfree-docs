@@ -364,4 +364,5 @@ Use public specifications and original test cases, not copied application code. 
 - [ ] Matched Word 2024 Windows ruler comparison; editable margins/tab stops depend on the corresponding layout model.
 
 - [x] Alpha.51: individual left/right/first-line-hanging reset commands, focused-marker Shift+Delete, preview/cancel and one Undo/Redo; unrelated overrides preserved (local tests).
-- [ ] Next: expose inherited/direct provenance in ruler marker tooltips, including mixed selections.
+- [x] Alpha.52: inherited/direct/default indent sources and mixed-source counts in marker tooltips/accessibility labels; preview/history and read-only inspection verified locally.
+- [ ] Next: review ruler tooltip discoverability and keyboard access to detailed provenance.

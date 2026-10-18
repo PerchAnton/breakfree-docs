@@ -19,6 +19,14 @@ struct Capture {
 impl eframe::App for Capture {
     fn raw_input_hook(&mut self, _ctx: &egui::Context, input: &mut egui::RawInput) {
         // Deterministic render fixture, including focus; this does not prove OS input.
+        if self.mode == "ruler-sources" {
+            input.focused = true;
+            if let Some(r) = self.app.regions.iter().find(|r| r.name == "ruler-first") {
+                input
+                    .events
+                    .push(egui::Event::PointerMoved(r.rect.center()));
+            }
+        }
         if self.mode.starts_with("keytips")
             || matches!(
                 self.mode.as_str(),
@@ -272,6 +280,9 @@ impl eframe::App for Capture {
     }
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        if self.mode == "ruler-sources" {
+            ctx.style_mut(|s| s.interaction.tooltip_delay = 0.);
+        }
         self.app.update_ui(ctx);
         for event in ctx.input(|i| i.events.clone()) {
             if let egui::Event::Screenshot { image, .. } = event {
@@ -335,6 +346,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "ruler-mixed",
             "ruler-reset",
             "ruler-reset-single",
+            "ruler-sources",
             "collapsed",
             "temporary",
             "view",
@@ -354,7 +366,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ]
         .contains(&args[2].as_str())
     {
-        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|styles-modify|styles-following|styles-create|styles-rename|styles-delete|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|paragraph|indent-layout|ruler-keyboard|ruler-mixed|ruler-reset|ruler-reset-single|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
+        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|styles-modify|styles-following|styles-create|styles-rename|styles-delete|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|paragraph|indent-layout|ruler-keyboard|ruler-mixed|ruler-reset|ruler-reset-single|ruler-sources|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
     }
     let path = std::env::var("BREAKFREE_CAPTURE_TO")
         .map_err(|_| "Set BREAKFREE_CAPTURE_TO to an output PNG path")?;
@@ -393,7 +405,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     let session = if matches!(
         args[2].as_str(),
-        "indent-layout" | "ruler-keyboard" | "ruler-mixed" | "ruler-reset" | "ruler-reset-single"
+        "indent-layout"
+            | "ruler-keyboard"
+            | "ruler-mixed"
+            | "ruler-reset"
+            | "ruler-reset-single"
+            | "ruler-sources"
     ) {
         let mut session = Session::default();
         let sample =
@@ -414,6 +431,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             } else {
                 breakfree_docs::model::Alignment::Left
             };
+        }
+        if args[2] == "ruler-sources" {
+            session
+                .editor
+                .document
+                .style_catalog
+                .normal
+                .left_indent_half_points = Some(36);
+            session.editor.document.paragraphs[0]
+                .spacing
+                .left_indent_half_points = None;
+            session.editor.document.paragraphs[0].paragraph_style =
+                breakfree_docs::model::ParagraphStyle::Heading1;
         }
         session.editor.document.validate()?;
         session.editor.selection = (0, 0);
@@ -535,8 +565,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "styles-delete" => app.execute(Action::DeleteStyle, &cc.egui_ctx),
                 "formatting" => app.execute(Action::Formatting, &cc.egui_ctx),
                 "indent-layout" | "ruler-keyboard" | "ruler-mixed" | "ruler-reset"
-                | "ruler-reset-single" => {
-                    if mode == "ruler-mixed" {
+                | "ruler-reset-single" | "ruler-sources" => {
+                    if mode == "ruler-mixed" || mode == "ruler-sources" {
                         app.execute(Action::SelectAll, &cc.egui_ctx);
                     }
                     if width < 800. {
