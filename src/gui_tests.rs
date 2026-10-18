@@ -5624,3 +5624,25 @@ fn formatting_provenance_pane_is_read_only_at_narrow_sizes() {
         );
     }
 }
+
+#[test]
+fn paragraph_provenance_pane_updates_without_history_changes() {
+    for scale in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        app.formatting = true;
+        app.session.editor.align(0, 0, Alignment::Center).unwrap();
+        let before = app.session.editor.document.clone();
+        frame(&ctx, &mut app, vec![], [960., 720.], scale);
+        assert_eq!(app.session.editor.document, before);
+        assert_eq!(
+            crate::formatting::paragraph_selection(&app.session.editor)[0].value,
+            "Center"
+        );
+        app.session.editor.undo();
+        frame(&ctx, &mut app, vec![], [960., 720.], scale);
+        assert_eq!(
+            crate::formatting::paragraph_selection(&app.session.editor)[0].value,
+            "Left"
+        );
+    }
+}

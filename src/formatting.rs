@@ -152,3 +152,100 @@ pub fn selection(editor: &Editor) -> Vec<PropertyInfo> {
     }
     result.unwrap_or_default()
 }
+
+/// Paragraph values use the same cascade as layout. Alignment is stored directly;
+/// the current format has no inherited alignment or optional alignment override.
+pub fn inspect_paragraph(
+    document: &Document,
+    paragraph: &crate::model::Paragraph,
+) -> Vec<PropertyInfo> {
+    use crate::model::Alignment;
+    let resolved = document.style_catalog.resolve(paragraph.paragraph_style);
+    let mut rows = vec![
+        PropertyInfo {
+            name: "Alignment",
+            value: match paragraph.alignment {
+                Alignment::Left => "Left",
+                Alignment::Center => "Center",
+                Alignment::Right => "Right",
+                Alignment::Justify => "Justify",
+            }
+            .into(),
+            source: "Paragraph value (not inherited)".into(),
+        },
+        PropertyInfo {
+            name: "Line spacing",
+            value: format!("{}%", resolved.line_height_percent),
+            source: "Document default".into(),
+        },
+        PropertyInfo {
+            name: "Space after",
+            value: format!("{} pt", resolved.space_after_points()),
+            source: "Document default".into(),
+        },
+    ];
+    let mut found = [false; 2];
+    let mut next = Some(paragraph.paragraph_style);
+    let mut seen = Vec::new();
+    while let Some(id) = next {
+        if seen.contains(&id) {
+            break;
+        }
+        seen.push(id);
+        let Some(definition) = document.style_catalog.get(id) else {
+            break;
+        };
+        let relation = if id == paragraph.paragraph_style {
+            "Paragraph style"
+        } else {
+            "Inherited paragraph style"
+        };
+        for (i, supplied) in [
+            definition.line_height_percent.is_some(),
+            definition.space_after_half_points.is_some(),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            if supplied && !found[i] {
+                rows[i + 1].source = format!("{relation}: {}", document.style_catalog.name(id));
+                found[i] = true;
+            }
+        }
+        next = definition.parent;
+    }
+    rows
+}
+
+/// Match alignment/style commands: exclude a paragraph at the exclusive end,
+/// but include the caret's paragraph and selected empty paragraphs/separators.
+pub fn paragraph_selection(editor: &Editor) -> Vec<PropertyInfo> {
+    let (start, end) = editor.selection;
+    if start > end {
+        return Vec::new();
+    }
+    let Ok((first, _)) = editor.document.locate(start) else {
+        return Vec::new();
+    };
+    let Ok((mut last, offset)) = editor.document.locate(end) else {
+        return Vec::new();
+    };
+    if end > start && offset == 0 && last > first {
+        last -= 1;
+    }
+    let mut result = inspect_paragraph(&editor.document, &editor.document.paragraphs[first]);
+    for paragraph in &editor.document.paragraphs[first + 1..=last] {
+        for (a, b) in result
+            .iter_mut()
+            .zip(inspect_paragraph(&editor.document, paragraph))
+        {
+            if a.value != b.value {
+                a.value = "Mixed".into();
+            }
+            if a.source != b.source {
+                a.source = "Mixed sources".into();
+            }
+        }
+    }
+    result
+}

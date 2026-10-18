@@ -3,6 +3,13 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.31 — 2026-10-18
+
+- Show alignment, line spacing and space-after values and sources in Formatting.
+- Distinguish paragraph-stored alignment from inherited intervals; preserve explicit zero and report mixed values/sources independently.
+- Inspect the same half-open paragraph range as editing commands, including empty paragraphs and caret positions. Read-only inspection preserves history and native v9.
+- Keep the palette/icons. Alpha.30 approved; alpha.31 awaits owner approval.
+
 ## 0.1.0-alpha.30 — 2026-10-18
 
 - Add a read-only Formatting pane inspector showing resolved Bold/Italic/Underline/size and authored source: direct formatting, character style/parent, paragraph style/parent or document default.

@@ -1161,3 +1161,19 @@ Light theme, English, 100% document zoom, macOS backing scale 2:
 | [Formatting](screenshots/rust-provenance-alpha30-macos-narrow.png) | 640 × 480 DIP | `3e2f0a9560224bfa31764587308db4e2eef23cb99b2507c32cb5500a5365e0b4` |
 
 Both captures inspected; no new overlap observed. Narrow body scrolls to lower commands. Native selection/direct-format/Undo/Redo source updates verified. Windows/Word comparison and native DPI remain unavailable; no similarity percentage claimed.
+
+## Alpha.31 paragraph provenance
+
+Formatting adds a Current paragraph / Selected paragraphs section after character
+properties. Alignment, Line spacing (%) and Space after (pt) each have value and
+wrapping source rows. The existing 220-DIP pane width and scrollable body remain;
+heading/close stay fixed. No palette, icon or ribbon geometry change.
+
+Light theme, English, 100% document zoom, macOS backing scale 2:
+
+| Capture | Window | SHA-256 |
+| --- | --- | --- |
+| [Paragraph sources](screenshots/rust-paragraph-provenance-alpha31-macos.png) | 1366 × 900 DIP | `6d7fc16318fa9da5c706434295d97097e121c99ad6cd03578bd501702ffd2704` |
+| [Paragraph sources](screenshots/rust-paragraph-provenance-alpha31-macos-narrow.png) | 640 × 480 DIP | `be9ac73737db870e6aaae9e04ee6df79cddc168e43c6f0a157c414e8e0adff46` |
+
+Both captures inspected; rows do not overlap. Lower rows and commands require scrolling at minimum height. Native No Spacing/centering/Undo/Redo source updates passed. No matched Windows/Word comparison or native Windows DPI verification; no similarity percentage claimed.

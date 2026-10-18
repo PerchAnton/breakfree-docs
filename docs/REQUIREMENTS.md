@@ -84,4 +84,19 @@ that supplies an inherited value. Equal-looking direct overrides remain direct.
 Mixed values and mixed sources are reported independently. With no selection,
 the pane describes future typing; selected paragraph separators have no character
 properties. This read-only view does not change document/history or native v9.
-Paragraph alignment/spacing provenance and style-management filtering remain future work.
+Alpha.31 adds paragraph-property provenance below; style-management filtering remains future work.
+
+## Paragraph provenance (alpha.31)
+
+Formatting also shows Alignment, Line spacing (percent) and Space after (points).
+Alignment is an explicit paragraph value in the current model, labeled
+“Paragraph value (not inherited)”; it is not attributed to a style or guessed
+from appearance. Intervals show the nearest supplying paragraph style/ancestor,
+or Document default. Explicit zero is preserved. There is no space-before property
+or direct paragraph-spacing override in this prototype.
+
+The paragraph section uses the same half-open selection rule as alignment/style
+commands: an exclusive end at the next paragraph start excludes that paragraph;
+a caret or selected empty paragraph still has paragraph properties. Mixed values
+and sources are independent. Inspection never mutates the document or undo history.
+Native content stays v9; palette and icons are unchanged.

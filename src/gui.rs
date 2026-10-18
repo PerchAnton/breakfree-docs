@@ -2445,6 +2445,22 @@ impl DocsApp {
                         }
                     });
                     ui.separator();
+                    ui.label(
+                        egui::RichText::new(if a == b {
+                            "Current paragraph"
+                        } else {
+                            "Selected paragraphs"
+                        })
+                        .strong(),
+                    );
+                    for row in crate::formatting::paragraph_selection(&self.session.editor) {
+                        let response = ui.label(
+                            egui::RichText::new(format!("{}: {}", row.name, row.value)).strong(),
+                        );
+                        self.record(&format!("provenance-{}", row.name), response.rect);
+                        ui.add(egui::Label::new(row.source).wrap());
+                    }
+                    ui.separator();
                     self.command(ui, "Bold", Action::Bold, vec2(150., 28.));
                     self.command(ui, "Italic", Action::Italic, vec2(150., 28.));
                     self.command(ui, "Underline", Action::Underline, vec2(150., 28.));

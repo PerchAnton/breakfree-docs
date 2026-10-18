@@ -8,18 +8,18 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.30**. Historical evidence retains its scope.
+Current local checkpoint: **0.1.0-alpha.31**. Historical evidence retains its scope.
 
 | Local check | Observed result |
 | --- | --- |
-| Full / no-default-features tests | 217 / 109 passed; three new provenance core tests and one read-only widget/scaling test |
-| fmt / Clippy | Passed; normal and capture all-target Clippy with warnings denied |
-| Release builds | Native binary and capture harness passed, no Office/sibling inputs |
-| CLI | Release version/capabilities return alpha.30; argument and isolated core checks pass |
+| Full / no-default-features tests | 221 / 112 passed; three new paragraph-provenance core tests and one widget/scaling test |
+| fmt / Clippy | Passed; normal/capture all-target checks with warnings denied |
+| Release builds | Native binary and capture harness passed without Office/sibling inputs |
+| CLI | Version/capabilities report alpha.31; CLI subprocess tests pass |
 | Repository/artwork/YAML/whitespace | Passed |
-| Native rendering | Formatting pane at 1366 × 900 and 640 × 480 DIP, backing scale 2, inspected; narrow content scrolls |
-| Native macOS input | Select custom styled text; open Formatting; Cmd+B changes inherited Strong to Direct formatting. Undo/Redo restore respective value/source; final Undo leaves document clean |
-| Synthetic DPI | Existing regressions retained; pane read-only check at 1/1.25/1.5 |
+| Native rendering | Formatting at 1366 × 900 / 640 × 480 DIP, backing scale 2, inspected; narrow body scrolls |
+| Native macOS input | Empty paragraph: No Spacing, Command+E, two Undo/Redo operations update alignment/interval values and sources; final Undo restores clean state |
+| Synthetic DPI | Existing regressions retained; paragraph inspector read-only/history check at 1/1.25/1.5 |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
 and native release build. Its observed run/commit results are recorded in
@@ -983,3 +983,21 @@ Native macOS keyboard smoke and two captures passed as listed above. This stage
 does not re-establish native Save/Open evidence; storage roundtrip/history tests
 passed. Windows/Word side-by-side, native 100/125/150% scaling, IME and full
 accessibility remain unverified. Paragraph spacing/alignment provenance is deferred.
+
+## Alpha.31 paragraph provenance validation
+
+Core tests verify root defaults, named/inherited paragraph intervals, explicit zero,
+equal values with different sources, mixed alignments, caret/empty paragraphs,
+Unicode scalar and exclusive-end boundaries, Undo/Redo and v9 save/reopen.
+Read-only inspection preserves serialized bytes and does not consume history.
+The GUI test opens the actual pane at three scales and verifies document/history
+behavior. Normal-release native input checks No Spacing, keyboard centering and
+separate Undo/Redo of both commands. Two native render captures were inspected.
+The previous temporary app bundle failed to launch; a fresh disposable bundle
+opened an untitled document, used for the input test. No native file-open claim
+is based on that launch. Storage roundtrip remains covered by core tests.
+
+Alignment has no inherited source in v9; the display reports the stored paragraph
+value without inventing authorship. Intervals have no direct paragraph override
+or space-before field. Windows/Word comparison, native Windows DPI/IME and full
+accessibility remain unverified.
