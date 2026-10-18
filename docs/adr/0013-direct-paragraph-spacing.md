@@ -91,3 +91,13 @@ proportionally in narrow views. This does not add page layout or ruler handles.
 
 The type/amount UI and continuous-layout geometry are original implementations.
 Matched native Windows/Word acceptance remains deferred; no equivalence claim.
+
+## Alpha.45 correction: logical whitespace extent
+
+Justification measures visible ink without trailing spaces. Preserve this visual
+measure for alignment, then extend the logical row width through the last stored
+glyph. Otherwise a cursor at a soft-wrap end maps back before its trailing space.
+Do not move or remove glyphs, edit document text or change file semantics. Logical
+caret/selection extent may exceed the visible justified edge through whitespace.
+The regression matrix checks text reconstruction, grapheme boundaries in tested
+examples, real paragraph delimiters, mesh counts, heights and cursor mapping.

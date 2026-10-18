@@ -513,7 +513,7 @@ impl StyleDialog {
                 egui::Frame::new()
                     .fill(Color32::WHITE)
                     .stroke(Stroke::new(1.0_f32, chrome::LINE))
-                    .inner_margin(6)
+                    .inner_margin(if compact { 3 } else { 6 })
                     .show(ui, |ui| {
                         let (rect, _) = ui.allocate_exact_size(
                             vec2(448., if compact { 24. } else { 48. }),
@@ -568,7 +568,12 @@ impl StyleDialog {
                         },
                     );
                     record(regions, "style-dialog-apply", apply.rect);
-                    ui.small("This document only. Creation and application use one undo step.");
+                    apply.on_hover_text(
+                        "This document only. Creation and application use one undo step.",
+                    );
+                    if !compact {
+                        ui.small("This document only. Creation and application use one undo step.");
+                    }
                 } else if self.character {
                     ui.small("Renaming keeps references; name and properties use one undo step.");
                 } else if matches!(self.id, ParagraphStyle::Custom(_)) {

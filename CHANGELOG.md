@@ -3,6 +3,13 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.45 — 2026-10-18
+
+- Fix caret hit testing at soft-wrap ends with justified trailing spaces: logical row width now includes stored whitespace after visible ink, preventing the cursor from jumping before the final space.
+- Add 108 indent layout cases across three widths/scales, both special-indent signs/zero and four alignments, with long Unicode/mixed-format text, empty/trailing paragraphs, mesh/height and cursor invariants. Cover projected input, zoom/selection, edit/history/save/reopen.
+- Fix compact style creation overflow observed in alpha.44 Windows CI. Move redundant creation guidance to the existing checkbox tooltip on compact windows and reduce preview padding; add taller-font metric checks at three scales. Native Windows acceptance remains deferred.
+- Add a native indent-layout capture scenario; preserve palette/icons, native v13, protocol/settings v1 and dependencies. Alpha.44 approved; alpha.45 awaits approval.
+
 ## 0.1.0-alpha.44 — 2026-10-18
 
 - Add inherited first-line/hanging indents, explicit direct zero and reset in one Undo/Redo with paragraph geometry. Paragraph/style dialogs expose type and amount; source inspection reports the supplying style/override.

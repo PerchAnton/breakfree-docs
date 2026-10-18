@@ -1426,3 +1426,33 @@ SHA-256: `22311fb89163fb3f029d59bca17046948fc45930b9e0d8f01e1dde8d1651bb84`.
 ![Special indent](screenshots/rust-style-special-indent-alpha44-compact-macos.png)
 
 SHA-256: `b041c02ca00c9de3a2e40516a226613184d746eac98e634edd2865dbf22b8124`.
+
+## Alpha45 indent layout regression checks
+
+Palette/icons and ribbon geometry are unchanged. Justified visible text retains
+its position; logical caret width includes trailing spaces, so soft-wrap-end
+clicks no longer resolve before a stored space. The new `indent-layout` capture
+scenario renders actual first-line, hanging and justified paragraphs (94 words,
+3 paragraphs), using 100% zoom at 1366 × 900 DIP and 50% at 640 × 480 DIP.
+
+Compact style creation now uses 3 DIP preview padding instead of 6. Its redundant
+creation explanation moves to the Apply checkbox tooltip in compact windows;
+fields, sample and actions remain visible. A test increases Body/Small/Button
+font sizes by 1 DIP at 100/125/150% synthetic scales. This reproduces sensitivity
+to font metrics; it does not simulate native Windows or assert exact Segoe metrics.
+
+The three native macOS capture-harness images below were inspected: paragraph
+insets and wrap are visible, controls do not overlap or clip. Ordinary native
+keyboard/IME input and matched Windows/Word comparison were not repeated.
+
+![Indent layout verification](screenshots/rust-indent-layout-alpha45-macos.png)
+
+SHA-256: `0a27d1cc8497d0591e94d272bf367de02f58003ec4f3d6667f61f65244ee957f`.
+
+![Indent layout verification](screenshots/rust-indent-layout-alpha45-compact-macos.png)
+
+SHA-256: `345c8c67e1501d430d3e4c7802d2a8a7257760df3b9fe5cf4a6363e8e35e8038`.
+
+![Indent layout verification](screenshots/rust-style-create-alpha45-compact-macos.png)
+
+SHA-256: `d559abfab7b0d511b0302b8db794e56e8c064464f4db311661389016de7a0570`.

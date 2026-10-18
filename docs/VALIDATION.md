@@ -1229,3 +1229,34 @@ Three native capture-harness images inspected (UI_SPEC). Existing minimum-window
 and synthetic 100/125/150% scale checks pass. Ordinary native keyboard/IME input
 not repeated; Windows/reference acceptance remains deferred. CI is recorded
 separately in the journal; no merge/tag/release.
+
+## Alpha45 expanded indent validation
+
+2026-10-18, macOS arm64 / Rust 1.99.1: **262 full tests / 133 core-only tests**
+passed. fmt, normal/capture all-target Clippy with warnings denied, release/capture
+builds, repository/artwork/YAML/whitespace checks passed. CLI reports alpha.45,
+protocol v1; native content stays v13. No new dependency/license change.
+
+The 108-case layout matrix combines 80/145/500 DIP widths, 100/125/150% synthetic
+scales, -144/0/+144 pt special indents and four alignments. It checks actual scale,
+text reconstruction, real paragraph delimiters, tested grapheme wrap boundaries,
+mesh counts, positive/nonoverlapping row heights, model immutability and cursor
+hit testing. Fixtures include long mixed-format English/Ukrainian/Russian text,
+combining marks, leading/trailing spaces, empty paragraphs and unbroken words.
+
+A failing matrix case reproduced a justified soft-wrap-end hit at scalar 351
+returning 350. Logical row extent now includes the final whitespace glyph after
+visual alignment. A focused regression also checks transient input projection.
+Actual-widget selection survives 50/125/200/100% zoom, paste, one Undo/Redo and
+save/reopen without losing indents. Existing visible-column assertions now exclude
+trailing whitespace; its logical caret extent may exceed the visible text edge.
+
+Alpha.44 [Windows CI](https://github.com/PerchAnton/breakfree-docs/actions/runs/39136311155)
+reported Create Style bounds y=-2…482 in a 480 DIP window. A local taller-font
+regression also failed before the compact-layout fix and passes afterwards at
+three scales. Server confirmation of the revised code is recorded separately in
+the journal; no native Windows acceptance is inferred.
+
+Three native capture-harness images inspected (UI_SPEC); ordinary native keyboard,
+IME, accessibility and matched Windows/reference comparison remain unverified or
+deferred. Interactive ruler handles are not implemented. No merge/tag/release.

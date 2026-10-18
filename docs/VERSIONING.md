@@ -130,4 +130,6 @@ Historical alpha.42 checkpoint: alpha.41 approved; alpha.42 then awaited approva
 
 Historical alpha.43 checkpoint: alpha.42 approved; alpha.43 then awaited approval. No merge/tag/release authorized. Alpha.43 writes native v12 and reads v1–v12; process/settings remain v1.
 
-Alpha.43 explicitly approved in chat; alpha.44 awaits approval. No merge/tag/release authorized. Alpha.44 writes native v13 and reads v1–v13; process/settings remain v1.
+Historical alpha.44 checkpoint: alpha.43 approved; alpha.44 then awaited approval. No merge/tag/release authorized. Alpha.44 writes native v13 and reads v1–v13; process/settings remain v1.
+
+Alpha.44 explicitly approved in chat; alpha.45 awaits approval. No merge/tag/release authorized. Native content remains v13; process/settings remain v1.

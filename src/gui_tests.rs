@@ -6466,7 +6466,15 @@ fn paragraph_indents_wrap_align_and_hit_test_without_changing_text() {
         assert!(g.rows.len() > doc.paragraphs.len());
         for row in &g.rows {
             assert!(row.x_offset(0) >= 17.9);
-            assert!(row.size.x <= 118.5, "{:?}: {}", alignment, row.size.x);
+            assert!(
+                row.glyphs
+                    .iter()
+                    .filter(|g| !g.chr.is_whitespace())
+                    .all(|g| g.max_x() <= 118.5),
+                "{:?}: {}",
+                alignment,
+                row.size.x
+            );
         }
         for i in [0, 3, 36, 37, 40, 46, 48] {
             let pos = g.pos_from_cursor(CCursor::new(i));
@@ -6554,7 +6562,13 @@ fn special_indents_shape_first_and_continuation_rows_without_fake_newlines() {
                     .sum::<usize>(),
                 doc.text().chars().filter(|c| *c != '\n').count()
             );
-            assert!(g.rows.iter().all(|r| r.size.x <= 145.5 && r.height() > 0.));
+            assert!(g.rows.iter().all(|r| {
+                r.glyphs
+                    .iter()
+                    .filter(|g| !g.chr.is_whitespace())
+                    .all(|g| g.max_x() <= 145.5)
+                    && r.height() > 0.
+            }));
             if alignment == Alignment::Left && value.abs() == 36 {
                 assert!((g.rows[0].x_offset(0) - if value > 0 { 18. } else { 0. }).abs() < 0.5);
                 assert!((g.rows[1].x_offset(0) - if value < 0 { 18. } else { 0. }).abs() < 0.5);
@@ -6582,5 +6596,251 @@ fn special_indents_shape_first_and_continuation_rows_without_fake_newlines() {
                 );
             }
         }
+    }
+}
+
+#[test]
+fn extended_indent_layout_matrix_preserves_rows_metrics_and_unicode() {
+    use unicode_segmentation::UnicodeSegmentation;
+    let (ctx, mut app) = setup();
+    let text = format!(
+        "  {}\n\n{}\n",
+        "English Україна Русский cafe\u{301}  ".repeat(12),
+        "LongWordWithoutSpaces".repeat(8)
+    );
+    app.session.editor.replace(0, 0, &text, "Fixture").unwrap();
+    app.session
+        .editor
+        .set_font_size(2, 9, "24".parse().unwrap())
+        .unwrap();
+    app.session.editor.emphasize(10, 17, true, true).unwrap();
+    app.sync_view();
+    let baseline = app.session.editor.document.clone();
+    let boundaries = crate::model::boundaries(&text);
+    for dpi in [1., 1.25, 1.5] {
+        frame(&ctx, &mut app, vec![], [1366. * dpi, 900. * dpi], dpi);
+        assert!((ctx.pixels_per_point() - dpi).abs() < 0.01);
+        for width in [80., 145., 500.] {
+            for special in [-288, 0, 288] {
+                for align in [
+                    Alignment::Left,
+                    Alignment::Center,
+                    Alignment::Right,
+                    Alignment::Justify,
+                ] {
+                    let mut doc = baseline.clone();
+                    doc.style_catalog.normal.left_indent_half_points = Some(60);
+                    doc.style_catalog.normal.right_indent_half_points = Some(30);
+                    doc.style_catalog.normal.first_line_half_points = Some(special);
+                    for p in &mut doc.paragraphs {
+                        p.alignment = align;
+                    }
+                    let before = doc.clone();
+                    let g = layout::galley(
+                        &ctx,
+                        &doc,
+                        &text,
+                        CharacterFormat::default(),
+                        0,
+                        width,
+                        15.,
+                    );
+                    assert_eq!(doc, before);
+                    assert_eq!(g.text(), text);
+                    let mut reconstructed = String::new();
+                    let mut offset = 0;
+                    for row in &g.rows {
+                        reconstructed.extend(row.glyphs.iter().map(|glyph| glyph.chr));
+                        offset += row.char_count_excluding_newline();
+                        assert!(
+                            boundaries.contains(&offset),
+                            "split grapheme at {offset}; {dpi} {width} {special} {align:?}"
+                        );
+                        if row.ends_with_newline {
+                            reconstructed.push('\n');
+                            offset += 1;
+                        }
+                        assert!(row.pos.y.is_finite() && row.height() > 0.);
+                        assert!(
+                            row.max_y() <= g.rect.max.y + 0.51,
+                            "height {dpi} {width} {special} {align:?}"
+                        );
+                    }
+                    assert_eq!(reconstructed, text);
+                    assert_eq!(
+                        g.num_vertices,
+                        g.rows
+                            .iter()
+                            .map(|r| r.visuals.mesh.vertices.len())
+                            .sum::<usize>()
+                    );
+                    assert_eq!(
+                        g.num_indices,
+                        g.rows
+                            .iter()
+                            .map(|r| r.visuals.mesh.indices.len())
+                            .sum::<usize>()
+                    );
+                    for pair in g.rows.windows(2) {
+                        assert!(pair[0].max_y() <= pair[1].min_y() + 0.51);
+                    }
+                    for (byte, grapheme) in text.grapheme_indices(true).step_by(17) {
+                        if grapheme.chars().all(char::is_whitespace) {
+                            continue;
+                        }
+                        let index = text[..byte].chars().count();
+                        let pos = g.pos_from_cursor(CCursor::new(index));
+                        assert_eq!(
+                            g.cursor_from_pos(pos.center().to_vec2()).index,
+                            index,
+                            "hit {dpi} {width} {special} {align:?} {index}"
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn indented_widget_selection_survives_zoom_edit_history_and_reopen() {
+    let (ctx, mut app) = setup();
+    let text = format!(
+        "{}\n\nУкраїна e\u{301} Русский",
+        "English wrapped words  ".repeat(20)
+    );
+    app.session.editor.replace(0, 0, &text, "Fixture").unwrap();
+    app.session
+        .editor
+        .set_paragraph_geometry(
+            0,
+            text.chars().count(),
+            crate::commands::ParagraphGeometryPatch {
+                left: Some(Some(36)),
+                right: Some(Some(24)),
+                first_line: Some(Some(-51)),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    let start = text.chars().count() - 7;
+    app.session.editor.selection = (start, text.chars().count());
+    app.sync_view();
+    let before = app.session.editor.document.clone();
+    for zoom in [50., 125., 200., 100.] {
+        app.zoom = zoom;
+        frame(&ctx, &mut app, vec![], [1024., 768.], 1.);
+        assert_eq!(app.session.editor.document, before);
+        assert_eq!(app.session.editor.selection, (start, text.chars().count()));
+    }
+    let depth = app.session.editor.undo_stack.len();
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Paste("замена".into())],
+        [1024., 768.],
+        1.,
+    );
+    assert_eq!(app.session.editor.undo_stack.len(), depth + 1);
+    let after = app.session.editor.document.clone();
+    assert_eq!(
+        after.paragraphs.last().unwrap().spacing,
+        before.paragraphs.last().unwrap().spacing
+    );
+    app.execute(Action::Undo, &ctx);
+    frame(&ctx, &mut app, vec![], [1024., 768.], 1.);
+    assert_eq!(app.session.editor.document, before);
+    app.execute(Action::Redo, &ctx);
+    frame(&ctx, &mut app, vec![], [1024., 768.], 1.);
+    assert_eq!(app.session.editor.document, after);
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("indent-layout.bfdoc");
+    app.session.save(&path).unwrap();
+    assert_eq!(storage::load(&path).unwrap(), after);
+}
+
+#[test]
+fn justified_trailing_spaces_keep_row_end_caret_and_projection_text() {
+    let (ctx, mut app) = setup();
+    let text = "alpha beta gamma delta  epsilon zeta  ";
+    app.session.editor.replace(0, 0, text, "Fixture").unwrap();
+    app.session.editor.align(0, 0, Alignment::Justify).unwrap();
+    app.session
+        .editor
+        .set_paragraph_geometry(
+            0,
+            0,
+            crate::commands::ParagraphGeometryPatch {
+                first_line: Some(Some(-36)),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    let doc = app.session.editor.document.clone();
+    for display in [text.to_owned(), format!("{text}e\u{301} Україна")] {
+        let g = layout::galley(
+            &ctx,
+            &doc,
+            &display,
+            CharacterFormat::default(),
+            0,
+            100.,
+            15.,
+        );
+        let mut end = 0;
+        for row in &g.rows {
+            end += row.char_count_excluding_newline();
+            let position = g.pos_from_cursor(CCursor::new(end));
+            assert_eq!(g.cursor_from_pos(position.center().to_vec2()).index, end);
+        }
+        assert_eq!(end, display.chars().count());
+        assert_eq!(g.text(), display);
+        assert_eq!(app.session.editor.document, doc);
+    }
+}
+
+#[test]
+fn compact_style_creation_reserves_room_for_taller_interface_font_metrics() {
+    for dpi in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        ctx.style_mut(|style| {
+            for key in [
+                egui::TextStyle::Body,
+                egui::TextStyle::Small,
+                egui::TextStyle::Button,
+            ] {
+                style.text_styles.get_mut(&key).unwrap().size += 1.;
+            }
+        });
+        app.execute(Action::CreateStyle, &ctx);
+        for _ in 0..4 {
+            frame(&ctx, &mut app, vec![], [640. * dpi, 480. * dpi], dpi);
+        }
+        let bounds = app
+            .regions
+            .iter()
+            .find(|r| r.name == "style-dialog")
+            .unwrap()
+            .rect;
+        assert!(
+            Rect::from_min_size(Pos2::ZERO, vec2(640., 480.)).contains_rect(bounds),
+            "{dpi} {bounds:?}"
+        );
+        for region in app
+            .regions
+            .iter()
+            .filter(|r| r.name.starts_with("style-dialog-"))
+        {
+            assert!(bounds.contains_rect(region.rect), "{}", region.name);
+        }
+        frame(
+            &ctx,
+            &mut app,
+            vec![key(Key::Escape, false)],
+            [640. * dpi, 480. * dpi],
+            dpi,
+        );
+        assert!(app.style_dialog.is_none());
+        assert!(app.session.editor.undo_stack.is_empty());
     }
 }

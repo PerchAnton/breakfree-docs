@@ -297,6 +297,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "formatting",
             "font",
             "paragraph",
+            "indent-layout",
             "collapsed",
             "temporary",
             "view",
@@ -316,7 +317,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ]
         .contains(&args[2].as_str())
     {
-        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|styles-modify|styles-following|styles-create|styles-rename|styles-delete|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|paragraph|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
+        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|styles-modify|styles-following|styles-create|styles-rename|styles-delete|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|paragraph|indent-layout|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
     }
     let path = std::env::var("BREAKFREE_CAPTURE_TO")
         .map_err(|_| "Set BREAKFREE_CAPTURE_TO to an output PNG path")?;
@@ -353,7 +354,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "examples/Welcome.bfdoc"
         },
     );
-    let session = if args[2] == "styles-menu" {
+    let session = if args[2] == "indent-layout" {
+        let mut session = Session::default();
+        let sample =
+            "English Україна Русский cafe\u{301}. Text wraps without changing stored characters.  ";
+        let text = format!(
+            "First line. {}\nHanging. {}\nJustified. {}",
+            sample.repeat(3),
+            sample.repeat(3),
+            sample.repeat(3)
+        );
+        session.editor.replace(0, 0, &text, "Layout fixture")?;
+        for (index, p) in session.editor.document.paragraphs.iter_mut().enumerate() {
+            p.spacing.left_indent_half_points = Some(36);
+            p.spacing.right_indent_half_points = Some(24);
+            p.spacing.first_line_half_points = Some(if index == 0 { 72 } else { -72 });
+            p.alignment = if index == 2 {
+                breakfree_docs::model::Alignment::Justify
+            } else {
+                breakfree_docs::model::Alignment::Left
+            };
+        }
+        session.editor.document.validate()?;
+        session.editor.selection = (0, 0);
+        session
+    } else if args[2] == "styles-menu" {
         let mut session = Session::default();
         session.editor.apply_paragraph_style(
             0,
@@ -469,6 +494,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "styles-create" => app.execute(Action::CreateStyle, &cc.egui_ctx),
                 "styles-delete" => app.execute(Action::DeleteStyle, &cc.egui_ctx),
                 "formatting" => app.execute(Action::Formatting, &cc.egui_ctx),
+                "indent-layout" => {
+                    if width < 800. {
+                        app.zoom = 50.;
+                    }
+                }
                 "paragraph" => app.execute(Action::ParagraphSpacing, &cc.egui_ctx),
                 "font" => {
                     app.execute(Action::SelectAll, &cc.egui_ctx);

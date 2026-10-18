@@ -260,3 +260,14 @@ indents to retain up to 32 DIP of text width; saved values do not change. Enter,
 joins and Replace All retain the established geometry copying policy. Native v13
 preserves the signed property; older imports inherit zero. Interactive ruler handles,
 negative outer-edge outdents and pagination remain future work. Windows is deferred.
+
+## Indent layout hardening (alpha.45)
+
+Justified trailing spaces retain their logical cursor positions after visible ink.
+The visual text column is unchanged; a row-end caret can extend through trailing
+whitespace beyond the visible justified edge. This avoids moving the caret before
+a stored space at a soft wrap. Tests cover long mixed-format Unicode paragraphs,
+empty/trailing paragraphs, narrow views, synthetic scale and zoom/edit/history.
+Compact style creation reserves extra room for differing interface-font metrics.
+Native content stays v13; interactive ruler handles and native Windows acceptance
+remain pending.

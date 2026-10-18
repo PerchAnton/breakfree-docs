@@ -183,6 +183,14 @@ pub fn galley(
                 row.size.x += shift;
             }
         }
+        // Justification measures visible ink and excludes trailing whitespace.
+        // Cursor-at-row-end must still advance past every stored whitespace glyph.
+        for placed in &mut paragraph.rows {
+            let row = Arc::make_mut(&mut placed.row);
+            if let Some(last) = row.glyphs.last() {
+                row.size.x = row.size.x.max(last.max_x());
+            }
+        }
         paragraph.rect.max.x = width;
         if index + 1 < source.paragraphs.len() {
             whole.append(
