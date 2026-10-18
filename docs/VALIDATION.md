@@ -8,16 +8,16 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.41**. Historical evidence retains its scope.
+Current local checkpoint: **0.1.0-alpha.49**. Historical evidence retains its scope.
 
 | Local check | Observed result |
 | --- | --- |
-| Full / no-default-features tests | 244 / 123 passed; direct paragraph spacing, v10, history/edit preservation and modal checks added |
+| Full / no-default-features tests | 282 / 141 passed; two-axis ruler alignment, visibility, scrolling and contextual values added |
 | fmt / Clippy | Passed; normal/capture all-target checks with warnings denied |
 | Release builds | Native binary and capture harness passed without Office/sibling inputs |
-| CLI | Version/capabilities report alpha.41; existing CLI subprocess tests pass |
+| CLI | Version/capabilities report alpha.49; existing CLI subprocess tests pass |
 | Repository/artwork/YAML/whitespace | Passed |
-| Native rendering | Paragraph spacing modal inspected at 1366 × 900 / 640 × 480 DIP |
+| Native rendering | Two-axis rulers inspected at 1366 × 900 / 640 × 480 DIP |
 | Native input | Not repeated this iteration; previous automation lost its window. CPU widget events are separate evidence |
 | Existing regressions | Home geometry, minimum-width 64-style keyboard scrolling, history, storage and synthetic scaling checks retained |
 
@@ -1319,3 +1319,24 @@ GUI or sibling dependencies. Two native macOS capture fixtures were inspected;
 these do not verify ordinary OS keyboard/IME input. Windows/manual DPI and matched
 reference acceptance remain deferred. Alpha.47 code/journal CI succeeded; alpha.48
 CI results are separate. No merge, tag or release.
+
+
+## Alpha.49 compact two-axis ruler validation
+
+2026-10-18, macOS arm64 / Rust 1.99.1. Full suite: **282 passed**; engine-only:
+**141 passed**. fmt, normal/capture all-target Clippy with warnings denied, native
+release/capture builds, repository/artwork/YAML and whitespace checks passed.
+
+Two added widget cases cover both axes at nine zoom/DPI combinations (50/100/200%
+zoom × 1/1.25/1.5 synthetic scale), alignment with actual canvas bounds, shared
+visibility without edits, and long-document scrolling with the horizontal ruler
+remaining visible. Updated contextual-readout checks retain compact maximum/mixed
+value bounds. Existing pointer/keyboard preview/cancel/Undo/Redo, mixed selection,
+storage, Unicode, styles and failed-save regressions pass unchanged.
+
+Native capture fixtures at 1366 × 900 and 640 × 480 DIP are recorded in UI_SPEC.
+They are actual application rendering, not ordinary OS keyboard automation.
+Windows display scaling/input and matched Word 2024 acceptance remain deferred.
+The vertical axis is a read-only continuous-canvas scale, not page layout. Format
+v13 and protocol/settings v1 are unchanged. Alpha.48 code/journal push and PR CI
+succeeded; alpha.49 server CI is separate from local results. No merge/tag/release.

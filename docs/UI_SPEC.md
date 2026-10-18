@@ -43,7 +43,7 @@ measurements taken from Word**. Source constants are in `src/presentation.rs`; o
 | Workspace | Neutral #ebebeb; white continuous canvas, border #c5c5c5; soft canvas shadow; 10-DIP workspace top gap; centered when space allows; horizontal/vertical scrolling when required |
 | Canvas | 816 DIP wide at 100% document zoom, 96-DIP side/top margins, content-driven height; **no page segmentation** |
 | Text | Host Arial/DejaVu or embedded fallback; default 11 pt (14.667 DIP), per-run 1–400 pt in half-points and underline; 1.25 line height, default-size 0.5-em paragraph gap; model styles/alignment projected into hit-testable text |
-| Ruler | 36-DIP-high horizontal canvas ruler with shaded margins, 96 DIP per inch, eighth-inch ticks; zoom scales with document; no draggable margins or vertical/page ruler yet |
+| Ruler | 24-DIP horizontal and 20-DIP vertical canvas rulers with shaded margins, 96 DIP per inch and eighth-inch ticks; zoom follows the document; no draggable page margins or pagination |
 | Panes | Navigation left 240 DIP (195–320); Formatting right 220 DIP (195–300); visible on request |
 | Status | 24 DIP; real Unicode word count and paragraph count, saved state, continuous-layout label and 50–200% zoom; ±10% buttons and click percentage to reset to 100% |
 | File | 180-DIP left action rail and scrollable Home/Options body; 158 × 160 blank-document tile, real current-file properties; New/Open/Save/Save As active, Print disabled with explanation |
@@ -1535,3 +1535,42 @@ SHA-256: `144200ede2929a0ce0d8932db3b4ddc3b5b595df69977cb344ddd2fd6a3e5572`.
 SHA-256: `ae504ea51c9c1bff2d1b7baab1fb77362477ca79cb80f31845a35b70b0b6afa9`.
 
 Both native macOS capture fixtures were inspected with three selected paragraphs: common left/right amounts remain numeric, first/hanging amounts show Mixed, and the corresponding marker dashes are visible. Readout and selection remain within the compact layout. Ordinary OS input was not repeated.
+
+
+## Alpha.49 compact horizontal and vertical rulers
+
+The owner's ruler-design correction takes priority over the next functional step.
+The [official ruler guide](https://support.microsoft.com/en-us/word/using-the-ruler-in-word)
+and [visibility guide](https://support.microsoft.com/en-us/word/training/show-the-ruler)
+were consulted for the two axes and indent controls. The dimensions below are Docs
+prototype targets, not measured Word 2024 Windows pixels. A matched Windows window
+is unavailable; the owner's earlier macOS images do not show a ruler comparison.
+
+| Element | Implemented target |
+| --- | --- |
+| Horizontal strip | 24 DIP high; stationary at viewport top during vertical scrolling |
+| Vertical strip | 20 DIP wide in the left viewport gutter; starts at the real canvas top and follows vertical scrolling |
+| Scale | Inches; 96 DIP per inch at 100% document zoom, eighth-inch ticks, longer quarter-inch ticks, 10-DIP upright numerals |
+| Colors | Neutral 252 body, 224 margin, 195 outline and 100 tick gray levels; existing purple focus/interaction accent |
+| Markers | First-line down triangle, continuation/right up triangles, 12 × 4 DIP left block; separate interaction regions and existing keyboard routing |
+| Exact values | Marker tooltips/accessibility labels; two-line overlay only during keyboard/drag operation, with no reserved document height |
+| Mixed selection | Existing origin dash and exact common/mixed amounts/ranges retained |
+| Visibility | View Ruler and Options toggle both axes together |
+
+Intentional differences: BreakFree identity, purple active focus, continuous canvas
+instead of Print Layout, inches as the fixed prototype unit, half-point nudges,
+Docs-specific keyboard entry and mixed-selection dash. Open differences: tab-stop
+selector, configurable units, editable page margins, pagination and exact Windows
+geometry/input acceptance. The vertical scale is read-only. Only visible ticks are
+painted for long documents; canvas and text clipping reserve the ruler gutter and
+horizontal band. No visual similarity percentage is claimed.
+
+![Two-axis rulers at 1366 × 900 DIP](screenshots/rust-rulers-alpha49-macos.png)
+
+SHA-256: `e221e5b986346635525cda3e5aad5b32170601daacf374e4bec82e28ac909aa4`.
+
+![Keyboard preview at 640 × 480 DIP](screenshots/rust-rulers-alpha49-compact-macos.png)
+
+SHA-256: `f50a44a403d7a55a4b5adb324268ae3d2ea1adc9d5658c628bd85d8def2777ea`.
+
+Both final native macOS captures were visually inspected. No edge labels are clipped; the compact contextual overlay fits above the text, and idle mode has no permanent values block. Windows/reference and ordinary OS keyboard checks were not performed.

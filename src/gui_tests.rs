@@ -7290,6 +7290,13 @@ fn ruler_keyboard_reveals_hidden_ruler_pointer_takeover_and_value_bounds() {
     p.spacing.right_indent_half_points = Some(288);
     p.spacing.first_line_half_points = Some(-288);
     frame(&ctx, &mut app, vec![], size, 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(Key::F8, Modifiers::CTRL | Modifiers::SHIFT)],
+        size,
+        1.,
+    );
     let style = app
         .session
         .editor
@@ -7441,6 +7448,14 @@ fn ruler_mixed_readout_fits_compact_and_does_not_edit() {
     for _ in 0..3 {
         frame(&ctx, &mut app, vec![], size, 1.);
     }
+    assert!(!app.regions.iter().any(|r| r.name == "ruler-values"));
+    frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(Key::F8, Modifiers::CTRL | Modifiers::SHIFT)],
+        size,
+        1.,
+    );
     let summary =
         crate::ruler::SelectionValues::read(&before, app.session.editor.selection).unwrap();
     let width = ctx.fonts_mut(|f| {
@@ -7460,4 +7475,76 @@ fn ruler_mixed_readout_fits_compact_and_does_not_edit() {
     );
     assert_eq!(app.session.editor.document, before);
     assert_eq!(app.session.editor.undo_stack.len(), n);
+}
+
+#[test]
+fn ruler_axes_align_with_canvas_at_zoom_and_dpi_and_hide_together() {
+    for dpi in [1., 1.25, 1.5] {
+        for zoom in [50., 100., 200.] {
+            let (ctx, mut app) = setup();
+            app.zoom = zoom;
+            for _ in 0..3 {
+                frame(&ctx, &mut app, vec![], [1366. * dpi, 900. * dpi], dpi);
+            }
+            let rect = |name: &str| app.regions.iter().find(|r| r.name == name).unwrap().rect;
+            let h = rect("ruler");
+            let v = rect("ruler-vertical");
+            let canvas = rect("continuous-canvas");
+            assert_eq!(h.height(), 24.);
+            assert_eq!(v.width(), 20.);
+            assert!((h.left() - canvas.left()).abs() < 2.);
+            assert!((v.top() - canvas.top()).abs() < 1.);
+            assert_eq!(v.bottom(), canvas.bottom());
+            assert!(v.right() < canvas.left());
+            assert!(!app.regions.iter().any(|r| r.name == "ruler-values"));
+            let before = app.session.editor.document.clone();
+            app.execute(Action::Rulers, &ctx);
+            frame(&ctx, &mut app, vec![], [1366. * dpi, 900. * dpi], dpi);
+            assert!(!app.regions.iter().any(|r| r.name.starts_with("ruler")));
+            assert_eq!(before, app.session.editor.document);
+        }
+    }
+}
+
+#[test]
+fn ruler_vertical_tracks_long_canvas_while_horizontal_remains_visible() {
+    let (ctx, mut app) = setup();
+    let text = "A paragraph for scrolling.\n".repeat(200);
+    app.session.editor.replace(0, 0, &text, "Fixture").unwrap();
+    app.session.editor.selection = (0, 0);
+    app.sync_view();
+    for _ in 0..4 {
+        frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    }
+    let old = app
+        .regions
+        .iter()
+        .find(|r| r.name == "continuous-canvas")
+        .unwrap()
+        .rect;
+    frame(
+        &ctx,
+        &mut app,
+        vec![
+            egui::Event::PointerMoved(pos2(900., 600.)),
+            egui::Event::MouseWheel {
+                unit: egui::MouseWheelUnit::Point,
+                delta: vec2(0., -500.),
+                modifiers: Modifiers::NONE,
+            },
+        ],
+        [1366., 900.],
+        1.,
+    );
+    for _ in 0..30 {
+        frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    }
+    let rect = |name: &str| app.regions.iter().find(|r| r.name == name).unwrap().rect;
+    let canvas = rect("continuous-canvas");
+    let v = rect("ruler-vertical");
+    let h = rect("ruler");
+    assert!(canvas.top() < old.top() - 100.);
+    assert_eq!(v.top(), canvas.top());
+    assert!(h.top() > 0. && h.bottom() < 400.);
+    assert_eq!(app.session.editor.document.text(), text);
 }

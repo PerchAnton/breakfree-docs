@@ -3,6 +3,13 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.49 — 2026-10-18
+
+- Refine the horizontal ruler to a 24-DIP neutral scale with compact indent markers, centered inch labels, quarter/eighth-inch ticks and shaded margins. Keep it visible during vertical scrolling.
+- Add a 20-DIP vertical ruler in the workspace gutter, aligned with the continuous canvas and its text origin. Both axes follow zoom and the shared visibility toggle. Vertical margins remain read-only; this is not pagination.
+- Replace the permanent two-line readout with a contextual keyboard/drag overlay; retain exact range tooltips and mixed-origin indicators. Preserve pointer/keyboard transactions, palette/icons and native v13.
+- Add zoom/DPI alignment, visibility and long-document scroll regression checks. Windows and matched Word 2024 comparison remain deferred. Alpha.49 awaits owner approval; no release or merge.
+
 ## 0.1.0-alpha.48 — 2026-10-18
 
 - Show Mixed independently for differing resolved left/right and first-line/hanging amounts across selected paragraphs. Matching inherited/direct values remain common; an exclusive selection end at the next paragraph start excludes that paragraph.

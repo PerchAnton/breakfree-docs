@@ -631,7 +631,7 @@ Undo/Redo. Escape, focus/pointer loss or a changed canvas/window transform cance
 returning to the original value preserves inheritance and redo. Text/shortcuts
 are blocked during dragging. Home → Paragraph spacing remains the keyboard
 alternative. This is a continuous-canvas prototype: no margins, tab stops,
-vertical ruler or pagination yet.
+pagination yet. Alpha.49 adds a read-only vertical canvas ruler.
 
 ## Ruler keyboard control and values (alpha.47)
 
@@ -654,7 +654,7 @@ continuation handles preserve the opposite origin. No native-format change.
 
 The ruler readout shows Mixed independently for Left, Right, First and Hanging
 when selected paragraphs have different resolved amounts. Equal values from
-different styles or direct overrides remain numeric. Hover the readout or a marker
+different styles or direct overrides remain numeric. Hover a marker
 for exact minimum/maximum values. A caret includes its paragraph; an exclusive end
 at the next paragraph start does not include that next paragraph.
 
@@ -664,3 +664,15 @@ coexist with mixed individual amounts. Markers stay anchored to the first select
 paragraph; tooltips identify this baseline. Editing still applies changed properties
 to selected paragraphs with one transaction. Indicators follow the live preview,
 cancel and Undo/Redo. Inspection never creates overrides or history entries.
+
+
+## Compact two-axis rulers (alpha.49)
+
+View → Ruler shows both axes. The horizontal ruler stays above the document when
+scrolling; the vertical ruler follows the continuous canvas text origin. Both use
+inches (eight subdivisions per inch) and follow document zoom. The 24-DIP horizontal
+and 20-DIP vertical scales retain neutral margins and compact indent markers.
+Exact values appear in marker tooltips and during keyboard/drag editing without a
+permanent readout above the document. Keyboard shortcuts and one-step Undo/Redo are
+unchanged. Vertical ruler margins are read-only; tab stops, editable page margins
+and pagination remain future work. Windows/reference matching remains unverified.

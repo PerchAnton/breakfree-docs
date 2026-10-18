@@ -2823,12 +2823,19 @@ impl DocsApp {
             .max(natural + 2. * margin)
             .max(300.);
         egui::ScrollArea::both().auto_shrink([false,false]).show(ui,|ui|{
-            let space=((ui.available_width()-width-32.)/2.).max(12.);
+            let space=((ui.available_width()-width-32.)/2.).max(if self.rulers {32.} else {12.});
             ui.add_space(10.);
             ui.horizontal_top(|ui|{
                 ui.add_space(space);
                 ui.vertical(|ui|{
-                    if self.rulers {self.ruler(ui,width,zoom);ui.add_space(7.);}
+                    if self.rulers {self.ruler(ui,width,zoom);ui.add_space(5.);}
+                    let original_clip=ui.clip_rect();
+                    let mut canvas_clip=original_clip;
+                    if self.rulers {
+                        canvas_clip.min.x+=26.;
+                        if let Some(r)=self.regions.iter().find(|r| r.name=="ruler") {canvas_clip.min.y=r.rect.bottom()+5.;}
+                    }
+                    ui.set_clip_rect(canvas_clip);
                     let frame=egui::Frame::new().fill(Color32::WHITE).stroke(Stroke::new(1.0_f32,Color32::from_gray(197))).shadow(egui::epaint::Shadow{offset:[0,2],blur:5,spread:0,color:Color32::from_black_alpha(24)}).inner_margin(0).show(ui,|ui|{
                         ui.set_min_size(vec2(width,min_height));
                         ui.add_space(margin);
@@ -2890,6 +2897,11 @@ impl DocsApp {
                         });
                         ui.add_space(margin);
                     });self.record("continuous-canvas",frame.response.rect);
+                    if self.rulers {
+                        ui.set_clip_rect(Rect::from_min_max(pos2(original_clip.left(),canvas_clip.top()),original_clip.max));
+                        self.vertical_ruler(ui,frame.response.rect,zoom);
+                    }
+                    ui.set_clip_rect(original_clip);
                 });
             });
         });
@@ -2995,7 +3007,7 @@ impl DocsApp {
 
                     ui.add_space(14.);
 
-                    ui.checkbox(&mut self.rulers, "Show canvas ruler");
+                    ui.checkbox(&mut self.rulers, "Show horizontal and vertical rulers");
 
                     ui.checkbox(&mut self.navigation, "Show navigation pane");
 

@@ -158,7 +158,7 @@ native dialog/IME, accessibility and target-platform reviews are outstanding.
 - [ ] Capture Word 2024 Windows and Docs at matched build/language/theme/window,
   document zoom and Windows 100/125/150%; record measured deltas in UI_SPEC.
 - [ ] Verify native Windows keyboard, IME, dialogs, font fallback, clipping and focus.
-- [ ] Review context tabs when document objects exist; full KeyTips and vertical ruler.
+- [ ] Review context tabs when document objects exist; full KeyTips and paginated vertical-ruler behavior.
 
 **Exit:** matched screenshots with recorded measurements, no unintended Home/workspace overlap,
 all active commands change real state, native D01–D09 reviewed, no fake pagination.
@@ -359,3 +359,6 @@ Use public specifications and original test cases, not copied application code. 
 - [x] Alpha.47: keyboard entry, marker traversal, half-point/coarse preview, transactional commit/cancel and exact resolved values (local widget tests).
 - [x] Alpha.48: per-property mixed resolved amounts, marker-origin indicators, exact ranges and half-open selection semantics; preview/cancel/history verified locally.
 - [ ] Next: explicit reset of selected paragraph indents to inherited style values from the ruler, with transactional preview/cancel. Native Windows acceptance remains deferred.
+
+- [x] Alpha.49: compact horizontal and vertical continuous-canvas rulers, contextual values, shared visibility and scrolling/zoom alignment (local widget validation).
+- [ ] Matched Word 2024 Windows ruler comparison; editable margins/tab stops depend on the corresponding layout model.

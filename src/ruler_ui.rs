@@ -48,7 +48,9 @@ impl DocsApp {
     }
 
     pub(super) fn ruler(&mut self, ui: &mut Ui, width: f32, zoom: f32) {
-        let (rect, _) = ui.allocate_exact_size(vec2(width, 36.), Sense::hover());
+        let (rect, _) = ui.allocate_exact_size(vec2(width, 24.), Sense::hover());
+        // Keep the horizontal ruler at the viewport top while the canvas scrolls.
+        let rect = rect.translate(vec2(0., (ui.clip_rect().top() - rect.top()).max(0.)));
         self.record("ruler", rect);
         if let Some(drag) = &mut self.ruler_drag
             && drag.rect == Rect::NOTHING
@@ -65,32 +67,7 @@ impl DocsApp {
         let margin = CANVAS_MARGIN * zoom;
         let left = rect.left() + margin;
         let right = rect.right() - margin;
-        ui.painter().rect_filled(rect, 0., Color32::from_gray(214));
-        ui.painter().rect_filled(
-            Rect::from_min_max(pos2(left, rect.top()), pos2(right, rect.bottom())),
-            0.,
-            Color32::from_gray(250),
-        );
-        for tick in 0..=((right - left) / (12. * zoom)) as usize {
-            let x = left + tick as f32 * 12. * zoom;
-            let large = tick % 8 == 0;
-            ui.painter().line_segment(
-                [
-                    pos2(x, rect.top() + 14.),
-                    pos2(x, rect.top() + if large { 23. } else { 19. }),
-                ],
-                Stroke::new(1.0_f32, Color32::from_gray(115)),
-            );
-            if large {
-                ui.painter().text(
-                    pos2(x, rect.top() + 7.),
-                    Align2::CENTER_CENTER,
-                    (tick / 8).to_string(),
-                    FontId::proportional(10.),
-                    Color32::from_gray(90),
-                );
-            }
-        }
+        paint_scale(ui, rect, left, right, zoom, false);
         let model = self
             .ruler_drag
             .as_ref()
@@ -113,33 +90,36 @@ impl DocsApp {
                 "ruler-first",
                 "First line",
                 left + l + special.max(0.),
-                rect.top() + 5.,
+                rect.top() + 4.,
             ),
             (
                 Handle::Body,
                 "ruler-body",
                 "Continuation lines (hanging indent)",
                 left + l + (-special).max(0.),
-                rect.top() + 19.,
+                rect.top() + 15.,
             ),
             (
                 Handle::Left,
                 "ruler-left",
                 "Left indent (all lines)",
                 left + l,
-                rect.top() + 31.,
+                rect.top() + 22.,
             ),
             (
                 Handle::Right,
                 "ruler-right",
                 "Right indent",
                 right - f32::from(style.right_indent_half_points) * unit,
-                rect.top() + 19.,
+                rect.top() + 15.,
             ),
         ];
         let enabled = self.enabled(Action::ParagraphSpacing) && !self.composing && !self.backstage;
         for (handle, name, label, x, y) in handles {
-            let target = Rect::from_center_size(pos2(x, y), vec2(12., 10.));
+            let target = Rect::from_center_size(
+                pos2(x, y),
+                vec2(12., if handle == Handle::Left { 4. } else { 8. }),
+            );
             self.record(name, target);
             let response = ui.interact(
                 target,
@@ -161,10 +141,10 @@ impl DocsApp {
             };
             if handle == Handle::Left {
                 ui.painter().rect(
-                    target.shrink(1.),
+                    target,
                     1.,
                     fill,
-                    Stroke::new(1.0_f32, INK),
+                    Stroke::new(1.0_f32, Color32::from_gray(110)),
                     egui::StrokeKind::Inside,
                 );
             } else {
@@ -176,7 +156,7 @@ impl DocsApp {
                         pos2(x, y + 4. * direction),
                     ],
                     fill,
-                    Stroke::new(1.0_f32, INK),
+                    Stroke::new(1.0_f32, Color32::from_gray(110)),
                 ));
             }
             if summary.position(handle).mixed() {
@@ -278,50 +258,56 @@ impl DocsApp {
         else {
             return;
         };
-        let (readout, response) = ui.allocate_exact_size(vec2(width, 30.), Sense::hover());
-        self.record("ruler-values", readout);
-        let readout_origin = pos2(
-            readout.left().max(ui.clip_rect().left() + 4.),
-            readout.top(),
+        // Values are contextual: they must not add permanent height above the canvas.
+        if self.ruler_key_focus.is_some() || self.ruler_drag.is_some() {
+            let hint = self
+                .ruler_key_focus
+                .or_else(|| self.ruler_drag.as_ref().map(|d| d.draft.handle))
+                .map(marker_name)
+                .unwrap_or("Indent");
+            let origin = pos2(
+                rect.left().max(ui.clip_rect().left() + 4.),
+                rect.bottom() + 5.,
+            );
+            let painter = ui
+                .ctx()
+                .layer_painter(egui::LayerId::new(
+                    egui::Order::Tooltip,
+                    Id::new("ruler-values"),
+                ))
+                .with_clip_rect(ui.clip_rect());
+            let galley = painter.layout_no_wrap(
+                format!("{}\n{hint} · Enter applies · Esc cancels", summary.values()),
+                FontId::proportional(11.),
+                INK,
+            );
+            let readout = Rect::from_min_size(origin, galley.size() + vec2(12., 8.));
+            self.record("ruler-values", readout);
+            painter.rect(
+                readout,
+                2.,
+                Color32::from_rgb(255, 255, 245),
+                Stroke::new(1.0_f32, Color32::from_gray(180)),
+                egui::StrokeKind::Inside,
+            );
+            painter.galley(origin + vec2(6., 4.), galley, INK);
+        }
+    }
+
+    pub(super) fn vertical_ruler(&mut self, ui: &mut Ui, canvas: Rect, zoom: f32) {
+        let x = ui.clip_rect().left() + 2.;
+        let rect = Rect::from_min_max(pos2(x, canvas.top()), pos2(x + 20., canvas.bottom()));
+        self.record("ruler-vertical", rect);
+        paint_scale(
+            ui,
+            rect,
+            canvas.top() + CANVAS_MARGIN * zoom,
+            canvas.bottom() - CANVAS_MARGIN * zoom,
+            zoom,
+            true,
         );
-        ui.painter().text(
-            readout_origin,
-            Align2::LEFT_TOP,
-            summary.values(),
-            FontId::proportional(11.),
-            INK,
-        );
-        let hint = self
-            .ruler_key_focus
-            .map(|h| {
-                format!(
-                    "{}{} · Enter applies · Esc cancels",
-                    marker_name(h),
-                    if summary.position(h).mixed() {
-                        " (Mixed)"
-                    } else {
-                        ""
-                    }
-                )
-            })
-            .unwrap_or_else(|| {
-                if summary.mixed() {
-                    format!(
-                        "{} paragraphs · Mixed values · anchors: first",
-                        summary.count
-                    )
-                } else {
-                    format!("{} paragraph(s) · Ctrl+Shift+F8: keyboard", summary.count)
-                }
-            });
-        response.on_hover_text(summary.marker_details(Handle::Left));
-        ui.painter().text(
-            readout_origin + vec2(0., 15.),
-            Align2::LEFT_TOP,
-            hint,
-            FontId::proportional(11.),
-            INK,
-        );
+        ui.interact(rect.intersect(ui.clip_rect()), Id::new("ruler-vertical"), Sense::hover())
+            .on_hover_text("Vertical ruler · inches from the continuous canvas text origin. Follows document scrolling. Page margins and pagination are not implemented.");
     }
 }
 
@@ -494,5 +480,70 @@ impl DocsApp {
             });
         }
         true
+    }
+}
+
+/// Both axes use the same physical scale. Only visible ticks are visited, including
+/// for long documents. The text origin is zero; margins share its physical scale.
+fn paint_scale(ui: &Ui, rect: Rect, start: f32, end: f32, zoom: f32, vertical: bool) {
+    let painter = ui.painter();
+    painter.rect_filled(rect, 0., Color32::from_gray(224));
+    let body = if vertical {
+        Rect::from_min_max(pos2(rect.left(), start), pos2(rect.right(), end))
+    } else {
+        Rect::from_min_max(pos2(start, rect.top()), pos2(end, rect.bottom()))
+    };
+    painter.rect_filled(body, 0., Color32::from_gray(252));
+    painter.rect_stroke(
+        rect,
+        0.,
+        Stroke::new(1.0_f32, Color32::from_gray(195)),
+        egui::StrokeKind::Inside,
+    );
+    let visible = rect.intersect(ui.clip_rect());
+    if !visible.is_positive() {
+        return;
+    }
+    let (low, high) = if vertical {
+        (visible.top(), visible.bottom())
+    } else {
+        (visible.left(), visible.right())
+    };
+    let step = 12. * zoom;
+    let first = ((low - start) / step).ceil() as i32;
+    let last = ((high - start) / step).floor() as i32;
+    for tick in first..=last {
+        let position = start + tick as f32 * step;
+        let major = tick % 8 == 0;
+        let middle = tick % 4 == 0;
+        let length = if middle { 6. } else { 3. };
+        let color = Color32::from_gray(100);
+        if major && tick != 0 && position >= low + 7. && position <= high - 7. {
+            let center = if vertical {
+                pos2(rect.center().x, position)
+            } else {
+                pos2(position, rect.center().y)
+            };
+            painter.text(
+                center,
+                Align2::CENTER_CENTER,
+                (tick.abs() / 8).to_string(),
+                FontId::proportional(10.),
+                color,
+            );
+        } else if !major {
+            let points = if vertical {
+                [
+                    pos2(rect.center().x - length / 2., position),
+                    pos2(rect.center().x + length / 2., position),
+                ]
+            } else {
+                [
+                    pos2(position, rect.center().y - length / 2.),
+                    pos2(position, rect.center().y + length / 2.),
+                ]
+            };
+            painter.line_segment(points, Stroke::new(1.0_f32, color));
+        }
     }
 }
