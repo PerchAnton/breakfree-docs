@@ -144,3 +144,14 @@ which include left plus the applicable special indent. Existing first-paragraph
 anchors and partial-edit semantics stay unchanged. Summaries of preview snapshots
 update without committing; cancellation/history restore the corresponding summary.
 No format, dependency, palette or license change.
+
+
+## Alpha.51 extension: property-specific ruler reset
+
+A typed reset scope builds the same partial paragraph-geometry patch as other
+ruler edits. Clearing one optional override restores that property's style-chain
+resolution for each selected paragraph; other optional overrides remain untouched.
+First-line and hanging remain two signs of one property, not independent fields.
+The detached draft previews the result; acceptance commits one shared command,
+with existing no-op history preservation and stale document/selection rejection.
+No native schema or model property is added.

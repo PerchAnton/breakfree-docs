@@ -1,6 +1,6 @@
 //! Native adapter for the shared ruler draft; no model mutations during motion.
 use super::*;
-use crate::ruler::{Draft, Handle, indent_scale};
+use crate::ruler::{Draft, Handle, ResetIndent, indent_scale};
 
 pub(super) struct Drag {
     pub draft: Draft,
@@ -229,7 +229,7 @@ impl DocsApp {
                     format!("{label}. {}", summary.marker_details(handle)),
                 )
             });
-            response.on_hover_text(format!("{label} — drag to preview; release to apply; Esc cancels. Half-point steps. Uses the first selected paragraph; applies to selected paragraphs. Ctrl+Shift+F8 enters keyboard control; Tab changes marker, arrows nudge 0.5 pt, Shift+arrows 5 pt, Enter applies, Esc cancels, Delete previews reset to style indents. {}", summary.marker_details(handle)));
+            response.on_hover_text(format!("{label} — drag to preview; release to apply; Esc cancels. Half-point steps. Uses the first selected paragraph; applies to selected paragraphs. Ctrl+Shift+F8 enters keyboard control; Tab changes marker, arrows nudge 0.5 pt, Shift+arrows 5 pt, Enter applies, Esc cancels, Delete previews all-indent reset; Shift+Delete resets the focused property to style indents. {}", summary.marker_details(handle)));
         }
         if let Some(drag) = &mut self.ruler_drag
             && !drag.keyboard
@@ -267,7 +267,7 @@ impl DocsApp {
                 .map(marker_name)
                 .unwrap_or("Indent");
             let hint = if self.ruler_drag.as_ref().is_some_and(|d| d.draft.resetting) {
-                "Reset to style"
+                self.ruler_drag.as_ref().unwrap().draft.reset_scope.label()
             } else {
                 hint
             };
@@ -298,21 +298,28 @@ impl DocsApp {
             );
             painter.galley(origin + vec2(6., 4.), galley, INK);
         }
-        menu_response.on_hover_text("Right-click for Reset indents to style. Ctrl+Shift+F8 enters markers; Delete previews reset; Enter applies; Esc cancels.")
+        menu_response.on_hover_text("Right-click for Reset indents to style. Ctrl+Shift+F8 enters markers; Delete previews all-indent reset; Shift+Delete resets the focused property; Enter applies; Esc cancels.")
             .context_menu(|ui| {
-                let reset = ui.add_enabled(enabled && self.ruler_drag.is_none(), Button::new("Reset indents to style"));
-                self.record("ruler-reset", reset.rect);
-                if reset.clicked() {
-                    self.start_ruler_reset(ui.ctx());
-                    ui.close();
+                for (scope, name, label) in [
+                    (ResetIndent::All, "ruler-reset", "Reset all indents to style"),
+                    (ResetIndent::Left, "ruler-reset-left", "Reset left indent to style"),
+                    (ResetIndent::Right, "ruler-reset-right", "Reset right indent to style"),
+                    (ResetIndent::FirstLine, "ruler-reset-first", "Reset first-line/hanging to style"),
+                ] {
+                    let reset = ui.add_enabled(enabled && self.ruler_drag.is_none(), Button::new(label));
+                    self.record(name, reset.rect);
+                    if reset.clicked() {
+                        self.start_ruler_reset(ui.ctx(), scope);
+                        ui.close();
+                    }
                 }
             });
     }
 
-    fn start_ruler_reset(&mut self, ctx: &egui::Context) {
+    fn start_ruler_reset(&mut self, ctx: &egui::Context, scope: ResetIndent) {
         let handle = self.ruler_key_focus.unwrap_or(Handle::Left);
         match Draft::new(&self.session.editor, handle).and_then(|mut draft| {
-            draft.reset_indents()?;
+            draft.reset_property(scope)?;
             Ok(draft)
         }) {
             Ok(draft) => {
@@ -452,7 +459,14 @@ impl DocsApp {
                 continue;
             }
             match key {
-                Key::Delete => self.start_ruler_reset(ctx),
+                Key::Delete => self.start_ruler_reset(
+                    ctx,
+                    if modifiers.shift {
+                        ResetIndent::for_handle(handle)
+                    } else {
+                        ResetIndent::All
+                    },
+                ),
                 Key::ArrowLeft | Key::ArrowRight => {
                     if self.ruler_drag.as_ref().is_some_and(|d| d.draft.resetting) {
                         continue;

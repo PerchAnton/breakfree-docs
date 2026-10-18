@@ -1596,3 +1596,23 @@ SHA-256: `448f0525ad25d4e52558c530f89ce1c388e5adbd2fbe1d58d377e604194baa6b`.
 SHA-256: `f854bcf03bf209a2267bdc3fa834f4f01fa060bec16f7ceada6d5054af61b810`.
 
 Both native macOS capture fixtures were visually inspected: the reset label and exact preview values fit, with the alpha.49 ruler geometry retained. Events are injected into widgets, not ordinary OS keyboard input. Windows/reference checks remain deferred.
+
+
+## Alpha.51 individual ruler reset
+
+Retain the alpha.49 scale geometry, palette and icons. The horizontal context menu
+has four commands: reset all, left, right, or first-line/hanging to style. The
+contextual preview names the chosen property. Shift+Delete resets the focused
+marker's property; both first-line and continuation markers map to first-line/hanging.
+Delete retains all-indent reset; Enter/Tab accepts, Escape/F6 cancels. These are
+Docs-specific mappings; no Windows/Word shortcut equivalence is claimed.
+
+![Individual reset at 1366 × 900 DIP](screenshots/rust-ruler-single-reset-alpha51-macos.png)
+
+SHA-256: `dc531254ace50203e942de028e44a9c4f6688c5f6840061550359aec636a11a4`.
+
+![Individual reset at 640 × 480 DIP](screenshots/rust-ruler-single-reset-alpha51-compact-macos.png)
+
+SHA-256: `939dc5ea8835a9aed50933f8deb708a1648db83e0632e970de7d74d60230f7f2`.
+
+Both native macOS capture fixtures were inspected: the special-indent reset retains left/right values, the scoped label fits at both widths and scale geometry is unchanged. Widget-injected events do not establish native OS keyboard or Windows/reference acceptance.

@@ -687,3 +687,15 @@ paragraph inherits its own style. Enter applies in one Undo/Redo step; Escape or
 cancels. Tab applies before changing markers. Arrow nudging is paused during reset
 preview. Spacing and alignment remain unchanged. A reset with no overrides creates
 no history entry and preserves redo. The vertical ruler remains read-only.
+
+
+## Individual ruler resets (alpha.51)
+
+The horizontal ruler context menu also resets **Left**, **Right**, or
+**First-line/hanging** independently. Enter marker control with Ctrl+Shift+F8,
+select a marker with Tab, then press **Shift+Delete** to preview its property reset.
+First-line and continuation markers refer to the same signed property; resetting
+it preserves the direct left indent. Plain Delete still resets all three properties.
+Enter/Tab accepts one Undo/Redo operation, Escape/F6 cancels. Other direct indents,
+spacing, alignment and content are preserved, including when the chosen property
+already inherits its value (no-op reset preserves redo).

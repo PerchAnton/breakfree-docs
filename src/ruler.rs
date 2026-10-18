@@ -177,6 +177,31 @@ pub fn indent_scale(style: ResolvedParagraphStyle, unit: f32, width: f32) -> f32
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ResetIndent {
+    All,
+    Left,
+    Right,
+    FirstLine,
+}
+impl ResetIndent {
+    pub fn for_handle(handle: Handle) -> Self {
+        match handle {
+            Handle::Left => Self::Left,
+            Handle::Right => Self::Right,
+            Handle::First | Handle::Body => Self::FirstLine,
+        }
+    }
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::All => "Reset to style",
+            Self::Left => "Reset left indent",
+            Self::Right => "Reset right indent",
+            Self::FirstLine => "Reset first-line/hanging",
+        }
+    }
+}
+
 pub struct Draft {
     pub original: Document,
     pub preview: Document,
@@ -185,6 +210,7 @@ pub struct Draft {
     pub style: ResolvedParagraphStyle,
     patch: ParagraphGeometryPatch,
     pub resetting: bool,
+    pub reset_scope: ResetIndent,
 }
 impl Draft {
     pub fn new(editor: &Editor, handle: Handle) -> Result<Self> {
@@ -199,14 +225,18 @@ impl Draft {
                 .resolved_paragraph(&editor.document.paragraphs[index]),
             patch: ParagraphGeometryPatch::default(),
             resetting: false,
+            reset_scope: ResetIndent::All,
         })
     }
     /// Remove only direct indent overrides; each paragraph keeps its own style chain.
     pub fn reset_indents(&mut self) -> Result<()> {
+        self.reset_property(ResetIndent::All)
+    }
+    pub fn reset_property(&mut self, scope: ResetIndent) -> Result<()> {
         let patch = ParagraphGeometryPatch {
-            left: Some(None),
-            right: Some(None),
-            first_line: Some(None),
+            left: matches!(scope, ResetIndent::All | ResetIndent::Left).then_some(None),
+            right: matches!(scope, ResetIndent::All | ResetIndent::Right).then_some(None),
+            first_line: matches!(scope, ResetIndent::All | ResetIndent::FirstLine).then_some(None),
             ..Default::default()
         };
         let mut preview = Editor::new(self.original.clone());
@@ -214,6 +244,7 @@ impl Draft {
         self.preview = preview.document;
         self.patch = patch;
         self.resetting = true;
+        self.reset_scope = scope;
         Ok(())
     }
     /// Absolute displacement from press, in half points; rounding never accumulates.
@@ -296,6 +327,70 @@ mod tests {
         e.selection = (0, e.document.text().chars().count());
         e.undo_stack.clear();
         e
+    }
+    #[test]
+    fn individual_resets_preserve_other_overrides_and_one_history_roundtrip() {
+        for scope in [
+            ResetIndent::Left,
+            ResetIndent::Right,
+            ResetIndent::FirstLine,
+        ] {
+            let mut e = editor();
+            e.document.style_catalog.normal.left_indent_half_points = Some(31);
+            e.document.style_catalog.normal.right_indent_half_points = Some(17);
+            e.document.style_catalog.normal.first_line_half_points = Some(-25);
+            for p in &mut e.document.paragraphs {
+                p.spacing.left_indent_half_points = Some(80);
+                p.spacing.right_indent_half_points = Some(60);
+                p.spacing.first_line_half_points = Some(40);
+                p.spacing.space_before_half_points = Some(9);
+            }
+            e.selection = (0, e.document.paragraphs[0].text.chars().count() + 1);
+            let before = e.document.clone();
+            let mut expected = before.clone();
+            let p = &mut expected.paragraphs[0];
+            match scope {
+                ResetIndent::Left => p.spacing.left_indent_half_points = None,
+                ResetIndent::Right => p.spacing.right_indent_half_points = None,
+                ResetIndent::FirstLine => p.spacing.first_line_half_points = None,
+                _ => unreachable!(),
+            }
+            let mut d = Draft::new(&e, Handle::First).unwrap();
+            d.reset_property(scope).unwrap();
+            assert_eq!(d.preview, expected);
+            assert_eq!(e.document, before);
+            d.commit(&mut e).unwrap();
+            assert_eq!(e.undo_stack.len(), 1);
+            assert_eq!(e.document, expected);
+            e.undo();
+            assert_eq!(e.document, before);
+            e.redo();
+            assert_eq!(e.document, expected);
+            let dir = tempfile::tempdir().unwrap();
+            let path = dir.path().join("individual.bfdoc");
+            crate::storage::save(&e.document, &path).unwrap();
+            assert_eq!(crate::storage::load(&path).unwrap(), expected);
+        }
+    }
+    #[test]
+    fn individual_reset_noop_preserves_unrelated_overrides_and_redo() {
+        let mut e = editor();
+        e.document.paragraphs[0].spacing.right_indent_half_points = Some(55);
+        let mut edit = Draft::new(&e, Handle::Left).unwrap();
+        edit.move_by(40.).unwrap();
+        edit.commit(&mut e).unwrap();
+        e.undo();
+        let before = e.document.clone();
+        let mut d = Draft::new(&e, Handle::Left).unwrap();
+        d.reset_property(ResetIndent::Left).unwrap();
+        d.commit(&mut e).unwrap();
+        assert_eq!(e.document, before);
+        assert!(e.undo_stack.is_empty());
+        assert_eq!(e.redo_stack.len(), 1);
+        assert_eq!(
+            ResetIndent::for_handle(Handle::First),
+            ResetIndent::for_handle(Handle::Body)
+        );
     }
     #[test]
     fn reset_inherits_each_style_preserves_spacing_and_roundtrips_one_history_entry() {

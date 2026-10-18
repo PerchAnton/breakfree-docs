@@ -7616,55 +7616,109 @@ fn ruler_reset_keyboard_preview_cancel_commit_and_history() {
 
 #[test]
 fn ruler_context_menu_reset_starts_cancellable_preview() {
-    let (ctx, mut app) = setup();
-    app.session.editor.document.paragraphs[0]
-        .spacing
-        .left_indent_half_points = Some(80);
-    let before = app.session.editor.document.clone();
-    let rect = app.regions.iter().find(|r| r.name == "ruler").unwrap().rect;
-    let pos = rect.center();
-    let event = |pressed| egui::Event::PointerButton {
-        pos,
-        button: egui::PointerButton::Secondary,
-        pressed,
-        modifiers: Modifiers::NONE,
-    };
-    frame(
-        &ctx,
-        &mut app,
-        vec![egui::Event::PointerMoved(pos), event(true), event(false)],
-        [1366., 900.],
-        1.,
-    );
-    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
-    let pos = app
-        .regions
-        .iter()
-        .find(|r| r.name == "ruler-reset")
-        .unwrap()
-        .rect
-        .center();
-    frame(
-        &ctx,
-        &mut app,
-        vec![
-            egui::Event::PointerMoved(pos),
-            ruler_pointer(pos, true),
-            ruler_pointer(pos, false),
-        ],
-        [1366., 900.],
-        1.,
-    );
-    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
-    assert!(app.ruler_drag.as_ref().unwrap().draft.resetting);
-    assert_eq!(app.session.editor.document, before);
-    frame(
-        &ctx,
-        &mut app,
-        vec![key(Key::Escape, false)],
-        [1366., 900.],
-        1.,
-    );
-    assert!(app.ruler_drag.is_none());
-    assert_eq!(app.session.editor.document, before);
+    for menu_name in [
+        "ruler-reset",
+        "ruler-reset-left",
+        "ruler-reset-right",
+        "ruler-reset-first",
+    ] {
+        let (ctx, mut app) = setup();
+        app.session.editor.document.paragraphs[0]
+            .spacing
+            .left_indent_half_points = Some(80);
+        let before = app.session.editor.document.clone();
+        let rect = app.regions.iter().find(|r| r.name == "ruler").unwrap().rect;
+        let pos = rect.center();
+        let event = |pressed| egui::Event::PointerButton {
+            pos,
+            button: egui::PointerButton::Secondary,
+            pressed,
+            modifiers: Modifiers::NONE,
+        };
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::PointerMoved(pos), event(true), event(false)],
+            [1366., 900.],
+            1.,
+        );
+        frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+        let pos = app
+            .regions
+            .iter()
+            .find(|r| r.name == menu_name)
+            .unwrap()
+            .rect
+            .center();
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                egui::Event::PointerMoved(pos),
+                ruler_pointer(pos, true),
+                ruler_pointer(pos, false),
+            ],
+            [1366., 900.],
+            1.,
+        );
+        frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+        assert!(app.ruler_drag.as_ref().unwrap().draft.resetting);
+        assert_eq!(app.session.editor.document, before);
+        frame(
+            &ctx,
+            &mut app,
+            vec![key(Key::Escape, false)],
+            [1366., 900.],
+            1.,
+        );
+        assert!(app.ruler_drag.is_none());
+        assert_eq!(app.session.editor.document, before);
+    }
+}
+
+#[test]
+fn ruler_shift_delete_resets_only_focused_property_with_cancel_and_history() {
+    use crate::ruler::{Handle, ResetIndent};
+    for (tabs, handle) in [
+        (0, Handle::First),
+        (1, Handle::Body),
+        (2, Handle::Left),
+        (3, Handle::Right),
+    ] {
+        let (ctx, mut app) = setup();
+        let p = &mut app.session.editor.document.paragraphs[0];
+        p.spacing.left_indent_half_points = Some(80);
+        p.spacing.right_indent_half_points = Some(60);
+        p.spacing.first_line_half_points = Some(-40);
+        let before = app.session.editor.document.clone();
+        let n = app.session.editor.undo_stack.len();
+        for cancel in [true, false] {
+            let mut events = vec![ruler_key(Key::F8, Modifiers::CTRL | Modifiers::SHIFT)];
+            events.extend((0..tabs).map(|_| key(Key::Tab, false)));
+            events.push(ruler_key(Key::Delete, Modifiers::SHIFT));
+            frame(&ctx, &mut app, events, [1366., 900.], 1.);
+            let draft = &app.ruler_drag.as_ref().unwrap().draft;
+            assert_eq!(draft.reset_scope, ResetIndent::for_handle(handle));
+            let expected = draft.preview.clone();
+            assert_eq!(app.session.editor.document, before);
+            frame(
+                &ctx,
+                &mut app,
+                vec![key(if cancel { Key::Escape } else { Key::Enter }, false)],
+                [1366., 900.],
+                1.,
+            );
+            assert_eq!(
+                app.session.editor.document,
+                if cancel { before.clone() } else { expected }
+            );
+        }
+        assert_eq!(app.session.editor.undo_stack.len(), n + 1);
+        frame(&ctx, &mut app, vec![key(Key::F6, false)], [1366., 900.], 1.);
+        let after = app.session.editor.document.clone();
+        app.execute(Action::Undo, &ctx);
+        assert_eq!(app.session.editor.document, before);
+        app.execute(Action::Redo, &ctx);
+        assert_eq!(app.session.editor.document, after);
+    }
 }

@@ -3,6 +3,12 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.51 — 2026-10-18
+
+- Add separate ruler menu commands to reset left, right or first-line/hanging indentation to the paragraph style, preserving every other direct override.
+- Shift+Delete previews reset of the focused marker property; first-line and continuation markers share the signed first-line/hanging property. Delete retains reset-all. Enter/Tab commits one Undo/Redo; Escape/F6 cancels.
+- Keep per-paragraph inheritance, half-open selection, no-op redo and persistence semantics. Preserve two-axis design, palette/icons and native v13. Alpha.50 approved; alpha.51 awaits approval. Windows remains deferred.
+
 ## 0.1.0-alpha.50 — 2026-10-18
 
 - Add Reset indents to style to the horizontal ruler context menu. Ctrl+Shift+F8, then Delete opens the same reset preview; Enter applies, Escape cancels. Tab also commits before moving to the next marker, consistent with ruler editing.

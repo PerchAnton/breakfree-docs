@@ -363,4 +363,5 @@ Use public specifications and original test cases, not copied application code. 
 - [x] Alpha.49: compact horizontal and vertical continuous-canvas rulers, contextual values, shared visibility and scrolling/zoom alignment (local widget validation).
 - [ ] Matched Word 2024 Windows ruler comparison; editable margins/tab stops depend on the corresponding layout model.
 
-- [ ] Next: reset individual indent properties from the ruler without changing other direct indent overrides.
+- [x] Alpha.51: individual left/right/first-line-hanging reset commands, focused-marker Shift+Delete, preview/cancel and one Undo/Redo; unrelated overrides preserved (local tests).
+- [ ] Next: expose inherited/direct provenance in ruler marker tooltips, including mixed selections.

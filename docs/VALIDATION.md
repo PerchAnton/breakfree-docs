@@ -8,16 +8,16 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.50**. Historical evidence retains its scope.
+Current local checkpoint: **0.1.0-alpha.51**. Historical evidence retains its scope.
 
 | Local check | Observed result |
 | --- | --- |
-| Full / no-default-features tests | 286 / 143 passed; ruler reset inheritance, preview/history/persistence and context-menu/keyboard checks added |
+| Full / no-default-features tests | 289 / 145 passed; individual reset preservation/history and all menu/marker mappings checked |
 | fmt / Clippy | Passed; normal/capture all-target checks with warnings denied |
 | Release builds | Native binary and capture harness passed without Office/sibling inputs |
-| CLI | Version/capabilities report alpha.50; existing CLI subprocess tests pass |
+| CLI | Version/capabilities report alpha.51; existing CLI subprocess tests pass |
 | Repository/artwork/YAML/whitespace | Passed |
-| Native rendering | Ruler reset preview inspected at 1366 × 900 / 640 × 480 DIP |
+| Native rendering | Individual ruler reset inspected at 1366 × 900 / 640 × 480 DIP |
 | Native input | Not repeated this iteration; previous automation lost its window. CPU widget events are separate evidence |
 | Existing regressions | Home geometry, minimum-width 64-style keyboard scrolling, history, storage and synthetic scaling checks retained |
 
@@ -1360,3 +1360,21 @@ Two native capture fixtures were inspected at 1366 × 900 and 640 × 480 DIP.
 These establish rendering only; ordinary OS input, native Windows scaling and
 matched Word reference validation were not performed. Native v13 and process/settings
 v1 are unchanged. Server CI is reported separately in PROJECT_LOG. No merge/tag/release.
+
+
+## Alpha.51 individual ruler reset validation
+
+2026-10-18, macOS arm64 / Rust 1.99.1: **289 full / 145 core-only tests** passed.
+fmt, normal/capture all-target Clippy with warnings denied, release/capture builds,
+repository/artwork/YAML/whitespace checks and isolated copied-binary version/capabilities
+passed. Three added tests cover individual-property reset preservation, half-open
+selection, single-entry undo/redo, save/reopen, no-op redo and focused-marker mapping.
+The existing context-menu test now exercises all four choices; keyboard coverage
+exercises all four markers with Shift+Delete, cancellation and history.
+
+Two native capture fixtures at 1366 × 900 and 640 × 480 DIP were inspected. The
+special-property reset preserves displayed left/right values and the scoped hint
+fits. These use injected widget events; ordinary OS keyboard, Windows display
+scaling and matched Word reference checks were not performed. Native v13 and
+process/settings v1 are unchanged. Alpha.50 code/journal CI succeeded; alpha.51 CI
+is reported separately. No merge/tag/release.
