@@ -3,6 +3,18 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.27 — Unreleased; submitted for owner approval
+
+Prepared 2026-10-18. The owner approved alpha.26 in the project chat.
+
+- Rename custom character styles in Modify Character Style. Select the current
+  name on entry; validate names using the existing character catalog rules.
+- Commit name and property edits together as one Undo/Redo. Preserve IDs, catalog
+  order, text references, pending formatting and direct overrides. Invalid/no-op
+  edits retain history; Cancel leaves the document unchanged.
+- Refresh displayed names through existing Home/search actions. Native v8,
+  approved palette, original icons and dependencies remain unchanged.
+
 ## 0.1.0-alpha.26 — Unreleased; submitted for owner approval
 
 Prepared 2026-10-18. The owner approved alpha.25 in the project chat.

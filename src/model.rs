@@ -622,16 +622,28 @@ impl Document {
         style: CharacterStyle,
         format: CharacterFormat,
     ) -> Result<()> {
+        let name = self.character_style_name(style).to_owned();
+        self.update_character_style(style, &name, format)
+    }
+
+    /// Validate a name and properties together before replacing a definition.
+    pub fn update_character_style(
+        &mut self,
+        style: CharacterStyle,
+        name: &str,
+        format: CharacterFormat,
+    ) -> Result<()> {
         let CharacterStyle::Custom(id) = style else {
             return Err("Built-in character styles cannot be modified.".into());
         };
         let mut candidate = self.clone();
-        candidate
+        let definition = candidate
             .character_styles
             .iter_mut()
             .find(|s| s.id == id)
-            .ok_or("Unknown character style reference.")?
-            .format = format;
+            .ok_or("Unknown character style reference.")?;
+        definition.name = name.into();
+        definition.format = format;
         candidate.validate()?;
         self.character_styles = candidate.character_styles;
         Ok(())

@@ -101,8 +101,8 @@ backward compatibility or authorize a release.
 
 Alpha.20 adds native content v5 for named custom style IDs/definitions. It reads
 v1–v5 and saves v5; alpha.19 and earlier reject new saves. The application candidate
-is `0.1.0-alpha.26`; process/settings remain v1. Alpha.25 was approved in chat on
-2026-10-18; alpha.26 awaits explicit owner approval. Alpha.21 renaming and alpha.22
+is `0.1.0-alpha.27`; process/settings remain v1. Alpha.26 was approved in chat on
+2026-10-18; alpha.27 awaits explicit owner approval. Alpha.21 renaming and alpha.22
 deletion use existing v5 IDs/references without a content-version change.
 
 Alpha.23 adds native v6 following-style references, retaining strict v1–v5

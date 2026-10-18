@@ -325,3 +325,77 @@ fn modify_unused_invalid_and_noop_definitions_preserve_history() {
     s.editor.undo();
     assert_eq!(s.editor.document, before);
 }
+
+#[test]
+fn rename_character_style_retains_references_and_combined_history() {
+    let mut e = Editor::default();
+    e.replace(0, 0, "English e\u{301}\nУкраїна Русский 🙂", "Input")
+        .unwrap();
+    e.selection = (0, e.document.character_count());
+    let id = e.create_character_style("Note", format(), true).unwrap();
+    let before = e.document.clone();
+    let selection = e.selection;
+    let typing = e.typing_style;
+    let count = e.undo_stack.len();
+    e.update_character_style(id, "Примітка e\u{301}", format())
+        .unwrap();
+    assert_eq!(e.document.paragraphs, before.paragraphs);
+    assert_eq!(
+        e.document.character_styles[0].id,
+        before.character_styles[0].id
+    );
+    assert_eq!(e.typing_style, typing);
+    assert_eq!(e.selection, selection);
+    assert_eq!(e.undo_stack.len(), count + 1);
+    let after = e.document.clone();
+    assert_eq!(
+        storage::decode(&storage::encode(&after).unwrap()).unwrap(),
+        after
+    );
+    e.undo();
+    assert_eq!(e.document, before);
+    e.redo();
+    assert_eq!(e.document, after);
+    let changed = CharacterFormat {
+        bold: Some(true),
+        ..format()
+    };
+    e.update_character_style(id, "Renamed", changed).unwrap();
+    e.undo();
+    assert_eq!(e.document, after);
+    e.redo();
+    assert_eq!(e.document.character_styles[0].format, changed);
+    assert_eq!(e.document.character_style_name(id), "Renamed");
+}
+
+#[test]
+fn rename_invalid_noop_unused_and_case_only_edits() {
+    let mut e = Editor::default();
+    let id = e.create_character_style("Note", format(), false).unwrap();
+    e.create_character_style("Other", format(), false).unwrap();
+    e.replace(0, 0, "x", "Input").unwrap();
+    e.undo();
+    let before = e.document.clone();
+    for name in [
+        "",
+        " Note",
+        "Note ",
+        "OTHER",
+        "Strong",
+        "a\nb",
+        "a\u{2028}b",
+        &"x".repeat(65),
+    ] {
+        assert!(e.update_character_style(id, name, format()).is_err());
+    }
+    for bad in [CharacterStyle::Strong, CharacterStyle::Custom(999)] {
+        assert!(e.update_character_style(bad, "Valid", format()).is_err());
+    }
+    e.update_character_style(id, "Note", format()).unwrap();
+    assert_eq!(e.document, before);
+    assert_eq!(e.redo_stack.len(), 1);
+    e.update_character_style(id, "NOTE", format()).unwrap();
+    assert_eq!(e.document.character_style_name(id), "NOTE");
+    e.undo();
+    assert_eq!(e.document, before);
+}

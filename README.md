@@ -240,9 +240,13 @@ Select text carrying one custom character style, then Home Styles → Modify
 character style (KeyTips H → L → J; narrow H → E → J). Change Inherit/On/Off
 properties or size, preview, then OK to commit one Undo/Redo. Cancel changes
 nothing. Right-click a custom style in the list to modify even an unused definition.
-Names, IDs, references and direct overrides stay unchanged; direct overrides can
+IDs, references and direct overrides stay unchanged; direct overrides can
 mask definition changes. Built-ins and mixed selections disable the main command.
-Character-style parents, renaming and deletion remain future work.
+The name is selected on entry: type a new unique name to rename the style.
+Name and property changes commit together in one Undo/Redo. Cancel/Escape changes
+nothing; invalid or reserved names keep OK disabled. Home and command search show
+the new name after confirmation and reopen. Unchanged drafts preserve redo.
+Character-style parents and deletion remain future work.
 [Named character styles](docs/adr/0012-named-character-styles.md).
 [Character-style rules](docs/adr/0011-character-style-precedence.md).
 [Style rules](docs/adr/0008-custom-named-styles.md) · [Deletion rules](docs/adr/0009-delete-custom-styles.md).

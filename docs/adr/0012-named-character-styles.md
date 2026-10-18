@@ -10,7 +10,7 @@ positive u32 ID, a validated name and optional bold/italic/underline/font size.
 A run or pending insertion format references the ID; do not copy resolved values
 into direct formatting. The cascade remains paragraph → character → direct.
 Explicit false wins, unset properties inherit the paragraph. Character parents,
-linked paragraph/character styles and rename/delete are deferred.
+linked paragraph/character styles and deletion are deferred.
 
 Character names are a separate namespace from paragraph names. Enforce 1–64 Unicode
 scalars, no outer spaces/control characters/U+2028/U+2029, case-insensitive uniqueness
@@ -57,3 +57,13 @@ Home/command search require a uniform custom selection; the style-row context
 command also permits unused definitions. J enters modification in Styles/Editing
 KeyTips. Cancel and invalid drafts leave the document untouched. No schema change:
 existing native v8 definitions already carry these properties.
+
+## Alpha.27 — Renaming
+
+Modify Character Style now drafts the name as well as properties. Select the old
+name initially, validate the complete candidate catalog before assignment, then
+commit name/properties as one editor transaction. Names follow the creation rules;
+case-only changes are allowed for the same ID. Invalid names, unknown IDs, fixed
+built-ins and unchanged drafts leave history intact. IDs/order/references, selection
+and pending format remain stable. Menus/search resolve the current name from the
+catalog. Native v8 already stores names; no migration or schema change is needed.

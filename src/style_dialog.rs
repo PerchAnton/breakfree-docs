@@ -127,7 +127,7 @@ impl StyleDialog {
                 ..Default::default()
             };
             if let Some(id) = self.character_id {
-                document.modify_character_style(id, definition.character)?;
+                document.update_character_style(id, &self.name, definition.character)?;
             } else {
                 document.add_character_style(&self.name, definition.character)?;
             }
@@ -184,7 +184,10 @@ impl StyleDialog {
                     .spacing([14., 7.])
                     .show(ui, |ui| {
                         ui.label("Name:");
-                        if self.creating || matches!(self.id, ParagraphStyle::Custom(_)) {
+                        if self.creating
+                            || self.character_id.is_some()
+                            || matches!(self.id, ParagraphStyle::Custom(_))
+                        {
                             let output = egui::TextEdit::singleline(&mut self.name)
                                 .id_salt("style-name")
                                 .desired_width(290.)
@@ -434,7 +437,7 @@ impl StyleDialog {
                     record(regions, "style-dialog-apply", apply.rect);
                     ui.small("This document only. Creation and application use one undo step.");
                 } else if self.character {
-                    ui.small("Updates all references in one undo step; direct formatting stays.");
+                    ui.small("Renaming keeps references; name and properties use one undo step.");
                 } else if matches!(self.id, ParagraphStyle::Custom(_)) {
                     ui.small("Renaming keeps all style references. Changes use one undo step.");
                 } else {

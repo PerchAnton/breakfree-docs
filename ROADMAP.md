@@ -211,8 +211,11 @@ Rust selection is complete; this gate evaluates GUI behavior and visual fidelity
 - [x] Alpha.26: modify custom character-style properties with stable IDs/references,
   one Undo/Redo, exact v8 roundtrip, cancellation and invalid/no-op preservation.
   Depends on alpha.25; native Windows acceptance remains open.
-- [ ] Next small increment: rename custom character styles with stable references
-  and one Undo/Redo; deletion and parent graphs follow separately.
+- [x] Alpha.27: rename custom character styles with stable references, validated
+  names, combined property edits in one Undo/Redo and exact v8 roundtrip.
+  Depends on alpha.26; native Windows acceptance remains open.
+- [ ] Next small increment: delete custom character styles with explicit reference
+  replacement and one Undo/Redo; parent graphs follow separately.
 - [ ] Add lists, indentation, tabs, spacing, links and Unicode-aware search/replace.
 - [ ] Add table editing and images with explicit sizing and anchoring semantics.
 - [ ] Add navigation, command search and understandable tool states.

@@ -5427,9 +5427,52 @@ fn modify_character_availability_unused_definition_and_bounds() {
         assert!(
             !app.regions
                 .iter()
-                .any(|r| r.name == "style-dialog-name" || r.name == "style-dialog-apply")
+                .any(|r| r.name == "style-dialog-parent" || r.name == "style-dialog-apply")
         );
         app.execute(Action::New, &ctx);
         assert!(app.style_dialog.is_some());
     }
+}
+
+#[test]
+fn rename_character_draft_validation_cancel_and_one_commit() {
+    let (ctx, mut app) = setup();
+    let id = app
+        .session
+        .editor
+        .create_character_style("Note", CharacterFormat::default(), true)
+        .unwrap();
+    app.sync_view();
+    let before = app.session.editor.document.clone();
+    app.execute(Action::ModifyCharacterStyle, &ctx);
+    frame(&ctx, &mut app, vec![], [640., 480.], 1.);
+    assert!(app.regions.iter().any(|r| r.name == "style-dialog-name"));
+    app.style_dialog.as_mut().unwrap().name = "Strong".into();
+    frame(&ctx, &mut app, vec![], [640., 480.], 1.);
+    click_region_at(&ctx, &mut app, "style-dialog-ok", [640., 480.]);
+    assert!(app.style_dialog.is_some());
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Escape, false)],
+        [640., 480.],
+        1.,
+    );
+    assert_eq!(app.session.editor.document, before);
+    app.execute(Action::ModifyCharacterStyle, &ctx);
+    let draft = app.style_dialog.as_mut().unwrap();
+    draft.name = "Примітка e\u{301}".into();
+    draft.size = "18".into();
+    frame(&ctx, &mut app, vec![], [640., 480.], 1.);
+    click_region_at(&ctx, &mut app, "style-dialog-ok", [640., 480.]);
+    assert!(app.style_dialog.is_none());
+    assert_eq!(
+        app.command_name(Action::CharacterStyle(Some(id))),
+        "Примітка e\u{301}"
+    );
+    let after = app.session.editor.document.clone();
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.document, before);
+    app.execute(Action::Redo, &ctx);
+    assert_eq!(app.session.editor.document, after);
 }

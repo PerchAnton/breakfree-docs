@@ -8,20 +8,20 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.26**. Earlier capture/CI evidence retains its
+Current local checkpoint: **0.1.0-alpha.27**. Earlier capture/CI evidence retains its
 original scope; this iteration does not establish native Windows behavior.
 
 | Local check | Observed result |
 | :--- | :--- |
-| `cargo test --locked` | 202 passed: 26 engine/storage/presentation, 45 styles/inheritance, 8 search, 7 batch replacement, 9 preferences, 4 CLI subprocess and 103 actual egui widget event tests; no skipped tests |
-| `cargo test --locked --no-default-features` | 99 passed; preferences, core/styles/search/batch replacement and CLI build without GUI dependencies |
+| `cargo test --locked` | 205 passed: 26 engine/storage/presentation, 47 styles/inheritance, 8 search, 7 batch replacement, 9 preferences, 4 CLI subprocess and 104 actual egui widget event tests; no skipped tests |
+| `cargo test --locked --no-default-features` | 101 passed; preferences, core/styles/search/batch replacement and CLI build without GUI dependencies |
 | `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
 | `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
-| Copied executable outside checkout | Alpha.26 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that identical copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
+| Copied executable outside checkout | Alpha.27 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that identical copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
 | Repository references, contract and artwork | `python3 tools/check_repository.py` passed; approved logo embedded directly and archive copy byte-identical |
 | Workflow YAML / whitespace | Ruby YAML parse and `git diff --check` passed |
-| Native rendering | Alpha.26 Modify Character Style at 1366 × 900 / 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha26-native-captures). Earlier evidence keeps its version context |
-| Native macOS interaction | Alpha.26 F10/H/L/J, size edit, Enter/Save, one Undo/Save, one Redo/Save, fresh-process reopen and Escape cancellation passed with complete JSON comparisons |
+| Native rendering | Alpha.27 Modify Character Style at 1366 × 900 / 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha27-native-captures). Earlier evidence keeps its version context |
+| Native macOS interaction | Alpha.27 F10/H/L/J, Unicode rename, Enter/Save, one Undo/Save, one Redo/Save and fresh-process reopen passed with complete JSON comparisons |
 | Synthetic DPI | Actual widgets at 1/1.25/1.5 scale and 960/1366/1920 physical widths; ribbon/group/workspace/status bounds and collapse assertions passed; 27 additional width/scale combinations check individual Home control containment/nonoverlap and title/search/window bounds |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
@@ -914,3 +914,22 @@ version and failure-retention regressions pass. Native format remains v8.
 Windows/Word/DPI/physical IME/AltGr/full accessibility remain unverified; no new
 platform acceptance is claimed. Renaming/deleting character styles and parents
 remain deferred. Earlier entries above retain their historical scope.
+
+## Alpha.27 character-style renaming validation
+
+205 full / 101 core tests pass. New engine tests verify stable IDs/run references,
+selection/pending format, rename-only and combined property history, Unicode v8
+roundtrip, unused definitions, case-only names, reserved/duplicate/invalid names,
+fixed built-ins, missing IDs and unchanged redo. Widget regression verifies the
+editable name, invalid OK, Cancel, combined name/size commit, updated command label
+and exact one-step history. Existing minimum-window/synthetic DPI tests pass.
+
+Native macOS: select Annotation text in a disposable fixture, F10/H/L/J, paste
+`Примітка é` into the initially selected name, Enter and Save. Full JSON comparison
+(normalizing absent/null optional fields) confirms only the name changed. One
+Undo/Save exactly restores the fixture; Redo/Save exactly restores the renamed
+file. A fresh process shows the saved Unicode name. Two native captures inspected.
+Copied release version/capabilities, fmt, normal/capture Clippy, full/core suites,
+release/capture builds, repository/artwork/YAML/whitespace checks pass.
+Windows/Word/DPI/physical IME and complete accessibility remain unverified. Native
+format v8, protocol/settings v1, dependencies, palette and icons remain unchanged.

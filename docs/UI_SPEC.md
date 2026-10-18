@@ -1096,3 +1096,17 @@ one Undo/Redo and fresh-process reopen passed. Brand differences remain the
 BreakFree identity, purple focus and original icons. Windows/Word side-by-side
 captures, native 100/125/150% DPI, physical IME and full accessibility were not
 available. Synthetic scaling is separate evidence; no similarity percentage.
+
+## Alpha.27 native captures
+
+Modify Character Style now focuses and selects its editable 290-DIP name field.
+Name and properties share OK/Cancel and one transaction. Existing dimensions,
+neutral surfaces, purple focus, preview clipping and original icons are unchanged.
+Light theme, English, 100% document zoom, macOS backing scale 2:
+
+| Capture | Window | SHA-256 |
+| --- | --- | --- |
+| [Rename draft](screenshots/rust-rename-character-alpha27-macos.png) | 1366 × 900 DIP | `c5e90335fdb94b78578694692fc254caab024cad6c958f592a3e422db31cd619` |
+| [Rename draft](screenshots/rust-rename-character-alpha27-macos-narrow.png) | 640 × 480 DIP | `e21601fc86d8b1c243b240170e251300054d19347f4b1f1b3ae174597410db16` |
+
+Both inspected captures keep labels/actions within the window. Native Unicode rename/history/save/reopen passed. Matched Windows/Word screenshots and native DPI/IME acceptance remain unavailable; no similarity percentage is claimed.
