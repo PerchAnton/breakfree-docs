@@ -2423,29 +2423,49 @@ impl DocsApp {
                         self.formatting = false;
                     }
                 });
-                let (a, b) = self.session.editor.selection;
-                ui.label(format!("{} selected characters", b - a));
-                ui.separator();
-                self.command(ui, "Bold", Action::Bold, vec2(150., 28.));
-                self.command(ui, "Italic", Action::Italic, vec2(150., 28.));
-                self.command(ui, "Underline", Action::Underline, vec2(150., 28.));
-                let size = self
-                    .session
-                    .editor
-                    .selected_font_size()
-                    .map(|s| format!("{s} pt"))
-                    .unwrap_or("Mixed sizes".into());
-                self.command(
-                    ui,
-                    &format!("Font size: {size}"),
-                    Action::FontSize,
-                    vec2(180., 28.),
-                );
-                ui.separator();
-                ui.label("Paragraph alignment");
-                for a in [Action::Left, Action::Center, Action::Right, Action::Justify] {
-                    self.command(ui, a.label(), a, vec2(150., 27.));
-                }
+                egui::ScrollArea::vertical().show(ui, |ui| {
+                    let (a, b) = self.session.editor.selection;
+                    ui.label(format!("{} selected characters", b - a));
+                    ui.label(if a == b {
+                        "Future typing"
+                    } else {
+                        "Selected text"
+                    });
+                    ui.vertical(|ui| {
+                        let rows = crate::formatting::selection(&self.session.editor);
+                        if rows.is_empty() {
+                            ui.label("No text properties (paragraph separators only).");
+                        }
+                        for row in rows {
+                            ui.label(
+                                egui::RichText::new(format!("{}: {}", row.name, row.value))
+                                    .strong(),
+                            );
+                            ui.add(egui::Label::new(row.source).wrap());
+                        }
+                    });
+                    ui.separator();
+                    self.command(ui, "Bold", Action::Bold, vec2(150., 28.));
+                    self.command(ui, "Italic", Action::Italic, vec2(150., 28.));
+                    self.command(ui, "Underline", Action::Underline, vec2(150., 28.));
+                    let size = self
+                        .session
+                        .editor
+                        .selected_font_size()
+                        .map(|s| format!("{s} pt"))
+                        .unwrap_or("Mixed sizes".into());
+                    self.command(
+                        ui,
+                        &format!("Font size: {size}"),
+                        Action::FontSize,
+                        vec2(180., 28.),
+                    );
+                    ui.separator();
+                    ui.label("Paragraph alignment");
+                    for a in [Action::Left, Action::Center, Action::Right, Action::Justify] {
+                        self.command(ui, a.label(), a, vec2(150., 27.));
+                    }
+                });
             });
         self.record("formatting", panel.response.rect);
     }

@@ -5609,3 +5609,18 @@ fn character_parent_dialog_validation_preview_and_history() {
     app.execute(Action::Redo, &ctx);
     assert_eq!(app.session.editor.document, after);
 }
+
+#[test]
+fn formatting_provenance_pane_is_read_only_at_narrow_sizes() {
+    for scale in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        app.formatting = true;
+        let before = app.session.editor.document.clone();
+        frame(&ctx, &mut app, vec![], [960., 720.], scale);
+        assert_eq!(app.session.editor.document, before);
+        assert_eq!(
+            crate::formatting::selection(&app.session.editor)[0].source,
+            "Document default"
+        );
+    }
+}

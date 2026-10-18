@@ -1143,3 +1143,21 @@ Light theme, English, 100% document zoom, macOS backing scale 2:
 | [Parent draft](screenshots/rust-character-parent-alpha29-macos-narrow.png) | 640 × 480 DIP | `09b917d1f2f4658d1a30beafad69d9ec1086edbd82a6f57eb21693c719a768b3` |
 
 Both captures were inspected: controls and labels fit without overlap. Native parent selection, Save, one Undo/Redo and fresh-process reopen passed. Matched Word/Windows captures and native 100/125/150% DPI remain unavailable. No similarity percentage is claimed.
+
+## Alpha.30 formatting provenance
+
+The existing right Formatting pane retains 220-DIP default width (195–300 range).
+Its body now scrolls vertically, leaving the heading/close control fixed. Each
+supported character property has a resolved-value row followed by a wrapping
+source label. Names use the current document catalog; mixed values/sources are
+independent. The selection count and future-typing label describe real state.
+Neutral surfaces, purple focus and original icons are unchanged.
+
+Light theme, English, 100% document zoom, macOS backing scale 2:
+
+| Capture | Window | SHA-256 |
+| --- | --- | --- |
+| [Formatting](screenshots/rust-provenance-alpha30-macos.png) | 1366 × 900 DIP | `314adc93d5aeb74d172adcd135874ba801ad9eb61a1c47ea8d3eadf7fe07fb83` |
+| [Formatting](screenshots/rust-provenance-alpha30-macos-narrow.png) | 640 × 480 DIP | `3e2f0a9560224bfa31764587308db4e2eef23cb99b2507c32cb5500a5365e0b4` |
+
+Both captures inspected; no new overlap observed. Narrow body scrolls to lower commands. Native selection/direct-format/Undo/Redo source updates verified. Windows/Word comparison and native DPI remain unavailable; no similarity percentage claimed.

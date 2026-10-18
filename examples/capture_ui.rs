@@ -404,6 +404,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 "styles-create" => app.execute(Action::CreateStyle, &cc.egui_ctx),
                 "styles-delete" => app.execute(Action::DeleteStyle, &cc.egui_ctx),
+                "formatting" => app.execute(Action::Formatting, &cc.egui_ctx),
                 "font" => {
                     app.execute(Action::SelectAll, &cc.egui_ctx);
                     app.execute(Action::FontDialog, &cc.egui_ctx);

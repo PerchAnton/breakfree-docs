@@ -419,3 +419,13 @@ BreakFree Docs is an independent project, not affiliated with Microsoft. Referen
 ---
 
 <p align="center"><strong>BreakFree Office · Your work. Your freedom.</strong><br><sub>Created by <a href="https://github.com/PerchAnton">Anton Perchenko</a></sub></p>
+
+## Formatting provenance (alpha.30)
+
+Open Home's Formatting pane to inspect Bold, Italic, Underline and font size.
+Each row shows its resolved value and authored source, including the named parent
+that supplies an inherited value. Equal-looking direct overrides remain direct.
+Mixed values and mixed sources are reported independently. With no selection,
+the pane describes future typing; selected paragraph separators have no character
+properties. This read-only view does not change document/history or native v9.
+Paragraph alignment/spacing provenance and style-management filtering remain future work.

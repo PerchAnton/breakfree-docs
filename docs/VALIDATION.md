@@ -8,21 +8,18 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.29**. Earlier capture/CI evidence retains its
-original scope; this iteration does not establish native Windows behavior.
+Current local checkpoint: **0.1.0-alpha.30**. Historical evidence retains its scope.
 
 | Local check | Observed result |
-| :--- | :--- |
-| `cargo test --locked` | 213 passed: 26 engine/storage/presentation, 52 styles/inheritance, 8 search, 7 batch replacement, 9 preferences, 4 CLI subprocess and 107 actual egui widget event tests; no skipped tests |
-| `cargo test --locked --no-default-features` | 106 passed; preferences, core/styles/search/batch replacement and CLI build without GUI dependencies |
-| `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
-| `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
-| Copied executable outside checkout | Alpha.29 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that identical copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
-| Repository references, contract and artwork | `python3 tools/check_repository.py` passed; approved logo embedded directly and archive copy byte-identical |
-| Workflow YAML / whitespace | Ruby YAML parse and `git diff --check` passed |
-| Native rendering | Alpha.29 Modify Character Style with parent selector at 1366 × 900 / 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha29-native-captures). Earlier evidence keeps its version context |
-| Native macOS interaction | Alpha.29 F10/H/L/J, parent selection, Save, one Undo/Redo and fresh-process reopen passed with complete JSON comparisons |
-| Synthetic DPI | Actual widgets at 1/1.25/1.5 scale and 960/1366/1920 physical widths; ribbon/group/workspace/status bounds and collapse assertions passed; 27 additional width/scale combinations check individual Home control containment/nonoverlap and title/search/window bounds |
+| --- | --- |
+| Full / no-default-features tests | 217 / 109 passed; three new provenance core tests and one read-only widget/scaling test |
+| fmt / Clippy | Passed; normal and capture all-target Clippy with warnings denied |
+| Release builds | Native binary and capture harness passed, no Office/sibling inputs |
+| CLI | Release version/capabilities return alpha.30; argument and isolated core checks pass |
+| Repository/artwork/YAML/whitespace | Passed |
+| Native rendering | Formatting pane at 1366 × 900 and 640 × 480 DIP, backing scale 2, inspected; narrow content scrolls |
+| Native macOS input | Select custom styled text; open Formatting; Cmd+B changes inherited Strong to Direct formatting. Undo/Redo restore respective value/source; final Undo leaves document clean |
+| Synthetic DPI | Existing regressions retained; pane read-only check at 1/1.25/1.5 |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
 and native release build. Its observed run/commit results are recorded in
@@ -970,3 +967,19 @@ serialized document except the intentionally migrated v9 header; Redo/Save exact
 restores the saved document. Fresh-process reopen displays Strong in the parent
 selector with inherited Bold. Wide and minimum-window captures were inspected.
 Windows/Word comparison, native DPI/IME and complete accessibility remain unverified.
+
+## Alpha.30 formatting provenance validation
+
+Three core regressions distinguish authored overrides from identical inherited
+values, explicit false, character and paragraph parents, independent mixed
+values/sources, pending typing, Unicode scalar selection, separator-only selection,
+and source changes through Undo/Redo. A widget regression opens the actual pane
+at three scales and verifies no document mutation. Adjacent identical runs reuse
+the previous inspection. Provenance is read-only and uses the renderer's resolved
+values; names/sources come from authored definitions. Legacy explicit imports
+remain labeled direct rather than guessed as inherited.
+
+Native macOS keyboard smoke and two captures passed as listed above. This stage
+does not re-establish native Save/Open evidence; storage roundtrip/history tests
+passed. Windows/Word side-by-side, native 100/125/150% scaling, IME and full
+accessibility remain unverified. Paragraph spacing/alignment provenance is deferred.

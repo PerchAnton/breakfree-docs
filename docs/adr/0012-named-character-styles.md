@@ -100,3 +100,13 @@ None reconnects children to the paragraph baseline. One undo restores the graph.
 Native v9 stores parent references. Frozen v8 definitions reject parent fields;
 v1–v8 imports give character definitions no parent. Save writes v9; alpha.28 and
 earlier reject it. No parent guessing, flattening, dependency or palette change.
+
+## Formatting provenance (alpha.30)
+
+Open Home's Formatting pane to inspect Bold, Italic, Underline and font size.
+Each row shows its resolved value and authored source, including the named parent
+that supplies an inherited value. Equal-looking direct overrides remain direct.
+Mixed values and mixed sources are reported independently. With no selection,
+the pane describes future typing; selected paragraph separators have no character
+properties. This read-only view does not change document/history or native v9.
+Paragraph alignment/spacing provenance and style-management filtering remain future work.

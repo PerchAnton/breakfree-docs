@@ -3,6 +3,12 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.30 — 2026-10-18
+
+- Add a read-only Formatting pane inspector showing resolved Bold/Italic/Underline/size and authored source: direct formatting, character style/parent, paragraph style/parent or document default.
+- Report mixed values independently from mixed sources; caret inspection uses future typing. Paragraph separators do not invent character properties.
+- Preserve palette/icons, history and native v9. Alpha.29 approved by the owner; alpha.30 awaits approval.
+
 ## 0.1.0-alpha.29 — Unreleased; submitted for owner approval
 
 Prepared 2026-10-18. The owner approved alpha.28 in the project chat.

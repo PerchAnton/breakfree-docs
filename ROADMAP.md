@@ -220,8 +220,8 @@ Rust selection is complete; this gate evaluates GUI behavior and visual fidelity
 - [x] Alpha.29: character-style parents, cycle/missing-reference rejection,
   shared cascade/preview, combined one-step history and native v9 migration.
   Deletion remaps direct children with cycle validation; depends on alpha.28.
-- [ ] Next small increment: improve Styles management and visibility of inherited
-  versus direct properties; linked styles remain a separate design decision.
+- [x] Alpha.30: read-only character-property provenance in Formatting, named inheritance sources, independent mixed values/sources and future-typing inspection.
+- [ ] Next small increment: paragraph-property provenance and style-management filtering; linked styles remain a separate design decision.
 - [ ] Add lists, indentation, tabs, spacing, links and Unicode-aware search/replace.
 - [ ] Add table editing and images with explicit sizing and anchoring semantics.
 - [ ] Add navigation, command search and understandable tool states.
