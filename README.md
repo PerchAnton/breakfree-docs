@@ -201,7 +201,12 @@ The current document supports up to 64 custom styles; names are 1–64 Unicode
 characters, without outer whitespace/control characters, unique after Unicode
 lowercasing. Styles remain available in More styles and command search after reopen.
 KeyTips H → L → C (wide/compact) or H → E → C (minimum width) opens creation.
-Rename/delete and character styles remain planned. [Creation rules](docs/adr/0008-custom-named-styles.md).
+Modify Style also renames custom styles: the current name is selected on entry.
+Confirm name, parent and property changes together in one undo; IDs and all
+paragraph/descendant references stay intact. Built-in names remain fixed.
+Right-click a gallery card or any Styles-list row → Modify style to edit it
+without applying it to the document. Cancel/unchanged OK preserves redo history.
+Delete and character styles remain planned. [Style rules](docs/adr/0008-custom-named-styles.md).
 
 This build reads native content v1/v2/v3/v4/v5 and **saves v5**. Opening an older file
 does not change it; an explicit save converts it to v5. Earlier builds cannot

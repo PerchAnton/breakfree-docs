@@ -8,20 +8,20 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.20**. Earlier capture/CI evidence retains its
+Current local checkpoint: **0.1.0-alpha.21**. Earlier capture/CI evidence retains its
 original scope; this iteration does not establish native Windows behavior.
 
 | Local check | Observed result |
 | :--- | :--- |
-| `cargo test --locked` | 155 passed: 26 engine/storage/presentation, 18 styles/inheritance, 8 search, 7 batch replacement, 9 preferences, 4 CLI subprocess and 83 actual egui widget event tests; no skipped tests |
-| `cargo test --locked --no-default-features` | 72 passed; preferences, core/styles/search/batch replacement and CLI build without GUI dependencies |
+| `cargo test --locked` | 163 passed: 26 engine/storage/presentation, 22 styles/inheritance, 8 search, 7 batch replacement, 9 preferences, 4 CLI subprocess and 87 actual egui widget event tests; no skipped tests |
+| `cargo test --locked --no-default-features` | 76 passed; preferences, core/styles/search/batch replacement and CLI build without GUI dependencies |
 | `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
 | `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
-| Copied executable outside checkout | Alpha.20 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that identical copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
+| Copied executable outside checkout | Alpha.21 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that identical copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
 | Repository references, contract and artwork | `python3 tools/check_repository.py` passed; approved logo embedded directly and archive copy byte-identical |
 | Workflow YAML / whitespace | Ruby YAML parse and `git diff --check` passed |
-| Native rendering | Alpha.20 Create Style at 1366 × 900 / 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha20-native-captures). Earlier evidence retains its version context |
-| Native macOS interaction | Alpha.20 F10/H/L/C, Unicode paste/name, parent selection, one Undo/Redo, custom child, duplicate-name error and Cancel; system Save, independent v5 readback, copied binary `--open` and clean close passed (details below) |
+| Native rendering | Alpha.21 Modify Style rename draft at 1366 × 900 / 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha21-native-captures). Earlier evidence retains its version context |
+| Native macOS interaction | Alpha.21 F10/H/L/M, Unicode name paste, one Undo/Redo, parent context-menu rename, duplicate error and Cancel; Save, exact v5 readback, fresh-process `--open` and parent-name display passed (details below) |
 | Synthetic DPI | Actual widgets at 1/1.25/1.5 scale and 960/1366/1920 physical widths; ribbon/group/workspace/status bounds and collapse assertions passed; 27 additional width/scale combinations check individual Home control containment/nonoverlap and title/search/window bounds |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
@@ -693,3 +693,45 @@ The automation's key-based `typeText` did not transmit Cyrillic/combining text;
 the verified Unicode scenario used native clipboard paste. This is not a physical
 IME/keyboard-layout certification. Windows/native DPI, paired Word reference,
 AltGr/IME, accessibility and complex-script gates remain open.
+
+## Alpha.21 rename validation
+
+Four new core tests cover unchanged IDs, paragraphs, descendant definitions and
+resolved formatting; exact history/selection/pending input; case-only names;
+no-op/invalid-name/combined-invalid-graph redo preservation; updates at the 64-style
+limit; combined rename/property edits in one transaction; dirty save checkpoints;
+stale Replace All previews; v5 roundtrip; injected write/sync/replace failures
+retaining the previous file. No content-version bump is needed.
+
+Four new widget tests cover selected Name focus at minimum size and three synthetic
+scales; duplicate/Cancel/no-op handling; combined parent/property/name undo;
+built-in read-only names; real command-search focus; updated gallery/search labels;
+identical name-only galley size/row placement; and context-menu modification of an
+unused style without applying it. The latter exposed popup lifetime coupling:
+rendering the context popup independently now preserves the target after the
+source Styles menu closes. Existing regressions remain passing. Total: 163 full,
+76 core-only; normal/capture Clippy, format, release builds, repository references,
+artwork, workflow YAML and diff whitespace passed.
+
+Native macOS check used the final ordinary release copied outside the repository,
+SHA-256 `af46a940bd4249a8b20aca5286d9bf65876e0022c27d6ea89e2c605d53c23064`.
+F10/H/L/M opened the selected custom style with its name selected. Unicode clipboard
+paste renamed it to `Дочірній café`; one Command+Z restored the original name and
+saved state, one Command+Shift+Z restored the rename. The Styles-list context menu
+opened its unselected parent without applying it to text. `Normal` plus Enter
+showed the duplicate error and retained name focus; replacing it with
+`Заголовок café Русский` and saving succeeded. Independent JSON comparison proved
+the document differed only in those two names: IDs, child parent, all paragraphs,
+English/Ukrainian/Russian text with combining accent, and formatting were exact.
+
+A new process opened the saved file through `--open`: the child gallery name and
+renamed parent in Modify Style were correct, Undo was initially disabled and the
+file was clean. Editing a draft and Escape left it clean. Both test processes
+closed normally. Isolated `--version`/`--capabilities` reported alpha.21/protocol v1
+with clean stderr. Native Save As was not repeated in this iteration; existing
+Save As evidence retains its earlier scope.
+
+Two final native renders were inspected separately (see UI_SPEC). Unicode native
+input used clipboard paste; physical IME/AltGr, Windows 100/125/150%, screen-reader
+acceptance and matched Word 2024 Windows comparison were unavailable. No broad
+script-support, exact reference-parity or power-loss guarantees are inferred.

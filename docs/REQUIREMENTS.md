@@ -21,7 +21,8 @@ styles, direct overrides and v3 writing while retaining strict v1/v2 readers.
 validation and v4 writing with strict v1/v2/v3 readers.
 [ADR 0008](adr/0008-custom-named-styles.md) adds named custom paragraph styles,
 validated IDs/parents, one-operation creation/application and v5 writing with
-strict v1–v4 readers. Follow the
+strict v1–v4 readers. Alpha.21 extends the same command boundary to renaming,
+with stable IDs/references and atomic name/definition undo. Follow the
 Word 2024 Windows reference in [UI_SPEC](UI_SPEC.md). GUI-library adoption, licensing
 and supported-platform decisions remain open.
 

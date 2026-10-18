@@ -909,3 +909,42 @@ BREAKFREE_CAPTURE_TO="$PWD/docs/screenshots/rust-create-style-alpha20-macos-narr
 
 ![Create Style at full width](screenshots/rust-create-style-alpha20-macos.png)
 ![Create Style at minimum width](screenshots/rust-create-style-alpha20-macos-narrow.png)
+
+## Alpha.21 custom-style renaming
+
+Modify Style now selects an editable Name when targeting a custom style. Built-in
+names remain fixed. Enter or OK validates the name, parent and properties together;
+Cancel/Escape preserves the document and redo branch. Invalid Enter retains name
+focus, with a visible error and disabled OK. A name-only change updates labels,
+tooltips, search and parent choices without reflowing document text.
+
+The existing 460-DIP content width, 290-DIP name field, 14 × 7 grid gaps,
+448 × 48 preview and 82 × 27 actions remain. All dialog/control bounds fit the
+minimum window at synthetic 1/1.25/1.5 scale. Right-click a gallery card or any
+Styles-list row → Modify style targets that ID without applying it to text; the
+context popup remains available after the source menu closes. Keyboard entry for
+the selected style remains H → L → M or narrow H → E → M via F10/Alt KeyTips.
+
+No redesign of palette, icons, gallery spacing, logo or continuous canvas. Exact
+Word keyboard/visual equivalence, Windows DPI, templates, character styles and
+style deletion remain unverified or unimplemented as previously documented.
+
+### Alpha.21 native captures
+
+Inspected the final alpha.21 capture executable on macOS arm64, light theme,
+English UI, 100% document zoom and backing scale 2. Both 1366 × 900 and 640 × 480
+DIP captures show a draft rename of the synthetic v5 example; controls and actions
+remain in bounds without unintended overlap. The original applied style still
+appears behind the uncommitted draft, as expected. These are native renders with
+synthetic input, separate from the [native interaction check](VALIDATION.md#alpha21-rename-validation).
+Matched Word 2024 Windows captures and native Windows 100/125/150% are unavailable;
+no similarity percentage or full platform acceptance is claimed.
+
+```sh
+cargo build --locked --release --features capture --example capture_ui
+BREAKFREE_CAPTURE_TO="$PWD/docs/screenshots/rust-rename-style-alpha21-macos.png" target/release/examples/capture_ui 1366 900 styles-rename
+BREAKFREE_CAPTURE_TO="$PWD/docs/screenshots/rust-rename-style-alpha21-macos-narrow.png" target/release/examples/capture_ui 640 480 styles-rename
+```
+
+![Modify Style with editable custom name](screenshots/rust-rename-style-alpha21-macos.png)
+![Rename draft at minimum window size](screenshots/rust-rename-style-alpha21-macos-narrow.png)

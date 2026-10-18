@@ -4385,3 +4385,290 @@ fn custom_style_long_names_and_scrollable_menu_stay_bounded_and_keyboard_reachab
         "{bounds:?}"
     );
 }
+
+#[test]
+fn rename_custom_style_selects_name_and_keeps_one_history_step_at_three_scales() {
+    for dpi in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        app.session = Session::new(
+            storage::decode(include_bytes!("../examples/CustomStyles.bfdoc")).unwrap(),
+            None,
+        );
+        app.sync_view();
+        let before = app.session.editor.document.clone();
+        let screen = [640. * dpi, 480. * dpi];
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![], screen, dpi);
+        }
+        for k in [Key::F10, Key::H, Key::E, Key::M] {
+            frame(&ctx, &mut app, vec![key(k, false)], screen, dpi);
+        }
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![], screen, dpi);
+        }
+        assert_eq!(
+            app.style_dialog.as_ref().unwrap().id,
+            ParagraphStyle::Custom(1)
+        );
+        let bounds = app
+            .regions
+            .iter()
+            .find(|r| r.name == "style-dialog")
+            .unwrap()
+            .rect;
+        assert!(Rect::from_min_size(Pos2::ZERO, vec2(640., 480.)).contains_rect(bounds));
+        assert!(
+            app.regions
+                .iter()
+                .filter(|r| r.name.starts_with("style-dialog-"))
+                .all(|r| bounds.contains_rect(r.rect))
+        );
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::Text("Новий café".into())],
+            screen,
+            dpi,
+        );
+        assert_eq!(app.style_dialog.as_ref().unwrap().name, "Новий café");
+        assert_eq!(app.session.editor.document, before);
+        frame(&ctx, &mut app, vec![key(Key::Enter, false)], screen, dpi);
+        assert!(app.style_dialog.is_none());
+        let after = app.session.editor.document.clone();
+        assert_eq!(
+            after.style_catalog.name(ParagraphStyle::Custom(1)),
+            "Новий café"
+        );
+        assert_eq!(before.paragraphs, after.paragraphs);
+        assert_eq!(app.session.editor.undo_stack.len(), 1);
+        app.execute(Action::Undo, &ctx);
+        assert_eq!(app.session.editor.document, before);
+        app.execute(Action::Redo, &ctx);
+        assert_eq!(app.session.editor.document, after);
+        assert_eq!(
+            storage::decode(&storage::encode(&after).unwrap()).unwrap(),
+            after
+        );
+    }
+}
+
+#[test]
+fn rename_dialog_invalid_cancel_noop_and_combined_changes_are_transactional() {
+    let (ctx, mut app) = setup();
+    let screen = [1366., 900.];
+    app.session = Session::new(
+        storage::decode(include_bytes!("../examples/CustomStyles.bfdoc")).unwrap(),
+        None,
+    );
+    app.session
+        .editor
+        .replace(0, 0, "Undo me", "Input")
+        .unwrap();
+    app.session.editor.undo();
+    app.sync_view();
+    let before = app.session.editor.document.clone();
+    app.execute(Action::ModifyStyle, &ctx);
+    frame(&ctx, &mut app, vec![], screen, 1.);
+    frame(&ctx, &mut app, vec![key(Key::Enter, false)], screen, 1.);
+    assert!(app.style_dialog.is_none());
+    assert_eq!(app.session.editor.redo_stack.len(), 1);
+    app.execute(Action::ModifyStyle, &ctx);
+    frame(&ctx, &mut app, vec![], screen, 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("Normal".into())],
+        screen,
+        1.,
+    );
+    frame(&ctx, &mut app, vec![key(Key::Enter, false)], screen, 1.);
+    assert!(app.style_dialog.is_some());
+    assert_eq!(app.session.editor.document, before);
+    frame(&ctx, &mut app, vec![key(Key::Escape, false)], screen, 1.);
+    assert_eq!(app.session.editor.redo_stack.len(), 1);
+    app.execute(Action::ModifyStyle, &ctx);
+    frame(&ctx, &mut app, vec![], screen, 1.);
+    let dialog = app.style_dialog.as_mut().unwrap();
+    dialog.name = "New title".into();
+    dialog.definition.parent = Some(ParagraphStyle::NoSpacing);
+    dialog.size = "24".into();
+    click_region(&ctx, &mut app, "style-dialog-ok");
+    assert!(app.style_dialog.is_none());
+    assert_eq!(app.session.editor.undo_stack.len(), 1);
+    assert!(app.session.editor.redo_stack.is_empty());
+    assert_eq!(
+        app.session
+            .editor
+            .document
+            .style_catalog
+            .name(ParagraphStyle::Custom(1)),
+        "New title"
+    );
+    assert_eq!(
+        app.session
+            .editor
+            .document
+            .style_catalog
+            .get(ParagraphStyle::Custom(1))
+            .unwrap()
+            .parent,
+        Some(ParagraphStyle::NoSpacing)
+    );
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.document, before);
+    // Built-in names remain fixed and keep the previous size-field focus behavior.
+    app.open_style_dialog(ParagraphStyle::Normal, &ctx);
+    frame(&ctx, &mut app, vec![], screen, 1.);
+    assert!(!app.regions.iter().any(|r| r.name == "style-dialog-name"));
+}
+
+#[test]
+fn renamed_style_search_and_gallery_use_current_names_and_preserve_layout() {
+    let (ctx, mut app) = setup();
+    app.session = Session::new(
+        storage::decode(include_bytes!("../examples/CustomStyles.bfdoc")).unwrap(),
+        None,
+    );
+    let screen = [1366., 900.];
+    app.sync_view();
+    let old = app.session.editor.document.clone();
+    frame(&ctx, &mut app, vec![], screen, 1.);
+    click_region(&ctx, &mut app, "command-search");
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("Modify style".into())],
+        screen,
+        1.,
+    );
+    frame(&ctx, &mut app, vec![key(Key::Enter, false)], screen, 1.);
+    assert!(app.style_dialog.is_some());
+    app.style_dialog.as_mut().unwrap().name = "Renamed heading".into();
+    frame(&ctx, &mut app, vec![], screen, 1.);
+    click_region(&ctx, &mut app, "style-dialog-ok");
+    let doc = &app.session.editor.document;
+    let mut expected = old.clone();
+    expected.style_catalog.custom[0].name = "Renamed heading".into();
+    assert_eq!(doc, &expected);
+    let layout_before = layout::galley(
+        &ctx,
+        &old,
+        &old.text(),
+        CharacterFormat::default(),
+        0,
+        500.,
+        15.,
+    );
+    let layout_after = layout::galley(
+        &ctx,
+        doc,
+        &doc.text(),
+        CharacterFormat::default(),
+        0,
+        500.,
+        15.,
+    );
+    assert_eq!(layout_before.size(), layout_after.size());
+    assert_eq!(
+        layout_before.rows.iter().map(|r| r.pos).collect::<Vec<_>>(),
+        layout_after.rows.iter().map(|r| r.pos).collect::<Vec<_>>()
+    );
+    assert_eq!(
+        app.command_name(Action::Style(ParagraphStyle::Custom(1))),
+        "Renamed heading"
+    );
+    app.execute(Action::Style(ParagraphStyle::Normal), &ctx);
+    let depth = app.session.editor.undo_stack.len();
+    frame(&ctx, &mut app, vec![], screen, 1.);
+    click_region(&ctx, &mut app, "command-search");
+    app.palette = true;
+    app.command_search = "Report Heading".into();
+    frame(&ctx, &mut app, vec![key(Key::Enter, false)], screen, 1.);
+    assert_eq!(app.session.editor.undo_stack.len(), depth);
+    app.command_search = "Renamed heading".into();
+    frame(&ctx, &mut app, vec![key(Key::Enter, false)], screen, 1.);
+    assert_eq!(
+        app.session.editor.selected_paragraph_style(),
+        Some(ParagraphStyle::Custom(1))
+    );
+    frame(&ctx, &mut app, vec![], screen, 1.);
+    assert!(
+        app.regions
+            .iter()
+            .any(|r| r.name == "command-Style(Custom(1))")
+    );
+    app.execute(Action::Undo, &ctx); // apply
+    app.execute(Action::Undo, &ctx); // Normal
+    app.execute(Action::Undo, &ctx); // rename
+    assert_eq!(
+        app.command_name(Action::Style(ParagraphStyle::Custom(1))),
+        "Report Heading"
+    );
+    assert_eq!(app.session.editor.document, old);
+}
+
+#[test]
+fn unused_style_list_context_menu_renames_without_applying_to_document() {
+    let (ctx, mut app) = setup();
+    let id = app
+        .session
+        .editor
+        .create_style("Unused", crate::model::StyleDefinition::default(), false)
+        .unwrap();
+    let before = app.session.editor.document.clone();
+    let depth = app.session.editor.undo_stack.len();
+    let screen = [1366., 900.];
+    app.sync_view();
+    frame(&ctx, &mut app, vec![], screen, 1.);
+    click_region(&ctx, &mut app, "home-menu-Styles");
+    for _ in 0..3 {
+        frame(&ctx, &mut app, vec![], screen, 1.);
+    }
+    let pos = app
+        .regions
+        .iter()
+        .find(|r| r.name == "command-Style(Custom(1))")
+        .unwrap()
+        .rect
+        .center();
+    for pressed in [true, false] {
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                egui::Event::PointerMoved(pos),
+                egui::Event::PointerButton {
+                    pos,
+                    button: egui::PointerButton::Secondary,
+                    pressed,
+                    modifiers: Modifiers::NONE,
+                },
+            ],
+            screen,
+            1.,
+        );
+    }
+    for _ in 0..2 {
+        frame(&ctx, &mut app, vec![], screen, 1.);
+    }
+    click_region(&ctx, &mut app, "style-modify-Custom(1)");
+    assert_eq!(app.style_dialog.as_ref().unwrap().id, id);
+    assert!(!egui::Popup::is_any_open(&ctx));
+    frame(&ctx, &mut app, vec![], screen, 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("Unused renamed".into())],
+        screen,
+        1.,
+    );
+    frame(&ctx, &mut app, vec![key(Key::Enter, false)], screen, 1.);
+    assert_eq!(
+        app.session.editor.document.style_catalog.name(id),
+        "Unused renamed"
+    );
+    assert_eq!(app.session.editor.document.paragraphs, before.paragraphs);
+    assert_eq!(app.session.editor.undo_stack.len(), depth + 1);
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.document, before);
+}

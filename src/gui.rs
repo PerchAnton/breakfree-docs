@@ -228,6 +228,7 @@ pub struct DocsApp {
     font_size_dirty: bool,
     font_dialog: Option<FontDialog>,
     style_dialog: Option<StyleDialog>,
+    style_context: Option<(ParagraphStyle, egui::Pos2, egui::LayerId)>,
     pending: Option<Pending>,
     error: Option<String>,
     backstage: bool,
@@ -338,6 +339,7 @@ impl DocsApp {
             font_size_dirty: false,
             font_dialog: None,
             style_dialog: None,
+            style_context: None,
             pending: None,
             error: None,
             backstage: false,
@@ -797,10 +799,13 @@ impl DocsApp {
                 _ => {}
             }
         }
+        if let Action::Style(id) = action {
+            self.style_context_menu(&response, id);
+        }
         let tip = if self.composing && !enabled {
             "Finish text composition first."
         } else {
-            action.label()
+            self.command_name(action)
         };
         if response
             .on_disabled_hover_text(tip)
@@ -1682,18 +1687,7 @@ impl DocsApp {
                             Color32::from_gray(135)
                         },
                     );
-                    response.context_menu(|ui| {
-                        if ui
-                            .add_enabled(
-                                self.enabled(Action::ModifyStyle),
-                                Button::new("Modify style…"),
-                            )
-                            .clicked()
-                        {
-                            self.open_style_dialog(style, ui.ctx());
-                            ui.close();
-                        }
-                    });
+                    self.style_context_menu(&response, style);
                     if response.on_hover_text(format!("Apply {} to the selected paragraphs. Direct font formatting and alignment stay unchanged.", name))
                         .on_disabled_hover_text("Finish the current dialog or text composition first.").clicked() {
                         self.execute(action, ui.ctx());
@@ -1750,6 +1744,44 @@ impl DocsApp {
             );
         }
     }
+    fn style_context_menu(&mut self, response: &egui::Response, id: ParagraphStyle) {
+        if response.secondary_clicked() && self.enabled(Action::ModifyStyle) {
+            self.style_context = Some((
+                id,
+                response
+                    .interact_pointer_pos()
+                    .unwrap_or(response.rect.center()),
+                response.layer_id,
+            ));
+            egui::Popup::open_id(&response.ctx, Id::new("style-context"));
+        }
+    }
+
+    fn show_style_context_menu(&mut self, ctx: &egui::Context) {
+        let Some((id, position, layer)) = self.style_context else {
+            return;
+        };
+        // Render independently: opening a context menu replaces its source Styles popup.
+        egui::Popup::new(Id::new("style-context"), ctx.clone(), position, layer)
+            .kind(egui::PopupKind::Menu)
+            .layout(Layout::top_down_justified(Align::Min))
+            .open_memory(None)
+            .show(|ui| {
+                let modify = ui.add_enabled(
+                    self.enabled(Action::ModifyStyle),
+                    Button::new("Modify style…"),
+                );
+                self.record(&format!("style-modify-{id:?}"), modify.rect);
+                if modify.clicked() {
+                    self.open_style_dialog(id, ui.ctx());
+                    egui::Popup::close_all(ui.ctx());
+                }
+            });
+        if !egui::Popup::is_id_open(ctx, Id::new("style-context")) {
+            self.style_context = None;
+        }
+    }
+
     fn open_style_dialog(&mut self, id: ParagraphStyle, ctx: &egui::Context) {
         self.style_dialog = Some(StyleDialog::new(
             id,
@@ -2526,7 +2558,7 @@ impl DocsApp {
                     ui.add_space(18.);
 
                     ui.small("Local document format: BreakFree Docs (.bfdoc)");
-                    ui.small("Saves use format v2. Earlier v1-only builds cannot open new saves.");
+                    ui.small("Saves use format v5. Earlier builds cannot open new saves.");
 
                     ui.small("Continuous layout. Pagination and printing are planned.");
                 }
@@ -2535,6 +2567,7 @@ impl DocsApp {
     }
 
     fn dialogs(&mut self, ctx: &egui::Context) {
+        self.show_style_context_menu(ctx);
         self.quick_reset_dialog(ctx);
         if let Some(mut dialog) = self.quick_order.take() {
             match dialog.show(ctx, &mut self.regions) {
@@ -2570,6 +2603,10 @@ impl DocsApp {
                             .editor
                             .create_style(&dialog.name, definition, dialog.apply)
                             .map(|_| ())
+                    } else if matches!(dialog.id, ParagraphStyle::Custom(_)) {
+                        self.session
+                            .editor
+                            .modify_custom_style(dialog.id, &dialog.name, definition)
                     } else {
                         self.session.editor.modify_style(dialog.id, definition)
                     };

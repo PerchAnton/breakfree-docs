@@ -81,6 +81,8 @@ impl StyleDialog {
         let mut catalog = self.catalog.clone();
         if self.creating {
             catalog.add(&self.name, definition)?;
+        } else if matches!(self.id, ParagraphStyle::Custom(_)) {
+            catalog.update_custom(self.id, &self.name, definition)?;
         } else {
             *catalog.get_mut(self.id).ok_or("Unknown paragraph style.")? = definition;
         }
@@ -124,13 +126,13 @@ impl StyleDialog {
                     .spacing([14., 7.])
                     .show(ui, |ui| {
                         ui.label("Name:");
-                        if self.creating {
-                            let response = ui.add(
-                                egui::TextEdit::singleline(&mut self.name)
-                                    .id_salt("style-name")
-                                    .desired_width(290.)
-                                    .hint_text("Style name"),
-                            );
+                        if self.creating || matches!(self.id, ParagraphStyle::Custom(_)) {
+                            let output = egui::TextEdit::singleline(&mut self.name)
+                                .id_salt("style-name")
+                                .desired_width(290.)
+                                .hint_text("Style name")
+                                .show(ui);
+                            let response = output.response;
                             response.widget_info(|| {
                                 egui::WidgetInfo::labeled(
                                     egui::WidgetType::TextEdit,
@@ -144,6 +146,14 @@ impl StyleDialog {
                                     && ctx.input(|i| i.key_pressed(Key::Enter)))
                             {
                                 response.request_focus();
+                                if self.focus && !self.creating {
+                                    let mut state = output.state;
+                                    state.cursor.set_char_range(Some(CCursorRange::two(
+                                        CCursor::new(0),
+                                        CCursor::new(self.name.chars().count()),
+                                    )));
+                                    state.store(ctx, response.id);
+                                }
                                 self.focus = false;
                             }
                         } else {
@@ -307,6 +317,8 @@ impl StyleDialog {
                     let apply = ui.checkbox(&mut self.apply, "Apply to selected paragraphs");
                     record(regions, "style-dialog-apply", apply.rect);
                     ui.small("This document only. Creation and application use one undo step.");
+                } else if matches!(self.id, ParagraphStyle::Custom(_)) {
+                    ui.small("Renaming keeps all style references. Changes use one undo step.");
                 } else {
                     ui.small("This document only. Updates descendants; direct formatting stays.");
                 }

@@ -55,7 +55,7 @@ impl eframe::App for Capture {
                 }
             }
         }
-        if self.frames == 2 && self.mode == "styles-create" {
+        if self.frames == 2 && ["styles-create", "styles-rename"].contains(&self.mode.as_str()) {
             input.events.push(egui::Event::Text("Report Note".into()));
         }
         if self.frames == 2 && self.mode == "styles-menu" {
@@ -222,6 +222,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "styles-menu",
             "styles-modify",
             "styles-create",
+            "styles-rename",
             "file",
             "navigation",
             "navigation-options",
@@ -249,7 +250,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ]
         .contains(&args[2].as_str())
     {
-        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|styles-modify|styles-create|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
+        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|styles-modify|styles-create|styles-rename|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
     }
     let path = std::env::var("BREAKFREE_CAPTURE_TO")
         .map_err(|_| "Set BREAKFREE_CAPTURE_TO to an output PNG path")?;
@@ -261,8 +262,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if !(640.0..=1920.0).contains(&width) || !(480.0..=1080.0).contains(&height) {
         return Err("Capture dimensions outside 640–1920 × 480–1080 DIP".into());
     }
-    let fixture =
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(if args[2] == "styles-create" {
+    let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(
+        if ["styles-create", "styles-rename"].contains(&args[2].as_str()) {
             "examples/CustomStyles.bfdoc"
         } else if args[2].starts_with("styles") {
             "examples/Styles.bfdoc"
@@ -270,7 +271,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "examples/Formatting.bfdoc"
         } else {
             "examples/Welcome.bfdoc"
-        });
+        },
+    );
     let session = if args[2] == "replace-all" {
         let mut session = Session::default();
         session.editor.replace(0, 0, "BreakFree Docs\nBreakFree writes locally.\nBreakFree preserves Unicode: Україна Русский e\u{301}.", "Fixture")?;
@@ -352,7 +354,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     app.ribbon_collapsed = true;
                     app.ribbon_temporary = true;
                 }
-                "styles-modify" => app.execute(Action::ModifyStyle, &cc.egui_ctx),
+                "styles-modify" | "styles-rename" => app.execute(Action::ModifyStyle, &cc.egui_ctx),
                 "styles-create" => app.execute(Action::CreateStyle, &cc.egui_ctx),
                 "font" => {
                     app.execute(Action::SelectAll, &cc.egui_ctx);

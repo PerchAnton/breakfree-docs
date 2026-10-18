@@ -339,3 +339,208 @@ fn published_custom_fixture_reopens_with_names_inheritance_and_direct_formatting
     assert_eq!(d.paragraphs[2].alignment, Alignment::Center);
     assert_eq!(storage::decode(&storage::encode(&d).unwrap()).unwrap(), d);
 }
+
+#[test]
+fn rename_parent_preserves_ids_descendants_direct_values_and_exact_history() {
+    let doc = storage::decode(include_bytes!("../examples/CustomStyles.bfdoc")).unwrap();
+    let mut e = Editor::new(doc);
+    let parent = ParagraphStyle::Custom(1);
+    let child = ParagraphStyle::Custom(2);
+    let mut child_definition = *e.document.style_catalog.get(child).unwrap();
+    child_definition.parent = Some(parent);
+    e.modify_style(child, child_definition).unwrap();
+    e.selection = (0, e.document.character_count());
+    e.typing_style.underline = Some(true);
+    let before = e.document.clone();
+    let selection = e.selection;
+    let pending = e.typing_style;
+    let depth = e.undo_stack.len();
+    let definition = *before.style_catalog.get(parent).unwrap();
+    e.modify_custom_style(parent, "Заголовок café Русский", definition)
+        .unwrap();
+    let after = e.document.clone();
+    assert_eq!(e.undo_stack.len(), depth + 1);
+    assert_eq!(after.paragraphs, before.paragraphs);
+    assert_eq!(
+        after.style_catalog.get(child),
+        before.style_catalog.get(child)
+    );
+    assert_eq!(
+        after.style_catalog.get(parent),
+        before.style_catalog.get(parent)
+    );
+    assert_eq!(after.style_catalog.ids(), before.style_catalog.ids());
+    assert_eq!(
+        after.style_catalog.resolve(child),
+        before.style_catalog.resolve(child)
+    );
+    assert_eq!(after.style_catalog.name(parent), "Заголовок café Русский");
+    e.undo();
+    assert_eq!(e.document, before);
+    assert_eq!((e.selection, e.typing_style), (selection, pending));
+    e.redo();
+    assert_eq!(e.document, after);
+    assert_eq!((e.selection, e.typing_style), (selection, pending));
+}
+
+#[test]
+fn rename_noops_errors_and_combined_invalid_definition_preserve_redo() {
+    let mut e =
+        Editor::new(storage::decode(include_bytes!("../examples/CustomStyles.bfdoc")).unwrap());
+    let id = ParagraphStyle::Custom(1);
+    let definition = *e.document.style_catalog.get(id).unwrap();
+    e.replace(0, 0, "Undo me", "Input").unwrap();
+    e.undo();
+    let before = e.document.clone();
+    let selection = e.selection;
+    let pending = e.typing_style;
+    e.modify_custom_style(id, "Report Heading", definition)
+        .unwrap();
+    assert!(e.undo_stack.is_empty());
+    assert_eq!(e.redo_stack.len(), 1);
+    for name in [
+        "",
+        " report",
+        "report ",
+        "Normal",
+        "no spacing",
+        "REPORT BODY",
+        "a\n",
+        "a\u{2029}b",
+        &"x".repeat(65),
+    ] {
+        assert!(
+            e.modify_custom_style(id, name, definition).is_err(),
+            "{name:?}"
+        );
+        assert_eq!(e.document, before);
+        assert!(e.undo_stack.is_empty());
+        assert_eq!(e.redo_stack.len(), 1);
+    }
+    for target in [
+        ParagraphStyle::Normal,
+        ParagraphStyle::NoSpacing,
+        ParagraphStyle::Heading1,
+        ParagraphStyle::Custom(999),
+    ] {
+        assert!(
+            e.modify_custom_style(target, "Valid name", definition)
+                .is_err()
+        );
+        assert_eq!(e.document, before);
+    }
+    let mut cycle = definition;
+    cycle.parent = Some(id);
+    assert!(e.modify_custom_style(id, "Still valid", cycle).is_err());
+    let mut invalid = definition;
+    invalid.line_height_percent = Some(99);
+    assert!(e.modify_custom_style(id, "Still valid", invalid).is_err());
+    assert_eq!(e.document, before);
+    assert_eq!((e.selection, e.typing_style), (selection, pending));
+    assert_eq!(e.redo_stack.len(), 1);
+    // A case-only edit is valid: the target is not a duplicate of itself.
+    e.modify_custom_style(id, "REPORT HEADING", definition)
+        .unwrap();
+    assert_eq!(e.undo_stack.len(), 1);
+    assert!(e.redo_stack.is_empty());
+    e.undo();
+    assert_eq!(e.document, before);
+}
+
+#[test]
+fn rename_and_definition_change_are_one_transaction_and_work_at_catalog_capacity() {
+    let mut e = Editor::default();
+    for i in 1..=MAX_CUSTOM_STYLES {
+        e.create_style(
+            &format!("Style {i}"),
+            based_on(ParagraphStyle::Normal),
+            false,
+        )
+        .unwrap();
+    }
+    let id = ParagraphStyle::Custom(64); // unused definition still needs to be renameable
+    let before = e.document.clone();
+    let depth = e.undo_stack.len();
+    let definition = StyleDefinition {
+        parent: Some(ParagraphStyle::Custom(1)),
+        character: CharacterFormat {
+            italic: Some(true),
+            ..Default::default()
+        },
+        line_height_percent: Some(175),
+        space_after_half_points: Some(17),
+    };
+    e.modify_custom_style(id, &"Ї".repeat(64), definition)
+        .unwrap();
+    assert_eq!(e.undo_stack.len(), depth + 1);
+    assert_eq!(e.document.style_catalog.custom.len(), MAX_CUSTOM_STYLES);
+    assert_eq!(e.document.paragraphs, before.paragraphs);
+    assert_eq!(e.document.style_catalog.get(id), Some(&definition));
+    let after = e.document.clone();
+    e.undo();
+    assert_eq!(e.document, before);
+    e.redo();
+    assert_eq!(e.document, after);
+}
+
+#[test]
+fn rename_roundtrip_dirty_checkpoint_failed_write_and_stale_preview_keep_references() {
+    use breakfree_docs::session::Session;
+    let mut session = Session::new(
+        storage::decode(include_bytes!("../examples/CustomStyles.bfdoc")).unwrap(),
+        None,
+    );
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("renamed.bfdoc");
+    session.save(&path).unwrap();
+    let original = std::fs::read(&path).unwrap();
+    let old = session.editor.document.clone();
+    let stale = session
+        .editor
+        .preview_replace_all(&[(0, 1)], "Another")
+        .unwrap();
+    let id = ParagraphStyle::Custom(1);
+    let definition = *old.style_catalog.get(id).unwrap();
+    session
+        .editor
+        .modify_custom_style(id, "Renamed Україна", definition)
+        .unwrap();
+    assert!(session.dirty());
+    assert!(session.editor.apply_replace_all(stale).is_err());
+    session.editor.undo();
+    assert!(!session.dirty());
+    session.editor.redo();
+    assert!(session.dirty());
+    let renamed = session.editor.document.clone();
+    for stage in [
+        storage::SaveStage::Write,
+        storage::SaveStage::Sync,
+        storage::SaveStage::Replace,
+    ] {
+        assert!(
+            storage::save_checked(&renamed, &path, |at| if at == stage {
+                Err("Injected failure".into())
+            } else {
+                Ok(())
+            })
+            .is_err()
+        );
+        assert_eq!(std::fs::read(&path).unwrap(), original);
+        assert!(session.dirty());
+    }
+    session.save(&path).unwrap();
+    assert!(!session.dirty());
+    assert_eq!(storage::load(&path).unwrap(), renamed);
+    let value: serde_json::Value = serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+    assert_eq!(value["content_version"], 5);
+    assert_eq!(renamed.paragraphs, old.paragraphs);
+    let plan = session
+        .editor
+        .preview_replace_all(&[(0, 1)], "Another")
+        .unwrap();
+    session.editor.apply_replace_all(plan).unwrap();
+    assert_eq!(session.editor.document.style_catalog, renamed.style_catalog);
+    assert_eq!(session.editor.document.paragraphs[0].paragraph_style, id);
+    session.editor.undo();
+    assert_eq!(session.editor.document, renamed);
+}

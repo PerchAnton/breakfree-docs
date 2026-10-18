@@ -22,7 +22,8 @@ name rules and all paragraph references before accepting a command/file. Reject
 missing parents and direct/indirect cycles; never substitute an unrelated style.
 Resolution remains root → parent → child → direct overrides, with the ADR 0007
 fallback and numeric limits. Normal may inherit from a custom style only if the
-graph remains acyclic. Rename/delete and character styles are not implemented.
+graph remains acyclic. Delete and character styles are not implemented.
+Alpha.21 adds renaming as described below.
 
 ## Command and interface
 
@@ -67,3 +68,28 @@ legacy appearance. Opening leaves source bytes unchanged; explicit save writes
 v5. Alpha.19 and older reject v5; use Save As to preserve an older copy. Protocol
 and preferences remain v1; checked-write guarantees do not change. This adds no
 power-loss recovery, cloud dependency or external style engine.
+
+## Alpha.21 renaming
+
+`Editor::modify_custom_style(id, name, definition)` validates a cloned full catalog
+and document before one commit. A pure name change is labelled Rename style;
+combined name/parent/property changes use Modify style. Change only the target
+name and requested definition, never its ID or paragraph/parent references.
+Preserve selection and pending direct formatting. Reject built-in/unknown IDs and
+all existing name/graph/value errors without changing document, dirty state or
+history. A true no-op preserves redo; a case-only rename is a real change. The
+64-style capacity limits creation, not updates to existing definitions.
+
+Modify Style exposes an initially selected editable Name for custom IDs only.
+Built-in names remain read-only. The same draft validates name, parent and fields;
+OK commits all of them together, while Cancel/Escape changes nothing. Gallery and
+Styles-list context menus can modify any listed style without first applying it.
+The context menu is rendered independently of the source popup so that an unused
+style remains a valid target when the Styles list closes. Search, tooltips,
+gallery and future parent lists read current catalog names, not cached aliases.
+
+Content v5 already separates IDs and names, so no format bump or migration is
+needed. Pure rename must leave the rendered paragraph layout unchanged. Test
+exact undo/redo, descendant/paragraph references, names at validation boundaries,
+combined failure rollback, capacity, saved checkpoints, stale bulk previews and
+save failure retention. Rename does not imply support for deletion or aliases.

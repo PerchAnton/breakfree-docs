@@ -291,6 +291,28 @@ impl StyleCatalog {
         *self = candidate;
         Ok(ParagraphStyle::Custom(id))
     }
+    /// Edit a custom definition without changing its identity or references.
+    pub fn update_custom(
+        &mut self,
+        id: ParagraphStyle,
+        name: &str,
+        definition: StyleDefinition,
+    ) -> Result<()> {
+        let ParagraphStyle::Custom(id) = id else {
+            return Err("Built-in style names cannot be changed.".into());
+        };
+        let mut candidate = self.clone();
+        let style = candidate
+            .custom
+            .iter_mut()
+            .find(|s| s.id == id)
+            .ok_or("Unknown custom style.")?;
+        style.name = name.into();
+        style.definition = definition;
+        candidate.validate()?;
+        *self = candidate;
+        Ok(())
+    }
     pub fn validate(&self) -> Result<()> {
         if self.custom.len() > MAX_CUSTOM_STYLES {
             return Err("A document supports up to 64 custom styles.".into());

@@ -291,6 +291,25 @@ impl Editor {
         Ok(())
     }
 
+    /// Rename and optionally modify a custom style in one validated transaction.
+    pub fn modify_custom_style(
+        &mut self,
+        id: ParagraphStyle,
+        name: &str,
+        definition: StyleDefinition,
+    ) -> Result<()> {
+        let mut result = self.document.clone();
+        result.style_catalog.update_custom(id, name, definition)?;
+        result.validate()?;
+        let label = if self.document.style_catalog.get(id) == Some(&definition) {
+            "Rename style"
+        } else {
+            "Modify style"
+        };
+        self.commit(result, label, self.selection, self.typing_style);
+        Ok(())
+    }
+
     /// Create and optionally apply a named definition in one history transaction.
     pub fn create_style(
         &mut self,

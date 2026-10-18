@@ -3,7 +3,28 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
-## 0.1.0-alpha.20 — Unreleased; submitted for owner approval
+## 0.1.0-alpha.21 — Unreleased; submitted for owner approval
+
+Prepared 2026-10-18. The owner approved alpha.20 in the project chat.
+
+- Rename custom paragraph styles in Modify Style, preserving stable IDs, paragraph
+  and descendant references, direct formatting, selection and pending input.
+  Name, parent and supported definition edits commit together in one undo/redo.
+- Select the current custom name on entry; reject invalid/duplicate names before
+  applying. Cancel and unchanged OK preserve history, including an existing redo.
+  Built-in names stay fixed; case-only custom name changes are allowed.
+- Offer Modify Style from the gallery and any Styles-list row's context menu,
+  including unused styles. Refresh gallery labels, tooltips and command search.
+  Keep the light palette, original icons and Home gutters.
+- Add engine/storage/widget regressions for Unicode, capacity, exact history,
+  unchanged layout, save/reopen, failed writes and context-menu targeting.
+  Correct File's stale format-version explanation to v5.
+
+Native content stays v5; protocol/settings stay v1. No dependency/license change.
+Deletion, character styles and native Windows/Word/DPI/IME acceptance remain open.
+No merge, tag or release is authorized.
+
+## 0.1.0-alpha.20 — Unreleased; version approved 2026-10-18
 
 Prepared 2026-10-18. The owner approved alpha.19 in the project chat.
 
