@@ -229,3 +229,99 @@ fn native_v8_validation_legacy_reading_and_failed_writes_are_lossless() {
         assert_eq!(std::fs::read(&path).unwrap(), bytes);
     }
 }
+
+#[test]
+fn modify_properties_preserves_identity_references_and_exact_history() {
+    let mut e = Editor::default();
+    e.replace(0, 0, "English e\u{301}\nУкраїна Русский 🙂", "Input")
+        .unwrap();
+    e.selection = (0, e.document.character_count());
+    let id = e.create_character_style("Note", format(), true).unwrap();
+    e.emphasize(0, 2, true, true).unwrap();
+    let before = e.document.clone();
+    let selection = e.selection;
+    let typing = e.typing_style;
+    let n = e.undo_stack.len();
+    let changed = CharacterFormat {
+        bold: Some(false),
+        italic: Some(false),
+        ..Default::default()
+    };
+    e.modify_character_style(id, changed).unwrap();
+    assert_eq!(e.undo_stack.len(), n + 1);
+    assert_eq!(e.document.paragraphs, before.paragraphs);
+    assert_eq!(
+        e.document.character_styles[0].id,
+        before.character_styles[0].id
+    );
+    assert_eq!(e.document.character_styles[0].name, "Note");
+    assert_eq!(e.selection, selection);
+    assert_eq!(e.typing_style, typing);
+    let p = &e.document.paragraphs[0];
+    let base = e
+        .document
+        .style_catalog
+        .resolve(p.paragraph_style)
+        .character;
+    assert!(
+        p.styles[0]
+            .resolve_with(base, &e.document.character_styles)
+            .bold
+    );
+    assert!(
+        !p.styles[2]
+            .resolve_with(base, &e.document.character_styles)
+            .italic
+    );
+    let after = e.document.clone();
+    assert_eq!(
+        storage::decode(&storage::encode(&after).unwrap()).unwrap(),
+        after
+    );
+    e.undo();
+    assert_eq!(e.document, before);
+    e.redo();
+    assert_eq!(e.document, after);
+}
+
+#[test]
+fn modify_unused_invalid_and_noop_definitions_preserve_history() {
+    let mut s = Session::default();
+    let id = s
+        .editor
+        .create_character_style("Unused", format(), false)
+        .unwrap();
+    s.editor.replace(0, 0, "x", "Input").unwrap();
+    s.editor.undo();
+    let before = s.editor.document.clone();
+    let n = s.editor.undo_stack.len();
+    s.editor.modify_character_style(id, format()).unwrap();
+    for bad in [
+        CharacterStyle::Strong,
+        CharacterStyle::Emphasis,
+        CharacterStyle::Custom(999),
+    ] {
+        assert!(s.editor.modify_character_style(bad, format()).is_err());
+    }
+    assert!(
+        s.editor
+            .modify_character_style(
+                id,
+                CharacterFormat {
+                    character_style: Some(id),
+                    ..format()
+                }
+            )
+            .is_err()
+    );
+    assert_eq!(s.editor.document, before);
+    assert_eq!(s.editor.undo_stack.len(), n);
+    assert_eq!(s.editor.redo_stack.len(), 1);
+    s.editor
+        .modify_character_style(id, CharacterFormat::default())
+        .unwrap();
+    assert!(s.editor.redo_stack.is_empty());
+    assert!(s.dirty());
+    s.editor.undo();
+    assert_eq!(s.editor.document, before);
+}

@@ -208,8 +208,11 @@ Rust selection is complete; this gate evaluates GUI behavior and visual fidelity
   creation/application in one undo. Validated names/IDs, v8 save/reopen, invalid
   files/failed saves and native GUI creation are covered; palette/icons retained.
   [ADR 0012](docs/adr/0012-named-character-styles.md); depends on alpha.24.
-- [ ] Next small increment: modify custom character-style properties without
-  changing IDs/references, with one undo and exact save/reopen; parent graphs later.
+- [x] Alpha.26: modify custom character-style properties with stable IDs/references,
+  one Undo/Redo, exact v8 roundtrip, cancellation and invalid/no-op preservation.
+  Depends on alpha.25; native Windows acceptance remains open.
+- [ ] Next small increment: rename custom character styles with stable references
+  and one Undo/Redo; deletion and parent graphs follow separately.
 - [ ] Add lists, indentation, tabs, spacing, links and Unicode-aware search/replace.
 - [ ] Add table editing and images with explicit sizing and anchoring semantics.
 - [ ] Add navigation, command search and understandable tool states.

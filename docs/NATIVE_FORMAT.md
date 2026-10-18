@@ -154,3 +154,5 @@ Unknown/duplicate fields and IDs are rejected, without lossy fallback. Strict v7
 rejects custom references/catalog fields; older imports receive an empty catalog.
 Creation/history/typing/replacement preserve semantic IDs and definitions. See
 [ADR 0012](adr/0012-named-character-styles.md).
+
+Alpha.26 property editing preserves character definition IDs/names and every run reference; only optional properties change. No new schema fields or version increment are required.

@@ -236,7 +236,13 @@ up to 64 custom character styles are stored per document. They appear in the
 scrollable Character styles list and command search after reopening. KeyTips
 H → L → K (narrow: H → E → K) opens creation. Paragraph and character names are
 separate namespaces. Direct formatting is preserved and may mask the new style.
-Character-style parents and modification/deletion remain future work.
+Select text carrying one custom character style, then Home Styles → Modify
+character style (KeyTips H → L → J; narrow H → E → J). Change Inherit/On/Off
+properties or size, preview, then OK to commit one Undo/Redo. Cancel changes
+nothing. Right-click a custom style in the list to modify even an unused definition.
+Names, IDs, references and direct overrides stay unchanged; direct overrides can
+mask definition changes. Built-ins and mixed selections disable the main command.
+Character-style parents, renaming and deletion remain future work.
 [Named character styles](docs/adr/0012-named-character-styles.md).
 [Character-style rules](docs/adr/0011-character-style-precedence.md).
 [Style rules](docs/adr/0008-custom-named-styles.md) · [Deletion rules](docs/adr/0009-delete-custom-styles.md).

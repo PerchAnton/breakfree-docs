@@ -11,6 +11,7 @@ pub(super) struct StyleDialog {
     pub id: ParagraphStyle,
     pub creating: bool,
     pub character: bool,
+    pub character_id: Option<CharacterStyle>,
     character_styles: Vec<NamedCharacterStyle>,
     preview_base: Style,
     pub name: String,
@@ -29,6 +30,7 @@ impl StyleDialog {
             id,
             creating: false,
             character: false,
+            character_id: None,
             character_styles: Vec::new(),
             preview_base: Style::default(),
             name: catalog.name(id).into(),
@@ -71,6 +73,27 @@ impl StyleDialog {
         dialog.preview_base = document.style_catalog.resolve(paragraph).character;
         dialog
     }
+    pub fn modify_character(
+        document: &Document,
+        paragraph: ParagraphStyle,
+        id: CharacterStyle,
+    ) -> Option<Self> {
+        let CharacterStyle::Custom(key) = id else {
+            return None;
+        };
+        let style = document.character_styles.iter().find(|s| s.id == key)?;
+        let mut dialog = Self::create_character(document, paragraph);
+        dialog.creating = false;
+        dialog.character_id = Some(id);
+        dialog.name = style.name.clone();
+        dialog.definition.character = style.format;
+        dialog.size = style
+            .format
+            .font_size
+            .map(|v| v.to_string())
+            .unwrap_or_default();
+        Some(dialog)
+    }
     fn draft(&self) -> Result<(StyleDefinition, StyleCatalog)> {
         let mut definition = self.definition;
         definition.character.font_size = if self.size.trim().is_empty() {
@@ -103,7 +126,11 @@ impl StyleDialog {
                 character_styles: self.character_styles.clone(),
                 ..Default::default()
             };
-            document.add_character_style(&self.name, definition.character)?;
+            if let Some(id) = self.character_id {
+                document.modify_character_style(id, definition.character)?;
+            } else {
+                document.add_character_style(&self.name, definition.character)?;
+            }
         } else if self.creating {
             catalog.add(&self.name, definition)?;
         } else if matches!(self.id, ParagraphStyle::Custom(_)) {
@@ -131,7 +158,11 @@ impl StyleDialog {
                 ui.set_width(460.);
                 ui.horizontal(|ui| {
                     ui.heading(if self.character {
-                        "Create Character Style"
+                        if self.creating {
+                            "Create Character Style"
+                        } else {
+                            "Modify Character Style"
+                        }
                     } else if self.creating {
                         "Create Style"
                     } else {
@@ -402,6 +433,8 @@ impl StyleDialog {
                     );
                     record(regions, "style-dialog-apply", apply.rect);
                     ui.small("This document only. Creation and application use one undo step.");
+                } else if self.character {
+                    ui.small("Updates all references in one undo step; direct formatting stays.");
                 } else if matches!(self.id, ParagraphStyle::Custom(_)) {
                     ui.small("Renaming keeps all style references. Changes use one undo step.");
                 } else {

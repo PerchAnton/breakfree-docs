@@ -226,6 +226,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "styles-character",
             "styles-character-create",
             "styles-character-custom",
+            "styles-character-modify",
             "styles-modify",
             "styles-following",
             "styles-create",
@@ -271,7 +272,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Err("Capture dimensions outside 640–1920 × 480–1080 DIP".into());
     }
     let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(
-        if args[2] == "styles-character-custom" {
+        if ["styles-character-custom", "styles-character-modify"].contains(&args[2].as_str()) {
             "examples/NamedCharacterStyles.bfdoc"
         } else if args[2] == "styles-character" || args[2] == "styles-character-create" {
             "examples/CharacterStyles.bfdoc"
@@ -372,6 +373,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 "styles-modify" | "styles-rename" | "styles-following" => {
                     app.execute(Action::ModifyStyle, &cc.egui_ctx)
+                }
+                "styles-character-modify" => {
+                    app.execute(
+                        Action::CharacterStyle(Some(
+                            breakfree_docs::model::CharacterStyle::Custom(1),
+                        )),
+                        &cc.egui_ctx,
+                    );
+                    app.execute(Action::ModifyCharacterStyle, &cc.egui_ctx);
                 }
                 "styles-character-create" => {
                     app.execute(Action::CreateCharacterStyle, &cc.egui_ctx)

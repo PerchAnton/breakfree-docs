@@ -1074,3 +1074,25 @@ Reproduce using the existing capture build and mode `styles-character-create`.
 `styles-character-custom` opens the v8 NamedCharacterStyles fixture. Brand differences
 and Windows/Word/DPI/physical IME limitations remain as documented above; no numeric
 similarity claim. Keyboard Tab was used for native text-field focus verification.
+
+## Alpha.26 native captures
+
+Modify Character Style retains the shared neutral draft, purple focus ring and
+original ribbon icons. Read-only name preserves identity; three 90-DIP tri-state
+controls, 290-DIP size input, 448 × 48-DIP clipped preview and 82 × 27-DIP buttons
+fit both inspected windows. Initial keyboard focus selects size; Enter applies,
+Escape cancels. Home Styles/command search and J KeyTip target a uniform custom
+style; its list-row context command also edits unused definitions.
+
+Captured on macOS at backing scale 2, light theme, English, 100% document zoom:
+
+| Capture | Window | SHA-256 |
+| --- | --- | --- |
+| [Modify draft](screenshots/rust-modify-character-alpha26-macos.png) | 1366 × 900 DIP | `065ed1cd40876805370cfa0f30887f68a2e04b065593b6ba03bde6bad44a40ff` |
+| [Modify draft](screenshots/rust-modify-character-alpha26-macos-narrow.png) | 640 × 480 DIP | `a0d02ad0c0f51911a5e2fd6a6703cbdef9745ffe3f92935cd93ca689524a484b` |
+
+No overlap or clipped action labels observed. Native KeyTips/size/Enter/Save,
+one Undo/Redo and fresh-process reopen passed. Brand differences remain the
+BreakFree identity, purple focus and original icons. Windows/Word side-by-side
+captures, native 100/125/150% DPI, physical IME and full accessibility were not
+available. Synthetic scaling is separate evidence; no similarity percentage.

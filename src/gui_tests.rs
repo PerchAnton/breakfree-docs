@@ -5339,3 +5339,97 @@ fn custom_character_style_changes_actual_layout_and_named_search_action() {
     app.execute(Action::CharacterStyle(Some(id)), &ctx);
     assert!(app.checked(Action::CharacterStyle(Some(id))));
 }
+
+#[test]
+fn modify_character_dialog_commit_cancel_validation_and_layout() {
+    let (ctx, mut app) = setup();
+    app.session.editor.replace(0, 0, "Text", "Input").unwrap();
+    app.session.editor.selection = (0, 4);
+    let id = app
+        .session
+        .editor
+        .create_character_style("Note", CharacterFormat::default(), true)
+        .unwrap();
+    app.sync_view();
+    let before = app.session.editor.document.clone();
+    let n = app.session.editor.undo_stack.len();
+    app.execute(Action::ModifyCharacterStyle, &ctx);
+    frame(&ctx, &mut app, vec![], [640., 480.], 1.);
+    app.style_dialog.as_mut().unwrap().size = "bad".into();
+    click_region_at(&ctx, &mut app, "style-dialog-ok", [640., 480.]);
+    assert!(app.style_dialog.is_some());
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Escape, false)],
+        [640., 480.],
+        1.,
+    );
+    assert_eq!(app.session.editor.document, before);
+    app.execute(Action::ModifyCharacterStyle, &ctx);
+    let draft = app.style_dialog.as_mut().unwrap();
+    assert_eq!(draft.character_id, Some(id));
+    draft.size = "24".into();
+    draft.definition.character.italic = Some(true);
+    frame(&ctx, &mut app, vec![], [640., 480.], 1.);
+    click_region_at(&ctx, &mut app, "style-dialog-ok", [640., 480.]);
+    assert!(app.style_dialog.is_none());
+    assert_eq!(app.session.editor.undo_stack.len(), n + 1);
+    assert_eq!(app.session.editor.document.paragraphs, before.paragraphs);
+    let d = &app.session.editor.document;
+    let galley = layout::galley(
+        &ctx,
+        d,
+        &d.text(),
+        app.session.editor.typing_style,
+        0,
+        500.,
+        11.,
+    );
+    assert!(galley.job.sections[0].format.italics);
+    assert_eq!(galley.job.sections[0].format.font_id.size, 24.);
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.document, before);
+    app.execute(Action::Redo, &ctx);
+    assert_eq!(
+        app.session.editor.document.character_styles[0]
+            .format
+            .font_size
+            .unwrap()
+            .to_string(),
+        "24"
+    );
+}
+
+#[test]
+fn modify_character_availability_unused_definition_and_bounds() {
+    for scale in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        assert!(!app.enabled(Action::ModifyCharacterStyle));
+        let id = app
+            .session
+            .editor
+            .create_character_style("Unused", CharacterFormat::default(), false)
+            .unwrap();
+        assert!(!app.enabled(Action::ModifyCharacterStyle));
+        app.open_character_style_dialog(id, &ctx);
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![], [640. * scale, 480. * scale], scale);
+        }
+        let screen = Rect::from_min_size(Pos2::ZERO, vec2(640., 480.));
+        for r in app
+            .regions
+            .iter()
+            .filter(|r| r.name.starts_with("style-dialog"))
+        {
+            assert!(screen.contains_rect(r.rect), "{} {:?}", r.name, r.rect);
+        }
+        assert!(
+            !app.regions
+                .iter()
+                .any(|r| r.name == "style-dialog-name" || r.name == "style-dialog-apply")
+        );
+        app.execute(Action::New, &ctx);
+        assert!(app.style_dialog.is_some());
+    }
+}

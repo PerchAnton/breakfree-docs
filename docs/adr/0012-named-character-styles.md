@@ -10,7 +10,7 @@ positive u32 ID, a validated name and optional bold/italic/underline/font size.
 A run or pending insertion format references the ID; do not copy resolved values
 into direct formatting. The cascade remains paragraph → character → direct.
 Explicit false wins, unset properties inherit the paragraph. Character parents,
-linked paragraph/character styles and modification/rename/delete are deferred.
+linked paragraph/character styles and rename/delete are deferred.
 
 Character names are a separate namespace from paragraph names. Enforce 1–64 Unicode
 scalars, no outer spaces/control characters/U+2028/U+2029, case-insensitive uniqueness
@@ -45,3 +45,15 @@ crash-recovery promise. No Office/sibling/cloud dependency or license change.
 
 Use engine/storage tests, actual widget/layout checks and native macOS smoke for
 local evidence. These do not establish Windows DPI/input or matched Word behavior.
+
+## Alpha.26 — Property editing
+
+Modify Character Style drafts only properties, never identity or name. The shared
+Document validator rejects built-ins, unknown IDs and nested character references
+before assignment. Editor commits one snapshot preserving selection, pending
+format and all run references; equal definitions do not consume undo or clear redo.
+The same dialog previews inherited properties and preserves direct overrides.
+Home/command search require a uniform custom selection; the style-row context
+command also permits unused definitions. J enters modification in Styles/Editing
+KeyTips. Cancel and invalid drafts leave the document untouched. No schema change:
+existing native v8 definitions already carry these properties.

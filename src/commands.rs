@@ -216,6 +216,23 @@ impl Editor {
         Ok(id)
     }
 
+    /// Modify a definition in one history transaction without rewriting runs.
+    pub fn modify_character_style(
+        &mut self,
+        id: CharacterStyle,
+        format: CharacterFormat,
+    ) -> Result<()> {
+        let mut document = self.document.clone();
+        document.modify_character_style(id, format)?;
+        self.commit(
+            document,
+            "Modify character style",
+            self.selection,
+            self.typing_style,
+        );
+        Ok(())
+    }
+
     /// Apply/remove a semantic character style, retaining all direct overrides.
     pub fn apply_character_style(
         &mut self,

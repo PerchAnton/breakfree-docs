@@ -616,6 +616,27 @@ impl Document {
         self.character_styles = candidate.character_styles;
         Ok(CharacterStyle::Custom(id))
     }
+    /// Change only properties, preserving stable identity and every reference.
+    pub fn modify_character_style(
+        &mut self,
+        style: CharacterStyle,
+        format: CharacterFormat,
+    ) -> Result<()> {
+        let CharacterStyle::Custom(id) = style else {
+            return Err("Built-in character styles cannot be modified.".into());
+        };
+        let mut candidate = self.clone();
+        candidate
+            .character_styles
+            .iter_mut()
+            .find(|s| s.id == id)
+            .ok_or("Unknown character style reference.")?
+            .format = format;
+        candidate.validate()?;
+        self.character_styles = candidate.character_styles;
+        Ok(())
+    }
+
     fn validate_character_styles(&self) -> Result<()> {
         if self.character_styles.len() > MAX_CUSTOM_STYLES {
             return Err("A document supports up to 64 custom character styles.".into());

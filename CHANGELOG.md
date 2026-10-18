@@ -3,6 +3,19 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.26 — Unreleased; submitted for owner approval
+
+Prepared 2026-10-18. The owner approved alpha.25 in the project chat.
+
+- Modify custom character-style bold, italic, underline and size in a previewed
+  draft. Preserve names, IDs, catalog order, run references and direct overrides.
+- Commit all property changes as one Undo/Redo; Cancel, invalid values and no-op
+  edits preserve history. Built-ins stay fixed. Native content remains v8.
+- Add Home Styles and command-search access, J KeyTip and a context command for
+  unused definitions. Keep the approved palette and original icons.
+- Cover exact history, persistence, invalid/no-op definitions, actual rendering,
+  dialog cancellation and minimum-window bounds with regression tests.
+
 ## 0.1.0-alpha.25 — Unreleased; submitted for owner approval
 
 Prepared 2026-10-18. The owner approved alpha.24 in the project chat.

@@ -83,6 +83,7 @@ pub enum Action {
     ModifyStyle,
     CreateStyle,
     CreateCharacterStyle,
+    ModifyCharacterStyle,
     DeleteStyle,
     GrowFont,
     ShrinkFont,
@@ -126,6 +127,7 @@ impl Action {
             Self::FontDialog => "Font dialog",
             Self::ModifyStyle => "Modify style…",
             Self::CreateStyle => "Create style…",
+            Self::ModifyCharacterStyle => "Modify character style…",
             Self::CreateCharacterStyle => "Create character style…",
             Self::DeleteStyle => "Delete style…",
             Self::GrowFont => "Grow font",
@@ -173,6 +175,7 @@ const COMMANDS: &[Action] = &[
     Action::ModifyStyle,
     Action::CreateStyle,
     Action::CreateCharacterStyle,
+    Action::ModifyCharacterStyle,
     Action::DeleteStyle,
     Action::GrowFont,
     Action::ShrinkFont,
@@ -406,6 +409,7 @@ impl DocsApp {
             Action::FontDialog
                 | Action::ModifyStyle
                 | Action::CreateStyle
+                | Action::ModifyCharacterStyle
                 | Action::CreateCharacterStyle
                 | Action::DeleteStyle
                 | Action::Zoom
@@ -417,6 +421,10 @@ impl DocsApp {
             return matches!(action, Action::Copy | Action::Ribbon | Action::Rulers);
         }
         match action {
+            Action::ModifyCharacterStyle => matches!(
+                self.session.editor.selected_character_style(),
+                Some(Some(CharacterStyle::Custom(_)))
+            ),
             Action::DeleteStyle => matches!(self.target_style(), ParagraphStyle::Custom(_)),
             Action::CreateCharacterStyle => {
                 self.session.editor.document.character_styles.len()
@@ -554,6 +562,7 @@ impl DocsApp {
                 | Action::CharacterStyle(_)
                 | Action::ModifyStyle
                 | Action::CreateStyle
+                | Action::ModifyCharacterStyle
                 | Action::CreateCharacterStyle
                 | Action::DeleteStyle
         ) && (self.pending.is_some()
@@ -650,6 +659,11 @@ impl DocsApp {
                 self.ribbon_focus = Some(RibbonFocus::Control("font-size".into()));
                 self.focus_font_size = true;
                 self.focus_document = false;
+            }
+            Action::ModifyCharacterStyle => {
+                if let Some(Some(id)) = self.session.editor.selected_character_style() {
+                    self.open_character_style_dialog(id, ctx);
+                }
             }
             Action::CreateCharacterStyle => {
                 let id = self.target_style();
@@ -750,6 +764,7 @@ impl DocsApp {
                     | Action::FontDialog
                     | Action::ModifyStyle
                     | Action::CreateStyle
+                    | Action::ModifyCharacterStyle
                     | Action::CreateCharacterStyle
                     | Action::DeleteStyle
                     | Action::Zoom
@@ -867,8 +882,21 @@ impl DocsApp {
         if let Action::Style(id) = action {
             self.style_context_menu(&response, id);
         }
+        if let Action::CharacterStyle(Some(id @ CharacterStyle::Custom(_))) = action {
+            response.context_menu(|ui| {
+                if ui
+                    .add_enabled(enabled, Button::new("Modify character style…"))
+                    .clicked()
+                {
+                    self.open_character_style_dialog(id, ui.ctx());
+                    ui.close();
+                }
+            });
+        }
         let tip = if self.composing && !enabled {
             "Finish text composition first."
+        } else if action == Action::ModifyCharacterStyle && !enabled {
+            "Choose one custom character style; built-ins cannot be modified."
         } else if action == Action::CreateCharacterStyle && !enabled {
             "Limit: 64 custom character styles per document."
         } else if action == Action::CharacterStyle(None) {
@@ -1907,6 +1935,15 @@ impl DocsApp {
         ctx.memory_mut(|m| m.surrender_focus(Id::new(EDIT_ID)));
     }
 
+    fn open_character_style_dialog(&mut self, id: CharacterStyle, ctx: &egui::Context) {
+        let paragraph = self.target_style();
+        if let Some(dialog) =
+            StyleDialog::modify_character(&self.session.editor.document, paragraph, id)
+        {
+            self.open_style_dialog(paragraph, ctx);
+            self.style_dialog = Some(dialog);
+        }
+    }
     fn styles_menu(&mut self, ui: &mut Ui) {
         ui.set_width(220.);
         egui::ScrollArea::vertical()
@@ -1942,6 +1979,12 @@ impl DocsApp {
                         vec2(210., 27.),
                     );
                 }
+                self.command(
+                    ui,
+                    "Modify character style…",
+                    Action::ModifyCharacterStyle,
+                    vec2(210., 27.),
+                );
                 self.command(
                     ui,
                     "Create character style…",
@@ -2760,7 +2803,11 @@ impl DocsApp {
                 StyleOutcome::Open => self.style_dialog = Some(dialog),
                 StyleOutcome::Cancel => self.sync_view(),
                 StyleOutcome::Apply(definition) => {
-                    let result = if dialog.character {
+                    let result = if let Some(id) = dialog.character_id {
+                        self.session
+                            .editor
+                            .modify_character_style(id, definition.character)
+                    } else if dialog.character {
                         self.session
                             .editor
                             .create_character_style(

@@ -8,20 +8,20 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.25**. Earlier capture/CI evidence retains its
+Current local checkpoint: **0.1.0-alpha.26**. Earlier capture/CI evidence retains its
 original scope; this iteration does not establish native Windows behavior.
 
 | Local check | Observed result |
 | :--- | :--- |
-| `cargo test --locked` | 198 passed: 26 engine/storage/presentation, 43 styles/inheritance, 8 search, 7 batch replacement, 9 preferences, 4 CLI subprocess and 101 actual egui widget event tests; no skipped tests |
-| `cargo test --locked --no-default-features` | 97 passed; preferences, core/styles/search/batch replacement and CLI build without GUI dependencies |
+| `cargo test --locked` | 202 passed: 26 engine/storage/presentation, 45 styles/inheritance, 8 search, 7 batch replacement, 9 preferences, 4 CLI subprocess and 103 actual egui widget event tests; no skipped tests |
+| `cargo test --locked --no-default-features` | 99 passed; preferences, core/styles/search/batch replacement and CLI build without GUI dependencies |
 | `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
 | `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
-| Copied executable outside checkout | Alpha.25 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that identical copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
+| Copied executable outside checkout | Alpha.26 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that identical copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
 | Repository references, contract and artwork | `python3 tools/check_repository.py` passed; approved logo embedded directly and archive copy byte-identical |
 | Workflow YAML / whitespace | Ruby YAML parse and `git diff --check` passed |
-| Native rendering | Alpha.25 Create Character Style at 1366 × 900 / 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha25-native-captures). Earlier evidence keeps its version context |
-| Native macOS interaction | Alpha.25 KeyTips creation, Unicode name, Italic On, 16 pt, Save, one Undo/Save, one Redo/Save, fresh-process open and named menu choice passed with complete JSON comparisons |
+| Native rendering | Alpha.26 Modify Character Style at 1366 × 900 / 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha26-native-captures). Earlier evidence keeps its version context |
+| Native macOS interaction | Alpha.26 F10/H/L/J, size edit, Enter/Save, one Undo/Save, one Redo/Save, fresh-process reopen and Escape cancellation passed with complete JSON comparisons |
 | Synthetic DPI | Actual widgets at 1/1.25/1.5 scale and 960/1366/1920 physical widths; ribbon/group/workspace/status bounds and collapse assertions passed; 27 additional width/scale combinations check individual Home control containment/nonoverlap and title/search/window bounds |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
@@ -888,3 +888,29 @@ palette/icons are unchanged. Native AX field clicks did not transfer text focus 
 this automation session; Tab navigation worked. This is not full accessibility
 acceptance. Windows/Word comparison, native DPI/IME/AltGr and emoji fallback remain
 open. Custom character modification/rename/delete and parent graphs are deferred.
+
+## Alpha.26 character-property validation
+
+202 full / 99 core-only tests pass. Two engine regressions cover exact definition
+history, stable identity/order/run references, selection/pending preservation,
+direct overrides, Unicode roundtrip, unused definitions, invalid IDs/built-ins/
+nested references and no-op redo retention. Two widget regressions cover draft
+validation/Cancel/OK, actual rendered italic/size, one Undo/Redo, modal guards,
+read-only names and minimum-window bounds at synthetic 1/1.25/1.5 scales.
+
+The release executable copied outside the checkout answered version/capabilities.
+Native macOS: select Annotation text in a disposable NamedCharacterStyles fixture,
+F10/H/L/J, replace selected size 14 with 18, Enter, Save. Full parsed JSON comparison
+(normalizing absent versus null optional fields) confirms only definition size
+changed: catalog IDs/names/order, runs, direct formatting, text and paragraph
+styles remain equal. One Undo/Save equals the original fixture; Redo/Save equals
+the changed document. A fresh process reopens size 18; a 30-pt draft cancelled with
+Escape leaves size 18 and no dirty state. Two native captures were inspected.
+
+fmt, normal/capture Clippy, full/core tests, release/capture builds, repository
+links/artwork, workflow YAML and whitespace checks pass. Capture harness was rebuilt
+and linted after its new mode was added. Existing malformed-file, unsupported
+version and failure-retention regressions pass. Native format remains v8.
+Windows/Word/DPI/physical IME/AltGr/full accessibility remain unverified; no new
+platform acceptance is claimed. Renaming/deleting character styles and parents
+remain deferred. Earlier entries above retain their historical scope.

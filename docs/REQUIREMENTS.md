@@ -67,3 +67,5 @@ stores references independently of direct properties; earlier readers stay stric
 
 Alpha.25 adds named character-style creation, optional one-step application and
 strict v8 storage under [ADR 0012](adr/0012-named-character-styles.md).
+
+Alpha.26 adds transactional custom character property editing with stable references. Native v8 remains unchanged.
