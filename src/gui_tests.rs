@@ -5476,3 +5476,80 @@ fn rename_character_draft_validation_cancel_and_one_commit() {
     app.execute(Action::Redo, &ctx);
     assert_eq!(app.session.editor.document, after);
 }
+
+#[test]
+fn delete_character_dialog_cancel_replacement_and_exact_history() {
+    let (ctx, mut app) = setup();
+    app.session.editor.replace(0, 0, "Text", "Input").unwrap();
+    app.session.editor.selection = (0, 4);
+    let id = app
+        .session
+        .editor
+        .create_character_style("Note", CharacterFormat::default(), true)
+        .unwrap();
+    app.sync_view();
+    let before = app.session.editor.document.clone();
+    let n = app.session.editor.undo_stack.len();
+    app.execute(Action::DeleteCharacterStyle, &ctx);
+    frame(&ctx, &mut app, vec![], [640., 480.], 1.);
+    app.execute(Action::New, &ctx);
+    assert!(app.delete_style_dialog.is_some());
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Escape, false)],
+        [640., 480.],
+        1.,
+    );
+    assert_eq!(app.session.editor.document, before);
+    app.execute(Action::DeleteCharacterStyle, &ctx);
+    app.delete_style_dialog
+        .as_mut()
+        .unwrap()
+        .character_replacement = Some(CharacterStyle::Emphasis);
+    frame(&ctx, &mut app, vec![], [640., 480.], 1.);
+    click_region_at(&ctx, &mut app, "delete-style-apply", [640., 480.]);
+    assert!(app.delete_style_dialog.is_none());
+    assert!(!app.session.editor.document.character_style_exists(id));
+    assert_eq!(app.session.editor.undo_stack.len(), n + 1);
+    assert_eq!(
+        app.session.editor.selected_character_style(),
+        Some(Some(CharacterStyle::Emphasis))
+    );
+    let after = app.session.editor.document.clone();
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.document, before);
+    app.execute(Action::Redo, &ctx);
+    assert_eq!(app.session.editor.document, after);
+}
+
+#[test]
+fn delete_character_unused_bounds_and_guards() {
+    for scale in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        assert!(!app.enabled(Action::DeleteCharacterStyle));
+        let id = app
+            .session
+            .editor
+            .create_character_style("Unused", CharacterFormat::default(), false)
+            .unwrap();
+        app.composing = true;
+        app.open_delete_character_style(id, &ctx);
+        assert!(app.delete_style_dialog.is_none());
+        app.composing = false;
+        app.open_delete_character_style(id, &ctx);
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![], [640. * scale, 480. * scale], scale);
+        }
+        let screen = Rect::from_min_size(Pos2::ZERO, vec2(640., 480.));
+        for r in app.regions.iter().filter(|r| r.name.starts_with("delete-")) {
+            assert!(screen.contains_rect(r.rect), "{} {:?}", r.name, r.rect);
+        }
+        assert_eq!(
+            app.delete_style_dialog.as_ref().unwrap().character_id,
+            Some(id)
+        );
+        click_region_at(&ctx, &mut app, "delete-style-cancel", [640., 480.]);
+        assert!(app.session.editor.document.character_style_exists(id));
+    }
+}

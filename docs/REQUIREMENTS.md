@@ -71,3 +71,5 @@ strict v8 storage under [ADR 0012](adr/0012-named-character-styles.md).
 Alpha.26 adds transactional custom character property editing with stable references. Native v8 remains unchanged.
 
 Alpha.27 adds validated character-style renaming and combined property edits in one Undo/Redo, preserving IDs/references and native v8.
+
+Alpha.28 adds custom character-style deletion with explicit text/pending replacement and one Undo/Redo, retaining native v8.

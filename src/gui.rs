@@ -85,6 +85,7 @@ pub enum Action {
     CreateCharacterStyle,
     ModifyCharacterStyle,
     DeleteStyle,
+    DeleteCharacterStyle,
     GrowFont,
     ShrinkFont,
     Left,
@@ -129,6 +130,7 @@ impl Action {
             Self::CreateStyle => "Create style…",
             Self::ModifyCharacterStyle => "Modify character style…",
             Self::CreateCharacterStyle => "Create character style…",
+            Self::DeleteCharacterStyle => "Delete character style…",
             Self::DeleteStyle => "Delete style…",
             Self::GrowFont => "Grow font",
             Self::ShrinkFont => "Shrink font",
@@ -177,6 +179,7 @@ const COMMANDS: &[Action] = &[
     Action::CreateCharacterStyle,
     Action::ModifyCharacterStyle,
     Action::DeleteStyle,
+    Action::DeleteCharacterStyle,
     Action::GrowFont,
     Action::ShrinkFont,
     Action::Left,
@@ -411,6 +414,7 @@ impl DocsApp {
                 | Action::CreateStyle
                 | Action::ModifyCharacterStyle
                 | Action::CreateCharacterStyle
+                | Action::DeleteCharacterStyle
                 | Action::DeleteStyle
                 | Action::Zoom
         ) && (self.pending.is_some() || self.error.is_some())
@@ -421,7 +425,7 @@ impl DocsApp {
             return matches!(action, Action::Copy | Action::Ribbon | Action::Rulers);
         }
         match action {
-            Action::ModifyCharacterStyle => matches!(
+            Action::ModifyCharacterStyle | Action::DeleteCharacterStyle => matches!(
                 self.session.editor.selected_character_style(),
                 Some(Some(CharacterStyle::Custom(_)))
             ),
@@ -564,6 +568,7 @@ impl DocsApp {
                 | Action::CreateStyle
                 | Action::ModifyCharacterStyle
                 | Action::CreateCharacterStyle
+                | Action::DeleteCharacterStyle
                 | Action::DeleteStyle
         ) && (self.pending.is_some()
             || self.error.is_some()
@@ -673,6 +678,11 @@ impl DocsApp {
                     id,
                 ));
             }
+            Action::DeleteCharacterStyle => {
+                if let Some(Some(id)) = self.session.editor.selected_character_style() {
+                    self.open_delete_character_style(id, ctx);
+                }
+            }
             Action::DeleteStyle => self.open_delete_style_dialog(self.target_style(), ctx),
             Action::ModifyStyle | Action::CreateStyle => {
                 let id = self
@@ -766,6 +776,7 @@ impl DocsApp {
                     | Action::CreateStyle
                     | Action::ModifyCharacterStyle
                     | Action::CreateCharacterStyle
+                    | Action::DeleteCharacterStyle
                     | Action::DeleteStyle
                     | Action::Zoom
                     | Action::File
@@ -891,11 +902,22 @@ impl DocsApp {
                     self.open_character_style_dialog(id, ui.ctx());
                     ui.close();
                 }
+                if ui
+                    .add_enabled(enabled, Button::new("Delete character style…"))
+                    .clicked()
+                {
+                    self.open_delete_character_style(id, ui.ctx());
+                    ui.close();
+                }
             });
         }
         let tip = if self.composing && !enabled {
             "Finish text composition first."
-        } else if action == Action::ModifyCharacterStyle && !enabled {
+        } else if matches!(
+            action,
+            Action::ModifyCharacterStyle | Action::DeleteCharacterStyle
+        ) && !enabled
+        {
             "Choose one custom character style; built-ins cannot be modified."
         } else if action == Action::CreateCharacterStyle && !enabled {
             "Limit: 64 custom character styles per document."
@@ -1906,6 +1928,20 @@ impl DocsApp {
             .unwrap_or_default()
     }
 
+    fn open_delete_character_style(&mut self, id: CharacterStyle, ctx: &egui::Context) {
+        if !self.enabled(Action::ModifyStyle)
+            || ctx.input(|i| i.events.iter().any(|e| matches!(e, egui::Event::Ime(_))))
+        {
+            return;
+        }
+        if let Some(dialog) = DeleteStyleDialog::character(id, &self.session.editor.document) {
+            self.delete_style_dialog = Some(dialog);
+            self.focus_document = false;
+            self.focus_font_size = false;
+            self.palette = false;
+            ctx.memory_mut(|m| m.surrender_focus(Id::new(EDIT_ID)));
+        }
+    }
     fn open_delete_style_dialog(&mut self, id: ParagraphStyle, ctx: &egui::Context) {
         if !self.enabled(Action::ModifyStyle)
             || !matches!(id, ParagraphStyle::Custom(_))
@@ -1979,6 +2015,12 @@ impl DocsApp {
                         vec2(210., 27.),
                     );
                 }
+                self.command(
+                    ui,
+                    "Delete character style…",
+                    Action::DeleteCharacterStyle,
+                    vec2(210., 27.),
+                );
                 self.command(
                     ui,
                     "Modify character style…",
@@ -2788,11 +2830,17 @@ impl DocsApp {
                 DeleteStyleOutcome::Open => self.delete_style_dialog = Some(dialog),
                 DeleteStyleOutcome::Cancel => self.sync_view(),
                 DeleteStyleOutcome::Apply => {
-                    let result = self.session.editor.delete_custom_style(
-                        dialog.id,
-                        dialog.paragraph_replacement,
-                        dialog.parent_replacement,
-                    );
+                    let result = if let Some(id) = dialog.character_id {
+                        self.session
+                            .editor
+                            .delete_character_style(id, dialog.character_replacement)
+                    } else {
+                        self.session.editor.delete_custom_style(
+                            dialog.id,
+                            dialog.paragraph_replacement,
+                            dialog.parent_replacement,
+                        )
+                    };
                     self.fail(result);
                     self.sync_view();
                 }

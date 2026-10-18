@@ -251,6 +251,22 @@ impl Editor {
         Ok(())
     }
 
+    /// Delete and remap document/pending references together in one undo step.
+    pub fn delete_character_style(
+        &mut self,
+        id: CharacterStyle,
+        replacement: Option<CharacterStyle>,
+    ) -> Result<()> {
+        let mut document = self.document.clone();
+        document.delete_character_style(id, replacement)?;
+        let mut typing = self.typing_style;
+        if typing.character_style == Some(id) {
+            typing.character_style = replacement;
+        }
+        self.commit(document, "Delete character style", self.selection, typing);
+        Ok(())
+    }
+
     /// Apply/remove a semantic character style, retaining all direct overrides.
     pub fn apply_character_style(
         &mut self,

@@ -3,6 +3,18 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.28 — Unreleased; submitted for owner approval
+
+Prepared 2026-10-18. The owner approved alpha.27 in the project chat.
+
+- Delete custom character styles with an explicit replacement: another custom
+  style, Strong/Emphasis or Default paragraph font (remove the reference).
+- Remap all text and pending-input references and remove the definition in one
+  Undo/Redo. Preserve text, paragraph styles, selection and direct overrides.
+- Add a cancellable deletion draft, Home/search/context access and X KeyTip.
+  Reject built-ins, missing IDs, self-replacement and missing replacements.
+- Retain native v8, palette, icons and dependencies; add engine/widget regressions.
+
 ## 0.1.0-alpha.27 — Unreleased; submitted for owner approval
 
 Prepared 2026-10-18. The owner approved alpha.26 in the project chat.

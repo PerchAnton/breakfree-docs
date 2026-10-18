@@ -246,7 +246,14 @@ The name is selected on entry: type a new unique name to rename the style.
 Name and property changes commit together in one Undo/Redo. Cancel/Escape changes
 nothing; invalid or reserved names keep OK disabled. Home and command search show
 the new name after confirmation and reopen. Unchanged drafts preserve redo.
-Character-style parents and deletion remain future work.
+Home Styles → Delete character style opens a replacement draft for a uniform
+custom style (F10/Alt → H → L → X; narrow H → E → X). Its context menu also deletes
+unused definitions. Choose another custom style, Strong/Emphasis or Default
+paragraph font to remove references. All text and future-typing references are
+remapped together; direct overrides and paragraph styles stay. Appearance may
+change. Delete commits one Undo/Redo; Cancel/Escape changes nothing. Cancel starts
+focused, so Enter alone does not delete. Built-ins cannot be deleted.
+Character-style parents remain future work.
 [Named character styles](docs/adr/0012-named-character-styles.md).
 [Character-style rules](docs/adr/0011-character-style-precedence.md).
 [Style rules](docs/adr/0008-custom-named-styles.md) · [Deletion rules](docs/adr/0009-delete-custom-styles.md).

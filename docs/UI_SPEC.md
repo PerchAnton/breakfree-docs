@@ -1110,3 +1110,21 @@ Light theme, English, 100% document zoom, macOS backing scale 2:
 | [Rename draft](screenshots/rust-rename-character-alpha27-macos-narrow.png) | 640 × 480 DIP | `e21601fc86d8b1c243b240170e251300054d19347f4b1f1b3ae174597410db16` |
 
 Both inspected captures keep labels/actions within the window. Native Unicode rename/history/save/reopen passed. Matched Windows/Word screenshots and native DPI/IME acceptance remain unavailable; no similarity percentage is claimed.
+
+## Alpha.28 native captures
+
+Delete Character Style uses the existing neutral modal and purple keyboard focus.
+The draft has a 440-DIP replacement selector, real reference-scalar count,
+wrapped explanation and 82 × 27-DIP actions. Cancel starts focused; Tab then Enter
+activates Delete. Replacement options exclude the target and include removal,
+Strong, Emphasis and surviving custom styles. X opens this draft in Styles/Editing
+KeyTips; the custom-row context menu supports unused definitions.
+
+Light theme, English, 100% document zoom, macOS backing scale 2:
+
+| Capture | Window | SHA-256 |
+| --- | --- | --- |
+| [Deletion draft](screenshots/rust-delete-character-alpha28-macos.png) | 1366 × 900 DIP | `ca022069d3a4ae04de34d3e7cfae4121a90b2d0eb90c86e0853aac34d4a46e78` |
+| [Deletion draft](screenshots/rust-delete-character-alpha28-macos-narrow.png) | 640 × 480 DIP | `80948fcc7e20395b4a193dd27a4cd2ee6eec81e69468af280ff3ad629d06b4f2` |
+
+Both inspected captures fit controls and labels without overlap. Native replacement/keyboard deletion/history/save passed. Windows/Word comparison and native DPI/IME acceptance remain open. Palette, original icons and branding are retained; no similarity percentage is claimed.

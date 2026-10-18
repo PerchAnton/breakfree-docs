@@ -8,20 +8,20 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.27**. Earlier capture/CI evidence retains its
+Current local checkpoint: **0.1.0-alpha.28**. Earlier capture/CI evidence retains its
 original scope; this iteration does not establish native Windows behavior.
 
 | Local check | Observed result |
 | :--- | :--- |
-| `cargo test --locked` | 205 passed: 26 engine/storage/presentation, 47 styles/inheritance, 8 search, 7 batch replacement, 9 preferences, 4 CLI subprocess and 104 actual egui widget event tests; no skipped tests |
-| `cargo test --locked --no-default-features` | 101 passed; preferences, core/styles/search/batch replacement and CLI build without GUI dependencies |
+| `cargo test --locked` | 209 passed: 26 engine/storage/presentation, 49 styles/inheritance, 8 search, 7 batch replacement, 9 preferences, 4 CLI subprocess and 106 actual egui widget event tests; no skipped tests |
+| `cargo test --locked --no-default-features` | 103 passed; preferences, core/styles/search/batch replacement and CLI build without GUI dependencies |
 | `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
 | `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
-| Copied executable outside checkout | Alpha.27 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that identical copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
+| Copied executable outside checkout | Alpha.28 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that identical copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
 | Repository references, contract and artwork | `python3 tools/check_repository.py` passed; approved logo embedded directly and archive copy byte-identical |
 | Workflow YAML / whitespace | Ruby YAML parse and `git diff --check` passed |
-| Native rendering | Alpha.27 Modify Character Style at 1366 × 900 / 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha27-native-captures). Earlier evidence keeps its version context |
-| Native macOS interaction | Alpha.27 F10/H/L/J, Unicode rename, Enter/Save, one Undo/Save, one Redo/Save and fresh-process reopen passed with complete JSON comparisons |
+| Native rendering | Alpha.28 Delete Character Style at 1366 × 900 / 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha28-native-captures). Earlier evidence keeps its version context |
+| Native macOS interaction | Alpha.28 F10/H/L/X, replacement selection, Tab/Enter deletion, Save and one Undo/Redo passed with complete JSON comparisons |
 | Synthetic DPI | Actual widgets at 1/1.25/1.5 scale and 960/1366/1920 physical widths; ribbon/group/workspace/status bounds and collapse assertions passed; 27 additional width/scale combinations check individual Home control containment/nonoverlap and title/search/window bounds |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
@@ -933,3 +933,22 @@ Copied release version/capabilities, fmt, normal/capture Clippy, full/core suite
 release/capture builds, repository/artwork/YAML/whitespace checks pass.
 Windows/Word/DPI/physical IME and complete accessibility remain unverified. Native
 format v8, protocol/settings v1, dependencies, palette and icons remain unchanged.
+
+## Alpha.28 character-style deletion validation
+
+209 full / 103 core-only tests pass. Engine regressions cover custom/built-in/None
+replacements, all text references, pending input, selection, direct properties,
+exact one-operation undo/redo, unused definitions, self/missing replacement and
+fixed/missing targets. Invalid commands preserve redo; native v8 roundtrip passes.
+Widget regressions cover cancellation, replacement, shared history, modal/IME
+guards, unused-style targeting and 640 × 480 bounds at synthetic 1/1.25/1.5 scale.
+
+Native macOS: select Annotation text, F10/H/L/X, choose Regular note, Tab from
+Cancel to Delete, Enter and Save. Complete parsed JSON comparison (absent/null
+optional fields normalized) verifies only removal of definition 1 and remapping
+its run references to 2. One Undo/Save equals the original fixture; Redo/Save equals
+the expected deleted document. Fresh-process reopen shows Regular note on the remapped selection; Enter on the initially focused Cancel leaves the file unchanged. Two native captures inspected without overlap.
+Copied executable version/capabilities and all fmt/Clippy/build/test/repository/
+artwork/YAML/whitespace gates pass. Existing invalid-file/failed-save tests pass.
+Native Windows/Word/DPI/physical IME and full accessibility remain unverified.
+No schema, dependency, license, palette or icon change.

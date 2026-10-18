@@ -10,7 +10,7 @@ positive u32 ID, a validated name and optional bold/italic/underline/font size.
 A run or pending insertion format references the ID; do not copy resolved values
 into direct formatting. The cascade remains paragraph → character → direct.
 Explicit false wins, unset properties inherit the paragraph. Character parents,
-linked paragraph/character styles and deletion are deferred.
+linked paragraph/character styles are deferred.
 
 Character names are a separate namespace from paragraph names. Enforce 1–64 Unicode
 scalars, no outer spaces/control characters/U+2028/U+2029, case-insensitive uniqueness
@@ -67,3 +67,19 @@ case-only changes are allowed for the same ID. Invalid names, unknown IDs, fixed
 built-ins and unchanged drafts leave history intact. IDs/order/references, selection
 and pending format remain stable. Menus/search resolve the current name from the
 catalog. Native v8 already stores names; no migration or schema change is needed.
+
+## Alpha.28 — Deletion
+
+Delete only custom definitions. Validate source and replacement before mutation;
+reject missing IDs, built-ins and self-replacement. Replacement may be a surviving
+custom style, Strong, Emphasis or None (Default paragraph font). Replace every run
+reference and pending insertion reference, preserving direct properties, text,
+paragraph styles, selection and survivor order. Commit the removed definition and
+all remapped state in one shared history operation. Undo restores exact IDs and
+references; redo repeats deletion. An unused definition can be removed too.
+
+The local draft explains possible inherited appearance changes and displays the
+actual count of referenced text scalars (not graphemes or words). Cancel starts
+focused. Home/search and X KeyTip target a uniform custom style; context access
+also handles unused definitions. Escape/Cancel do not mutate. Existing v8 storage
+already represents the result; no schema change or dependency is required.

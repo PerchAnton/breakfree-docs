@@ -169,6 +169,7 @@ impl DocsApp {
                 Tip::action("C", Action::CreateStyle),
                 Tip::action("K", Action::CreateCharacterStyle),
                 Tip::action("J", Action::ModifyCharacterStyle),
+                Tip::action("X", Action::DeleteCharacterStyle),
                 Tip::action("D", Action::DeleteStyle),
             ],
             Level::Editing => vec![
@@ -182,6 +183,7 @@ impl DocsApp {
                 Tip::action("C", Action::CreateStyle),
                 Tip::action("K", Action::CreateCharacterStyle),
                 Tip::action("J", Action::ModifyCharacterStyle),
+                Tip::action("X", Action::DeleteCharacterStyle),
                 Tip::action("D", Action::DeleteStyle),
                 Tip::action("FD", Action::Find),
                 Tip::action("R", Action::Replace),

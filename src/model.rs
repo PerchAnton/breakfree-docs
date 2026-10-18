@@ -649,6 +649,37 @@ impl Document {
         Ok(())
     }
 
+    /// Remove a custom definition and replace all semantic run references.
+    pub fn delete_character_style(
+        &mut self,
+        style: CharacterStyle,
+        replacement: Option<CharacterStyle>,
+    ) -> Result<()> {
+        let CharacterStyle::Custom(id) = style else {
+            return Err("Built-in character styles cannot be deleted.".into());
+        };
+        if !self.character_style_exists(style) {
+            return Err("Unknown character style reference.".into());
+        }
+        if replacement == Some(style)
+            || replacement.is_some_and(|r| !self.character_style_exists(r))
+        {
+            return Err("Choose an existing replacement different from the deleted style.".into());
+        }
+        let mut candidate = self.clone();
+        candidate.character_styles.retain(|s| s.id != id);
+        for paragraph in &mut candidate.paragraphs {
+            for format in &mut paragraph.styles {
+                if format.character_style == Some(style) {
+                    format.character_style = replacement;
+                }
+            }
+        }
+        candidate.validate()?;
+        *self = candidate;
+        Ok(())
+    }
+
     fn validate_character_styles(&self) -> Result<()> {
         if self.character_styles.len() > MAX_CUSTOM_STYLES {
             return Err("A document supports up to 64 custom character styles.".into());

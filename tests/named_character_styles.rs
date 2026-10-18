@@ -399,3 +399,87 @@ fn rename_invalid_noop_unused_and_case_only_edits() {
     e.undo();
     assert_eq!(e.document, before);
 }
+
+#[test]
+fn delete_character_replaces_all_runs_and_pending_in_one_history_step() {
+    for replacement_kind in 0..3 {
+        let mut e = Editor::default();
+        e.replace(0, 0, "English e\u{301}\nУкраїна Русский 🙂", "Input")
+            .unwrap();
+        e.selection = (0, e.document.character_count());
+        let id = e.create_character_style("Note", format(), true).unwrap();
+        let other = e
+            .create_character_style("Other", CharacterFormat::default(), false)
+            .unwrap();
+        let replacement = match replacement_kind {
+            0 => None,
+            1 => Some(CharacterStyle::Strong),
+            _ => Some(other),
+        };
+        e.typing_style.character_style = Some(id);
+        e.emphasize(0, 2, true, true).unwrap();
+        let before = e.document.clone();
+        let typing = e.typing_style;
+        let selection = e.selection;
+        let n = e.undo_stack.len();
+        e.delete_character_style(id, replacement).unwrap();
+        assert_eq!(e.undo_stack.len(), n + 1);
+        assert_eq!(e.typing_style.character_style, replacement);
+        assert_eq!(e.selection, selection);
+        let mut expected = before.clone();
+        expected
+            .character_styles
+            .retain(|s| CharacterStyle::Custom(s.id) != id);
+        for p in &mut expected.paragraphs {
+            for f in &mut p.styles {
+                if f.character_style == Some(id) {
+                    f.character_style = replacement;
+                }
+            }
+        }
+        assert_eq!(e.document, expected);
+        assert_eq!(
+            storage::decode(&storage::encode(&expected).unwrap()).unwrap(),
+            expected
+        );
+        e.undo();
+        assert_eq!(e.document, before);
+        assert_eq!(e.typing_style, typing);
+        e.redo();
+        assert_eq!(e.document, expected);
+        assert_eq!(e.typing_style.character_style, replacement);
+        let end = e.document.character_count();
+        e.replace(end, end, "x", "Input").unwrap();
+        e.document.validate().unwrap();
+    }
+}
+
+#[test]
+fn delete_character_rejects_invalid_replacements_and_preserves_redo() {
+    let mut e = Editor::default();
+    let id = e.create_character_style("Unused", format(), false).unwrap();
+    e.replace(0, 0, "x", "Input").unwrap();
+    e.undo();
+    let before = e.document.clone();
+    let n = e.undo_stack.len();
+    for (target, replacement) in [
+        (id, Some(id)),
+        (id, Some(CharacterStyle::Custom(999))),
+        (CharacterStyle::Strong, None),
+        (CharacterStyle::Custom(999), None),
+    ] {
+        assert!(e.delete_character_style(target, replacement).is_err());
+        assert_eq!(e.document, before);
+        assert_eq!(e.undo_stack.len(), n);
+        assert_eq!(e.redo_stack.len(), 1);
+    }
+    e.typing_style.character_style = Some(CharacterStyle::Emphasis);
+    e.delete_character_style(id, None).unwrap();
+    assert!(e.document.character_styles.is_empty());
+    assert_eq!(
+        e.typing_style.character_style,
+        Some(CharacterStyle::Emphasis)
+    );
+    e.undo();
+    assert_eq!(e.document, before);
+}
