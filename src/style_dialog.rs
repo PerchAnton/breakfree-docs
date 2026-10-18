@@ -1,6 +1,8 @@
 //! A local definition draft. Only OK submits one model command.
 use super::*;
-use crate::model::{Document, NamedCharacterStyle, Style, StyleCatalog, StyleDefinition};
+use crate::model::{
+    CharacterFormat, Document, NamedCharacterStyle, Style, StyleCatalog, StyleDefinition,
+};
 
 pub(super) enum StyleOutcome {
     Open,
@@ -12,6 +14,7 @@ pub(super) struct StyleDialog {
     pub creating: bool,
     pub character: bool,
     pub character_id: Option<CharacterStyle>,
+    pub character_parent: Option<CharacterStyle>,
     character_styles: Vec<NamedCharacterStyle>,
     preview_base: Style,
     pub name: String,
@@ -31,6 +34,7 @@ impl StyleDialog {
             creating: false,
             character: false,
             character_id: None,
+            character_parent: None,
             character_styles: Vec::new(),
             preview_base: Style::default(),
             name: catalog.name(id).into(),
@@ -86,6 +90,7 @@ impl StyleDialog {
         dialog.creating = false;
         dialog.character_id = Some(id);
         dialog.name = style.name.clone();
+        dialog.character_parent = style.parent;
         dialog.definition.character = style.format;
         dialog.size = style
             .format
@@ -126,11 +131,13 @@ impl StyleDialog {
                 character_styles: self.character_styles.clone(),
                 ..Default::default()
             };
-            if let Some(id) = self.character_id {
+            let id = if let Some(id) = self.character_id {
                 document.update_character_style(id, &self.name, definition.character)?;
+                id
             } else {
-                document.add_character_style(&self.name, definition.character)?;
-            }
+                document.add_character_style(&self.name, definition.character)?
+            };
+            document.set_character_parent(id, self.character_parent)?;
         } else if self.creating {
             catalog.add(&self.name, definition)?;
         } else if matches!(self.id, ParagraphStyle::Custom(_)) {
@@ -225,6 +232,56 @@ impl StyleDialog {
                             .on_hover_text(&self.name);
                         }
                         ui.end_row();
+                        if self.character {
+                            ui.label("Style based on:");
+                            let name = |id: CharacterStyle| {
+                                self.character_styles
+                                    .iter()
+                                    .find(|s| CharacterStyle::Custom(s.id) == id)
+                                    .map_or(id.name(), |s| s.name.as_str())
+                            };
+                            let response = egui::ComboBox::from_id_salt("character-parent")
+                                .width(290.)
+                                .height(150.)
+                                .truncate()
+                                .selected_text(
+                                    self.character_parent
+                                        .map(name)
+                                        .unwrap_or("(Paragraph style)"),
+                                )
+                                .show_ui(ui, |ui| {
+                                    ui.set_max_width(290.);
+                                    ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Truncate);
+                                    let choices = [
+                                        None,
+                                        Some(CharacterStyle::Strong),
+                                        Some(CharacterStyle::Emphasis),
+                                    ]
+                                    .into_iter()
+                                    .chain(
+                                        self.character_styles
+                                            .iter()
+                                            .map(|s| Some(CharacterStyle::Custom(s.id))),
+                                    );
+                                    for choice in
+                                        choices.filter(|c| c.is_none() || *c != self.character_id)
+                                    {
+                                        if ui
+                                            .selectable_value(
+                                                &mut self.character_parent,
+                                                choice,
+                                                choice.map(name).unwrap_or("(Paragraph style)"),
+                                            )
+                                            .clicked()
+                                        {
+                                            ui.close();
+                                        }
+                                    }
+                                })
+                                .response;
+                            record(regions, "style-dialog-character-parent", response.rect);
+                            ui.end_row();
+                        }
                         if !self.character {
                             ui.label("Style based on:");
                             let parent = egui::ComboBox::from_id_salt("style-parent")
@@ -381,7 +438,7 @@ impl StyleDialog {
                     });
                 ui.add_space(6.);
                 ui.small(if self.character {
-                    "Unset properties inherit the paragraph style. Direct formatting wins."
+                    "Unset properties inherit the parent, then paragraph. Direct formatting wins."
                 } else {
                     "Blank fields inherit. No parent uses regular 11 pt, 125%, 5.5 pt after."
                 });
@@ -394,7 +451,13 @@ impl StyleDialog {
                         let (rect, _) = ui.allocate_exact_size(vec2(448., 48.), Sense::hover());
                         if let Ok((definition, catalog)) = &draft {
                             let style = if self.character {
-                                definition.character.resolve(self.preview_base)
+                                definition.character.resolve(
+                                    CharacterFormat {
+                                        character_style: self.character_parent,
+                                        ..Default::default()
+                                    }
+                                    .resolve_with(self.preview_base, &self.character_styles),
+                                )
                             } else {
                                 catalog.resolve(self.id).character
                             };

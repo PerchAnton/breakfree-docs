@@ -198,12 +198,23 @@ impl Editor {
         format: CharacterFormat,
         apply: bool,
     ) -> Result<CharacterStyle> {
+        self.create_character_style_with_parent(name, format, None, apply)
+    }
+
+    pub fn create_character_style_with_parent(
+        &mut self,
+        name: &str,
+        format: CharacterFormat,
+        parent: Option<CharacterStyle>,
+        apply: bool,
+    ) -> Result<CharacterStyle> {
         let (start, end) = self.selection;
         validate_range(&self.document.text(), start, end)?;
         let mut candidate = Editor::new(self.document.clone());
         candidate.selection = self.selection;
         candidate.typing_style = self.typing_style;
         let id = candidate.document.add_character_style(name, format)?;
+        candidate.document.set_character_parent(id, parent)?;
         if apply {
             candidate.apply_character_style(start, end, Some(id))?;
         }
@@ -242,6 +253,26 @@ impl Editor {
     ) -> Result<()> {
         let mut document = self.document.clone();
         document.update_character_style(id, name, format)?;
+        self.commit(
+            document,
+            "Modify character style",
+            self.selection,
+            self.typing_style,
+        );
+        Ok(())
+    }
+
+    /// Commit name, parent and properties as one validated history transaction.
+    pub fn update_character_style_with_parent(
+        &mut self,
+        id: CharacterStyle,
+        name: &str,
+        format: CharacterFormat,
+        parent: Option<CharacterStyle>,
+    ) -> Result<()> {
+        let mut document = self.document.clone();
+        document.update_character_style(id, name, format)?;
+        document.set_character_parent(id, parent)?;
         self.commit(
             document,
             "Modify character style",

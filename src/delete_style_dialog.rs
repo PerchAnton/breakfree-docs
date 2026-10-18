@@ -70,7 +70,7 @@ impl DeleteStyleDialog {
             ui.separator();
             let count = document.paragraphs.iter().flat_map(|p| &p.styles).filter(|f| f.character_style == Some(style)).count();
             ui.label(format!("Referenced text scalars: {count}"));
-            ui.label("Replace in text and future typing:");
+            ui.label("Replace in text, child styles and future typing:");
             let response = egui::ComboBox::from_id_salt("delete-character-replacement").width(440.).height(150.).truncate()
                 .selected_text(self.character_replacement.map(|id| document.character_style_name(id)).unwrap_or("Default paragraph font"))
                 .show_ui(ui, |ui| {
@@ -88,7 +88,7 @@ impl DeleteStyleDialog {
             record(regions, "delete-character-replacement", response.rect);
             ui.add_space(10.);
             ui.label("Inherited appearance may change. Text and direct formatting stay. Default paragraph font removes the character-style reference.");
-            ui.small("One Undo restores the definition, text references and future typing.");
+            ui.small("One Undo restores the definition, references and child parents.");
             let mut candidate = document.clone();
             let validation = candidate.delete_character_style(style, self.character_replacement);
             if let Err(error) = &validation { ui.colored_label(Color32::from_rgb(165,30,30), error); }

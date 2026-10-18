@@ -9,8 +9,8 @@ Store a separate character catalog on Document. Each custom style has a stable
 positive u32 ID, a validated name and optional bold/italic/underline/font size.
 A run or pending insertion format references the ID; do not copy resolved values
 into direct formatting. The cascade remains paragraph → character → direct.
-Explicit false wins, unset properties inherit the paragraph. Character parents,
-linked paragraph/character styles are deferred.
+Explicit false wins. Alpha.29 extends inheritance with character parents; linked
+paragraph/character styles remain deferred.
 
 Character names are a separate namespace from paragraph names. Enforce 1–64 Unicode
 scalars, no outer spaces/control characters/U+2028/U+2029, case-insensitive uniqueness
@@ -83,3 +83,20 @@ actual count of referenced text scalars (not graphemes or words). Cancel starts
 focused. Home/search and X KeyTip target a uniform custom style; context access
 also handles unused definitions. Escape/Cancel do not mutate. Existing v8 storage
 already represents the result; no schema change or dependency is required.
+
+## Alpha.29 — Parent inheritance
+
+Each custom definition has an optional parent ID, including fixed Strong/Emphasis.
+None uses the current paragraph baseline. Resolve ancestors from root to leaf,
+then the run's direct properties; explicit false overrides inherited true. Bound
+resolution walks even for invalid external models; commands and storage reject
+all missing references and direct/indirect cycles, including unused definitions.
+Create/Modify drafts parent/name/properties and commits one operation. Preview
+uses the same cascade. Existing property-only APIs preserve the parent.
+
+Deletion applies its replacement to direct child parents as well as text/pending
+references. A descendant replacement that creates a cycle rejects the whole edit;
+None reconnects children to the paragraph baseline. One undo restores the graph.
+Native v9 stores parent references. Frozen v8 definitions reject parent fields;
+v1–v8 imports give character definitions no parent. Save writes v9; alpha.28 and
+earlier reject it. No parent guessing, flattening, dependency or palette change.

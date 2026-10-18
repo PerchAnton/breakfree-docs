@@ -3,6 +3,20 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.29 — Unreleased; submitted for owner approval
+
+Prepared 2026-10-18. The owner approved alpha.28 in the project chat.
+
+- Choose a custom or built-in character parent, or inherit directly from the
+  paragraph, in Create/Modify Character Style. Preview the resolved cascade.
+- Validate missing parents and direct/indirect cycles before committing name,
+  properties and parent together as one Undo/Redo. Direct overrides still win.
+- Deletion remaps direct child parents to its chosen replacement; reject cycles
+  without changing the document or history.
+- Write native v9 parent references; read v1–v8 with parentless legacy character
+  styles. Alpha.28 and earlier reject v9. Use Save As to retain older files.
+- Preserve palette/icons and add cascade, graph, migration and GUI regressions.
+
 ## 0.1.0-alpha.28 — Unreleased; submitted for owner approval
 
 Prepared 2026-10-18. The owner approved alpha.27 in the project chat.

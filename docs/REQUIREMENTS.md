@@ -73,3 +73,5 @@ Alpha.26 adds transactional custom character property editing with stable refere
 Alpha.27 adds validated character-style renaming and combined property edits in one Undo/Redo, preserving IDs/references and native v8.
 
 Alpha.28 adds custom character-style deletion with explicit text/pending replacement and one Undo/Redo, retaining native v8.
+
+Alpha.29 adds character parent inheritance, graph validation, child-parent remapping on deletion and transactional drafts; native v9 retains v1–v8 readers.

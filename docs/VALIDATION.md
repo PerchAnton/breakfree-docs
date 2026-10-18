@@ -8,20 +8,20 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.28**. Earlier capture/CI evidence retains its
+Current local checkpoint: **0.1.0-alpha.29**. Earlier capture/CI evidence retains its
 original scope; this iteration does not establish native Windows behavior.
 
 | Local check | Observed result |
 | :--- | :--- |
-| `cargo test --locked` | 209 passed: 26 engine/storage/presentation, 49 styles/inheritance, 8 search, 7 batch replacement, 9 preferences, 4 CLI subprocess and 106 actual egui widget event tests; no skipped tests |
-| `cargo test --locked --no-default-features` | 103 passed; preferences, core/styles/search/batch replacement and CLI build without GUI dependencies |
+| `cargo test --locked` | 213 passed: 26 engine/storage/presentation, 52 styles/inheritance, 8 search, 7 batch replacement, 9 preferences, 4 CLI subprocess and 107 actual egui widget event tests; no skipped tests |
+| `cargo test --locked --no-default-features` | 106 passed; preferences, core/styles/search/batch replacement and CLI build without GUI dependencies |
 | `cargo fmt --check` / Clippy all targets with warnings denied | Passed |
 | `cargo build --locked --release` | Native macOS binary built; no Office/sibling source inputs |
-| Copied executable outside checkout | Alpha.28 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that identical copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
+| Copied executable outside checkout | Alpha.29 release `--version` and `--capabilities` verified from a temporary directory without Office/source files; that identical copied binary also ran the native app-bundle smoke. Malformed-open and argument handling are covered by CLI subprocess tests |
 | Repository references, contract and artwork | `python3 tools/check_repository.py` passed; approved logo embedded directly and archive copy byte-identical |
 | Workflow YAML / whitespace | Ruby YAML parse and `git diff --check` passed |
-| Native rendering | Alpha.28 Delete Character Style at 1366 × 900 / 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha28-native-captures). Earlier evidence keeps its version context |
-| Native macOS interaction | Alpha.28 F10/H/L/X, replacement selection, Tab/Enter deletion, Save and one Undo/Redo passed with complete JSON comparisons |
+| Native rendering | Alpha.29 Modify Character Style with parent selector at 1366 × 900 / 640 × 480 DIP inspected at backing scale 2; [captures](UI_SPEC.md#alpha29-native-captures). Earlier evidence keeps its version context |
+| Native macOS interaction | Alpha.29 F10/H/L/J, parent selection, Save, one Undo/Redo and fresh-process reopen passed with complete JSON comparisons |
 | Synthetic DPI | Actual widgets at 1/1.25/1.5 scale and 960/1366/1920 physical widths; ribbon/group/workspace/status bounds and collapse assertions passed; 27 additional width/scale combinations check individual Home control containment/nonoverlap and title/search/window bounds |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
@@ -952,3 +952,21 @@ Copied executable version/capabilities and all fmt/Clippy/build/test/repository/
 artwork/YAML/whitespace gates pass. Existing invalid-file/failed-save tests pass.
 Native Windows/Word/DPI/physical IME and full accessibility remain unverified.
 No schema, dependency, license, palette or icon change.
+
+## Alpha.29 character-parent validation
+
+2026-10-18, Europe/Kyiv. Three new core tests cover multi-level inheritance,
+explicit false, direct overrides, stable references, pending input, one-operation
+history, self/indirect cycles, missing parents, deletion reparenting and rejection
+of descendant replacements that would create cycles. V8 imports gain no parent;
+v8 rejects parent fields, v9 roundtrips and rejects malformed graphs, and invalid
+saves preserve previous bytes. One new widget test checks parent validation,
+preview, rendered inherited formatting and exact undo/redo. Existing dialog and
+Home geometry/scaling regressions remain enabled.
+
+Normal release native macOS smoke: select Annotation, F10/H/L/J, choose Strong,
+OK and Save. Bold changes from off to on; one Command+Z/Save restores the entire
+serialized document except the intentionally migrated v9 header; Redo/Save exactly
+restores the saved document. Fresh-process reopen displays Strong in the parent
+selector with inherited Bold. Wide and minimum-window captures were inspected.
+Windows/Word comparison, native DPI/IME and complete accessibility remain unverified.

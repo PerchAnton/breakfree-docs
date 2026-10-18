@@ -155,13 +155,30 @@ impl CharacterFormat {
     }
     /// Resolve document-owned character definitions before direct properties.
     pub fn resolve_with(self, base: Style, catalog: &[NamedCharacterStyle]) -> Style {
-        let base = match self.character_style {
-            Some(CharacterStyle::Custom(id)) => catalog
-                .iter()
-                .find(|s| s.id == id)
-                .map_or(base, |s| s.format.resolve(base)),
-            _ => base,
-        };
+        let mut chain = Vec::new();
+        let mut next = self.character_style;
+        while let Some(id) = next {
+            if chain.contains(&id) {
+                break;
+            }
+            chain.push(id);
+            next = match id {
+                CharacterStyle::Custom(key) => {
+                    catalog.iter().find(|s| s.id == key).and_then(|s| s.parent)
+                }
+                _ => None,
+            };
+        }
+        let mut base = base;
+        for id in chain.into_iter().rev() {
+            base = match id {
+                CharacterStyle::Custom(key) => catalog
+                    .iter()
+                    .find(|s| s.id == key)
+                    .map_or(base, |s| s.format.resolve(base)),
+                _ => id.resolve(base),
+            };
+        }
         self.resolve(base)
     }
     /// Legacy files contain resolved values, with no reliable authored inheritance.
@@ -176,11 +193,12 @@ impl CharacterFormat {
     }
 }
 
-/// Document-owned character definitions. No character-parent graph in v8.
+/// Document-owned character definitions with validated parent references.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct NamedCharacterStyle {
     pub id: u32,
+    pub parent: Option<CharacterStyle>,
     pub name: String,
     pub format: CharacterFormat,
 }
@@ -609,6 +627,7 @@ impl Document {
         let mut candidate = self.clone();
         candidate.character_styles.push(NamedCharacterStyle {
             id,
+            parent: None,
             name: name.into(),
             format,
         });
@@ -668,6 +687,11 @@ impl Document {
         }
         let mut candidate = self.clone();
         candidate.character_styles.retain(|s| s.id != id);
+        for definition in &mut candidate.character_styles {
+            if definition.parent == Some(style) {
+                definition.parent = replacement;
+            }
+        }
         for paragraph in &mut candidate.paragraphs {
             for format in &mut paragraph.styles {
                 if format.character_style == Some(style) {
@@ -677,6 +701,26 @@ impl Document {
         }
         candidate.validate()?;
         *self = candidate;
+        Ok(())
+    }
+
+    pub fn set_character_parent(
+        &mut self,
+        style: CharacterStyle,
+        parent: Option<CharacterStyle>,
+    ) -> Result<()> {
+        let CharacterStyle::Custom(id) = style else {
+            return Err("Built-in character styles have fixed parents.".into());
+        };
+        let mut candidate = self.clone();
+        candidate
+            .character_styles
+            .iter_mut()
+            .find(|s| s.id == id)
+            .ok_or("Unknown character style.")?
+            .parent = parent;
+        candidate.validate()?;
+        self.character_styles = candidate.character_styles;
         Ok(())
     }
 
@@ -714,6 +758,26 @@ impl Document {
                 );
             }
             names.push(name);
+            let mut seen = Vec::new();
+            let mut next = Some(CharacterStyle::Custom(s.id));
+            while let Some(current) = next {
+                if seen.contains(&current) {
+                    return Err(
+                        "A character style cannot inherit from itself or its descendants.".into(),
+                    );
+                }
+                seen.push(current);
+                next = match current {
+                    CharacterStyle::Custom(id) => {
+                        self.character_styles
+                            .iter()
+                            .find(|s| s.id == id)
+                            .ok_or("Unknown character parent style.")?
+                            .parent
+                    }
+                    _ => None,
+                };
+            }
             if s.format.character_style.is_some() {
                 return Err(
                     "Character definitions cannot reference another character style.".into(),

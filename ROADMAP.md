@@ -217,8 +217,11 @@ Rust selection is complete; this gate evaluates GUI behavior and visual fidelity
 - [x] Alpha.28: delete custom character styles with explicit replacement/removal,
   all-run and pending-input remapping, one Undo/Redo and native v8 roundtrip.
   Depends on alpha.27; native Windows acceptance remains open.
-- [ ] Next small increment: define and validate character-style parent inheritance
-  with cycle rejection and one Undo/Redo before adding linked styles.
+- [x] Alpha.29: character-style parents, cycle/missing-reference rejection,
+  shared cascade/preview, combined one-step history and native v9 migration.
+  Deletion remaps direct children with cycle validation; depends on alpha.28.
+- [ ] Next small increment: improve Styles management and visibility of inherited
+  versus direct properties; linked styles remain a separate design decision.
 - [ ] Add lists, indentation, tabs, spacing, links and Unicode-aware search/replace.
 - [ ] Add table editing and images with explicit sizing and anchoring semantics.
 - [ ] Add navigation, command search and understandable tool states.

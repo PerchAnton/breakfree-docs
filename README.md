@@ -253,14 +253,18 @@ paragraph font to remove references. All text and future-typing references are
 remapped together; direct overrides and paragraph styles stay. Appearance may
 change. Delete commits one Undo/Redo; Cancel/Escape changes nothing. Cancel starts
 focused, so Enter alone does not delete. Built-ins cannot be deleted.
-Character-style parents remain future work.
+Create/Modify Character Style includes Style based on: a custom style, Strong,
+Emphasis or (Paragraph style). Unset properties follow the parent chain; direct
+formatting wins. Invalid parent cycles disable OK. Name, parent and properties
+commit together in one Undo/Redo. Deleting a parent also remaps its direct children
+to the replacement and rejects a descendant replacement that would create a cycle.
 [Named character styles](docs/adr/0012-named-character-styles.md).
 [Character-style rules](docs/adr/0011-character-style-precedence.md).
 [Style rules](docs/adr/0008-custom-named-styles.md) · [Deletion rules](docs/adr/0009-delete-custom-styles.md).
 
-This build reads native content v1/v2/v3/v4/v5/v6/v7/v8 and **saves v8**. Opening an older file
-does not change it; an explicit save converts it to v8. Earlier builds cannot
-open new v8 saves. Use Save As to keep an older copy. See [format details](docs/NATIVE_FORMAT.md).
+This build reads native content v1/v2/v3/v4/v5/v6/v7/v8/v9 and **saves v9**. Opening an older file
+does not change it; an explicit save converts it to v9. Earlier builds cannot
+open new v9 saves. Use Save As to keep an older copy. See [format details](docs/NATIVE_FORMAT.md).
 File provides New/Open/Save/Save As, unsaved Save/Discard/Cancel and view settings;
 Print is disabled. Navigation and the formatting pane operate on real model ranges.
 The white canvas is continuous; pagination, page numbers and print layout are absent.

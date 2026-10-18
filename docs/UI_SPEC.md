@@ -1128,3 +1128,18 @@ Light theme, English, 100% document zoom, macOS backing scale 2:
 | [Deletion draft](screenshots/rust-delete-character-alpha28-macos-narrow.png) | 640 × 480 DIP | `80948fcc7e20395b4a193dd27a4cd2ee6eec81e69468af280ff3ad629d06b4f2` |
 
 Both inspected captures fit controls and labels without overlap. Native replacement/keyboard deletion/history/save passed. Windows/Word comparison and native DPI/IME acceptance remain open. Palette, original icons and branding are retained; no similarity percentage is claimed.
+
+## Alpha.29 native captures
+
+Create/Modify Character Style adds a 290-DIP **Style based on** selector,
+with paragraph fallback, built-in and custom parents. Invalid graphs disable OK
+and show a validation error. Preview uses the same cascade as document rendering.
+Neutral surfaces, purple focus, original icons and other modal dimensions remain.
+Light theme, English, 100% document zoom, macOS backing scale 2:
+
+| Capture | Window | SHA-256 |
+| --- | --- | --- |
+| [Parent draft](screenshots/rust-character-parent-alpha29-macos.png) | 1366 × 900 DIP | `eb9f70dce99bb9d81778c2da2c771709c8591514345692c076e0fdceecbbfdd6` |
+| [Parent draft](screenshots/rust-character-parent-alpha29-macos-narrow.png) | 640 × 480 DIP | `09b917d1f2f4658d1a30beafad69d9ec1086edbd82a6f57eb21693c719a768b3` |
+
+Both captures were inspected: controls and labels fit without overlap. Native parent selection, Save, one Undo/Redo and fresh-process reopen passed. Matched Word/Windows captures and native 100/125/150% DPI remain unavailable. No similarity percentage is claimed.

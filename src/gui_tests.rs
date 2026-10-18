@@ -5553,3 +5553,59 @@ fn delete_character_unused_bounds_and_guards() {
         assert!(app.session.editor.document.character_style_exists(id));
     }
 }
+
+#[test]
+fn character_parent_dialog_validation_preview_and_history() {
+    let (ctx, mut app) = setup();
+    app.session.editor.replace(0, 0, "Text", "Input").unwrap();
+    app.session.editor.selection = (0, 4);
+    let parent = app
+        .session
+        .editor
+        .create_character_style(
+            "Parent",
+            CharacterFormat {
+                italic: Some(true),
+                ..Default::default()
+            },
+            false,
+        )
+        .unwrap();
+    let child = app
+        .session
+        .editor
+        .create_character_style("Child", CharacterFormat::default(), true)
+        .unwrap();
+    app.sync_view();
+    let before = app.session.editor.document.clone();
+    app.execute(Action::ModifyCharacterStyle, &ctx);
+    app.style_dialog.as_mut().unwrap().character_parent = Some(child);
+    frame(&ctx, &mut app, vec![], [640., 480.], 1.);
+    click_region_at(&ctx, &mut app, "style-dialog-ok", [640., 480.]);
+    assert!(app.style_dialog.is_some());
+    app.style_dialog.as_mut().unwrap().character_parent = Some(parent);
+    frame(&ctx, &mut app, vec![], [640., 480.], 1.);
+    assert!(
+        app.regions
+            .iter()
+            .any(|r| r.name == "style-dialog-character-parent")
+    );
+    click_region_at(&ctx, &mut app, "style-dialog-ok", [640., 480.]);
+    assert!(app.style_dialog.is_none());
+    let d = &app.session.editor.document;
+    let galley = layout::galley(
+        &ctx,
+        d,
+        &d.text(),
+        app.session.editor.typing_style,
+        0,
+        500.,
+        11.,
+    );
+    assert!(galley.job.sections[0].format.italics);
+    let after = app.session.editor.document.clone();
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.document, before);
+    app.execute(Action::Redo, &ctx);
+    assert_eq!(app.session.editor.document, after);
+}

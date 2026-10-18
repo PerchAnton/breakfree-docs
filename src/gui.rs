@@ -2852,17 +2852,19 @@ impl DocsApp {
                 StyleOutcome::Cancel => self.sync_view(),
                 StyleOutcome::Apply(definition) => {
                     let result = if let Some(id) = dialog.character_id {
-                        self.session.editor.update_character_style(
+                        self.session.editor.update_character_style_with_parent(
                             id,
                             &dialog.name,
                             definition.character,
+                            dialog.character_parent,
                         )
                     } else if dialog.character {
                         self.session
                             .editor
-                            .create_character_style(
+                            .create_character_style_with_parent(
                                 &dialog.name,
                                 definition.character,
+                                dialog.character_parent,
                                 dialog.apply,
                             )
                             .map(|_| ())

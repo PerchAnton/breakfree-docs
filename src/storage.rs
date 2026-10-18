@@ -8,7 +8,7 @@ use std::{
 };
 
 pub const FORMAT_ID: &str = "breakfree.docs.native";
-pub const CONTENT_VERSION: u32 = 8;
+pub const CONTENT_VERSION: u32 = 9;
 pub const MAX_FILE_BYTES: usize = 16 * 1024 * 1024;
 
 #[derive(Serialize, Deserialize)]
@@ -130,11 +130,29 @@ struct RunV7 {
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct NativeV8 {
+struct NativeV9 {
     format: String,
     content_version: u32,
     style_catalog: StyleCatalog,
     character_styles: Vec<NamedCharacterStyle>,
+    paragraphs: Vec<ParagraphV7>,
+}
+
+// Frozen v8 rejects parent fields instead of silently importing newer semantics.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CharacterStyleV8 {
+    id: u32,
+    name: String,
+    format: CharacterFormat,
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NativeV8 {
+    format: String,
+    content_version: u32,
+    style_catalog: StyleCatalog,
+    character_styles: Vec<CharacterStyleV8>,
     paragraphs: Vec<ParagraphV7>,
 }
 
@@ -207,7 +225,7 @@ pub fn encode(document: &Document) -> Result<Vec<u8>> {
             }
         })
         .collect();
-    let mut bytes = serde_json::to_vec_pretty(&NativeV8 {
+    let mut bytes = serde_json::to_vec_pretty(&NativeV9 {
         format: FORMAT_ID.into(),
         content_version: CONTENT_VERSION,
         style_catalog: document.style_catalog.clone(),
@@ -330,14 +348,29 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
                 .map_err(|e| format!("Invalid native v6 document: {e}"))?;
             return decode_styled(file.paragraphs, file.style_catalog);
         }
-        7 | CONTENT_VERSION => {
+        7 | 8 | CONTENT_VERSION => {
             let (paragraphs, catalog, character_styles) = if file.content_version == 7 {
                 let file: NativeV7 = serde_json::from_slice(bytes)
                     .map_err(|e| format!("Invalid native v7 document: {e}"))?;
                 (file.paragraphs, file.style_catalog, Vec::new())
-            } else {
+            } else if file.content_version == 8 {
                 let file: NativeV8 = serde_json::from_slice(bytes)
                     .map_err(|e| format!("Invalid native v8 document: {e}"))?;
+                let _ = (&file.format, file.content_version);
+                let styles = file
+                    .character_styles
+                    .into_iter()
+                    .map(|s| NamedCharacterStyle {
+                        id: s.id,
+                        name: s.name,
+                        format: s.format,
+                        parent: None,
+                    })
+                    .collect();
+                (file.paragraphs, file.style_catalog, styles)
+            } else {
+                let file: NativeV9 = serde_json::from_slice(bytes)
+                    .map_err(|e| format!("Invalid native v9 document: {e}"))?;
                 (file.paragraphs, file.style_catalog, file.character_styles)
             };
             let paragraphs = paragraphs

@@ -138,6 +138,7 @@ fn invalid_names_references_and_catalog_limits_preserve_history() {
     let mut exhausted = Document::default();
     exhausted.character_styles.push(NamedCharacterStyle {
         id: u32::MAX,
+        parent: None,
         name: "Last".into(),
         format: format(),
     });
@@ -177,7 +178,7 @@ fn native_v8_validation_legacy_reading_and_failed_writes_are_lossless() {
     e.create_character_style("Accent", format(), true).unwrap();
     let bytes = storage::encode(&e.document).unwrap();
     let value: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
-    assert_eq!(value["content_version"], 8);
+    assert_eq!(value["content_version"], 9);
     for (pointer, bad) in [
         ("/character_styles/0/id", serde_json::json!(0)),
         ("/character_styles/0/name", serde_json::json!("Strong")),
@@ -482,4 +483,137 @@ fn delete_character_rejects_invalid_replacements_and_preserves_redo() {
     );
     e.undo();
     assert_eq!(e.document, before);
+}
+
+#[test]
+fn character_parent_cascade_changes_descendants_and_undoes_exactly() {
+    let mut e = Editor::default();
+    e.replace(0, 0, "English e\u{301}\nУкраїна Русский 🙂", "Input")
+        .unwrap();
+    let parent = e
+        .create_character_style_with_parent("Parent", format(), Some(CharacterStyle::Strong), false)
+        .unwrap();
+    e.selection = (0, e.document.character_count());
+    let child = e
+        .create_character_style_with_parent(
+            "Child",
+            CharacterFormat {
+                italic: Some(false),
+                ..Default::default()
+            },
+            Some(parent),
+            true,
+        )
+        .unwrap();
+    let d = &e.document;
+    let p = &d.paragraphs[0];
+    let base = d.style_catalog.resolve(p.paragraph_style).character;
+    let resolved = p.styles[0].resolve_with(base, &d.character_styles);
+    assert!(!resolved.bold && !resolved.italic && resolved.underline);
+    assert_eq!(resolved.font_size.to_string(), "24");
+    let before = e.document.clone();
+    let n = e.undo_stack.len();
+    let typing = e.typing_style;
+    e.update_character_style_with_parent(
+        parent,
+        "Renamed",
+        CharacterFormat {
+            underline: Some(false),
+            ..Default::default()
+        },
+        Some(CharacterStyle::Strong),
+    )
+    .unwrap();
+    let after = e.document.clone();
+    assert_eq!(after.paragraphs, before.paragraphs);
+    assert_eq!(e.undo_stack.len(), n + 1);
+    assert_eq!(e.typing_style, typing);
+    let resolved = after.paragraphs[0].styles[0].resolve_with(base, &after.character_styles);
+    assert!(resolved.bold && !resolved.italic && !resolved.underline);
+    e.undo();
+    assert_eq!(e.document, before);
+    e.redo();
+    assert_eq!(e.document, after);
+    assert_eq!(
+        storage::decode(&storage::encode(&after).unwrap()).unwrap(),
+        after
+    );
+    assert_eq!(e.selected_character_style(), Some(Some(child)));
+}
+
+#[test]
+fn parent_cycles_missing_ids_and_deletion_are_transactional() {
+    let mut e = Editor::default();
+    let a = e.create_character_style("A", format(), false).unwrap();
+    let b = e
+        .create_character_style_with_parent("B", CharacterFormat::default(), Some(a), false)
+        .unwrap();
+    let c = e
+        .create_character_style_with_parent("C", CharacterFormat::default(), Some(b), false)
+        .unwrap();
+    e.replace(0, 0, "x", "Input").unwrap();
+    e.undo();
+    let before = e.document.clone();
+    let n = e.undo_stack.len();
+    for parent in [a, b, c, CharacterStyle::Custom(999)] {
+        assert!(
+            e.update_character_style_with_parent(a, "Changed", format(), Some(parent))
+                .is_err()
+        );
+        assert_eq!(e.document, before);
+        assert_eq!(e.undo_stack.len(), n);
+        assert_eq!(e.redo_stack.len(), 1);
+    }
+    assert!(e.delete_character_style(a, Some(c)).is_err());
+    assert_eq!(e.document, before);
+    e.delete_character_style(a, Some(CharacterStyle::Emphasis))
+        .unwrap();
+    assert_eq!(
+        e.document.character_styles[0].parent,
+        Some(CharacterStyle::Emphasis)
+    );
+    e.undo();
+    assert_eq!(e.document, before);
+    e.delete_character_style(a, None).unwrap();
+    assert_eq!(e.document.character_styles[0].parent, None);
+}
+
+#[test]
+fn native_parent_migration_strict_v8_and_invalid_v9() {
+    let old = include_bytes!("../examples/NamedCharacterStyles.bfdoc");
+    let legacy = storage::decode(old).unwrap();
+    assert!(legacy.character_styles.iter().all(|s| s.parent.is_none()));
+    let mut e = Editor::new(legacy);
+    let id = CharacterStyle::Custom(1);
+    e.update_character_style_with_parent(id, "Annotation", format(), Some(CharacterStyle::Strong))
+        .unwrap();
+    let bytes = storage::encode(&e.document).unwrap();
+    let json: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(json["content_version"], 9);
+    for parent in [
+        serde_json::json!({"custom":1}),
+        serde_json::json!({"custom":999}),
+    ] {
+        let mut bad = json.clone();
+        bad["character_styles"][0]["parent"] = parent;
+        assert!(storage::decode(&serde_json::to_vec(&bad).unwrap()).is_err());
+    }
+    let mut bad = json.clone();
+    bad["content_version"] = 8.into();
+    assert!(storage::decode(&serde_json::to_vec(&bad).unwrap()).is_err());
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("parents.bfdoc");
+    storage::save(&e.document, &path).unwrap();
+    assert_eq!(storage::load(&path).unwrap(), e.document);
+    assert!(
+        storage::save_checked(&Document::default(), &path, |at| {
+            if at == storage::SaveStage::Replace {
+                Err("Injected".into())
+            } else {
+                Ok(())
+            }
+        })
+        .is_err()
+    );
+    assert_eq!(std::fs::read(path).unwrap(), bytes);
 }

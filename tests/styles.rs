@@ -201,7 +201,7 @@ fn native_rejects_unknown_styles_and_bad_overrides_legacy_import_keeps_appearanc
     let encoded = storage::encode(&e.document).unwrap();
     let json: serde_json::Value = serde_json::from_slice(&encoded).unwrap();
     for (pointer, value) in [
-        ("/content_version", serde_json::json!(9)),
+        ("/content_version", serde_json::json!(10)),
         ("/format", serde_json::json!("breakfree.sheets.native")),
         ("/paragraphs/0/paragraph_style", serde_json::json!("custom")),
         ("/paragraphs/0/runs/0/direct/bold", serde_json::json!(1)),

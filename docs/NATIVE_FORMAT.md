@@ -1,12 +1,12 @@
 # Native BreakFree Docs document format
 
-Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v8.
+Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v9.
 This is not a DOCX container. Process protocol and file-content versions are independent.
 
 ```json
 {
   "format": "breakfree.docs.native",
-  "content_version": 8,
+  "content_version": 9,
   "character_styles": [],
   "style_catalog": {
     "custom": [],
@@ -72,9 +72,9 @@ Opening performs only in-memory conversion and does not dirty/write the file.
 V3 uses its frozen built-in catalog from [ADR 0006](adr/0006-built-in-paragraph-styles.md);
 it rejects embedded definitions. V4 reads its original three-definition catalog
 with no custom array and preserves its graph. V5 retains its custom catalog. Legacy definitions receive Same style in memory.
-Every explicit save writes v8, even
+Every explicit save writes v9, even
 for an unchanged older document. Use Save As
-to retain the original. **Alpha.24 and earlier cannot open v8 saves.** No downgrade or
+to retain the original. **Alpha.28 and earlier cannot open v9 saves.** No downgrade or
 lossy export is provided. Header/full-schema parsing preserves duplicate rejection.
 
 Empty paragraphs retain their named style. Pending direct formatting at a caret
@@ -156,3 +156,13 @@ Creation/history/typing/replacement preserve semantic IDs and definitions. See
 [ADR 0012](adr/0012-named-character-styles.md).
 
 Alpha.26 property editing preserves character definition IDs/names and every run reference; only optional properties change. No new schema fields or version increment are required.
+
+## Character parents (v9)
+
+V9 character definitions add optional/null `parent`: `strong`, `emphasis` or
+`{ "custom": 1 }`. None inherits the paragraph baseline. All parent references
+must exist and form an acyclic graph, including unused entries. Resolve ancestors,
+then leaf properties, then run direct overrides. Deletion remaps direct child
+parents to its replacement and validates the resulting graph before committing.
+Frozen v8 rejects parent fields; v1–v8 imports have no character parents. No
+inference from appearance. The writer emits v9; earlier builds reject new saves.
