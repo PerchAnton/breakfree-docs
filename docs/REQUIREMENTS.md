@@ -115,3 +115,14 @@ canonical normalization, locale-sensitive folding and fuzzy matching are not
 claimed. Built-in/default-character entries are excluded by Custom. Existing
 style application and context editing retain stable IDs. Native v9, palette and
 icons are unchanged.
+
+## Used styles (alpha.33)
+
+Enable **Used in document** in More styles. This intersects name/category filters
+and includes styles assigned to every paragraph (even empty ones), character
+styles referenced by text, and all transitive parents. Direct formatting does
+not remove a semantic style dependency. Unused descendants/siblings, next-style
+links and pending typing alone do not count. Default paragraph font is shown for
+text without a character style or an empty paragraph. Reset clears all filters.
+Usage is recomputed from the current model, so edits and Undo/Redo update the list;
+filtering itself never modifies content/history/settings. Native v9 is unchanged.

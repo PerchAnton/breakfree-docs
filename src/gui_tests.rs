@@ -5711,3 +5711,37 @@ fn style_filter_empty_scope_and_reset_do_not_change_history() {
     ribbon_key(&ctx, &mut app, Key::Escape, Modifiers::NONE, [640., 480.]);
     assert_eq!(app.session.editor.document, before);
 }
+
+#[test]
+fn used_style_filter_intersects_scope_and_reset_preserves_document() {
+    let (ctx, mut app) = setup();
+    app.session
+        .editor
+        .apply_paragraph_style(0, 0, ParagraphStyle::Heading1)
+        .unwrap();
+    let before = app.session.editor.document.clone();
+    let size = [640., 480.];
+    frame(&ctx, &mut app, vec![], size, 1.);
+    for k in [Key::F10, Key::H, Key::E] {
+        frame(&ctx, &mut app, vec![key(k, false)], size, 1.);
+    }
+    click_region_at(&ctx, &mut app, "style-filter-used", size);
+    frame(&ctx, &mut app, vec![], size, 1.);
+    assert!(app.style_used_only);
+    assert!(app.ribbon_menu_targets.iter().any(|t| matches!(
+        t.kind,
+        TargetKind::Action(Action::Style(ParagraphStyle::Normal))
+    )));
+    assert!(!app.ribbon_menu_targets.iter().any(|t| matches!(
+        t.kind,
+        TargetKind::Action(Action::Style(ParagraphStyle::NoSpacing))
+    )));
+    click_region_at(&ctx, &mut app, "style-filter-reset", size);
+    assert!(!app.style_used_only);
+    assert_eq!(app.session.editor.document, before);
+    app.session.editor.undo();
+    assert_eq!(
+        app.session.editor.selected_paragraph_style(),
+        Some(ParagraphStyle::Normal)
+    );
+}

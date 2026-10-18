@@ -91,8 +91,23 @@ impl eframe::App for Capture {
                     });
                 }
             }
-            if self.frames == 6 {
-                input.events.push(egui::Event::Text("Heading".into()));
+            if self.frames == 6
+                && let Some(region) = self
+                    .app
+                    .regions
+                    .iter()
+                    .find(|r| r.name == "style-filter-used")
+            {
+                let pos = region.rect.center();
+                input.events.push(egui::Event::PointerMoved(pos));
+                for pressed in [true, false] {
+                    input.events.push(egui::Event::PointerButton {
+                        pos,
+                        button: egui::PointerButton::Primary,
+                        pressed,
+                        modifiers: egui::Modifiers::NONE,
+                    });
+                }
             }
         }
         if self.frames == 2 && self.mode.starts_with("navigation") {

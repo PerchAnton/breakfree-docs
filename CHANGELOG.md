@@ -3,6 +3,12 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.33 — 2026-10-18
+
+- Add Used in document filtering, intersected with name/category filters. Include empty-paragraph styles, text references and transitive parent dependencies.
+- Exclude pending typing, next-style links and unused descendants. Default paragraph font appears for unstyled text/empty paragraphs; Reset clears the usage filter too.
+- Keep filtering read-only and session-local, palette/icons and native v9 unchanged. Alpha.32 approved; alpha.33 awaits approval.
+
 ## 0.1.0-alpha.32 — 2026-10-18
 
 - Filter the Styles menu by name and All/Paragraph/Character/Custom scope, with Reset and an empty-result message.

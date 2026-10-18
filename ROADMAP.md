@@ -223,7 +223,8 @@ Rust selection is complete; this gate evaluates GUI behavior and visual fidelity
 - [x] Alpha.30: read-only character-property provenance in Formatting, named inheritance sources, independent mixed values/sources and future-typing inspection.
 - [x] Alpha.31: alignment/line-spacing/space-after provenance, independent mixed values/sources and half-open selection including empty paragraphs; read-only history/native roundtrip tests.
 - [x] Alpha.32: Styles name/scope filtering with reset, empty results, keyboard routing and view-only state.
-- [ ] Next small increment: used-style filtering and style-list management; linked styles and direct paragraph-spacing overrides remain separate design decisions.
+- [x] Alpha.33: Used in document filter with transitive parent closure, empty paragraphs, exact pending/next-style exclusions, Reset and read-only history/roundtrip checks.
+- [ ] Next small increment: distinguish directly used styles from dependency-only parents in the list; linked styles and direct paragraph-spacing overrides remain separate design decisions.
 - [ ] Add lists, indentation, tabs, spacing, links and Unicode-aware search/replace.
 - [ ] Add table editing and images with explicit sizing and anchoring semantics.
 - [ ] Add navigation, command search and understandable tool states.

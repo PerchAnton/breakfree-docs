@@ -251,6 +251,7 @@ pub struct DocsApp {
     font_dialog: Option<FontDialog>,
     style_dialog: Option<StyleDialog>,
     delete_style_dialog: Option<DeleteStyleDialog>,
+    style_used_only: bool,
     style_filter: String,
     style_scope: crate::style_filter::Scope,
     style_context: Option<(ParagraphStyle, egui::Pos2, egui::LayerId)>,
@@ -365,6 +366,7 @@ impl DocsApp {
             font_dialog: None,
             style_dialog: None,
             delete_style_dialog: None,
+            style_used_only: false,
             style_filter: String::new(),
             style_scope: Default::default(),
             style_context: None,
@@ -2014,13 +2016,23 @@ impl DocsApp {
             if clear.clicked() {
                 self.style_filter.clear();
                 self.style_scope = Default::default();
+                self.style_used_only = false;
                 self.ribbon_menu_index = None;
             }
         });
+        let used_toggle = ui.checkbox(&mut self.style_used_only, "Used in document");
+        self.record("style-filter-used", used_toggle.rect);
+        if used_toggle.changed() {
+            self.ribbon_menu_index = None;
+        }
+        used_toggle.on_hover_text("Document text and empty paragraphs, plus parent styles. Excludes future typing and next-style links.");
+        let used = self
+            .style_used_only
+            .then(|| crate::style_filter::UsedStyles::collect(&self.session.editor.document));
         let mut matches = 0;
         egui::ScrollArea::vertical()
             .id_salt("style-list")
-            .max_height(150.)
+            .max_height(125.)
             .show(ui, |ui| {
                 for style in self.session.editor.document.style_catalog.ids() {
                     let name = self
@@ -2035,7 +2047,8 @@ impl DocsApp {
                         &name,
                         false,
                         matches!(style, ParagraphStyle::Custom(_)),
-                    ) {
+                    ) && used.as_ref().is_none_or(|u| u.paragraphs.contains(&style))
+                    {
                         matches += 1;
                         self.command(ui, &name, Action::Style(style), vec2(210., 27.));
                     }
@@ -2051,6 +2064,7 @@ impl DocsApp {
                     if self
                         .style_scope
                         .matches(&self.style_filter, action.label(), true, false)
+                        && used.as_ref().is_none_or(|u| u.character(style))
                     {
                         matches += 1;
                         self.command(ui, action.label(), action, vec2(210., 27.));
@@ -2061,6 +2075,9 @@ impl DocsApp {
                     if !self
                         .style_scope
                         .matches(&self.style_filter, &style.name, true, true)
+                        || used
+                            .as_ref()
+                            .is_some_and(|u| !u.character(Some(CharacterStyle::Custom(style.id))))
                     {
                         continue;
                     }

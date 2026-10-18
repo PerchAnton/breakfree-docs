@@ -8,17 +8,17 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.32**. Historical evidence retains its scope.
+Current local checkpoint: **0.1.0-alpha.33**. Historical evidence retains its scope.
 
 | Local check | Observed result |
 | --- | --- |
-| Full / no-default-features tests | 224 / 113 passed; one filter core test and two actual-widget regressions added |
+| Full / no-default-features tests | 227 / 115 passed; two used-style core tests and one actual-widget regression added |
 | fmt / Clippy | Passed; normal/capture all-target checks with warnings denied |
 | Release builds | Native binary and capture harness passed without Office/sibling inputs |
-| CLI | Version/capabilities report alpha.32; existing CLI subprocess tests pass |
+| CLI | Version/capabilities report alpha.33; existing CLI subprocess tests pass |
 | Repository/artwork/YAML/whitespace | Passed |
-| Native rendering | Filtered Styles menu at 1366 × 900 / 640 × 480 DIP, backing scale 2, inspected |
-| Native macOS input | More styles, F3, Heading query, Down/Enter, one Undo, Reset, Paragraph/Character/Custom scope and empty message verified; filter changes preserve clean document and redo |
+| Native rendering | Used Styles menu at 1366 × 900 / 640 × 480 DIP, backing scale 2, inspected |
+| Native macOS input | Ordinary app launched and Heading 1 applied; menu input verification incomplete after automation lost the window. Actual-widget tests cover used filtering/reset/history |
 | Existing regressions | Home geometry, minimum-width 64-style keyboard scrolling, history, storage and synthetic scaling checks retained |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
@@ -1018,3 +1018,20 @@ sent paste before the popup was ready; it was undone, then each observed focus/s
 was checked before proceeding. Two native captures were inspected. Windows/Word,
 native Windows DPI/IME and full accessibility remain unverified. No schema change;
 this iteration does not claim a new native Save/Open check.
+
+## Alpha.33 used-style validation
+
+227 full / 115 core-only tests pass. New core cases cover paragraph and character
+parent chains, unused siblings, next-style exclusion, direct overrides, empty
+paragraphs, pending typing, undo/redo and v9 save/reopen. The actual-widget test
+checks the used checkbox, inherited Normal, excluded No Spacing, Reset and
+unchanged document/history. Normal/capture Clippy, fmt, release builds and
+repository/artwork/YAML/whitespace checks pass.
+
+Two native capture-harness images were inspected at 1366 × 900 and 640 × 480 DIP.
+The ordinary macOS binary launched and applied Heading 1; subsequent menu actions
+did not produce the expected popup and automation reported noWindowsAvailable.
+Native used-filter keyboard acceptance is therefore incomplete; the harness and
+CPU widget checks are not a substitute. No new native Save/Open claim is made.
+Windows 100%/125%/150%, matched Word comparison, physical IME and full accessibility
+remain unverified. Protocol/settings v1 and document writer v9 are unchanged.

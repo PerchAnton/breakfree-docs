@@ -1195,3 +1195,20 @@ Light theme, English, 100% document zoom, macOS backing scale 2:
 | [Filtered styles](screenshots/rust-style-filter-alpha32-macos-narrow.png) | 640 × 480 DIP | `29a6e3a5e0607e4e75eb201f312e24ccf179ae951e8d9576620408eb7ed8241d` |
 
 Both captures inspected; controls fit, with the compact overflow popup moved upward by the toolkit. Native keyboard/filter/reset/category checks passed. Windows/Word side-by-side and native DPI remain unavailable; no similarity percentage is claimed.
+
+## Alpha.33 used styles
+
+The Styles menu adds a Used in document checkbox below scope/Reset. It intersects
+name and category filters, retaining assigned paragraph/character styles and all
+parents. Reset clears all three filters. The scrollable list is now 125 DIP high
+to keep lower management commands inside the minimum-height popup. Palette and
+icons are unchanged. Partial bottom rows are reached by scrolling.
+
+Light theme, English, 100% document zoom, macOS backing scale 2:
+
+| Capture | Window | SHA-256 |
+| --- | --- | --- |
+| [Used styles](screenshots/rust-used-styles-alpha33-macos.png) | 1366 × 900 DIP | `25242693c3c88630eb9ed47d14429249bd8daee0b1f715fe69b87e2029f97098` |
+| [Used styles](screenshots/rust-used-styles-alpha33-macos-narrow.png) | 640 × 480 DIP | `c1d8a830a445d319bea2232c9e9c84ad4ba779700b2949b3588aaab0e0266b20` |
+
+Both harness captures inspected: checkbox and commands fit; narrow popup relocates upward. Ordinary native menu acceptance remains incomplete after automation lost its window. No matched Word/Windows DPI comparison was available.
