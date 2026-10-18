@@ -3,6 +3,12 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.50 — 2026-10-18
+
+- Add Reset indents to style to the horizontal ruler context menu. Ctrl+Shift+F8, then Delete opens the same reset preview; Enter applies, Escape cancels. Tab also commits before moving to the next marker, consistent with ruler editing.
+- Remove direct left, right and first-line/hanging overrides from the selected paragraphs in one Undo/Redo operation. Each paragraph inherits its own style chain; spacing, alignment, text and style references remain unchanged.
+- Preserve half-open selections, no-op redo history, stale-operation protection, the two-axis ruler design, palette/icons and native v13. Add core and actual-widget reset/history/persistence checks. Alpha.49 approved; alpha.50 awaits approval. Windows remains deferred.
+
 ## 0.1.0-alpha.49 — 2026-10-18
 
 - Refine the horizontal ruler to a 24-DIP neutral scale with compact indent markers, centered inch labels, quarter/eighth-inch ticks and shaded margins. Keep it visible during vertical scrolling.

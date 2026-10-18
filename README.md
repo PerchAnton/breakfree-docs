@@ -676,3 +676,14 @@ Exact values appear in marker tooltips and during keyboard/drag editing without 
 permanent readout above the document. Keyboard shortcuts and one-step Undo/Redo are
 unchanged. Vertical ruler margins are read-only; tab stops, editable page margins
 and pagination remain future work. Windows/reference matching remains unverified.
+
+
+## Reset ruler indents (alpha.50)
+
+Right-click the horizontal ruler and choose **Reset indents to style**. Alternatively,
+press Ctrl+Shift+F8 to enter the markers, then Delete. The preview removes direct
+left/right and first-line/hanging overrides from the selected paragraphs; each
+paragraph inherits its own style. Enter applies in one Undo/Redo step; Escape or F6
+cancels. Tab applies before changing markers. Arrow nudging is paused during reset
+preview. Spacing and alignment remain unchanged. A reset with no overrides creates
+no history entry and preserves redo. The vertical ruler remains read-only.

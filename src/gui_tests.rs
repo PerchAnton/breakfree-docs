@@ -7548,3 +7548,123 @@ fn ruler_vertical_tracks_long_canvas_while_horizontal_remains_visible() {
     assert!(h.top() > 0. && h.bottom() < 400.);
     assert_eq!(app.session.editor.document.text(), text);
 }
+
+#[test]
+fn ruler_reset_keyboard_preview_cancel_commit_and_history() {
+    let (ctx, mut app) = setup();
+    app.session.editor.document.paragraphs[0]
+        .spacing
+        .left_indent_half_points = Some(80);
+    app.session
+        .editor
+        .document
+        .style_catalog
+        .normal
+        .left_indent_half_points = Some(25);
+    let before = app.session.editor.document.clone();
+    let n = app.session.editor.undo_stack.len();
+    for cancel in [true, false] {
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                ruler_key(Key::F8, Modifiers::CTRL | Modifiers::SHIFT),
+                key(Key::Delete, false),
+            ],
+            [1366., 900.],
+            1.,
+        );
+        assert!(app.ruler_drag.as_ref().unwrap().draft.resetting);
+        assert_eq!(
+            app.ruler_drag.as_ref().unwrap().draft.preview.paragraphs[0]
+                .spacing
+                .left_indent_half_points,
+            None
+        );
+        assert_eq!(app.session.editor.document, before);
+        frame(
+            &ctx,
+            &mut app,
+            vec![key(if cancel { Key::Escape } else { Key::Enter }, false)],
+            [1366., 900.],
+            1.,
+        );
+        assert!(app.ruler_drag.is_none());
+        if cancel {
+            assert_eq!(app.session.editor.document, before);
+            assert_eq!(app.session.editor.undo_stack.len(), n);
+        }
+    }
+    assert_eq!(app.session.editor.undo_stack.len(), n + 1);
+    assert_eq!(
+        app.session.editor.document.paragraphs[0]
+            .spacing
+            .left_indent_half_points,
+        None
+    );
+    frame(&ctx, &mut app, vec![key(Key::F6, false)], [1366., 900.], 1.);
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.document, before);
+    app.execute(Action::Redo, &ctx);
+    assert_eq!(
+        app.session.editor.document.paragraphs[0]
+            .spacing
+            .left_indent_half_points,
+        None
+    );
+}
+
+#[test]
+fn ruler_context_menu_reset_starts_cancellable_preview() {
+    let (ctx, mut app) = setup();
+    app.session.editor.document.paragraphs[0]
+        .spacing
+        .left_indent_half_points = Some(80);
+    let before = app.session.editor.document.clone();
+    let rect = app.regions.iter().find(|r| r.name == "ruler").unwrap().rect;
+    let pos = rect.center();
+    let event = |pressed| egui::Event::PointerButton {
+        pos,
+        button: egui::PointerButton::Secondary,
+        pressed,
+        modifiers: Modifiers::NONE,
+    };
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::PointerMoved(pos), event(true), event(false)],
+        [1366., 900.],
+        1.,
+    );
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    let pos = app
+        .regions
+        .iter()
+        .find(|r| r.name == "ruler-reset")
+        .unwrap()
+        .rect
+        .center();
+    frame(
+        &ctx,
+        &mut app,
+        vec![
+            egui::Event::PointerMoved(pos),
+            ruler_pointer(pos, true),
+            ruler_pointer(pos, false),
+        ],
+        [1366., 900.],
+        1.,
+    );
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    assert!(app.ruler_drag.as_ref().unwrap().draft.resetting);
+    assert_eq!(app.session.editor.document, before);
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Escape, false)],
+        [1366., 900.],
+        1.,
+    );
+    assert!(app.ruler_drag.is_none());
+    assert_eq!(app.session.editor.document, before);
+}

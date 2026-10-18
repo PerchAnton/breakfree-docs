@@ -8,16 +8,16 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.49**. Historical evidence retains its scope.
+Current local checkpoint: **0.1.0-alpha.50**. Historical evidence retains its scope.
 
 | Local check | Observed result |
 | --- | --- |
-| Full / no-default-features tests | 282 / 141 passed; two-axis ruler alignment, visibility, scrolling and contextual values added |
+| Full / no-default-features tests | 286 / 143 passed; ruler reset inheritance, preview/history/persistence and context-menu/keyboard checks added |
 | fmt / Clippy | Passed; normal/capture all-target checks with warnings denied |
 | Release builds | Native binary and capture harness passed without Office/sibling inputs |
-| CLI | Version/capabilities report alpha.49; existing CLI subprocess tests pass |
+| CLI | Version/capabilities report alpha.50; existing CLI subprocess tests pass |
 | Repository/artwork/YAML/whitespace | Passed |
-| Native rendering | Two-axis rulers inspected at 1366 × 900 / 640 × 480 DIP |
+| Native rendering | Ruler reset preview inspected at 1366 × 900 / 640 × 480 DIP |
 | Native input | Not repeated this iteration; previous automation lost its window. CPU widget events are separate evidence |
 | Existing regressions | Home geometry, minimum-width 64-style keyboard scrolling, history, storage and synthetic scaling checks retained |
 
@@ -1340,3 +1340,23 @@ Windows display scaling/input and matched Word 2024 acceptance remain deferred.
 The vertical axis is a read-only continuous-canvas scale, not page layout. Format
 v13 and protocol/settings v1 are unchanged. Alpha.48 code/journal push and PR CI
 succeeded; alpha.49 server CI is separate from local results. No merge/tag/release.
+
+
+## Alpha.50 ruler reset validation
+
+2026-10-18, macOS arm64 / Rust 1.99.1: **286 full tests / 143 without GUI** passed.
+fmt, normal/capture all-target Clippy with warnings denied, release/capture builds,
+repository/artwork/YAML/whitespace checks and copied-binary isolated CLI identity
+and capabilities passed. No Office or sibling repository is needed at runtime.
+
+Four new tests cover distinct paragraph styles and parent inheritance, removal of
+only indent overrides, preservation of spacing and half-open selection boundaries,
+preview isolation, cancel/no-op redo preservation, stale selection rejection,
+one-entry Undo/Redo and save/reopen. Actual-widget tests exercise context-menu
+reset/cancel and keyboard reset/accept/history. Existing ruler input, zoom/DPI,
+scrolling, Unicode and persistence regressions remain passing.
+
+Two native capture fixtures were inspected at 1366 × 900 and 640 × 480 DIP.
+These establish rendering only; ordinary OS input, native Windows scaling and
+matched Word reference validation were not performed. Native v13 and process/settings
+v1 are unchanged. Server CI is reported separately in PROJECT_LOG. No merge/tag/release.

@@ -20,7 +20,7 @@ impl eframe::App for Capture {
     fn raw_input_hook(&mut self, _ctx: &egui::Context, input: &mut egui::RawInput) {
         // Deterministic render fixture, including focus; this does not prove OS input.
         if self.mode.starts_with("keytips")
-            || self.mode == "ruler-keyboard"
+            || matches!(self.mode.as_str(), "ruler-keyboard" | "ruler-reset")
             || self.mode == "temporary"
             || self.mode == "replace-all"
             || self.mode.starts_with("styles")
@@ -29,14 +29,20 @@ impl eframe::App for Capture {
         {
             input.focused = true;
         }
-        if self.mode == "ruler-keyboard" && matches!(self.frames, 3 | 5) {
+        if matches!(self.mode.as_str(), "ruler-keyboard" | "ruler-reset")
+            && matches!(self.frames, 3 | 5)
+        {
             let (key, modifiers) = if self.frames == 3 {
                 (
                     egui::Key::F8,
                     egui::Modifiers::CTRL | egui::Modifiers::SHIFT,
                 )
             } else {
-                (egui::Key::ArrowRight, egui::Modifiers::SHIFT)
+                if self.mode == "ruler-reset" {
+                    (egui::Key::Delete, egui::Modifiers::NONE)
+                } else {
+                    (egui::Key::ArrowRight, egui::Modifiers::SHIFT)
+                }
             };
             for pressed in [true, false] {
                 input.events.push(egui::Event::Key {
@@ -320,6 +326,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "indent-layout",
             "ruler-keyboard",
             "ruler-mixed",
+            "ruler-reset",
             "collapsed",
             "temporary",
             "view",
@@ -339,7 +346,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ]
         .contains(&args[2].as_str())
     {
-        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|styles-modify|styles-following|styles-create|styles-rename|styles-delete|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|paragraph|indent-layout|ruler-keyboard|ruler-mixed|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
+        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|styles-modify|styles-following|styles-create|styles-rename|styles-delete|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|paragraph|indent-layout|ruler-keyboard|ruler-mixed|ruler-reset|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
     }
     let path = std::env::var("BREAKFREE_CAPTURE_TO")
         .map_err(|_| "Set BREAKFREE_CAPTURE_TO to an output PNG path")?;
@@ -378,7 +385,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     let session = if matches!(
         args[2].as_str(),
-        "indent-layout" | "ruler-keyboard" | "ruler-mixed"
+        "indent-layout" | "ruler-keyboard" | "ruler-mixed" | "ruler-reset"
     ) {
         let mut session = Session::default();
         let sample =
@@ -519,7 +526,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "styles-create" => app.execute(Action::CreateStyle, &cc.egui_ctx),
                 "styles-delete" => app.execute(Action::DeleteStyle, &cc.egui_ctx),
                 "formatting" => app.execute(Action::Formatting, &cc.egui_ctx),
-                "indent-layout" | "ruler-keyboard" | "ruler-mixed" => {
+                "indent-layout" | "ruler-keyboard" | "ruler-mixed" | "ruler-reset" => {
                     if mode == "ruler-mixed" {
                         app.execute(Action::SelectAll, &cc.egui_ctx);
                     }

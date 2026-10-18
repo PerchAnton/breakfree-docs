@@ -184,6 +184,7 @@ pub struct Draft {
     pub handle: Handle,
     pub style: ResolvedParagraphStyle,
     patch: ParagraphGeometryPatch,
+    pub resetting: bool,
 }
 impl Draft {
     pub fn new(editor: &Editor, handle: Handle) -> Result<Self> {
@@ -197,7 +198,23 @@ impl Draft {
                 .document
                 .resolved_paragraph(&editor.document.paragraphs[index]),
             patch: ParagraphGeometryPatch::default(),
+            resetting: false,
         })
+    }
+    /// Remove only direct indent overrides; each paragraph keeps its own style chain.
+    pub fn reset_indents(&mut self) -> Result<()> {
+        let patch = ParagraphGeometryPatch {
+            left: Some(None),
+            right: Some(None),
+            first_line: Some(None),
+            ..Default::default()
+        };
+        let mut preview = Editor::new(self.original.clone());
+        preview.set_paragraph_geometry(self.selection.0, self.selection.1, patch)?;
+        self.preview = preview.document;
+        self.patch = patch;
+        self.resetting = true;
+        Ok(())
     }
     /// Absolute displacement from press, in half points; rounding never accumulates.
     pub fn move_by(&mut self, delta: f32) -> Result<()> {
@@ -258,7 +275,12 @@ impl Draft {
         if self.preview != self.original
             && let Some(operation) = editor.undo_stack.last_mut()
         {
-            operation.label = "Ruler indent".into();
+            operation.label = if self.resetting {
+                "Reset ruler indents"
+            } else {
+                "Ruler indent"
+            }
+            .into();
         }
         Ok(())
     }
@@ -274,6 +296,86 @@ mod tests {
         e.selection = (0, e.document.text().chars().count());
         e.undo_stack.clear();
         e
+    }
+    #[test]
+    fn reset_inherits_each_style_preserves_spacing_and_roundtrips_one_history_entry() {
+        let mut e = editor();
+        e.document.style_catalog.normal.left_indent_half_points = Some(37);
+        e.document.style_catalog.heading1.right_indent_half_points = Some(21);
+        e.document.paragraphs[0].paragraph_style = crate::model::ParagraphStyle::Heading1;
+        for p in &mut e.document.paragraphs {
+            p.spacing.left_indent_half_points = Some(0);
+            p.spacing.right_indent_half_points = Some(88);
+            p.spacing.first_line_half_points = Some(-72);
+            p.spacing.space_before_half_points = Some(11);
+        }
+        e.selection = (
+            0,
+            e.document.paragraphs[..2]
+                .iter()
+                .map(|p| p.text.chars().count() + 1)
+                .sum(),
+        );
+        let before = e.document.clone();
+        let mut draft = Draft::new(&e, Handle::Left).unwrap();
+        draft.reset_indents().unwrap();
+        assert_eq!(e.document, before);
+        for p in &draft.preview.paragraphs[..2] {
+            assert_eq!(p.spacing.left_indent_half_points, None);
+            assert_eq!(p.spacing.right_indent_half_points, None);
+            assert_eq!(p.spacing.first_line_half_points, None);
+            assert_eq!(p.spacing.space_before_half_points, Some(11));
+        }
+        assert_eq!(draft.preview.paragraphs[2], before.paragraphs[2]);
+        assert_eq!(
+            draft
+                .preview
+                .resolved_paragraph(&draft.preview.paragraphs[0])
+                .right_indent_half_points,
+            21
+        );
+        assert_eq!(
+            draft
+                .preview
+                .resolved_paragraph(&draft.preview.paragraphs[1])
+                .left_indent_half_points,
+            37
+        );
+        let after = draft.preview.clone();
+        draft.commit(&mut e).unwrap();
+        assert_eq!(e.undo_stack.len(), 1);
+        assert_eq!(e.undo_stack[0].label, "Reset ruler indents");
+        e.undo();
+        assert_eq!(e.document, before);
+        e.redo();
+        assert_eq!(e.document, after);
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("reset.bfdoc");
+        crate::storage::save(&e.document, &path).unwrap();
+        assert_eq!(crate::storage::load(&path).unwrap(), after);
+    }
+    #[test]
+    fn reset_cancel_and_noop_preserve_redo_and_stale_reset_is_rejected() {
+        let mut e = editor();
+        let mut edit = Draft::new(&e, Handle::Left).unwrap();
+        edit.move_by(40.).unwrap();
+        edit.commit(&mut e).unwrap();
+        e.undo();
+        let before = e.document.clone();
+        let mut reset = Draft::new(&e, Handle::Left).unwrap();
+        reset.reset_indents().unwrap();
+        drop(reset);
+        assert_eq!(e.document, before);
+        assert_eq!(e.redo_stack.len(), 1);
+        let mut reset = Draft::new(&e, Handle::Left).unwrap();
+        reset.reset_indents().unwrap();
+        reset.commit(&mut e).unwrap();
+        assert_eq!(e.redo_stack.len(), 1);
+        assert!(e.undo_stack.is_empty());
+        let mut reset = Draft::new(&e, Handle::Left).unwrap();
+        reset.reset_indents().unwrap();
+        e.selection = (0, 0);
+        assert!(reset.commit(&mut e).is_err());
     }
     #[test]
     fn draft_preview_commit_history_and_reopen() {

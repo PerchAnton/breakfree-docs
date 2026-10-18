@@ -52,6 +52,7 @@ impl DocsApp {
         // Keep the horizontal ruler at the viewport top while the canvas scrolls.
         let rect = rect.translate(vec2(0., (ui.clip_rect().top() - rect.top()).max(0.)));
         self.record("ruler", rect);
+        let menu_response = ui.interact(rect, Id::new("ruler-menu"), Sense::click());
         if let Some(drag) = &mut self.ruler_drag
             && drag.rect == Rect::NOTHING
         {
@@ -228,7 +229,7 @@ impl DocsApp {
                     format!("{label}. {}", summary.marker_details(handle)),
                 )
             });
-            response.on_hover_text(format!("{label} — drag to preview; release to apply; Esc cancels. Half-point steps. Uses the first selected paragraph; applies to selected paragraphs. Ctrl+Shift+F8 enters keyboard control; Tab changes marker, arrows nudge 0.5 pt, Shift+arrows 5 pt, Enter applies, Esc cancels. {}", summary.marker_details(handle)));
+            response.on_hover_text(format!("{label} — drag to preview; release to apply; Esc cancels. Half-point steps. Uses the first selected paragraph; applies to selected paragraphs. Ctrl+Shift+F8 enters keyboard control; Tab changes marker, arrows nudge 0.5 pt, Shift+arrows 5 pt, Enter applies, Esc cancels, Delete previews reset to style indents. {}", summary.marker_details(handle)));
         }
         if let Some(drag) = &mut self.ruler_drag
             && !drag.keyboard
@@ -265,6 +266,11 @@ impl DocsApp {
                 .or_else(|| self.ruler_drag.as_ref().map(|d| d.draft.handle))
                 .map(marker_name)
                 .unwrap_or("Indent");
+            let hint = if self.ruler_drag.as_ref().is_some_and(|d| d.draft.resetting) {
+                "Reset to style"
+            } else {
+                hint
+            };
             let origin = pos2(
                 rect.left().max(ui.clip_rect().left() + 4.),
                 rect.bottom() + 5.,
@@ -291,6 +297,40 @@ impl DocsApp {
                 egui::StrokeKind::Inside,
             );
             painter.galley(origin + vec2(6., 4.), galley, INK);
+        }
+        menu_response.on_hover_text("Right-click for Reset indents to style. Ctrl+Shift+F8 enters markers; Delete previews reset; Enter applies; Esc cancels.")
+            .context_menu(|ui| {
+                let reset = ui.add_enabled(enabled && self.ruler_drag.is_none(), Button::new("Reset indents to style"));
+                self.record("ruler-reset", reset.rect);
+                if reset.clicked() {
+                    self.start_ruler_reset(ui.ctx());
+                    ui.close();
+                }
+            });
+    }
+
+    fn start_ruler_reset(&mut self, ctx: &egui::Context) {
+        let handle = self.ruler_key_focus.unwrap_or(Handle::Left);
+        match Draft::new(&self.session.editor, handle).and_then(|mut draft| {
+            draft.reset_indents()?;
+            Ok(draft)
+        }) {
+            Ok(draft) => {
+                self.ruler_drag = Some(Drag {
+                    draft,
+                    origin: 0.,
+                    unit: 1.,
+                    rect: Rect::NOTHING,
+                    zoom: self.zoom / 100.,
+                    screen: ctx.content_rect(),
+                    keyboard: true,
+                });
+                self.ruler_key_focus = Some(handle);
+                self.focus_document = false;
+                let id = MARKERS.iter().find(|(h, _)| *h == handle).unwrap().1;
+                ctx.memory_mut(|m| m.request_focus(Id::new(id)));
+            }
+            Err(error) => self.error = Some(error),
         }
     }
 
@@ -412,7 +452,11 @@ impl DocsApp {
                 continue;
             }
             match key {
+                Key::Delete => self.start_ruler_reset(ctx),
                 Key::ArrowLeft | Key::ArrowRight => {
+                    if self.ruler_drag.as_ref().is_some_and(|d| d.draft.resetting) {
+                        continue;
+                    }
                     if self.ruler_drag.is_none() {
                         let rect = self
                             .regions

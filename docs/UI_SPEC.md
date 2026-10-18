@@ -1574,3 +1574,25 @@ SHA-256: `e221e5b986346635525cda3e5aad5b32170601daacf374e4bec82e28ac909aa4`.
 SHA-256: `f50a44a403d7a55a4b5adb324268ae3d2ea1adc9d5658c628bd85d8def2777ea`.
 
 Both final native macOS captures were visually inspected. No edge labels are clipped; the compact contextual overlay fits above the text, and idle mode has no permanent values block. Windows/reference and ordinary OS keyboard checks were not performed.
+
+
+## Alpha.50 ruler reset preview
+
+Keep alpha.49 dimensions, palette and icons. Right-click the horizontal scale to
+open the **Reset indents to style** menu item. Ctrl+Shift+F8 then Delete provides
+keyboard access. The existing contextual overlay identifies **Reset to style**;
+Enter applies, Escape/F6 cancels, Tab applies before moving focus. Arrow nudges
+are ignored while this preview is active. This is a Docs-specific command, not a
+verified Word keyboard mapping. The shared ruler draft drives the preview and
+commit; no document changes occur before acceptance. Read-only vertical geometry
+and existing focus/resize/pointer-takeover cancellation remain unchanged.
+
+![Reset preview at 1366 × 900 DIP](screenshots/rust-ruler-reset-alpha50-macos.png)
+
+SHA-256: `448f0525ad25d4e52558c530f89ce1c388e5adbd2fbe1d58d377e604194baa6b`.
+
+![Reset preview at 640 × 480 DIP](screenshots/rust-ruler-reset-alpha50-compact-macos.png)
+
+SHA-256: `f854bcf03bf209a2267bdc3fa834f4f01fa060bec16f7ceada6d5054af61b810`.
+
+Both native macOS capture fixtures were visually inspected: the reset label and exact preview values fit, with the alpha.49 ruler geometry retained. Events are injected into widgets, not ordinary OS keyboard input. Windows/reference checks remain deferred.
