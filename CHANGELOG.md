@@ -3,6 +3,11 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.36 — 2026-10-18
+
+- Navigate from Required by names to their style rows without applying formatting. Pointer and menu keyboard activation clear name/category filters, preserve Used in document, and focus/scroll to the stable-ID destination.
+- Preserve palette/icons and native/protocol/settings versions. Alpha.35 approved; alpha.36 awaits approval.
+
 ## 0.1.0-alpha.35 — 2026-10-18
 
 - Show Required by with every directly assigned paragraph/character style that needs an ancestor, including transitive parents and styles hidden by name/category filters. Direct-plus-parent styles keep both their status and consumers.

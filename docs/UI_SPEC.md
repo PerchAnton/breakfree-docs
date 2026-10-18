@@ -1248,3 +1248,21 @@ Light theme, English, 100% document zoom, macOS backing scale 2:
 | [Dependency consumers](screenshots/rust-style-consumers-alpha35-macos-narrow.png) | 640 × 480 DIP | `49afa6ea85d1af19cffdc2414afda39b8d30a2ee9aa90d3bd1dea6a8d1983ba8` |
 
 Both harness captures inspected: Normal shows Required by: Heading 1, with no overlap. Compact popup remains in bounds; lower rows require scrolling. Native keyboard input and matched Word/Windows DPI validation were not performed in this iteration.
+
+## Alpha.36 dependency navigation
+
+Required by names are separate wrapping, small-text, frameless buttons using the
+existing palette. Hover/focus provide button feedback; the tooltip explains that
+navigation clears name/category filters without applying formatting. Links join
+the menu's directional keyboard targets. Activation focuses and scrolls to the
+210 × 27 DIP style command, preserving the 125-DIP list viewport and used-only
+setting. Returning to the original filter/parent view is not implemented.
+
+Light theme, English, 100% document zoom, macOS backing scale 2:
+
+| Capture | Window | SHA-256 |
+| --- | --- | --- |
+| [Dependency navigation](screenshots/rust-style-navigation-alpha36-macos.png) | 1366 × 900 DIP | `d6ee9482be19f7e29f32a13148fbc9541db3b36d3def9fdbc03e71149348f806` |
+| [Dependency navigation](screenshots/rust-style-navigation-alpha36-macos-narrow.png) | 640 × 480 DIP | `2401d023765b5ecda2004a5d372355faf877159070cdce5afc35ac74ec08261d` |
+
+Both harness captures inspected: names and commands do not overlap; lower rows require scrolling. Pointer/Enter focus handoff is covered by CPU widget events. Ordinary native input and matched Windows/Word/DPI validation were not repeated.

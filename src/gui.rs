@@ -252,6 +252,7 @@ pub struct DocsApp {
     style_dialog: Option<StyleDialog>,
     delete_style_dialog: Option<DeleteStyleDialog>,
     style_used_only: bool,
+    style_jump: Option<Action>,
     style_filter: String,
     style_scope: crate::style_filter::Scope,
     style_context: Option<(ParagraphStyle, egui::Pos2, egui::LayerId)>,
@@ -367,6 +368,7 @@ impl DocsApp {
             style_dialog: None,
             delete_style_dialog: None,
             style_used_only: false,
+            style_jump: None,
             style_filter: String::new(),
             style_scope: Default::default(),
             style_context: None,
@@ -1988,6 +1990,14 @@ impl DocsApp {
             self.style_dialog = Some(dialog);
         }
     }
+    fn jump_to_style(&mut self, action: Action) {
+        self.style_filter.clear();
+        self.style_scope = Default::default();
+        self.ribbon_menu_index = None;
+        self.style_jump = Some(action);
+        self.focus_document = false;
+    }
+
     fn style_menu_command(
         &mut self,
         ui: &mut Ui,
@@ -1996,6 +2006,10 @@ impl DocsApp {
         usage: crate::style_filter::Usage,
         used: &crate::style_filter::UsedStyles,
     ) {
+        if self.style_jump == Some(action) {
+            self.ribbon_menu_index = Some(self.ribbon_menu_targets.len());
+            self.style_jump = None;
+        }
         self.command(ui, name, action, vec2(210., 27.));
         let label = ui.small(usage.label()).on_hover_text(match usage {
             crate::style_filter::Usage::Direct => "Assigned to document content. May also be a parent of another used style.",
@@ -2007,23 +2021,54 @@ impl DocsApp {
             label.rect,
         );
         let document = &self.session.editor.document;
-        let consumers: Vec<String> = match action {
+        let consumers: Vec<(Action, String)> = match action {
             Action::Style(id) => used
                 .paragraph_consumers(document, id)
                 .into_iter()
-                .map(|id| document.style_catalog.name(id).to_owned())
+                .map(|id| {
+                    (
+                        Action::Style(id),
+                        document.style_catalog.name(id).to_owned(),
+                    )
+                })
                 .collect(),
             Action::CharacterStyle(Some(id)) => used
                 .character_consumers(document, id)
                 .into_iter()
-                .map(|id| document.character_style_name(id).to_owned())
+                .map(|id| {
+                    (
+                        Action::CharacterStyle(Some(id)),
+                        document.character_style_name(id).to_owned(),
+                    )
+                })
                 .collect(),
             _ => Vec::new(),
         };
         if !consumers.is_empty() {
-            let text = format!("Required by: {}", consumers.join(", "));
-            let response = ui.add(egui::Label::new(RichText::new(&text).small()).wrap());
-            self.record(&format!("style-consumers-{action:?}-{text}"), response.rect);
+            let text = format!(
+                "Required by: {}",
+                consumers
+                    .iter()
+                    .map(|(_, name)| name.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            );
+            let heading = ui.small("Required by:");
+            self.record(&format!("style-consumers-{action:?}-{text}"), heading.rect);
+            for (destination, name) in consumers {
+                let response = ui.add(
+                    egui::Button::new(RichText::new(&name).small())
+                        .wrap()
+                        .frame(false),
+                );
+                let key = format!("style-jump-{action:?}-{destination:?}");
+                self.record(&key, response.rect);
+                self.track_ribbon(&response, &key, TargetKind::StyleJump(destination));
+                if response.on_hover_text("Go to this style without applying it. Clears name/category filters; keeps Used in document.").clicked() {
+                    self.jump_to_style(destination);
+                    ui.ctx().request_repaint();
+                }
+            }
         }
     }
 

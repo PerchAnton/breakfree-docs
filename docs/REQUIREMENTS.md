@@ -147,3 +147,12 @@ style namespaces remain separate. Direct-use parents also show their consumers.
 Names wrap inside the existing scroll area; filtering does not hide dependency
 evidence. Renaming, editing and Undo/Redo are reflected from the current model.
 No document, history, settings, palette, icons or native format changes.
+
+## Dependency navigation (alpha.36)
+
+Activate a Required by name to reveal its style row without applying it. The
+menu stays open; name/category filters clear, Used in document stays unchanged,
+and the destination receives keyboard focus and scrolls into view. Links use
+stable paragraph/character IDs, so duplicate names across namespaces are safe.
+Enter/Space activates the navigation target; a separate activation of the focused
+style applies it. Escape closes the menu. Document/history/settings stay unchanged.

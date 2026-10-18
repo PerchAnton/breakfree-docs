@@ -5775,3 +5775,56 @@ fn used_style_filter_intersects_scope_and_reset_preserves_document() {
         Some(ParagraphStyle::Normal)
     );
 }
+
+#[test]
+fn required_by_navigation_reveals_focuses_without_applying() {
+    for keyboard in [false, true] {
+        let (ctx, mut app) = setup();
+        app.session
+            .editor
+            .apply_paragraph_style(0, 0, ParagraphStyle::Heading1)
+            .unwrap();
+        let before = app.session.editor.document.clone();
+        let depth = app.session.editor.undo_stack.len();
+        let size = [640., 480.];
+        app.style_used_only = true;
+        app.style_filter = "Normal".into();
+        app.style_scope = crate::style_filter::Scope::Paragraph;
+        frame(&ctx, &mut app, vec![], size, 1.);
+        for k in [Key::F10, Key::H, Key::E] {
+            frame(&ctx, &mut app, vec![key(k, false)], size, 1.);
+        }
+        frame(&ctx, &mut app, vec![], size, 1.);
+        let name = "style-jump-Style(Normal)-Style(Heading1)";
+        if keyboard {
+            app.ribbon_menu_index = app.ribbon_menu_targets.iter().position(|t| t.name == name);
+            assert!(app.ribbon_menu_index.is_some());
+            frame(&ctx, &mut app, vec![], size, 1.);
+            ribbon_key(&ctx, &mut app, Key::Enter, Modifiers::NONE, size);
+        } else {
+            click_region_at(&ctx, &mut app, name, size);
+        }
+        for _ in 0..4 {
+            frame(&ctx, &mut app, vec![], size, 1.);
+        }
+        assert!(egui::Popup::is_any_open(&ctx));
+        assert!(app.style_filter.is_empty());
+        assert_eq!(app.style_scope, crate::style_filter::Scope::All);
+        assert!(app.style_used_only);
+        let target = &app.ribbon_menu_targets[app.ribbon_menu_index.unwrap()];
+        assert!(matches!(
+            target.kind,
+            TargetKind::Action(Action::Style(ParagraphStyle::Heading1))
+        ));
+        assert!(ctx.memory(|m| m.has_focus(target.id)));
+        assert!(
+            app.regions
+                .iter()
+                .any(|r| r.name == "command-Style(Heading1)")
+        );
+        assert_eq!(app.session.editor.document, before);
+        assert_eq!(app.session.editor.undo_stack.len(), depth);
+        ribbon_key(&ctx, &mut app, Key::Escape, Modifiers::NONE, size);
+        assert!(!egui::Popup::is_any_open(&ctx));
+    }
+}

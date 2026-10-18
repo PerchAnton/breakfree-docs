@@ -8,16 +8,16 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.35**. Historical evidence retains its scope.
+Current local checkpoint: **0.1.0-alpha.36**. Historical evidence retains its scope.
 
 | Local check | Observed result |
 | --- | --- |
-| Full / no-default-features tests | 229 / 117 passed; transitive/shared consumer test added; history and filtered widget assertions extended |
+| Full / no-default-features tests | 230 / 117 passed; pointer/keyboard dependency navigation regression added |
 | fmt / Clippy | Passed; normal/capture all-target checks with warnings denied |
 | Release builds | Native binary and capture harness passed without Office/sibling inputs |
-| CLI | Version/capabilities report alpha.35; existing CLI subprocess tests pass |
+| CLI | Version/capabilities report alpha.36; existing CLI subprocess tests pass |
 | Repository/artwork/YAML/whitespace | Passed |
-| Native rendering | Dependency consumers at 1366 × 900 / 640 × 480 DIP, backing scale 2 |
+| Native rendering | Dependency navigation controls at 1366 × 900 / 640 × 480 DIP, backing scale 2 |
 | Native input | Not repeated this iteration; previous automation lost its window. CPU widget events are separate evidence |
 | Existing regressions | Home geometry, minimum-width 64-style keyboard scrolling, history, storage and synthetic scaling checks retained |
 
@@ -1060,3 +1060,14 @@ when a name filter hides the consuming style, without document/history changes.
 Existing 64-style keyboard scrolling, context commands and synthetic scale tests
 remain. Native keyboard input is not repeated this iteration; harness captures
 are rendering evidence only. Windows/Word/DPI/IME/accessibility gates remain open.
+
+## Alpha.36 dependency-navigation validation
+
+A new minimum-window actual-widget test activates Required by with pointer and
+Enter, verifies name/category reset, used-only preservation, popup persistence,
+destination focus/visibility, unchanged document/undo depth and Escape closure.
+The first keyboard test read targets before the popup's next layout frame; it
+now waits one UI frame before locating the link. Existing style/filter/history
+and 64-style scrolling regressions remain. Native input was not repeated; the
+capture harness provides rendering evidence only. Windows/Word/DPI/IME and full
+accessibility acceptance remain open. No storage or dependency changes.
