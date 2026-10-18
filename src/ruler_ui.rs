@@ -99,6 +99,10 @@ impl DocsApp {
         let Ok((index, _)) = model.locate(self.session.editor.selection.0) else {
             return;
         };
+        let Ok(summary) = crate::ruler::SelectionValues::read(model, self.session.editor.selection)
+        else {
+            return;
+        };
         let style = model.resolved_paragraph(&model.paragraphs[index]);
         let unit = 14.6667 * zoom / 22. * indent_scale(style, 14.6667 * zoom / 22., right - left);
         let l = f32::from(style.left_indent_half_points) * unit;
@@ -175,6 +179,14 @@ impl DocsApp {
                     Stroke::new(1.0_f32, INK),
                 ));
             }
+            if summary.position(handle).mixed() {
+                self.record(&format!("{name}-mixed"), target);
+                // An offset dash distinguishes mixed positions without relying on color.
+                ui.painter().line_segment(
+                    [pos2(x + 8., y), pos2(x + 13., y)],
+                    Stroke::new(2.0_f32, INK),
+                );
+            }
             if enabled
                 && ui.input(|i| i.pointer.primary_pressed())
                 && response.is_pointer_button_down_on()
@@ -233,10 +245,10 @@ impl DocsApp {
                 egui::WidgetInfo::labeled(
                     egui::WidgetType::Button,
                     enabled || self.ruler_key_focus == Some(handle),
-                    format!("{label}. {}", crate::ruler::values(style)),
+                    format!("{label}. {}", summary.marker_details(handle)),
                 )
             });
-            response.on_hover_text(format!("{label} — drag to preview; release to apply; Esc cancels. Half-point steps. Uses the first selected paragraph; applies to selected paragraphs. Ctrl+Shift+F8 enters keyboard control; Tab changes marker, arrows nudge 0.5 pt, Shift+arrows 5 pt, Enter applies, Esc cancels. {}", crate::ruler::values(style)));
+            response.on_hover_text(format!("{label} — drag to preview; release to apply; Esc cancels. Half-point steps. Uses the first selected paragraph; applies to selected paragraphs. Ctrl+Shift+F8 enters keyboard control; Tab changes marker, arrows nudge 0.5 pt, Shift+arrows 5 pt, Enter applies, Esc cancels. {}", summary.marker_details(handle)));
         }
         if let Some(drag) = &mut self.ruler_drag
             && !drag.keyboard
@@ -262,8 +274,11 @@ impl DocsApp {
             .as_ref()
             .map(|d| &d.draft.preview)
             .unwrap_or(&self.session.editor.document);
-        let style = model.resolved_paragraph(&model.paragraphs[index]);
-        let (readout, _) = ui.allocate_exact_size(vec2(width, 30.), Sense::hover());
+        let Ok(summary) = crate::ruler::SelectionValues::read(model, self.session.editor.selection)
+        else {
+            return;
+        };
+        let (readout, response) = ui.allocate_exact_size(vec2(width, 30.), Sense::hover());
         self.record("ruler-values", readout);
         let readout_origin = pos2(
             readout.left().max(ui.clip_rect().left() + 4.),
@@ -272,14 +287,34 @@ impl DocsApp {
         ui.painter().text(
             readout_origin,
             Align2::LEFT_TOP,
-            crate::ruler::values(style),
+            summary.values(),
             FontId::proportional(11.),
             INK,
         );
         let hint = self
             .ruler_key_focus
-            .map(|h| format!("{} · Enter applies · Esc cancels", marker_name(h)))
-            .unwrap_or_else(|| "First selected paragraph · Ctrl+Shift+F8: keyboard".into());
+            .map(|h| {
+                format!(
+                    "{}{} · Enter applies · Esc cancels",
+                    marker_name(h),
+                    if summary.position(h).mixed() {
+                        " (Mixed)"
+                    } else {
+                        ""
+                    }
+                )
+            })
+            .unwrap_or_else(|| {
+                if summary.mixed() {
+                    format!(
+                        "{} paragraphs · Mixed values · anchors: first",
+                        summary.count
+                    )
+                } else {
+                    format!("{} paragraph(s) · Ctrl+Shift+F8: keyboard", summary.count)
+                }
+            });
+        response.on_hover_text(summary.marker_details(Handle::Left));
         ui.painter().text(
             readout_origin + vec2(0., 15.),
             Align2::LEFT_TOP,

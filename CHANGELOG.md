@@ -3,6 +3,12 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.48 — 2026-10-18
+
+- Show Mixed independently for differing resolved left/right and first-line/hanging amounts across selected paragraphs. Matching inherited/direct values remain common; an exclusive selection end at the next paragraph start excludes that paragraph.
+- Mark differing ruler origins with a small dash and expose exact minimum/maximum values and selection scope in tooltips/accessibility labels. Keep first-paragraph marker anchors and the existing transactional editing policy.
+- Recompute indicators from keyboard/pointer previews, cancellation and undo/redo without mutating the document. Preserve palette/icons, native v13, protocol/settings v1 and dependencies. Windows remains deferred. Alpha.47 approved; alpha.48 awaits approval.
+
 ## 0.1.0-alpha.47 — 2026-10-18
 
 - Add keyboard ruler control: Ctrl+Shift+F8 enters/reveals the ruler, Tab/Shift+Tab selects markers, arrows preview 0.5 pt steps and Shift+arrows 5 pt. Enter or changing marker commits one Undo/Redo; Escape/F6, focus/geometry loss or pointer takeover cancels the pending preview.

@@ -649,3 +649,18 @@ points for the first selected paragraph, including the current preview. Zero is
 shown as 0.0 pt; zoom never changes stored/reported values. Left remains the
 outermost edge, while First/Hanging are additional distances. The first-line and
 continuation handles preserve the opposite origin. No native-format change.
+
+## Mixed paragraph indents (alpha.48)
+
+The ruler readout shows Mixed independently for Left, Right, First and Hanging
+when selected paragraphs have different resolved amounts. Equal values from
+different styles or direct overrides remain numeric. Hover the readout or a marker
+for exact minimum/maximum values. A caret includes its paragraph; an exclusive end
+at the next paragraph start does not include that next paragraph.
+
+A small dash beside a marker means its logical origin differs across the selection.
+First/continuation origins include the left indent, so a common marker origin can
+coexist with mixed individual amounts. Markers stay anchored to the first selected
+paragraph; tooltips identify this baseline. Editing still applies changed properties
+to selected paragraphs with one transaction. Indicators follow the live preview,
+cancel and Undo/Redo. Inspection never creates overrides or history entries.

@@ -1301,3 +1301,21 @@ keyboard preview and exact values; they do not prove physical keyboard/IME input
 The native automation app selector could not address the standalone executable by path or name; ordinary OS keyboard input was not verified. Windows/manual DPI and matched-reference
 acceptance remain deferred. Alpha.46 code/journal CI succeeded; alpha.47 server
 results are recorded separately in the project log. No merge, tag or release.
+
+## Alpha.48 mixed-selection ruler validation
+
+2026-10-18, macOS arm64, Rust 1.99.1: 280 full / 141 core-only tests passed.
+Five new cases cover resolved equality across inherited/direct sources, per-property
+ranges, logical marker origins versus special amounts, caret/exclusive-end/empty
+paragraphs and combining text, invalid ranges, preview/cancel/commit/history/reopen,
+actual-widget selection changes and keyboard preview at three synthetic scales,
+and compact readout bounds with no document/history mutations. Existing pointer,
+keyboard, Unicode, layout, persistence and failure suites remain in the full gate.
+
+fmt, normal/capture all-target Clippy with warnings denied, release/capture builds,
+repository/artwork/contract checks, workflow YAML and diff whitespace passed.
+Isolated version/capabilities report alpha.48, protocol 1 and breakfree.docs without
+GUI or sibling dependencies. Two native macOS capture fixtures were inspected;
+these do not verify ordinary OS keyboard/IME input. Windows/manual DPI and matched
+reference acceptance remain deferred. Alpha.47 code/journal CI succeeded; alpha.48
+CI results are separate. No merge, tag or release.

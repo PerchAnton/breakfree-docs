@@ -1511,3 +1511,27 @@ SHA-256: `4f54dffef9a6b6b16c6dd2463ffed0dbca645e66c79bec508d54a3a7879e2ba7`.
 SHA-256: `47be632529d21056fcd0e8df4887b38ee6b5d267fc2133b3ea24a7d76a0ba6a3`.
 
 Both native macOS capture-harness images were inspected with keyboard preview active: focus outline and exact values are visible without overlap. These fixtures inject widget events, not OS keystrokes. The native automation app selector did not recognize the standalone binary by path or name, so ordinary OS keyboard input was not verified this iteration.
+
+## Alpha.48 mixed-selection ruler indicators
+
+Keep the 36-DIP ruler, 30-DIP readout, 11-DIP type, focus outline, palette and icons.
+Each readout amount displays Mixed when resolved selected-paragraph values differ.
+Marker origins are checked separately: a 5-DIP dash, 2-DIP stroke, starts 8 DIP to
+the right of the marker center when that origin varies. This is a shape distinction,
+not a color-only signal. Hover/accessibility text reports paragraph count, exact
+half-point ranges and first-paragraph anchoring/edit scope. Inactive mixed readouts
+show the selection count and anchor policy on the second row; focused mixed markers
+retain the keyboard hint with a Mixed suffix. Preview/cancel/history update the
+summary; an exclusive end at the next paragraph start excludes it. The minimum
+compact readout remains within its width. Matched Windows/reference and ordinary
+OS keyboard acceptance remain unverified/deferred.
+
+![Mixed ruler at 1366 × 900 DIP](screenshots/rust-ruler-mixed-alpha48-macos.png)
+
+SHA-256: `144200ede2929a0ce0d8932db3b4ddc3b5b595df69977cb344ddd2fd6a3e5572`.
+
+![Mixed ruler at 640 × 480 DIP](screenshots/rust-ruler-mixed-alpha48-compact-macos.png)
+
+SHA-256: `ae504ea51c9c1bff2d1b7baab1fb77362477ca79cb80f31845a35b70b0b6afa9`.
+
+Both native macOS capture fixtures were inspected with three selected paragraphs: common left/right amounts remain numeric, first/hanging amounts show Mixed, and the corresponding marker dashes are visible. Readout and selection remain within the compact layout. Ordinary OS input was not repeated.

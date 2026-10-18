@@ -131,3 +131,16 @@ selects the next marker. Toolkit directional focus traversal is suppressed while
 the ruler owns input, including the first frame before its focus filter settles.
 The readout uses resolved model half points, independent of display zoom/scaling.
 File/version semantics, dependencies and palette remain unchanged.
+
+## Alpha.48 extension: mixed-selection inspection
+
+A toolkit-independent read-only summary resolves every selected paragraph using
+the command engine's half-open paragraph selection rule. Aggregate each displayed
+amount and each marker origin independently in integer half points. Compare values,
+not provenance: different inherited/direct sources with equal results are common.
+The readout uses Mixed instead of a misleading first-paragraph value, with exact
+minimum/maximum ranges in tooltips. Marker dashes identify different logical origins,
+which include left plus the applicable special indent. Existing first-paragraph
+anchors and partial-edit semantics stay unchanged. Summaries of preview snapshots
+update without committing; cancellation/history restore the corresponding summary.
+No format, dependency, palette or license change.

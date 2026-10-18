@@ -319,6 +319,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "paragraph",
             "indent-layout",
             "ruler-keyboard",
+            "ruler-mixed",
             "collapsed",
             "temporary",
             "view",
@@ -338,7 +339,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ]
         .contains(&args[2].as_str())
     {
-        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|styles-modify|styles-following|styles-create|styles-rename|styles-delete|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|paragraph|indent-layout|ruler-keyboard|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
+        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|styles-modify|styles-following|styles-create|styles-rename|styles-delete|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|paragraph|indent-layout|ruler-keyboard|ruler-mixed|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
     }
     let path = std::env::var("BREAKFREE_CAPTURE_TO")
         .map_err(|_| "Set BREAKFREE_CAPTURE_TO to an output PNG path")?;
@@ -375,7 +376,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "examples/Welcome.bfdoc"
         },
     );
-    let session = if matches!(args[2].as_str(), "indent-layout" | "ruler-keyboard") {
+    let session = if matches!(
+        args[2].as_str(),
+        "indent-layout" | "ruler-keyboard" | "ruler-mixed"
+    ) {
         let mut session = Session::default();
         let sample =
             "English Україна Русский cafe\u{301}. Text wraps without changing stored characters.  ";
@@ -515,7 +519,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "styles-create" => app.execute(Action::CreateStyle, &cc.egui_ctx),
                 "styles-delete" => app.execute(Action::DeleteStyle, &cc.egui_ctx),
                 "formatting" => app.execute(Action::Formatting, &cc.egui_ctx),
-                "indent-layout" | "ruler-keyboard" => {
+                "indent-layout" | "ruler-keyboard" | "ruler-mixed" => {
+                    if mode == "ruler-mixed" {
+                        app.execute(Action::SelectAll, &cc.egui_ctx);
+                    }
                     if width < 800. {
                         app.zoom = 50.;
                     }

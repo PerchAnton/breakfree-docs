@@ -37,6 +37,133 @@ pub fn values(style: ResolvedParagraphStyle) -> String {
     )
 }
 
+/// Resolved half-point range: identical appearance is common even with different sources.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ValueRange {
+    pub min: i32,
+    pub max: i32,
+}
+impl ValueRange {
+    fn new(value: i32) -> Self {
+        Self {
+            min: value,
+            max: value,
+        }
+    }
+    fn include(&mut self, value: i32) {
+        self.min = self.min.min(value);
+        self.max = self.max.max(value);
+    }
+    pub fn mixed(self) -> bool {
+        self.min != self.max
+    }
+    fn display(self) -> String {
+        if self.mixed() {
+            "Mixed".into()
+        } else {
+            format!("{:.1} pt", self.min as f32 / 2.)
+        }
+    }
+    fn detail(self) -> String {
+        if self.mixed() {
+            format!("{:.1}–{:.1} pt", self.min as f32 / 2., self.max as f32 / 2.)
+        } else {
+            self.display()
+        }
+    }
+}
+#[derive(Clone, Debug)]
+pub struct SelectionValues {
+    pub count: usize,
+    /// Left, right, first-line amount, hanging amount (not absolute marker origins).
+    pub amounts: [ValueRange; 4],
+    /// Overall left, first-line origin, continuation origin, right inset.
+    pub positions: [ValueRange; 4],
+}
+impl SelectionValues {
+    pub fn read(document: &Document, selection: (usize, usize)) -> Result<Self> {
+        if selection.0 > selection.1 {
+            return Err("Invalid ruler selection.".into());
+        }
+        let (first, _) = document.locate(selection.0)?;
+        let (mut last, offset) = document.locate(selection.1)?;
+        if selection.1 > selection.0 && offset == 0 && last > first {
+            last -= 1;
+        }
+        let collect = |style: ResolvedParagraphStyle| {
+            (
+                [
+                    i32::from(style.left_indent_half_points),
+                    i32::from(style.right_indent_half_points),
+                    i32::from(style.first_line_half_points.max(0)),
+                    i32::from((-style.first_line_half_points).max(0)),
+                ],
+                [
+                    Handle::Left.position(style),
+                    Handle::First.position(style),
+                    Handle::Body.position(style),
+                    -Handle::Right.position(style),
+                ],
+            )
+        };
+        let (amounts, positions) =
+            collect(document.resolved_paragraph(&document.paragraphs[first]));
+        let mut result = Self {
+            count: last - first + 1,
+            amounts: amounts.map(ValueRange::new),
+            positions: positions.map(ValueRange::new),
+        };
+        for paragraph in &document.paragraphs[first + 1..last + 1] {
+            let (amounts, positions) = collect(document.resolved_paragraph(paragraph));
+            for i in 0..4 {
+                result.amounts[i].include(amounts[i]);
+                result.positions[i].include(positions[i]);
+            }
+        }
+        Ok(result)
+    }
+    pub fn position(&self, handle: Handle) -> ValueRange {
+        self.positions[match handle {
+            Handle::Left => 0,
+            Handle::First => 1,
+            Handle::Body => 2,
+            Handle::Right => 3,
+        }]
+    }
+    pub fn mixed(&self) -> bool {
+        self.amounts.iter().any(|v| v.mixed())
+    }
+    pub fn values(&self) -> String {
+        ["Left", "Right", "First", "Hanging"]
+            .into_iter()
+            .zip(self.amounts)
+            .map(|(label, value)| format!("{label} {}", value.display()))
+            .collect::<Vec<_>>()
+            .join("   ")
+    }
+    pub fn details(&self) -> String {
+        ["Left", "Right", "First", "Hanging"]
+            .into_iter()
+            .zip(self.amounts)
+            .map(|(label, value)| format!("{label}: {}", value.detail()))
+            .collect::<Vec<_>>()
+            .join("; ")
+    }
+    pub fn marker_details(&self, handle: Handle) -> String {
+        format!(
+            "{} paragraph(s). {} Marker {}: {}. Markers are anchored to the first selected paragraph; editing applies changed properties to the selection.",
+            self.count,
+            self.details(),
+            if handle == Handle::Right {
+                "inset from right"
+            } else {
+                "origin from left"
+            },
+            self.position(handle).detail()
+        )
+    }
+}
+
 /// Shared narrow-column projection, also used by the native text adapter.
 pub fn indent_scale(style: ResolvedParagraphStyle, unit: f32, width: f32) -> f32 {
     let total = (f32::from(style.left_indent_half_points)
@@ -254,5 +381,85 @@ mod tests {
         assert_eq!(Handle::First.position(style), 37);
         assert_eq!(Handle::Body.position(style), 48);
         assert_eq!(Handle::Right.position(style), -5);
+    }
+    #[test]
+    fn mixed_selection_resolves_sources_and_exclusive_paragraph_end() {
+        let mut e = editor();
+        e.document.style_catalog.normal.left_indent_half_points = Some(37);
+        e.document.paragraphs[0].paragraph_style = crate::model::ParagraphStyle::Heading1;
+        e.document.paragraphs[1].spacing.left_indent_half_points = Some(37);
+        e.document.paragraphs[2].spacing.left_indent_half_points = Some(0);
+        let second_end = e.document.paragraphs[..2]
+            .iter()
+            .map(|p| p.text.chars().count() + 1)
+            .sum();
+        let common = SelectionValues::read(&e.document, (0, second_end)).unwrap();
+        assert_eq!(common.count, 2);
+        assert!(!common.mixed());
+        assert!(common.values().contains("Left 18.5 pt"));
+        let mixed = SelectionValues::read(&e.document, e.selection).unwrap();
+        assert_eq!(mixed.count, 3);
+        assert!(mixed.values().contains("Left Mixed"));
+        assert!(mixed.details().contains("Left: 0.0–18.5 pt"));
+        assert!(
+            !SelectionValues::read(&e.document, (second_end, second_end))
+                .unwrap()
+                .mixed()
+        );
+        assert!(SelectionValues::read(&e.document, (5, 2)).is_err());
+        assert!(SelectionValues::read(&e.document, (0, usize::MAX)).is_err());
+    }
+    #[test]
+    fn mixed_amounts_and_marker_origins_are_distinct() {
+        let mut e = Editor::default();
+        e.replace(0, 0, "e\u{301}\n\n", "Fixture").unwrap();
+        e.document.paragraphs[0].spacing.first_line_half_points = Some(20);
+        e.document.paragraphs[1].spacing.left_indent_half_points = Some(20);
+        let summary = SelectionValues::read(&e.document, (0, 4)).unwrap();
+        assert_eq!(summary.count, 2);
+        assert!(summary.mixed());
+        assert!(!summary.position(Handle::First).mixed());
+        assert!(summary.position(Handle::Body).mixed());
+        assert_eq!(SelectionValues::read(&e.document, (4, 4)).unwrap().count, 1);
+        e.document.paragraphs[1].spacing.first_line_half_points = Some(-20);
+        let summary = SelectionValues::read(&e.document, (0, 4)).unwrap();
+        assert!(summary.values().contains("First Mixed   Hanging Mixed"));
+    }
+    #[test]
+    fn mixed_preview_cancel_commit_and_history_preserve_sources() {
+        let mut e = editor();
+        e.document.paragraphs[1].spacing.right_indent_half_points = Some(72);
+        let before = e.document.clone();
+        let count = e.undo_stack.len();
+        assert!(
+            SelectionValues::read(&e.document, e.selection)
+                .unwrap()
+                .position(Handle::Right)
+                .mixed()
+        );
+        let mut draft = Draft::new(&e, Handle::Right).unwrap();
+        draft.move_by(-10.).unwrap();
+        assert!(
+            !SelectionValues::read(&draft.preview, e.selection)
+                .unwrap()
+                .position(Handle::Right)
+                .mixed()
+        );
+        drop(draft);
+        assert_eq!(e.document, before);
+        assert_eq!(e.undo_stack.len(), count);
+        let mut draft = Draft::new(&e, Handle::Right).unwrap();
+        draft.move_by(-10.).unwrap();
+        draft.commit(&mut e).unwrap();
+        assert_eq!(e.undo_stack.len(), count + 1);
+        let after = e.document.clone();
+        e.undo();
+        assert_eq!(e.document, before);
+        e.redo();
+        assert_eq!(e.document, after);
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("mixed.bfdoc");
+        crate::storage::save(&e.document, &path).unwrap();
+        assert_eq!(crate::storage::load(&path).unwrap(), after);
     }
 }

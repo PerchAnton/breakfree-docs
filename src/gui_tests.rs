@@ -7357,3 +7357,107 @@ fn ruler_keyboard_scrolls_focused_marker_into_view_without_cancelling_preview() 
         Some(1)
     );
 }
+
+#[test]
+fn ruler_mixed_markers_follow_selection_preview_cancel_and_history() {
+    for dpi in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        let size = [1366. * dpi, 900. * dpi];
+        app.session
+            .editor
+            .replace(0, 0, "English cafe\u{301}\nУкраїна\nРусский", "Fixture")
+            .unwrap();
+        app.session.editor.document.paragraphs[1]
+            .spacing
+            .right_indent_half_points = Some(72);
+        let first_end = app.session.editor.document.paragraphs[0]
+            .text
+            .chars()
+            .count()
+            + 1;
+        app.session.editor.selection = (0, first_end);
+        app.sync_view();
+        for _ in 0..2 {
+            frame(&ctx, &mut app, vec![], size, dpi);
+        }
+        assert!(!app.regions.iter().any(|r| r.name == "ruler-right-mixed"));
+        app.execute(Action::SelectAll, &ctx);
+        frame(&ctx, &mut app, vec![], size, dpi);
+        assert!(app.regions.iter().any(|r| r.name == "ruler-right-mixed"));
+        let before = app.session.editor.document.clone();
+        let n = app.session.editor.undo_stack.len();
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                ruler_key(Key::F8, Modifiers::CTRL | Modifiers::SHIFT),
+                ruler_key(Key::Tab, Modifiers::SHIFT),
+                key(Key::ArrowLeft, false),
+            ],
+            size,
+            dpi,
+        );
+        assert!(!app.regions.iter().any(|r| r.name == "ruler-right-mixed"));
+        assert_eq!(app.session.editor.document, before);
+        frame(&ctx, &mut app, vec![key(Key::Escape, false)], size, dpi);
+        assert!(app.regions.iter().any(|r| r.name == "ruler-right-mixed"));
+        assert_eq!(app.session.editor.undo_stack.len(), n);
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                ruler_key(Key::F8, Modifiers::CTRL | Modifiers::SHIFT),
+                ruler_key(Key::Tab, Modifiers::SHIFT),
+                key(Key::ArrowLeft, false),
+                key(Key::Enter, false),
+                key(Key::F6, false),
+            ],
+            size,
+            dpi,
+        );
+        assert_eq!(app.session.editor.undo_stack.len(), n + 1);
+        app.execute(Action::Undo, &ctx);
+        frame(&ctx, &mut app, vec![], size, dpi);
+        assert!(app.regions.iter().any(|r| r.name == "ruler-right-mixed"));
+        app.execute(Action::Redo, &ctx);
+        frame(&ctx, &mut app, vec![], size, dpi);
+        assert!(!app.regions.iter().any(|r| r.name == "ruler-right-mixed"));
+    }
+}
+
+#[test]
+fn ruler_mixed_readout_fits_compact_and_does_not_edit() {
+    let (ctx, mut app) = setup();
+    app.zoom = 50.;
+    let size = [640., 480.];
+    app.session.editor.replace(0, 0, "a\nb", "Fixture").unwrap();
+    let p = &mut app.session.editor.document.paragraphs[1];
+    p.spacing.left_indent_half_points = Some(288);
+    p.spacing.right_indent_half_points = Some(288);
+    p.spacing.first_line_half_points = Some(-288);
+    app.execute(Action::SelectAll, &ctx);
+    let before = app.session.editor.document.clone();
+    let n = app.session.editor.undo_stack.len();
+    for _ in 0..3 {
+        frame(&ctx, &mut app, vec![], size, 1.);
+    }
+    let summary =
+        crate::ruler::SelectionValues::read(&before, app.session.editor.selection).unwrap();
+    let width = ctx.fonts_mut(|f| {
+        f.layout_no_wrap(summary.values(), FontId::proportional(11.), INK)
+            .size()
+            .x
+    });
+    assert!(
+        width
+            <= app
+                .regions
+                .iter()
+                .find(|r| r.name == "ruler-values")
+                .unwrap()
+                .rect
+                .width()
+    );
+    assert_eq!(app.session.editor.document, before);
+    assert_eq!(app.session.editor.undo_stack.len(), n);
+}
