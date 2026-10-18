@@ -8,18 +8,18 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.31**. Historical evidence retains its scope.
+Current local checkpoint: **0.1.0-alpha.32**. Historical evidence retains its scope.
 
 | Local check | Observed result |
 | --- | --- |
-| Full / no-default-features tests | 221 / 112 passed; three new paragraph-provenance core tests and one widget/scaling test |
+| Full / no-default-features tests | 224 / 113 passed; one filter core test and two actual-widget regressions added |
 | fmt / Clippy | Passed; normal/capture all-target checks with warnings denied |
 | Release builds | Native binary and capture harness passed without Office/sibling inputs |
-| CLI | Version/capabilities report alpha.31; CLI subprocess tests pass |
+| CLI | Version/capabilities report alpha.32; existing CLI subprocess tests pass |
 | Repository/artwork/YAML/whitespace | Passed |
-| Native rendering | Formatting at 1366 × 900 / 640 × 480 DIP, backing scale 2, inspected; narrow body scrolls |
-| Native macOS input | Empty paragraph: No Spacing, Command+E, two Undo/Redo operations update alignment/interval values and sources; final Undo restores clean state |
-| Synthetic DPI | Existing regressions retained; paragraph inspector read-only/history check at 1/1.25/1.5 |
+| Native rendering | Filtered Styles menu at 1366 × 900 / 640 × 480 DIP, backing scale 2, inspected |
+| Native macOS input | More styles, F3, Heading query, Down/Enter, one Undo, Reset, Paragraph/Character/Custom scope and empty message verified; filter changes preserve clean document and redo |
+| Existing regressions | Home geometry, minimum-width 64-style keyboard scrolling, history, storage and synthetic scaling checks retained |
 
 Server CI is configured for Windows, Ubuntu and macOS with the same Cargo checks
 and native release build. Its observed run/commit results are recorded in
@@ -1001,3 +1001,20 @@ Alignment has no inherited source in v9; the display reports the stored paragrap
 value without inventing authorship. Intervals have no direct paragraph override
 or space-before field. Windows/Word comparison, native Windows DPI/IME and full
 accessibility remain unverified.
+
+## Alpha.32 style-filter validation
+
+Core coverage checks scope/name intersection, trimmed lowercase English/Ukrainian/
+Russian substrings, combining sequences and the explicit absence of canonical
+normalization. Widget tests cover narrow-menu F3/text/Down/Enter/Undo, empty scope,
+Reset, pointer category switching and unchanged document state. These exposed
+KeyTips consuming F3, focus restoration stealing text input and default popup
+click closure; routing now hands F3 to the filter and filter clicks keep the menu
+open. Existing action dispatch still closes it when applying a style.
+
+Native normal-release smoke independently checked wide-menu focus/search/application,
+Undo, Reset and all categories, including empty Custom. Initial batched automation
+sent paste before the popup was ready; it was undone, then each observed focus/state
+was checked before proceeding. Two native captures were inspected. Windows/Word,
+native Windows DPI/IME and full accessibility remain unverified. No schema change;
+this iteration does not claim a new native Save/Open check.

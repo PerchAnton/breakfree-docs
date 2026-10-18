@@ -172,7 +172,8 @@ impl DocsApp {
         }) {
             let inside = self.regions.iter().any(|r| {
                 (matches!(r.name.as_str(), "ribbon" | "tabs" | "quick-access-menu")
-                    || r.name.starts_with("qat-"))
+                    || r.name.starts_with("qat-")
+                    || r.name.starts_with("style-filter-"))
                     && r.rect.contains(pos)
             }) || self
                 .ribbon_menu_targets
@@ -252,13 +253,25 @@ impl DocsApp {
                 _ => self.focus_ribbon(ctx, false),
             }
         }
-        let Some(focus) = self.ribbon_focus.clone() else {
-            return;
-        };
         if egui::Popup::is_any_open(ctx) {
             if ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Escape)) {
                 egui::Popup::close_all(ctx);
                 self.ribbon_menu_index = None;
+                return;
+            }
+            let filter_id = Id::new("style-filter-input");
+            let has_style_filter = self.regions.iter().any(|r| r.name == "style-filter-input");
+            if has_style_filter && ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::F3)) {
+                self.ribbon_menu_index = None;
+                ctx.memory_mut(|m| m.request_focus(filter_id));
+                return;
+            }
+            if has_style_filter && ctx.memory(|m| m.has_focus(filter_id)) {
+                self.ribbon_menu_index = None;
+                if ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::ArrowDown)) {
+                    ctx.memory_mut(|m| m.surrender_focus(filter_id));
+                    self.ribbon_menu_index = Some(0);
+                }
                 return;
             }
             if self.ribbon_menu_index.is_some() && !self.ribbon_menu_targets.is_empty() {
@@ -287,6 +300,9 @@ impl DocsApp {
             }
             return;
         }
+        let Some(focus) = self.ribbon_focus.clone() else {
+            return;
+        };
         self.ribbon_menu_index = None;
         if ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Escape)) {
             if focus == RibbonFocus::Control("font-size".into()) {
@@ -467,6 +483,11 @@ impl DocsApp {
         {
             ctx.memory_mut(|m| m.request_focus(target.id));
             return;
+        }
+        if egui::Popup::is_any_open(ctx)
+            && self.regions.iter().any(|r| r.name == "style-filter-input")
+        {
+            return; // Let filter controls keep text/Tab focus until Down enters results.
         }
         // A resize may move the focused Editing control into More. Keep focus visible.
         let target = match &self.ribbon_focus {

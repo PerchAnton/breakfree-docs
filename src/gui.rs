@@ -251,6 +251,8 @@ pub struct DocsApp {
     font_dialog: Option<FontDialog>,
     style_dialog: Option<StyleDialog>,
     delete_style_dialog: Option<DeleteStyleDialog>,
+    style_filter: String,
+    style_scope: crate::style_filter::Scope,
     style_context: Option<(ParagraphStyle, egui::Pos2, egui::LayerId)>,
     pending: Option<Pending>,
     error: Option<String>,
@@ -363,6 +365,8 @@ impl DocsApp {
             font_dialog: None,
             style_dialog: None,
             delete_style_dialog: None,
+            style_filter: String::new(),
+            style_scope: Default::default(),
             style_context: None,
             pending: None,
             error: None,
@@ -1829,11 +1833,13 @@ impl DocsApp {
                 );
                 self.record("home-menu-Styles", response.rect);
                 self.track_ribbon(&response, "home-menu-Styles", TargetKind::Menu);
-                egui::Popup::menu(&response).show(|ui| {
-                    self.collecting_menu = true;
-                    self.styles_menu(ui);
-                    self.collecting_menu = false;
-                });
+                egui::Popup::menu(&response)
+                    .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
+                    .show(|ui| {
+                        self.collecting_menu = true;
+                        self.styles_menu(ui);
+                        self.collecting_menu = false;
+                    });
             }
             4 => {
                 self.editing_menu(ui, r(0., 0., width - 3., 23.), true);
@@ -1982,6 +1988,36 @@ impl DocsApp {
     }
     fn styles_menu(&mut self, ui: &mut Ui) {
         ui.set_width(220.);
+        let filter = ui.add(
+            egui::TextEdit::singleline(&mut self.style_filter)
+                .id(Id::new("style-filter-input"))
+                .hint_text("Filter styles (F3)")
+                .char_limit(64)
+                .desired_width(210.),
+        );
+        self.record("style-filter-input", filter.rect);
+        if filter.clicked() || filter.changed() {
+            self.ribbon_menu_index = None;
+        }
+        ui.horizontal(|ui| {
+            let scope = ui.button(self.style_scope.label());
+            self.record("style-filter-scope", scope.rect);
+            if scope
+                .on_hover_text("Cycle: All, Paragraph, Character, Custom. Tab/Space also work.")
+                .clicked()
+            {
+                self.style_scope = self.style_scope.next();
+                self.ribbon_menu_index = None;
+            }
+            let clear = ui.button("Reset");
+            self.record("style-filter-reset", clear.rect);
+            if clear.clicked() {
+                self.style_filter.clear();
+                self.style_scope = Default::default();
+                self.ribbon_menu_index = None;
+            }
+        });
+        let mut matches = 0;
         egui::ScrollArea::vertical()
             .id_salt("style-list")
             .max_height(150.)
@@ -1994,7 +2030,15 @@ impl DocsApp {
                         .style_catalog
                         .name(style)
                         .to_owned();
-                    self.command(ui, &name, Action::Style(style), vec2(210., 27.));
+                    if self.style_scope.matches(
+                        &self.style_filter,
+                        &name,
+                        false,
+                        matches!(style, ParagraphStyle::Custom(_)),
+                    ) {
+                        matches += 1;
+                        self.command(ui, &name, Action::Style(style), vec2(210., 27.));
+                    }
                 }
                 ui.separator();
                 ui.small("Character styles");
@@ -2004,16 +2048,32 @@ impl DocsApp {
                     Some(CharacterStyle::Emphasis),
                 ] {
                     let action = Action::CharacterStyle(style);
-                    self.command(ui, action.label(), action, vec2(210., 27.));
+                    if self
+                        .style_scope
+                        .matches(&self.style_filter, action.label(), true, false)
+                    {
+                        matches += 1;
+                        self.command(ui, action.label(), action, vec2(210., 27.));
+                    }
                 }
                 let styles = self.session.editor.document.character_styles.clone();
                 for style in styles {
+                    if !self
+                        .style_scope
+                        .matches(&self.style_filter, &style.name, true, true)
+                    {
+                        continue;
+                    }
+                    matches += 1;
                     self.command(
                         ui,
                         &style.name,
                         Action::CharacterStyle(Some(CharacterStyle::Custom(style.id))),
                         vec2(210., 27.),
                     );
+                }
+                if matches == 0 {
+                    ui.label("No matching styles");
                 }
                 self.command(
                     ui,
@@ -2069,23 +2129,28 @@ impl DocsApp {
                 }
                 if widths[3] == 0. {
                     self.ribbon_group = Some(4);
-                    let menu = ui.menu_button("More", |ui| {
-                        self.collecting_menu = true;
-                        ui.label("Styles");
-                        self.styles_menu(ui);
-                        ui.separator();
-                        for action in [
-                            Action::Find,
-                            Action::Replace,
-                            Action::SelectAll,
-                            Action::Formatting,
-                        ] {
-                            self.command(ui, action.label(), action, vec2(145., 25.));
-                        }
-                        self.collecting_menu = false;
-                    });
-                    self.record("home-overflow", menu.response.rect);
-                    self.track_ribbon(&menu.response, "home-overflow", TargetKind::Menu);
+                    let (menu_response, _) = egui::containers::menu::MenuButton::new("More")
+                        .config(
+                            egui::containers::menu::MenuConfig::new()
+                                .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside),
+                        )
+                        .ui(ui, |ui| {
+                            self.collecting_menu = true;
+                            ui.label("Styles");
+                            self.styles_menu(ui);
+                            ui.separator();
+                            for action in [
+                                Action::Find,
+                                Action::Replace,
+                                Action::SelectAll,
+                                Action::Formatting,
+                            ] {
+                                self.command(ui, action.label(), action, vec2(145., 25.));
+                            }
+                            self.collecting_menu = false;
+                        });
+                    self.record("home-overflow", menu_response.rect);
+                    self.track_ribbon(&menu_response, "home-overflow", TargetKind::Menu);
                     self.ribbon_group = None;
                 }
             });

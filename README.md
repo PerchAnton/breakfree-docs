@@ -444,3 +444,18 @@ commands: an exclusive end at the next paragraph start excludes that paragraph;
 a caret or selected empty paragraph still has paragraph properties. Mixed values
 and sources are independent. Inspection never mutates the document or undo history.
 Native content stays v9; palette and icons are unchanged.
+
+## Style filtering (alpha.32)
+
+Open Home → More styles (or the compact Editing menu). Filter by name and cycle
+All / Paragraph / Character / Custom using the scope button. Reset clears both.
+The list reports no matches explicitly; management commands remain available.
+F3 focuses the name field; Down enters the filtered command list, Enter applies,
+and Escape closes the popup. Tab/Space operate the filter controls.
+
+Filtering is view-only and session-local: no document/history/settings writes.
+Search trims surrounding whitespace and compares Unicode lowercase substrings;
+canonical normalization, locale-sensitive folding and fuzzy matching are not
+claimed. Built-in/default-character entries are excluded by Custom. Existing
+style application and context editing retain stable IDs. Native v9, palette and
+icons are unchanged.

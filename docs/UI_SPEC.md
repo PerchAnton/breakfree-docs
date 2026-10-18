@@ -1177,3 +1177,21 @@ Light theme, English, 100% document zoom, macOS backing scale 2:
 | [Paragraph sources](screenshots/rust-paragraph-provenance-alpha31-macos-narrow.png) | 640 × 480 DIP | `be9ac73737db870e6aaae9e04ee6df79cddc168e43c6f0a157c414e8e0adff46` |
 
 Both captures inspected; rows do not overlap. Lower rows and commands require scrolling at minimum height. Native No Spacing/centering/Undo/Redo source updates passed. No matched Windows/Word comparison or native Windows DPI verification; no similarity percentage claimed.
+
+## Alpha.32 style filtering
+
+The 220-DIP Styles menu adds a 210-DIP name field and a scope/Reset row above the
+existing 150-DIP scrollable list. Scope cycles All, Paragraph, Character, Custom;
+its tooltip explains the order. Management commands remain available when no style
+matches. F3 focuses the field; Down enters results; Enter applies and Escape closes.
+Filter state survives popup reopening within the session, not application restart.
+Neutral surfaces, purple focus and original icons are retained.
+
+Light theme, English, 100% document zoom, macOS backing scale 2:
+
+| Capture | Window | SHA-256 |
+| --- | --- | --- |
+| [Filtered styles](screenshots/rust-style-filter-alpha32-macos.png) | 1366 × 900 DIP | `f552895d5c09c06a81fc7df3eb1d8d07ae2c2f9eb2061b760e3d122f47f503b2` |
+| [Filtered styles](screenshots/rust-style-filter-alpha32-macos-narrow.png) | 640 × 480 DIP | `29a6e3a5e0607e4e75eb201f312e24ccf179ae951e8d9576620408eb7ed8241d` |
+
+Both captures inspected; controls fit, with the compact overflow popup moved upward by the toolkit. Native keyboard/filter/reset/category checks passed. Windows/Word side-by-side and native DPI remain unavailable; no similarity percentage is claimed.

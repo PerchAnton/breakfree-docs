@@ -5646,3 +5646,68 @@ fn paragraph_provenance_pane_updates_without_history_changes() {
         );
     }
 }
+
+#[test]
+fn style_filter_keyboard_preserves_document_and_applies_visible_result() {
+    let (ctx, mut app) = setup();
+    let size = [640., 480.];
+    frame(&ctx, &mut app, vec![], size, 1.);
+    for k in [Key::F10, Key::H, Key::E] {
+        frame(&ctx, &mut app, vec![key(k, false)], size, 1.);
+    }
+    let before = app.session.editor.document.clone();
+    ribbon_key(&ctx, &mut app, Key::F3, Modifiers::NONE, size);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("Heading".into())],
+        size,
+        1.,
+    );
+    frame(&ctx, &mut app, vec![], size, 1.);
+    assert_eq!(app.style_filter, "Heading");
+    assert_eq!(app.session.editor.document, before);
+    assert!(!app.ribbon_menu_targets.iter().any(|t| matches!(
+        t.kind,
+        TargetKind::Action(Action::Style(ParagraphStyle::Normal))
+    )));
+    ribbon_key(&ctx, &mut app, Key::ArrowDown, Modifiers::NONE, size);
+    ribbon_key(&ctx, &mut app, Key::Enter, Modifiers::NONE, size);
+    assert_eq!(
+        app.session.editor.selected_paragraph_style(),
+        Some(ParagraphStyle::Heading1)
+    );
+    app.session.editor.undo();
+    assert_eq!(app.session.editor.document, before);
+}
+
+#[test]
+fn style_filter_empty_scope_and_reset_do_not_change_history() {
+    let (ctx, mut app) = setup();
+    app.style_filter = "missing".into();
+    app.style_scope = crate::style_filter::Scope::Custom;
+    let before = app.session.editor.document.clone();
+    for k in [Key::F10, Key::H, Key::E] {
+        frame(&ctx, &mut app, vec![key(k, false)], [640., 480.], 1.);
+    }
+    frame(&ctx, &mut app, vec![], [640., 480.], 1.);
+    assert!(!app.ribbon_menu_targets.iter().any(|t| matches!(
+        t.kind,
+        TargetKind::Action(Action::Style(_) | Action::CharacterStyle(_))
+    )));
+    assert_eq!(app.session.editor.document, before);
+    click_region_at(&ctx, &mut app, "style-filter-reset", [640., 480.]);
+    assert!(app.style_filter.is_empty());
+    assert_eq!(app.style_scope, crate::style_filter::Scope::All);
+    assert_eq!(app.session.editor.document, before);
+    click_region_at(&ctx, &mut app, "style-filter-scope", [640., 480.]);
+    assert_eq!(app.style_scope, crate::style_filter::Scope::Paragraph);
+    frame(&ctx, &mut app, vec![], [640., 480.], 1.);
+    assert!(
+        !app.ribbon_menu_targets
+            .iter()
+            .any(|t| matches!(t.kind, TargetKind::Action(Action::CharacterStyle(_))))
+    );
+    ribbon_key(&ctx, &mut app, Key::Escape, Modifiers::NONE, [640., 480.]);
+    assert_eq!(app.session.editor.document, before);
+}

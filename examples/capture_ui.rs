@@ -61,17 +61,38 @@ impl eframe::App for Capture {
         {
             input.events.push(egui::Event::Text("Report Note".into()));
         }
-        if self.frames == 2 && self.mode == "styles-menu" {
-            for key in [egui::Key::F10, egui::Key::H, egui::Key::E] {
+        if self.mode == "styles-menu" {
+            if self.frames == 2
+                && let Some(region) = self
+                    .app
+                    .regions
+                    .iter()
+                    .find(|r| r.name == "home-menu-Styles" || r.name == "home-overflow")
+            {
+                let pos = region.rect.center();
+                input.events.push(egui::Event::PointerMoved(pos));
+                for pressed in [true, false] {
+                    input.events.push(egui::Event::PointerButton {
+                        pos,
+                        button: egui::PointerButton::Primary,
+                        pressed,
+                        modifiers: egui::Modifiers::NONE,
+                    });
+                }
+            }
+            if self.frames == 4 {
                 for pressed in [true, false] {
                     input.events.push(egui::Event::Key {
-                        key,
+                        key: egui::Key::F3,
                         physical_key: None,
                         pressed,
                         repeat: false,
                         modifiers: egui::Modifiers::NONE,
                     });
                 }
+            }
+            if self.frames == 6 {
+                input.events.push(egui::Event::Text("Heading".into()));
             }
         }
         if self.frames == 2 && self.mode.starts_with("navigation") {

@@ -3,6 +3,12 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.32 — 2026-10-18
+
+- Filter the Styles menu by name and All/Paragraph/Character/Custom scope, with Reset and an empty-result message.
+- Add F3 focus and Down-to-results navigation without changing document content/history. Filters remain session-local; Unicode matching uses lowercase substrings, not linguistic normalization.
+- Preserve style application/context commands, palette/icons and native v9. Alpha.31 approved; alpha.32 awaits approval.
+
 ## 0.1.0-alpha.31 — 2026-10-18
 
 - Show alignment, line spacing and space-after values and sources in Formatting.

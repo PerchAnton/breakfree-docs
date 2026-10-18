@@ -428,6 +428,7 @@ impl DocsApp {
                         if matches!(
                             key,
                             Key::Tab
+                                | Key::F3
                                 | Key::ArrowLeft
                                 | Key::ArrowRight
                                 | Key::ArrowUp
