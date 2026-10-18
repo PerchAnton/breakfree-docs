@@ -1285,3 +1285,19 @@ following Normal → Heading 1:
 | [Return navigation](screenshots/rust-style-return-alpha37-macos-narrow.png) | 640 × 480 DIP | `306eba75d3360be16cf619a4bdd8c3a014198139ccfc5b80702400e7c577daba` |
 
 Both harness captures inspected: Back and the focused destination fit without overlap. Other rows require scrolling. Pointer/Space return is covered by CPU widget events; ordinary native keyboard and matched Windows/Word/DPI verification were not performed.
+
+## Alpha.38 named return
+
+The return button shows Back to: <original parent name>, resolved from its stable
+ID each frame. A 210-DIP minimum expands to the existing 220-DIP menu width; height
+is 23 DIP. Long labels truncate without expanding the popup; the tooltip includes
+the full name. The existing palette, icons and 100-DIP return-mode list remain.
+
+Light theme, English, 100% document zoom, macOS backing scale 2:
+
+| Capture | Window | SHA-256 |
+| --- | --- | --- |
+| [Named return](screenshots/rust-named-return-alpha38-macos.png) | 1366 × 900 DIP | `7fb4940a028eaa6dac4272b214c869708942ad9b095e8578ef124184ba85947e` |
+| [Named return](screenshots/rust-named-return-alpha38-macos-narrow.png) | 640 × 480 DIP | `e552d4db849e5212dbf81afdeaeb9a0625b5b7a2beca6fa974d63e7e300f74e6` |
+
+Both harness captures inspected: Back to: Normal fits without overlap. Long Unicode-name width and live rename are checked by widget tests. Ordinary native input and matched Windows/Word/DPI verification were not performed.

@@ -2136,8 +2136,11 @@ impl DocsApp {
             self.ribbon_menu_index = None;
         }
         used_toggle.on_hover_text("Document text and empty paragraphs, plus parent styles. Excludes future typing and next-style links.");
-        if self.style_return.is_some() {
-            let back = ui.button("Back to parent").on_hover_text("Return to the original parent and restore its name, category and used-only filters. Does not apply formatting.");
+        if let Some((source, _, _, _)) = &self.style_return {
+            let label = format!("Back to: {}", self.command_name(*source));
+            let back = ui.add_sized(vec2(210., 23.), Button::new(&label).truncate())
+                .on_hover_text(format!("{label}\nRestore the original name, category and used-only filters. Does not apply formatting."));
+            self.record(&format!("style-return-label-{label}"), back.rect);
             self.record("style-return", back.rect);
             self.track_ribbon(&back, "style-return", TargetKind::StyleReturn);
             if back.clicked() {

@@ -8,16 +8,16 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.37**. Historical evidence retains its scope.
+Current local checkpoint: **0.1.0-alpha.38**. Historical evidence retains its scope.
 
 | Local check | Observed result |
 | --- | --- |
-| Full / no-default-features tests | 231 / 117 passed; return restoration, chained navigation and closure checks added |
+| Full / no-default-features tests | 232 / 117 passed; named return width and live custom-name checks added |
 | fmt / Clippy | Passed; normal/capture all-target checks with warnings denied |
 | Release builds | Native binary and capture harness passed without Office/sibling inputs |
-| CLI | Version/capabilities report alpha.37; existing CLI subprocess tests pass |
+| CLI | Version/capabilities report alpha.38; existing CLI subprocess tests pass |
 | Repository/artwork/YAML/whitespace | Passed |
-| Native rendering | Back to parent controls at 1366 × 900 / 640 × 480 DIP, backing scale 2 |
+| Native rendering | Named return controls at 1366 × 900 / 640 × 480 DIP, backing scale 2 |
 | Native input | Not repeated this iteration; previous automation lost its window. CPU widget events are separate evidence |
 | Existing regressions | Home geometry, minimum-width 64-style keyboard scrolling, history, storage and synthetic scaling checks retained |
 
@@ -1085,3 +1085,14 @@ the next menu layout prevents that drift. Visibility assertions wait 12 frames
 for the existing scroll animation to settle. Full existing regressions remain.
 Native keyboard input is not repeated; captures are rendering evidence only.
 Windows/Word/DPI/IME/accessibility acceptance remains open.
+
+## Alpha.38 named return validation
+
+The existing pointer/Space return test now asserts Back to: Normal and bounded
+button width. A new actual-widget case uses a long Ukrainian/combining character
+style name, checks the 220-DIP menu bound and window edge, then renames the same
+ID and verifies the displayed name updates. The toolkit expands the requested
+210-DIP minimum button to the menu's 220-DIP width; assertions use that actual
+layout contract. Existing return/filter/history and scrolling checks remain.
+Ordinary native input was not repeated; harness captures only establish rendering.
+Windows/Word/DPI/IME/accessibility gates remain open.

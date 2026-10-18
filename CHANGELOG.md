@@ -3,6 +3,11 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.38 — 2026-10-18
+
+- Show the original parent name in Back to: <style>. Resolve the current name from its stable ID; constrain the button width and show the full name in its tooltip when truncated.
+- Preserve return/filter/history behavior, palette and icons. Alpha.37 approved; alpha.38 awaits approval.
+
 ## 0.1.0-alpha.37 — 2026-10-18
 
 - Add Back to parent after Required by navigation. Restore the original parent focus and name/category/used-only filters, even after further jumps or filter changes, without applying formatting or changing undo history. Closing the menu discards the return point.

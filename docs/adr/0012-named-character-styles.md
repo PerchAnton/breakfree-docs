@@ -191,3 +191,11 @@ open, focuses and scrolls to the original style without applying it. The return
 point is consumed on return and discarded when the menu closes; it is not saved
 in the document, settings or undo history. The list shrinks from 125 to 100 DIP
 while Back is available so the minimum-height popup remains bounded.
+
+## Named return destination (alpha.38)
+
+The return button now says Back to: followed by the original parent style name.
+The name is resolved from the stored stable ID on each frame, including custom
+paragraph and character names. Its 23-DIP-high button fits the 220-DIP menu width and truncates long labels;
+the tooltip retains the full name and restoration explanation. Return behavior,
+palette, icons, document/history and storage are unchanged.

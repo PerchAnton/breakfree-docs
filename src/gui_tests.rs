@@ -5824,6 +5824,12 @@ fn required_by_navigation_reveals_focuses_without_applying() {
         );
         assert_eq!(app.session.editor.document, before);
         assert_eq!(app.session.editor.undo_stack.len(), depth);
+        let back = app
+            .regions
+            .iter()
+            .find(|r| r.name == "style-return-label-Back to: Normal")
+            .unwrap();
+        assert!(back.rect.width() <= 220.1, "{:?}", back.rect);
         app.style_used_only = false;
         app.style_filter = "No match".into();
         app.style_scope = crate::style_filter::Scope::Custom;
@@ -5884,4 +5890,44 @@ fn dependency_return_keeps_original_source_through_chained_jumps_and_clears_on_c
     frame(&ctx, &mut app, vec![], [640., 480.], 1.);
     assert!(app.style_return.is_none());
     assert!(app.style_jump.is_none());
+}
+
+#[test]
+fn return_name_tracks_long_custom_names_without_expanding_menu() {
+    let (ctx, mut app) = setup();
+    let long = "Український стиль e\u{301} ".repeat(2).trim().to_owned();
+    let id = app
+        .session
+        .editor
+        .document
+        .add_character_style(&long, CharacterFormat::default())
+        .unwrap();
+    let size = [640., 480.];
+    frame(&ctx, &mut app, vec![], size, 1.);
+    for k in [Key::F10, Key::H, Key::E] {
+        frame(&ctx, &mut app, vec![key(k, false)], size, 1.);
+    }
+    frame(&ctx, &mut app, vec![], size, 1.);
+    app.style_return = Some((
+        Action::CharacterStyle(Some(id)),
+        String::new(),
+        crate::style_filter::Scope::All,
+        false,
+    ));
+    frame(&ctx, &mut app, vec![], size, 1.);
+    let name = format!("style-return-label-Back to: {long}");
+    let rect = app.regions.iter().find(|r| r.name == name).unwrap().rect;
+    assert!(rect.width() <= 220.1, "{rect:?}");
+    assert!(rect.right() <= size[0]);
+    app.session
+        .editor
+        .document
+        .update_character_style(id, "Renamed parent", CharacterFormat::default())
+        .unwrap();
+    frame(&ctx, &mut app, vec![], size, 1.);
+    assert!(
+        app.regions
+            .iter()
+            .any(|r| r.name == "style-return-label-Back to: Renamed parent")
+    );
 }
