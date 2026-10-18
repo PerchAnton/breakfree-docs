@@ -229,7 +229,7 @@ impl DocsApp {
                     format!("{label}. {}", summary.marker_details(handle)),
                 )
             });
-            response.on_hover_text(format!("{label} — drag to preview; release to apply; Esc cancels. Half-point steps. Uses the first selected paragraph; applies to selected paragraphs. Ctrl+Shift+F8 enters keyboard control; Tab changes marker, arrows nudge 0.5 pt, Shift+arrows 5 pt, Enter applies, Esc cancels, Delete previews all-indent reset; Shift+Delete resets the focused property to style indents. {}", summary.marker_details(handle)));
+            response.on_hover_text(format!("{label} — drag to preview; release to apply; Esc cancels. Half-point steps. Uses the first selected paragraph; applies to selected paragraphs. Ctrl+Shift+F8 enters keyboard control; Tab changes marker, arrows nudge 0.5 pt, Shift+arrows 5 pt, Enter applies, Esc cancels, F1 shows sources, Delete previews all-indent reset; Shift+Delete resets the focused property to style indents. {}", summary.marker_details(handle)));
         }
         if let Some(drag) = &mut self.ruler_drag
             && !drag.keyboard
@@ -282,13 +282,33 @@ impl DocsApp {
                     Id::new("ruler-values"),
                 ))
                 .with_clip_rect(ui.clip_rect());
-            let galley = painter.layout_no_wrap(
-                format!("{}\n{hint} · Enter applies · Esc cancels", summary.values()),
-                FontId::proportional(11.),
-                INK,
-            );
+            let galley = if self.ruler_sources {
+                let handle = self.ruler_key_focus.unwrap_or(Handle::Left);
+                painter.layout(
+                    format!(
+                        "{} — value sources\n{}\nEnter / Esc / F1: return to marker",
+                        marker_name(handle),
+                        summary.marker_details(handle)
+                    ),
+                    FontId::proportional(11.),
+                    INK,
+                    (ui.clip_rect().right() - origin.x - 16.).clamp(80., 440.),
+                )
+            } else {
+                painter.layout_no_wrap(
+                    format!(
+                        "{}\n{hint} · Enter applies · Esc cancels · F1 sources",
+                        summary.values()
+                    ),
+                    FontId::proportional(11.),
+                    INK,
+                )
+            };
             let readout = Rect::from_min_size(origin, galley.size() + vec2(12., 8.));
             self.record("ruler-values", readout);
+            if self.ruler_sources {
+                self.record("ruler-sources", readout);
+            }
             painter.rect(
                 readout,
                 2.,
@@ -391,12 +411,53 @@ impl DocsApp {
             ctx.memory_mut(|m| m.request_focus(Id::new("ruler-first")));
         }
         let Some(mut handle) = self.ruler_key_focus else {
+            self.ruler_sources = false;
             return false;
         };
         if self.ruler_drag.as_ref().is_some_and(|d| !d.keyboard) {
             return false;
         }
         let events = ctx.input(|i| i.events.clone());
+        // The information view keeps marker focus and the uncommitted draft intact.
+        // Dismissal consumes its key so Escape cannot also cancel that draft.
+        if self.ruler_sources
+            && self.rulers
+            && !self.backstage
+            && ctx
+                .input(|i| i.focused && !i.viewport().close_requested() && !i.pointer.any_pressed())
+        {
+            if events.iter().any(|e| {
+                matches!(
+                    e,
+                    egui::Event::Key {
+                        key: Key::F1 | Key::Escape | Key::Enter,
+                        pressed: true,
+                        ..
+                    }
+                )
+            }) {
+                self.ruler_sources = false;
+            }
+            ctx.memory_mut(|m| {
+                m.move_focus(egui::FocusDirection::None);
+                m.request_focus(Id::new(
+                    MARKERS.iter().find(|(h, _)| *h == handle).unwrap().1,
+                ));
+            });
+            ctx.input_mut(|i| {
+                i.events.retain(|e| {
+                    !matches!(
+                        e,
+                        egui::Event::Key { .. }
+                            | egui::Event::Text(_)
+                            | egui::Event::Paste(_)
+                            | egui::Event::Ime(_)
+                            | egui::Event::MouseWheel { .. }
+                    )
+                })
+            });
+            return true;
+        }
         let cancel = !self.rulers
             || self.backstage
             || ctx.input(|i| !i.focused || i.viewport().close_requested())
@@ -414,6 +475,7 @@ impl DocsApp {
         let lost =
             !enter && !ctx.memory(|m| MARKERS.iter().any(|(_, id)| m.has_focus(Id::new(id))));
         if cancel || pointer || lost {
+            self.ruler_sources = false;
             self.ruler_drag = None;
             self.ruler_key_focus = None;
             if !pointer {
@@ -459,6 +521,10 @@ impl DocsApp {
                 continue;
             }
             match key {
+                Key::F1 => {
+                    self.ruler_sources = true;
+                    break;
+                }
                 Key::Delete => self.start_ruler_reset(
                     ctx,
                     if modifiers.shift {

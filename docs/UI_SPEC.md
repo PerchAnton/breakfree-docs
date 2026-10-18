@@ -1639,3 +1639,25 @@ SHA-256: `7c33b2c4cef380a9e3f98cfbf41e91eb54fcef044e03e5ca32376c5b899ab585`.
 SHA-256: `d1f797bb23e8a95665ced9c712cf78425544efa7a09ace4537a7949bb149753c`.
 
 Both native macOS capture fixtures were inspected: equal left amounts retain separate ancestor-style/direct groups with counts; special-indent provenance remains distinct. Tooltip text wraps within both windows. These are widget-injected hover fixtures, not native OS-input or Windows/reference validation.
+
+
+## Alpha.53 keyboard ruler sources
+
+F1 opens wrapped marker value/source details in the existing contextual overlay.
+Marker focus remains locked. Enter/Escape/F1 dismiss only the information view;
+editing resumes from the same marker and pending draft. While open, Tab, arrows,
+Delete and text input do not change selection, indents or history. Pointer takeover,
+focus loss, hidden ruler or transform cancellation follows existing ruler policy.
+The overlay uses the established neutral surface, 11-DIP text and a maximum 440-DIP
+text width, constrained to the visible viewport. No scale geometry, palette or
+icon changes. Source summaries retain the existing three-group display limit.
+
+![Keyboard sources at 1366 × 900 DIP](screenshots/rust-ruler-keyboard-sources-alpha53-macos.png)
+
+SHA-256: `76e710a9309a3305353725e0b77adc87728369f33e6950ecbc1b4a98a32f1796`.
+
+![Keyboard sources at 640 × 480 DIP](screenshots/rust-ruler-keyboard-sources-alpha53-compact-macos.png)
+
+SHA-256: `eb63fed359ee03c298262d251b0ff6f11f9b6b29ca1c13a8e7bce7135e3fc712`.
+
+Both native macOS capture fixtures were inspected: marker focus, wrapped mixed-source details and the dismissal hint remain visible within the viewport. These inject widget keystrokes; ordinary OS input and Windows/reference validation remain unperformed.

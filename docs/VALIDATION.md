@@ -8,16 +8,16 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.52**. Historical evidence retains its scope.
+Current local checkpoint: **0.1.0-alpha.53**. Historical evidence retains its scope.
 
 | Local check | Observed result |
 | --- | --- |
-| Full / no-default-features tests | 293 / 148 passed; source aggregation, preview/history and actual tooltip rendering checked |
+| Full / no-default-features tests | 296 / 148 passed; keyboard provenance, draft-preserving dismissal, focus and bounds checked |
 | fmt / Clippy | Passed; normal/capture all-target checks with warnings denied |
 | Release builds | Native binary and capture harness passed without Office/sibling inputs |
-| CLI | Version/capabilities report alpha.52; existing CLI subprocess tests pass |
+| CLI | Version/capabilities report alpha.53; existing CLI subprocess tests pass |
 | Repository/artwork/YAML/whitespace | Passed |
-| Native rendering | Ruler source tooltip inspected at 1366 × 900 / 640 × 480 DIP |
+| Native rendering | Keyboard ruler sources inspected at 1366 × 900 / 640 × 480 DIP |
 | Native input | Not repeated this iteration; previous automation lost its window. CPU widget events are separate evidence |
 | Existing regressions | Home geometry, minimum-width 64-style keyboard scrolling, history, storage and synthetic scaling checks retained |
 
@@ -1395,3 +1395,21 @@ source groups and counts wrap within the window. Ordinary OS keyboard, Windows
 scaling and matched Word reference checks remain unperformed/deferred. The source
 inspector is shared with the Formatting pane; native v13 and process/settings v1
 are unchanged. Server CI is reported separately. No merge/tag/release.
+
+
+## Alpha.53 keyboard ruler source validation
+
+2026-10-18, macOS arm64 / Rust 1.99.1: **296 full / 148 core-only tests** passed.
+fmt, normal/capture all-target Clippy with warnings denied, release/capture builds,
+repository/artwork/YAML/whitespace and isolated executable CLI identity/capabilities
+passed. Three new widget cases cover all four marker entries, blocked edit/navigation
+keys, Enter/Escape/F1 dismissal, preserved pending preview and separate acceptance,
+compact bounds at three synthetic scales and focus-loss cleanup. The first run
+exposed Escape cancelling the pending draft; explicit focus restoration and consumed
+dismissal events fix that regression. The final full suite includes the fix.
+
+Two native captures at 1366 × 900 / 640 × 480 DIP were inspected. These are
+widget-injected keyboard fixtures, not ordinary OS input. Windows/Word matching,
+native display scaling and full accessibility acceptance remain deferred. Source
+summaries retain the three-group limit. Native v13 and process/settings v1 unchanged.
+Alpha.52 code/journal CI succeeded; alpha.53 CI is recorded separately. No merge/tag/release.

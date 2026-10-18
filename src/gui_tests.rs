@@ -7769,3 +7769,128 @@ fn ruler_hover_displays_provenance_without_editing() {
     assert_eq!(app.session.editor.document, before);
     assert_eq!(app.session.editor.undo_stack.len(), n);
 }
+
+#[test]
+fn ruler_sources_keyboard_reads_each_marker_and_returns_without_edits() {
+    for tabs in 0..4 {
+        let (ctx, mut app) = setup();
+        let before = app.session.editor.document.clone();
+        let n = app.session.editor.undo_stack.len();
+        let mut keys = vec![ruler_key(Key::F8, Modifiers::CTRL | Modifiers::SHIFT)];
+        keys.extend((0..tabs).map(|_| key(Key::Tab, false)));
+        keys.push(key(Key::F1, false));
+        frame(&ctx, &mut app, keys, [1366., 900.], 1.);
+        let focused = app.ruler_key_focus;
+        assert!(app.ruler_sources);
+        assert!(app.regions.iter().any(|r| r.name == "ruler-sources"));
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                key(Key::Tab, false),
+                key(Key::ArrowRight, false),
+                key(Key::Delete, false),
+                egui::Event::Text("blocked".into()),
+            ],
+            [1366., 900.],
+            1.,
+        );
+        assert_eq!(app.ruler_key_focus, focused);
+        assert!(app.ruler_drag.is_none());
+        assert_eq!(app.session.editor.document, before);
+        assert_eq!(app.session.editor.undo_stack.len(), n);
+        frame(
+            &ctx,
+            &mut app,
+            vec![key(Key::Escape, false)],
+            [1366., 900.],
+            1.,
+        );
+        assert!(!app.ruler_sources);
+        assert_eq!(app.ruler_key_focus, focused);
+        frame(
+            &ctx,
+            &mut app,
+            vec![key(Key::Escape, false)],
+            [1366., 900.],
+            1.,
+        );
+        assert!(app.ruler_key_focus.is_none());
+    }
+}
+
+#[test]
+fn ruler_sources_dismissal_preserves_preview_until_separate_commit_or_cancel() {
+    for dismiss in [Key::Escape, Key::Enter, Key::F1] {
+        let (ctx, mut app) = setup();
+        let before = app.session.editor.document.clone();
+        let n = app.session.editor.undo_stack.len();
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                ruler_key(Key::F8, Modifiers::CTRL | Modifiers::SHIFT),
+                key(Key::ArrowRight, false),
+                key(Key::F1, false),
+            ],
+            [1366., 900.],
+            1.,
+        );
+        let preview = app.ruler_drag.as_ref().unwrap().draft.preview.clone();
+        frame(&ctx, &mut app, vec![key(dismiss, false)], [1366., 900.], 1.);
+        assert!(!app.ruler_sources);
+        assert_eq!(app.ruler_drag.as_ref().unwrap().draft.preview, preview);
+        assert_eq!(app.session.editor.document, before);
+        assert_eq!(app.session.editor.undo_stack.len(), n);
+        frame(
+            &ctx,
+            &mut app,
+            vec![key(Key::Enter, false)],
+            [1366., 900.],
+            1.,
+        );
+        assert_eq!(app.session.editor.document, preview);
+        assert_eq!(app.session.editor.undo_stack.len(), n + 1);
+    }
+}
+
+#[test]
+fn ruler_sources_compact_bounds_and_focus_loss_cleanup() {
+    for dpi in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        app.zoom = 50.;
+        let size = [640. * dpi, 480. * dpi];
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![], size, dpi);
+        }
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                ruler_key(Key::F8, Modifiers::CTRL | Modifiers::SHIFT),
+                key(Key::F1, false),
+            ],
+            size,
+            dpi,
+        );
+        let r = app
+            .regions
+            .iter()
+            .find(|r| r.name == "ruler-sources")
+            .unwrap()
+            .rect;
+        assert!(
+            r.left() >= 0. && r.right() <= 640. && r.bottom() <= 480.,
+            "{r:?}"
+        );
+        let _ = ctx.run(
+            egui::RawInput {
+                focused: false,
+                ..Default::default()
+            },
+            |ctx| app.update_ui(ctx),
+        );
+        assert!(!app.ruler_sources);
+        assert!(app.ruler_key_focus.is_none());
+    }
+}

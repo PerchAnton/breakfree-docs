@@ -3,6 +3,12 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.53 — 2026-10-18
+
+- Add F1 access to value/source details while a ruler marker has keyboard focus. Enter, Escape or F1 returns to that marker without applying or discarding its pending indent preview.
+- Keep inspection read-only: editing/navigation keys are consumed while details are open. Focus loss, hidden rulers and pointer takeover retain existing cancellation policy.
+- Preserve shared provenance, two-axis design, palette/icons and native v13. Add keyboard/draft/focus/bounds regressions and native captures. Alpha.52 approved; alpha.53 awaits approval. Windows remains deferred.
+
 ## 0.1.0-alpha.52 — 2026-10-18
 
 - Show indent provenance in ruler marker tooltips and accessibility descriptions: direct paragraph formatting, supplying paragraph/ancestor style, or document default.

@@ -709,3 +709,13 @@ Source groups include paragraph counts; equal values can still have Mixed source
 First-line/continuation markers show both left and special-indent provenance.
 The inspection follows the current reset/drag preview and undo/redo. It creates no
 overrides or history. Long source lists show three groups and a remaining count.
+
+
+## Keyboard ruler sources (alpha.53)
+
+Press Ctrl+Shift+F8 to enter the ruler, Tab to choose a marker, then **F1** to
+inspect its values and sources. **Enter, Escape or F1** closes the details and
+returns to the same marker. Pending indentation previews remain untouched; apply
+or cancel them separately after closing details. Other editing/navigation keys
+are ignored while inspecting. Existing focus-loss/pointer-takeover cancellation
+still applies. This is a Docs-specific shortcut, not verified Word equivalence.
