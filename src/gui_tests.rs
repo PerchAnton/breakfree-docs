@@ -6066,3 +6066,120 @@ fn dependency_navigation_long_reverse_catalog_chain_keeps_identity_and_history()
     assert_eq!(app.session.editor.document, before);
     assert_eq!(app.session.editor.undo_stack.len(), depth);
 }
+
+#[test]
+fn dependency_keyboard_navigation_scale_matrix() {
+    for dpi in [1., 1.25, 1.5] {
+        for logical in [[640., 480.], [1024., 768.], [1366., 900.]] {
+            for collapsed in [false, true] {
+                let (ctx, mut app) = setup();
+                app.session
+                    .editor
+                    .apply_paragraph_style(0, 0, ParagraphStyle::Heading1)
+                    .unwrap();
+                app.ribbon_collapsed = collapsed;
+                app.style_filter = "Normal".into();
+                app.style_used_only = true;
+                let before = app.session.editor.document.clone();
+                let depth = app.session.editor.undo_stack.len();
+                let screen = [logical[0] * dpi, logical[1] * dpi];
+                let press = |app: &mut DocsApp, k, modifiers| {
+                    for pressed in [true, false] {
+                        frame(
+                            &ctx,
+                            app,
+                            vec![egui::Event::Key {
+                                key: k,
+                                physical_key: Some(k),
+                                pressed,
+                                repeat: false,
+                                modifiers,
+                            }],
+                            screen,
+                            dpi,
+                        );
+                    }
+                };
+                for _ in 0..3 {
+                    frame(&ctx, &mut app, vec![], screen, dpi);
+                }
+                if collapsed {
+                    press(&mut app, Key::H, Modifiers::ALT);
+                } else {
+                    press(&mut app, Key::F10, Modifiers::NONE);
+                    press(&mut app, Key::H, Modifiers::NONE);
+                }
+                press(
+                    &mut app,
+                    if logical[0] == 640. { Key::E } else { Key::L },
+                    Modifiers::NONE,
+                );
+                press(&mut app, Key::F3, Modifiers::NONE);
+                assert!(ctx.memory(|m| m.has_focus(Id::new("style-filter-input"))));
+                press(&mut app, Key::ArrowDown, Modifiers::NONE);
+                let link = "style-jump-Style(Normal)-Style(Heading1)";
+                for _ in 0..20 {
+                    if app
+                        .ribbon_menu_index
+                        .is_some_and(|i| app.ribbon_menu_targets[i].name == link)
+                    {
+                        break;
+                    }
+                    press(&mut app, Key::Tab, Modifiers::NONE);
+                }
+                let index = app.ribbon_menu_index.unwrap();
+                assert_eq!(app.ribbon_menu_targets[index].name, link);
+                press(&mut app, Key::Tab, Modifiers::SHIFT);
+                press(&mut app, Key::Tab, Modifiers::NONE);
+                assert_eq!(app.ribbon_menu_index, Some(index));
+                press(&mut app, Key::Enter, Modifiers::NONE);
+                for _ in 0..12 {
+                    frame(&ctx, &mut app, vec![], screen, dpi);
+                }
+                let target = &app.ribbon_menu_targets[app.ribbon_menu_index.unwrap()];
+                assert!(matches!(
+                    target.kind,
+                    TargetKind::Action(Action::Style(ParagraphStyle::Heading1))
+                ));
+                assert!(ctx.memory(|m| m.has_focus(target.id)));
+                let back = app
+                    .regions
+                    .iter()
+                    .find(|r| r.name == "style-return")
+                    .unwrap();
+                assert!(back.rect.min.x >= 0. && back.rect.max.x <= logical[0] + 0.1);
+                assert!(back.rect.min.y >= 0. && back.rect.max.y <= logical[1] + 0.1);
+                for _ in 0..20 {
+                    if app
+                        .ribbon_menu_index
+                        .is_some_and(|i| app.ribbon_menu_targets[i].name == "style-return")
+                    {
+                        break;
+                    }
+                    press(&mut app, Key::ArrowUp, Modifiers::NONE);
+                }
+                assert_eq!(
+                    app.ribbon_menu_targets[app.ribbon_menu_index.unwrap()].name,
+                    "style-return"
+                );
+                press(&mut app, Key::Space, Modifiers::NONE);
+                for _ in 0..12 {
+                    frame(&ctx, &mut app, vec![], screen, dpi);
+                }
+                assert_eq!(app.style_filter, "Normal");
+                assert!(app.style_used_only);
+                assert!(app.style_return.is_none());
+                let target = &app.ribbon_menu_targets[app.ribbon_menu_index.unwrap()];
+                assert!(matches!(
+                    target.kind,
+                    TargetKind::Action(Action::Style(ParagraphStyle::Normal))
+                ));
+                assert!(ctx.memory(|m| m.has_focus(target.id)));
+                assert_eq!(app.session.editor.document, before);
+                assert_eq!(app.session.editor.undo_stack.len(), depth);
+                press(&mut app, Key::Escape, Modifiers::NONE);
+                assert!(!egui::Popup::is_any_open(&ctx));
+            }
+        }
+    }
+}

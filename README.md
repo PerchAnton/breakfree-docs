@@ -529,3 +529,14 @@ focuses the filter. It does not apply a replacement style. Explicit filter edits
 cancel pending navigation and clear the notice. Navigation does not change
 content or undo history. A 32-style reverse-catalog chain and repeated keyboard
 jumps are covered by widget tests; native Windows acceptance remains open.
+
+
+## Windows navigation acceptance preparation (alpha.40)
+
+An 18-case CPU widget matrix exercises dependency navigation at synthetic
+100/125/150% scale, three window sizes and expanded/collapsed Home.
+The [Windows acceptance checklist](docs/WINDOWS_ACCEPTANCE.md) defines the separate native gate.
+A Unicode 32-style fixture and a Windows CI review artifact with source/version/hash
+metadata make the procedure reproducible. No suitable Windows desktop was
+available; native keyboard, display scaling and Word comparison remain unverified.
+The review artifact is not a release. Runtime behavior, palette and icons are unchanged.

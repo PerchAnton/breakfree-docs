@@ -3,6 +3,12 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.40 — 2026-10-18
+
+- Add an 18-case synthetic scale/keyboard matrix for style dependency navigation: three window sizes, 100/125/150% scale and expanded/collapsed Home. Exercise Alt+H/F10, F3, arrows, Tab/Shift+Tab, Enter, Space and Escape without assigning menu focus in the test.
+- Add a validated Unicode, 32-style native acceptance fixture, Windows manual checklist and CI review artifact with executable/source provenance. These do not establish native Windows input or display-scaling acceptance; no suitable Windows desktop was available.
+- Preserve runtime behavior, palette/icons and format/protocol/settings versions. Alpha.39 approved; alpha.40 awaits approval.
+
 ## 0.1.0-alpha.39 — 2026-10-18
 
 - Resolve pending style navigation against the current document and filters. If a return destination was deleted, renamed out of the query or is no longer used, restore the exact filters, explain the unavailable row and focus the filter instead of retaining a stale jump.

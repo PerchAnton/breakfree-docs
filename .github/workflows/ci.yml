@@ -48,3 +48,29 @@ jobs:
           else
             ./target/release/breakfree-docs --capabilities
           fi
+      - name: Record Windows review build provenance
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $exe = 'target/release/breakfree-docs.exe'
+          $version = & $exe --version
+          if ($LASTEXITCODE -ne 0) { throw 'Version check failed' }
+          @{
+            source_commit = '${{ github.sha }}'
+            version = $version
+            executable_sha256 = (Get-FileHash $exe -Algorithm SHA256).Hash
+            runner = '${{ runner.os }}'
+            native_keyboard_and_display_scaling = 'NOT VERIFIED by CI'
+          } | ConvertTo-Json | Set-Content -Encoding utf8 windows-build.json
+      - name: Upload Windows review build (not a release)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-review-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            target/release/breakfree-docs.exe
+            examples/StyleNavigation.bfdoc
+            docs/WINDOWS_ACCEPTANCE.md
+            windows-build.json

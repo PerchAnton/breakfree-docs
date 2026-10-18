@@ -1319,3 +1319,13 @@ Normal → Heading 1 and the retained return control, not the unavailable notice
 | [Dependency navigation](screenshots/rust-style-navigation-alpha39-macos-narrow.png) | 640 × 480 DIP | `e552d4db849e5212dbf81afdeaeb9a0625b5b7a2beca6fa974d63e7e300f74e6` |
 
 Both captures inspected. Windows/reference/DPI and ordinary native keyboard acceptance remain open; widget tests are separate evidence.
+
+
+## Alpha.40 Windows acceptance preparation
+
+No visual/runtime changes or new native screenshots. The 18-case widget matrix
+covers 640 × 480, 1024 × 768 and 1366 × 900 DIP at synthetic 1.0/1.25/1.5 scales
+with expanded/collapsed Home, keyboard traversal and Back bounds. It does not
+exercise Windows display settings or physical input. Native Windows acceptance
+was unavailable and remains open under [the checklist](WINDOWS_ACCEPTANCE.md).
+Existing palette and original icons are unchanged.

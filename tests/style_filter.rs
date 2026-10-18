@@ -294,3 +294,20 @@ fn consumers_include_transitive_direct_users_only_and_survive_roundtrip() {
             .is_empty()
     );
 }
+
+#[test]
+fn windows_acceptance_fixture_has_transitive_consumers_and_roundtrips() {
+    use breakfree_docs::{model::CharacterStyle, storage, style_filter::UsedStyles};
+    let doc = storage::decode(include_bytes!("../examples/StyleNavigation.bfdoc")).unwrap();
+    let used = UsedStyles::collect(&doc);
+    assert_eq!(doc.character_styles.len(), 32);
+    assert_eq!(
+        used.character_consumers(&doc, CharacterStyle::Custom(32)),
+        vec![CharacterStyle::Custom(1), CharacterStyle::Custom(17)]
+    );
+    assert!(doc.text().contains("Україна Русский e\u{301}"));
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("navigation.bfdoc");
+    storage::save(&doc, &path).unwrap();
+    assert_eq!(storage::load(&path).unwrap(), doc);
+}

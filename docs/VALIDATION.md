@@ -8,16 +8,16 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.39**. Historical evidence retains its scope.
+Current local checkpoint: **0.1.0-alpha.40**. Historical evidence retains its scope.
 
 | Local check | Observed result |
 | --- | --- |
-| Full / no-default-features tests | 234 / 117 passed; stale-return and long-chain keyboard checks added |
+| Full / no-default-features tests | 236 / 118 passed; 18-case synthetic keyboard/scale matrix and fixture roundtrip added |
 | fmt / Clippy | Passed; normal/capture all-target checks with warnings denied |
 | Release builds | Native binary and capture harness passed without Office/sibling inputs |
-| CLI | Version/capabilities report alpha.39; existing CLI subprocess tests pass |
+| CLI | Version/capabilities report alpha.40; existing CLI subprocess tests pass |
 | Repository/artwork/YAML/whitespace | Passed |
-| Native rendering | Dependency navigation at 1366 × 900 / 640 × 480 DIP, backing scale 2 |
+| Native rendering | No new rendering changes; alpha.39 captures retained (1366 × 900 / 640 × 480 DIP) |
 | Native input | Not repeated this iteration; previous automation lost its window. CPU widget events are separate evidence |
 | Existing regressions | Home geometry, minimum-width 64-style keyboard scrolling, history, storage and synthetic scaling checks retained |
 
@@ -1113,3 +1113,31 @@ palette, icons and existing return menu remain intact. This harness injects
 widget events, not physical input. Ordinary native input was not repeated;
 Windows 100/125/150%, matched Word comparison, physical IME and accessibility
 remain unverified. No content/protocol/settings/dependency/license changes.
+
+
+## Alpha.40 Windows acceptance preparation
+
+No suitable Windows desktop was available; the owner confirmed no access could
+be provided. Native Windows keyboard and OS display scaling were **not tested**.
+The macOS host's installed remote-desktop client is not Windows GUI evidence.
+
+Local gate: 236 full / 118 core tests, fmt, normal/capture all-target Clippy,
+release/capture builds, repository/artwork/YAML/whitespace and CLI checks passed.
+The new matrix exercises 18 combinations: three DIP sizes × synthetic scales
+1.0/1.25/1.5 × expanded/collapsed Home. F10 or Alt+H, F3, Down, Tab/Shift+Tab,
+Enter, Up, Space and Escape use widget events without manually assigning a menu
+index. Destination focus, Back bounds, exact filters and unchanged document/undo
+are asserted. It does not test bare Alt routing, AltGr, native DPI or OS IME.
+The fixture test validates 32 character styles, transitive consumers, combining
+Unicode text and exact native save/reopen.
+
+The prior alpha.39 Windows job's test and Clippy steps were observed successful;
+its release build was still running when inspected:
+[Windows job](https://github.com/PerchAnton/breakfree-docs/actions/runs/39131923187/job/117688671545).
+This is evidence for that commit, not alpha.40 or native acceptance.
+
+The updated workflow will upload an EXE, fixture, checklist and SHA/version
+metadata after successful Windows checks. Artifact publication and alpha.40 CI
+completion are separate from these local results. Follow
+[WINDOWS_ACCEPTANCE](WINDOWS_ACCEPTANCE.md); all native result cells remain Not run.
+No new screenshots, runtime, dependency, schema, palette or icon changes.
