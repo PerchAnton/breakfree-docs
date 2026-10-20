@@ -1744,3 +1744,34 @@ SHA-256: `e4b3f4d4f525aef6a0d5478db96479eaace516886a5e992074a407d6f100e2d4`.
 SHA-256: `bc36645baf32665d093401fa9040a060704c22d9abe8dbd22ddc7d00e28a14bd`.
 
 Both macOS capture fixtures were inspected: menu labels/reset commands fit, and the selected source panel begins at the top with marker focus and visible dismissal hints. These use injected pointer events, not physical-input acceptance.
+
+
+## Alpha.57 keyboard ruler context menu
+
+Shift+F10 opens the existing menu at the focused marker lower-left corner; the
+popup constrains its placement to the viewport. Initially focus the matching
+source command. Up/Down and Tab/Shift+Tab wrap through eight commands; Home/End
+select the first/last. Enter/Space activates; Escape closes only the menu and
+restores marker focus. Text, wheel and unrelated shortcuts are consumed.
+
+A pending keyboard preview survives menu opening, Escape and source inspection.
+Only its current source command is enabled until the preview is applied/cancelled;
+reset and other-marker inspection remain disabled with an explanation. Focus loss,
+hidden rulers and resize-cancelled drafts close the menu without applying edits.
+Pointer takeover retains the existing cancellation policy. All visual styles,
+menu labels, palette and icons remain unchanged. Shift+F10 is the supported key;
+the current toolkit does not expose a dedicated Menu-key variant. Native Windows
+and assistive-technology acceptance remain unverified.
+
+Suppress the contextual value readout while the keyboard menu is open, so its
+tooltip layer cannot obscure the first menu item. It returns after dismissal.
+
+![Keyboard ruler menu at 1366 × 900 DIP](screenshots/rust-ruler-keyboard-menu-alpha57-macos.png)
+
+SHA-256: `1ebcc3449053d6ce8d8b959e5cde799b19d6f3eccd77425e381b1b576be6ac97`.
+
+![Keyboard ruler menu at 640 × 480 DIP](screenshots/rust-ruler-keyboard-menu-alpha57-compact-macos.png)
+
+SHA-256: `0dde2556d99c060d61900211f2670dabc83f833c60560f7266e9ccbcc71a9306`.
+
+Both final macOS fixtures were inspected: the first source item has visible focus, no value readout covers it, and all labels fit within the window. These inject widget keys; physical/native Windows acceptance is not established.

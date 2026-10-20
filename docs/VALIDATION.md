@@ -8,14 +8,14 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.56**. Historical evidence retains its scope.
+Current local checkpoint: **0.1.0-alpha.57**. Historical evidence retains its scope.
 
 | Local check | Observed result |
 | --- | --- |
-| Full / no-default-features tests | 303 / 149 passed; context source commands, focus, read-only behavior and takeover cancellation checked |
+| Full / no-default-features tests | 306 / 149 passed; Shift+F10, all-marker navigation/activation, preview preservation and focus/resize cleanup checked |
 | fmt / Clippy | Passed; normal/capture all-target checks with warnings denied |
 | Release builds | Native binary and capture harness passed without Office/sibling inputs |
-| CLI | Version/capabilities report alpha.56; existing CLI subprocess tests pass |
+| CLI | Version/capabilities report alpha.57; existing CLI subprocess tests pass |
 | Repository/artwork/YAML/whitespace | Passed |
 | Native rendering | Keyboard ruler sources inspected at 1366 × 900 / 640 × 480 DIP |
 | Native input | Not repeated this iteration; previous automation lost its window. CPU widget events are separate evidence |
@@ -1470,3 +1470,26 @@ through it. Events are injected into widgets; ordinary OS input, physical DPI,
 accessibility and Windows/Word acceptance are unverified. No native-format,
 protocol/settings, dependency or license change. Alpha.55 CI was still running
 at the audit; current CI is recorded separately in the journal.
+
+
+## Alpha.57 keyboard-context validation
+
+2026-10-20, macOS arm64 / Rust 1.99.1: 306 full and 149 core tests.
+The actual-widget matrix enters the ruler, tabs to all four markers, opens with
+Shift+F10 and activates the initially selected source command using Enter, at
+640 × 480 DIP and synthetic scales 1/1.25/1.5. It verifies bounds, popup closure,
+marker focus and unchanged document/history. Separate tests exercise Space,
+Home/End, arrows and Tab/Shift+Tab wrap, blocked text, Escape preserving a draft,
+source inspection and one-operation acceptance/Undo/Redo, then reset acceptance.
+Focus loss and resize-cancelled previews close stale menus without editing.
+Existing pointer source/reset and wheel regressions remain passing.
+
+Two native macOS fixtures use injected keyboard events to open the menu at
+1366 × 900 and 640 × 480 DIP. They verify rendering, not physical Shift+F10,
+Windows DPI, IME or assistive-technology acceptance. The dedicated Menu key is
+not represented in the current toolkit key enum. Native v13 and protocol/settings
+v1 remain unchanged. At audit, alpha.56 journal push/PR CI succeeded and its code
+runs were still running; current CI is recorded separately in the journal.
+
+Initial compact capture exposed the value readout covering the first menu item.
+Suppress it during keyboard-menu display; the widget matrix asserts its absence.

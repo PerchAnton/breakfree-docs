@@ -369,4 +369,5 @@ Use public specifications and original test cases, not copied application code. 
 - [x] Alpha.54: complete ruler source lists, bounded scrolling with arrows/Page Up/Down/Home/End, preserved drafts and reopening at the top (local core/widget tests).
 - [x] Alpha.55: pointer-wheel source inspection, viewport scoping, residual-scroll isolation and draft cancellation/commit regressions (local widget tests).
 - [x] Alpha.56: ruler context-menu source inspection for all four markers, focus restoration, read-only behavior and unchanged reset/cancellation policy (local widget tests).
-- [ ] Next: keyboard context-menu access from a focused ruler marker.
+- [x] Alpha.57: Shift+F10 marker context menu, explicit keyboard navigation/activation, preview-preserving dismissal and cleanup on focus loss/resize (local widget tests).
+- [ ] Next: inspect and navigate ruler source panels with assistive technology when a suitable native test environment is available.

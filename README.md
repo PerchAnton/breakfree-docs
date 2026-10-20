@@ -733,3 +733,10 @@ Right-click the horizontal ruler and choose First line sources, Continuation lin
 sources, Left indent sources or Right indent sources (alpha.56). Enter/Escape/F1
 returns to the chosen marker. Right-click cancels any uncommitted ruler preview;
 use F1 on its focused marker to inspect that preview without cancelling it.
+
+With a ruler marker focused, press **Shift+F10** to open its context menu
+(alpha.57). Use arrows, Tab/Shift+Tab or Home/End; Enter/Space runs the selected
+command and Escape returns to the marker. Opening/closing with the keyboard
+preserves a pending preview; until it is applied/cancelled, only that marker's
+source command is available. The dedicated Menu key is not exposed by the current
+GUI key abstraction; use Shift+F10. Windows acceptance remains deferred.

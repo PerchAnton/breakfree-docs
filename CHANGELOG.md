@@ -3,6 +3,12 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.57 — 2026-10-20
+
+- Open the ruler context menu with Shift+F10 while a marker is focused. Anchor it to that marker and initially select its source command; arrows, Tab/Shift+Tab, Home/End navigate, Enter/Space activates, Escape returns to the marker.
+- Preserve keyboard indent previews while opening or dismissing the menu. During a pending preview only its current source command is available; apply/cancel before other source/reset commands. Inspection retains the preview and reset acceptance remains one undo operation.
+- Close stale keyboard menus on focus loss or cancelled resize previews. Preserve pointer behavior, design, palette/icons, native v13 and protocol/settings v1. Alpha.56 approved; alpha.57 awaits approval. Windows remains deferred.
+
 ## 0.1.0-alpha.56 — 2026-10-20
 
 - Add explicit first-line, continuation-line, left and right source inspection commands to the horizontal ruler context menu. Opening resets list scroll and focuses the chosen marker; dismissal returns to that marker.

@@ -8356,3 +8356,154 @@ fn ruler_context_sources_open_when_right_clicking_a_marker() {
         );
     }
 }
+
+#[test]
+fn ruler_keyboard_context_opens_at_each_marker_and_inspects() {
+    for dpi in [1., 1.25, 1.5] {
+        for tabs in 0..4 {
+            let (ctx, mut app, size) = ruler_source_fixture(dpi);
+            let before = app.session.editor.document.clone();
+            let n = app.session.editor.undo_stack.len();
+            let mut keys = vec![ruler_key(Key::F8, Modifiers::CTRL | Modifiers::SHIFT)];
+            keys.extend((0..tabs).map(|_| key(Key::Tab, false)));
+            keys.push(ruler_key(Key::F10, Modifiers::SHIFT));
+            frame(&ctx, &mut app, keys, size, dpi);
+            frame(&ctx, &mut app, vec![], size, dpi);
+            assert_eq!(app.ruler_menu, Some(tabs));
+            assert!(!app.regions.iter().any(|r| r.name == "ruler-values"));
+            assert!(egui::Popup::is_any_open(&ctx));
+            let handle = app.ruler_key_focus;
+            let item = region(&app, "ruler-sources-first");
+            assert!(item.left() >= 0. && item.right() <= 640. && item.bottom() <= 480.);
+            frame(&ctx, &mut app, vec![key(Key::Enter, false)], size, dpi);
+            frame(&ctx, &mut app, vec![], size, dpi);
+            assert!(app.ruler_sources);
+            assert!(app.ruler_menu.is_none());
+            assert_eq!(app.ruler_key_focus, handle);
+            frame(&ctx, &mut app, vec![key(Key::Escape, false)], size, dpi);
+            assert_eq!(app.ruler_key_focus, handle);
+            assert_eq!(app.session.editor.document, before);
+            assert_eq!(app.session.editor.undo_stack.len(), n);
+        }
+    }
+}
+
+#[test]
+fn ruler_keyboard_context_escape_preserves_draft_and_reset_is_one_edit() {
+    let (ctx, mut app, size) = ruler_source_fixture(1.);
+    let before = app.session.editor.document.clone();
+    let n = app.session.editor.undo_stack.len();
+    frame(
+        &ctx,
+        &mut app,
+        vec![
+            ruler_key(Key::F8, Modifiers::CTRL | Modifiers::SHIFT),
+            key(Key::ArrowRight, false),
+            ruler_key(Key::F10, Modifiers::SHIFT),
+        ],
+        size,
+        1.,
+    );
+    let preview = app.ruler_drag.as_ref().unwrap().draft.preview.clone();
+    frame(
+        &ctx,
+        &mut app,
+        vec![
+            key(Key::End, false),
+            key(Key::ArrowDown, false),
+            egui::Event::Text("blocked".into()),
+        ],
+        size,
+        1.,
+    );
+    assert_eq!(app.ruler_menu, Some(0));
+    frame(&ctx, &mut app, vec![key(Key::Escape, false)], size, 1.);
+    assert!(app.ruler_menu.is_none());
+    assert_eq!(app.ruler_drag.as_ref().unwrap().draft.preview, preview);
+    frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(Key::F10, Modifiers::SHIFT)],
+        size,
+        1.,
+    );
+    frame(&ctx, &mut app, vec![key(Key::Space, false)], size, 1.);
+    frame(&ctx, &mut app, vec![], size, 1.);
+    assert!(app.ruler_sources);
+    frame(&ctx, &mut app, vec![key(Key::Escape, false)], size, 1.);
+    frame(&ctx, &mut app, vec![key(Key::Enter, false)], size, 1.);
+    assert_eq!(app.session.editor.document, preview);
+    assert_eq!(app.session.editor.undo_stack.len(), n + 1);
+    app.session.editor.undo();
+    assert_eq!(app.session.editor.document, before);
+    app.session.editor.redo();
+    assert_eq!(app.session.editor.document, preview);
+    // Navigate to the last reset command, then accept its separate preview.
+    frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(Key::F10, Modifiers::SHIFT)],
+        size,
+        1.,
+    );
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Home, false), key(Key::ArrowUp, false)],
+        size,
+        1.,
+    );
+    assert_eq!(app.ruler_menu, Some(7));
+    frame(&ctx, &mut app, vec![key(Key::Tab, false)], size, 1.);
+    assert_eq!(app.ruler_menu, Some(0));
+    frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(Key::Tab, Modifiers::SHIFT)],
+        size,
+        1.,
+    );
+    assert_eq!(app.ruler_menu, Some(7));
+    frame(&ctx, &mut app, vec![key(Key::Enter, false)], size, 1.);
+    assert!(app.ruler_drag.as_ref().unwrap().draft.resetting);
+    assert_eq!(app.session.editor.document, preview);
+    frame(&ctx, &mut app, vec![key(Key::Enter, false)], size, 1.);
+    assert_eq!(app.session.editor.undo_stack.len(), n + 2);
+}
+
+#[test]
+fn ruler_keyboard_context_focus_loss_and_resize_cancel_safely() {
+    for resize in [false, true] {
+        let (ctx, mut app) = setup();
+        let before = app.session.editor.document.clone();
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                ruler_key(Key::F8, Modifiers::CTRL | Modifiers::SHIFT),
+                key(Key::ArrowRight, false),
+                ruler_key(Key::F10, Modifiers::SHIFT),
+            ],
+            [1366., 900.],
+            1.,
+        );
+        assert!(app.ruler_menu.is_some());
+        if resize {
+            for _ in 0..3 {
+                frame(&ctx, &mut app, vec![], [960., 720.], 1.);
+            }
+        } else {
+            let _ = ctx.run(
+                egui::RawInput {
+                    focused: false,
+                    ..Default::default()
+                },
+                |ctx| app.update_ui(ctx),
+            );
+        }
+        assert!(app.ruler_menu.is_none());
+        assert!(app.ruler_drag.is_none());
+        assert!(!egui::Popup::is_any_open(&ctx));
+        assert_eq!(app.session.editor.document, before);
+    }
+}

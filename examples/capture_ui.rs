@@ -38,6 +38,7 @@ impl eframe::App for Capture {
                     | "ruler-source-wheel"
                     | "ruler-source-menu"
                     | "ruler-source-context"
+                    | "ruler-keyboard-menu"
             )
             || self.mode == "temporary"
             || self.mode == "replace-all"
@@ -57,9 +58,10 @@ impl eframe::App for Capture {
                 | "ruler-source-wheel"
                 | "ruler-source-menu"
                 | "ruler-source-context"
+                | "ruler-keyboard-menu"
         ) && !matches!(
             self.mode.as_str(),
-            "ruler-source-menu" | "ruler-source-context"
+            "ruler-source-menu" | "ruler-source-context" | "ruler-keyboard-menu"
         ) && matches!(self.frames, 3 | 5)
         {
             let (key, modifiers) = if self.frames == 3 {
@@ -75,6 +77,7 @@ impl eframe::App for Capture {
                         | "ruler-source-wheel"
                         | "ruler-source-menu"
                         | "ruler-source-context"
+                        | "ruler-keyboard-menu"
                 ) {
                     (egui::Key::F1, egui::Modifiers::NONE)
                 } else if self.mode == "ruler-reset-single" {
@@ -141,6 +144,25 @@ impl eframe::App for Capture {
                         modifiers: egui::Modifiers::NONE,
                     });
                 }
+            }
+        }
+        if self.mode == "ruler-keyboard-menu" && matches!(self.frames, 3 | 5) {
+            let (key, modifiers) = if self.frames == 3 {
+                (
+                    egui::Key::F8,
+                    egui::Modifiers::CTRL | egui::Modifiers::SHIFT,
+                )
+            } else {
+                (egui::Key::F10, egui::Modifiers::SHIFT)
+            };
+            for pressed in [true, false] {
+                input.events.push(egui::Event::Key {
+                    key,
+                    physical_key: None,
+                    pressed,
+                    repeat: false,
+                    modifiers,
+                });
             }
         }
         if self.frames == 2 && self.mode.starts_with("keytips") {
@@ -426,6 +448,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "ruler-source-wheel",
             "ruler-source-menu",
             "ruler-source-context",
+            "ruler-keyboard-menu",
             "collapsed",
             "temporary",
             "view",
@@ -445,7 +468,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ]
         .contains(&args[2].as_str())
     {
-        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|styles-modify|styles-following|styles-create|styles-rename|styles-delete|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|paragraph|indent-layout|ruler-keyboard|ruler-mixed|ruler-reset|ruler-reset-single|ruler-sources|ruler-source-keyboard|ruler-source-list|ruler-source-wheel|ruler-source-menu|ruler-source-context|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
+        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|styles-modify|styles-following|styles-create|styles-rename|styles-delete|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|paragraph|indent-layout|ruler-keyboard|ruler-mixed|ruler-reset|ruler-reset-single|ruler-sources|ruler-source-keyboard|ruler-source-list|ruler-source-wheel|ruler-source-menu|ruler-source-context|ruler-keyboard-menu|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
     }
     let path = std::env::var("BREAKFREE_CAPTURE_TO")
         .map_err(|_| "Set BREAKFREE_CAPTURE_TO to an output PNG path")?;
@@ -495,6 +518,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             | "ruler-source-wheel"
             | "ruler-source-menu"
             | "ruler-source-context"
+            | "ruler-keyboard-menu"
     ) {
         let mut session = Session::default();
         let sample =
@@ -524,6 +548,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 | "ruler-source-wheel"
                 | "ruler-source-menu"
                 | "ruler-source-context"
+                | "ruler-keyboard-menu"
         ) {
             session
                 .editor
@@ -543,6 +568,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 | "ruler-source-wheel"
                 | "ruler-source-menu"
                 | "ruler-source-context"
+                | "ruler-keyboard-menu"
         ) {
             session = Session::default();
             session.editor.replace(
@@ -692,7 +718,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 | "ruler-source-list"
                 | "ruler-source-wheel"
                 | "ruler-source-menu"
-                | "ruler-source-context" => {
+                | "ruler-source-context"
+                | "ruler-keyboard-menu" => {
                     if mode == "ruler-mixed"
                         || matches!(
                             mode.as_str(),
@@ -702,6 +729,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 | "ruler-source-wheel"
                                 | "ruler-source-menu"
                                 | "ruler-source-context"
+                                | "ruler-keyboard-menu"
                         )
                     {
                         app.execute(Action::SelectAll, &cc.egui_ctx);

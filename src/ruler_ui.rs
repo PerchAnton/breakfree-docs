@@ -226,7 +226,7 @@ impl DocsApp {
                 if response.gained_focus() {
                     ui.scroll_to_rect(target.expand(4.), Some(Align::Center));
                 }
-                if !response.has_focus() {
+                if !response.has_focus() && self.ruler_menu.is_none() {
                     response.request_focus();
                 }
                 ui.memory_mut(|m| {
@@ -291,7 +291,9 @@ impl DocsApp {
             return;
         };
         // Values are contextual: they must not add permanent height above the canvas.
-        if self.ruler_key_focus.is_some() || self.ruler_drag.is_some() {
+        if (self.ruler_key_focus.is_some() || self.ruler_drag.is_some())
+            && self.ruler_menu.is_none()
+        {
             let hint = self
                 .ruler_key_focus
                 .or_else(|| self.ruler_drag.as_ref().map(|d| d.draft.handle))
@@ -402,44 +404,110 @@ impl DocsApp {
                 }
             }
         }
-        menu_response.on_hover_text("Right-click for indent sources or Reset indents to style. Ctrl+Shift+F8 enters markers; Delete previews all-indent reset; Shift+Delete resets the focused property; Enter applies; Esc cancels.")
-            .context_menu(|ui| {
-                ui.label("Inspect indent sources");
-                for (handle, name, label) in [
-                    (Handle::First, "ruler-sources-first", "First line sources"),
-                    (Handle::Body, "ruler-sources-body", "Continuation line sources"),
-                    (Handle::Left, "ruler-sources-left", "Left indent sources"),
-                    (Handle::Right, "ruler-sources-right", "Right indent sources"),
-                ] {
-                    let inspect = ui.add_enabled(enabled && self.ruler_drag.is_none(), Button::new(label));
-                    self.record(name, inspect.rect);
-                    if inspect.clicked() {
-                        self.leave_ribbon(ui.ctx());
-                        self.focus_document = false;
-                        self.ruler_key_focus = Some(handle);
-                        self.ruler_sources_scroll = 0.;
-                        self.ruler_sources = true;
-                        self.ruler_sources_wheel_guard = true;
-                        let id = MARKERS.iter().find(|(h, _)| *h == handle).unwrap().1;
-                        ui.ctx().memory_mut(|m| m.request_focus(Id::new(id)));
-                        ui.close();
-                    }
+        let menu_response = menu_response.on_hover_text("Right-click or Shift+F10 on a focused marker for indent sources or reset. Ctrl+Shift+F8 enters markers; Enter applies; Esc cancels.");
+        let mut popup = egui::Popup::context_menu(&menu_response);
+        if self.ruler_menu.is_some() {
+            let marker = self.ruler_key_focus.unwrap_or(Handle::First);
+            let id = MARKERS.iter().find(|(h, _)| *h == marker).unwrap().1;
+            let anchor = self
+                .regions
+                .iter()
+                .find(|r| r.name == id)
+                .map_or(rect.left_bottom(), |r| r.rect.left_bottom());
+            popup = popup.at_position(anchor);
+        }
+        let pending = self.ruler_drag.as_ref().is_some_and(|d| d.keyboard);
+        popup.show(|ui| {
+            ui.label("Inspect indent sources");
+            for (index, (handle, name, label)) in [
+                (Handle::First, "ruler-sources-first", "First line sources"),
+                (
+                    Handle::Body,
+                    "ruler-sources-body",
+                    "Continuation line sources",
+                ),
+                (Handle::Left, "ruler-sources-left", "Left indent sources"),
+                (Handle::Right, "ruler-sources-right", "Right indent sources"),
+            ]
+            .into_iter()
+            .enumerate()
+            {
+                let available =
+                    (enabled || pending) && (!pending || self.ruler_key_focus == Some(handle));
+                let inspect = ui
+                    .add_enabled(available, Button::new(label))
+                    .on_disabled_hover_text("Apply or cancel the pending indent preview first.");
+                if self.ruler_menu == Some(index) {
+                    inspect.request_focus();
                 }
-                ui.separator();
-                for (scope, name, label) in [
-                    (ResetIndent::All, "ruler-reset", "Reset all indents to style"),
-                    (ResetIndent::Left, "ruler-reset-left", "Reset left indent to style"),
-                    (ResetIndent::Right, "ruler-reset-right", "Reset right indent to style"),
-                    (ResetIndent::FirstLine, "ruler-reset-first", "Reset first-line/hanging to style"),
-                ] {
-                    let reset = ui.add_enabled(enabled && self.ruler_drag.is_none(), Button::new(label));
-                    self.record(name, reset.rect);
-                    if reset.clicked() {
-                        self.start_ruler_reset(ui.ctx(), scope);
-                        ui.close();
-                    }
+                self.record(name, inspect.rect);
+                if available
+                    && (inspect.clicked()
+                        || (self.ruler_menu == Some(index) && self.ruler_menu_activate))
+                {
+                    self.leave_ribbon(ui.ctx());
+                    self.focus_document = false;
+                    self.ruler_key_focus = Some(handle);
+                    self.ruler_sources_scroll = 0.;
+                    self.ruler_sources = true;
+                    self.ruler_sources_wheel_guard = true;
+                    let id = MARKERS.iter().find(|(h, _)| *h == handle).unwrap().1;
+                    ui.ctx().memory_mut(|m| m.request_focus(Id::new(id)));
+                    ui.close();
                 }
-            });
+            }
+            ui.separator();
+            for (index, (scope, name, label)) in [
+                (
+                    ResetIndent::All,
+                    "ruler-reset",
+                    "Reset all indents to style",
+                ),
+                (
+                    ResetIndent::Left,
+                    "ruler-reset-left",
+                    "Reset left indent to style",
+                ),
+                (
+                    ResetIndent::Right,
+                    "ruler-reset-right",
+                    "Reset right indent to style",
+                ),
+                (
+                    ResetIndent::FirstLine,
+                    "ruler-reset-first",
+                    "Reset first-line/hanging to style",
+                ),
+            ]
+            .into_iter()
+            .enumerate()
+            {
+                let reset =
+                    ui.add_enabled(enabled && self.ruler_drag.is_none(), Button::new(label));
+                self.record(name, reset.rect);
+                if self.ruler_menu == Some(index + 4) {
+                    reset.request_focus();
+                }
+                if enabled
+                    && self.ruler_drag.is_none()
+                    && (reset.clicked()
+                        || (self.ruler_menu == Some(index + 4) && self.ruler_menu_activate))
+                {
+                    self.start_ruler_reset(ui.ctx(), scope);
+                    ui.close();
+                }
+            }
+        });
+        self.ruler_menu_activate = false;
+        if self.ruler_menu.is_some()
+            && !egui::Popup::is_id_open(ui.ctx(), Id::new("ruler-menu").with("popup"))
+        {
+            self.ruler_menu = None;
+            if let Some(handle) = self.ruler_key_focus {
+                let id = MARKERS.iter().find(|(h, _)| *h == handle).unwrap().1;
+                ui.ctx().memory_mut(|m| m.request_focus(Id::new(id)));
+            }
+        }
     }
 
     fn start_ruler_reset(&mut self, ctx: &egui::Context, scope: ResetIndent) {
@@ -517,6 +585,10 @@ impl DocsApp {
             ctx.memory_mut(|m| m.request_focus(Id::new("ruler-first")));
         }
         let Some(mut handle) = self.ruler_key_focus else {
+            if self.ruler_menu.take().is_some() {
+                egui::Popup::close_id(ctx, Id::new("ruler-menu").with("popup"));
+                self.ruler_menu_activate = false;
+            }
             self.ruler_sources = false;
             return false;
         };
@@ -524,6 +596,70 @@ impl DocsApp {
             return false;
         }
         let events = ctx.input(|i| i.events.clone());
+        if let Some(mut index) = self.ruler_menu {
+            let invalid = !self.rulers
+                || self.backstage
+                || ctx.input(|i| !i.focused || i.viewport().close_requested());
+            if invalid {
+                egui::Popup::close_id(ctx, Id::new("ruler-menu").with("popup"));
+                self.ruler_menu = None;
+                self.ruler_drag = None;
+                self.ruler_key_focus = None;
+                self.sync_view();
+            } else {
+                if ctx.input(|i| i.pointer.any_pressed()) {
+                    self.ruler_drag = None;
+                }
+                for event in &events {
+                    if let egui::Event::Key {
+                        key,
+                        pressed: true,
+                        modifiers,
+                        ..
+                    } = event
+                    {
+                        match key {
+                            Key::Escape => {
+                                egui::Popup::close_id(ctx, Id::new("ruler-menu").with("popup"));
+                                self.ruler_menu = None;
+                                self.ruler_menu_activate = false;
+                                break;
+                            }
+                            Key::Enter | Key::Space => self.ruler_menu_activate = true,
+                            _ if self.ruler_drag.is_some() => {}
+                            Key::ArrowUp => index = (index + 7) % 8,
+                            Key::ArrowDown => index = (index + 1) % 8,
+                            Key::Tab => index = (index + if modifiers.shift { 7 } else { 1 }) % 8,
+                            Key::Home => index = 0,
+                            Key::End => index = 7,
+                            _ => {}
+                        }
+                    }
+                }
+                if self.ruler_menu.is_some() {
+                    self.ruler_menu = Some(index);
+                } else {
+                    let id = MARKERS.iter().find(|(h, _)| *h == handle).unwrap().1;
+                    ctx.memory_mut(|m| m.request_focus(Id::new(id)));
+                }
+            }
+            ctx.memory_mut(|m| m.move_focus(egui::FocusDirection::None));
+            ctx.input_mut(|i| {
+                i.raw_scroll_delta = Vec2::ZERO;
+                i.smooth_scroll_delta = Vec2::ZERO;
+                i.events.retain(|e| {
+                    !matches!(
+                        e,
+                        egui::Event::Key { .. }
+                            | egui::Event::Text(_)
+                            | egui::Event::Paste(_)
+                            | egui::Event::Ime(_)
+                            | egui::Event::MouseWheel { .. }
+                    )
+                });
+            });
+            return true;
+        }
         // The information view keeps marker focus and the uncommitted draft intact.
         // Dismissal consumes its key so Escape cannot also cancel that draft.
         if self.ruler_sources
@@ -668,6 +804,12 @@ impl DocsApp {
                 continue;
             }
             match key {
+                Key::F10 if modifiers == Modifiers::SHIFT => {
+                    self.ruler_menu = Some(MARKERS.iter().position(|(h, _)| *h == handle).unwrap());
+                    self.ruler_menu_activate = false;
+                    egui::Popup::open_id(ctx, Id::new("ruler-menu").with("popup"));
+                    break;
+                }
                 Key::F1 => {
                     self.ruler_sources_scroll = 0.;
                     self.ruler_sources = true;
