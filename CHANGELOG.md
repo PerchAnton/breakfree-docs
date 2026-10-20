@@ -3,6 +3,12 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.61 — 2026-10-20
+
+- Add left tab-grid layout, literal Tab input and per-paragraph interval storage in native v14. Default stops repeat every 36 pt; the validated engine interval API is one Undo/Redo operation.
+- Preserve Unicode/grapheme boundaries, cursor indices, tab formatting, paragraph geometry and strict v1–v13 imports. Modified Tab cannot delete a selection.
+- Tab paragraphs use fixed spacing (Justify falls back to left placement); custom ruler stops, leaders, named-style inheritance and a GUI interval editor remain future work. Preserve palette/icons and design. Alpha.60 approved; alpha.61 awaits approval. VoiceOver and Windows remain deferred.
+
 ## 0.1.0-alpha.60 — 2026-10-20
 
 - Enable Home Increase/Decrease indent using shared Rust commands: change each selected paragraph's resolved left indent by 36 pt, clamped to 0–144 pt, in one Undo/Redo operation.

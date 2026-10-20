@@ -1,12 +1,12 @@
 # Native BreakFree Docs document format
 
-Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v13.
+Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v14.
 This is not a DOCX container. Process protocol and file-content versions are independent.
 
 ```json
 {
   "format": "breakfree.docs.native",
-  "content_version": 13,
+  "content_version": 14,
   "character_styles": [],
   "style_catalog": {
     "custom": [],
@@ -215,3 +215,12 @@ negative adds its magnitude to continuation rows only. This is the project's
 continuous-layout policy, not a claim of document-format equivalence. Writer v13
 omits unset values. Every v1–v12 reader rejects the key even when null before
 strict typed validation; old imports inherit zero. Process/settings stay v1.
+
+## Content v14: left tab intervals
+
+Paragraph spacing accepts optional `tab_interval_half_points`: integer 1–288,
+null/absent = default 72 (36 pt). Literal tabs remain U+0009 within text runs.
+This is a direct paragraph property, not named-style inheritance. Readers v1–v13
+reject the new key even when null; v14 validates bounds and rejects unknown fields.
+Older applications reject v14 saves: retain an older copy when required.
+[Storage/layout policy](adr/0014-tab-grid.md).

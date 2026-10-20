@@ -1565,3 +1565,29 @@ are enabled, with unchanged group geometry and palette. The known missing emoji
 glyph in the Welcome fixture remains. Capture uses the development harness, not
 physical OS input. Native keyboard/input was not repeated this iteration.
 VoiceOver final review, Windows and matched Word comparison remain deferred.
+
+## Alpha.61 tab storage and layout validation
+
+2026-10-20, macOS arm64, Rust 1.99.1: 318 full / 153 core tests pass.
+fmt, normal/capture all-target Clippy, normal/capture release builds,
+repository/artwork/YAML/whitespace and isolated CLI checks pass.
+
+Two core additions cover literal tabs with English/Ukrainian/Russian/combining
+text, native v14 save/reopen, interval bounds, strict v13 field rejection,
+selection boundaries, Enter propagation and Undo/Redo. Three widget/layout
+additions cover native-widget Tab insertion/history, modified-Tab selection
+safety, cursor hit testing, paragraph separators, default/custom grid positions,
+indents, repeated/trailing tabs, narrow wrapping and combining-cluster boundaries
+at synthetic 1/1.25/1.5 scale and 50/100/200% zoom. Existing persistence fault,
+formatting and undo tests remain passing. Synthetic scales are not Windows tests.
+
+Native render captures at 1366 × 900 and 640 × 480 DIP were inspected with a
+five-paragraph tab fixture. Names of different widths reach different grid stops;
+this is a repeating grid, not a table. Chrome/palette/icons retain their design.
+Capture uses a development fixture; physical Tab/IME was not retested.
+
+Limits: no GUI interval editor, custom ruler stops, style inheritance, leaders or
+right/center/decimal tab types. Justify uses left placement for tab paragraphs;
+Center/Right align the fixed-spacing row as a block. No Word fidelity claim.
+VoiceOver final review and Windows remain deferred. Content v14 is rejected by
+older readers; retain older files separately when using alpha.60 or earlier.

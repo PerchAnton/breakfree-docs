@@ -377,3 +377,6 @@ Use public specifications and original test cases, not copied application code. 
 
 - [x] Alpha.60: functional Home left-indent stepping through a shared command, mixed/inherited values, clamping, one Undo/Redo and v13 roundtrip tests.
 - [ ] Next D2 increment: define tab-stop storage/layout semantics before adding editable ruler tab stops; list structure remains a separate feature.
+
+- [x] Alpha.61: literal Tab storage/input, validated paragraph grid interval, native v14 migration and left-stop layout with Unicode/cursor/history tests.
+- [ ] Next: expose the stored tab interval in a transactional paragraph dialog; custom stops/types require additional layout semantics.

@@ -416,6 +416,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if args.len() != 3
         || ![
             "home",
+            "tabs",
             "styles",
             "styles-menu",
             "styles-character",
@@ -468,7 +469,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ]
         .contains(&args[2].as_str())
     {
-        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|styles-modify|styles-following|styles-create|styles-rename|styles-delete|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|paragraph|indent-layout|ruler-keyboard|ruler-mixed|ruler-reset|ruler-reset-single|ruler-sources|ruler-source-keyboard|ruler-source-list|ruler-source-wheel|ruler-source-menu|ruler-source-context|ruler-keyboard-menu|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
+        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|tabs|styles|styles-menu|styles-modify|styles-following|styles-create|styles-rename|styles-delete|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|paragraph|indent-layout|ruler-keyboard|ruler-mixed|ruler-reset|ruler-reset-single|ruler-sources|ruler-source-keyboard|ruler-source-list|ruler-source-wheel|ruler-source-menu|ruler-source-context|ruler-keyboard-menu|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
     }
     let path = std::env::var("BREAKFREE_CAPTURE_TO")
         .map_err(|_| "Set BREAKFREE_CAPTURE_TO to an output PNG path")?;
@@ -505,7 +506,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "examples/Welcome.bfdoc"
         },
     );
-    let session = if matches!(
+    let session = if args[2] == "tabs" {
+        let mut session = Session::default();
+        session.editor.replace(0, 0, "Name\t\tValue\nEnglish\t\t36 pt grid\nУкраїна\t\tТабуляція\nРусский\t\tТабуляция\nCombining e\u{301}\t\tEnd", "Tab fixture")?;
+        session
+    } else if matches!(
         args[2].as_str(),
         "indent-layout"
             | "ruler-keyboard"

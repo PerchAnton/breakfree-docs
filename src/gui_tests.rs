@@ -8771,3 +8771,112 @@ fn home_indent_keytips_keep_collapsed_ribbon_selection() {
     app.execute(Action::Undo, &ctx);
     assert_eq!(app.session.editor.document, before);
 }
+
+#[test]
+fn tab_grid_positions_cursor_and_wrapping() {
+    for dpi in [1., 1.25, 1.5] {
+        let (ctx, _) = setup();
+        ctx.set_pixels_per_point(dpi);
+        let mut e = crate::commands::Editor::default();
+        e.replace(0, 0, "a\tb\t\tУкраїна e\u{301}\tend", "Fixture")
+            .unwrap();
+        for zoom in [0.5, 1., 2.] {
+            let g = layout::galley(
+                &ctx,
+                &e.document,
+                &e.document.text(),
+                CharacterFormat::default(),
+                0,
+                600. * zoom,
+                11. * zoom,
+            );
+            let row = &g.rows[0];
+            assert!((row.glyphs[2].pos.x - 36. * zoom).abs() < 1.1);
+            assert!((row.glyphs[5].pos.x - 108. * zoom).abs() < 1.1);
+            assert_eq!(
+                g.rows.iter().map(|r| r.glyphs.len()).sum::<usize>(),
+                e.document.text().chars().count()
+            );
+            assert!(row.glyphs.windows(2).all(|w| w[0].pos.x <= w[1].pos.x));
+        }
+        for width in [8., 40., 80.] {
+            let g = layout::galley(
+                &ctx,
+                &e.document,
+                &e.document.text(),
+                CharacterFormat::default(),
+                0,
+                width,
+                11.,
+            );
+            assert!(g.rows.len() > 1);
+            assert_eq!(
+                g.rows.iter().map(|r| r.glyphs.len()).sum::<usize>(),
+                e.document.text().chars().count()
+            );
+            assert!(
+                g.rows
+                    .iter()
+                    .all(|r| r.glyphs.first().is_none_or(|g| g.chr != '\u{301}'))
+            );
+            assert!(g.rows.iter().all(|r| !r.ends_with_newline));
+        }
+    }
+}
+
+#[test]
+fn document_tab_input_undo_redo() {
+    let (ctx, mut app) = setup();
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("a".into())],
+        [1366., 900.],
+        1.,
+    );
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Tab, false)],
+        [1366., 900.],
+        1.,
+    );
+    assert_eq!(app.session.editor.document.text(), "a\t");
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.document.text(), "a");
+    app.execute(Action::Redo, &ctx);
+    assert_eq!(app.session.editor.document.text(), "a\t");
+}
+
+#[test]
+fn tab_interval_indents_cursor_and_modified_tab_safety() {
+    let (ctx, mut app) = setup();
+    app.session
+        .editor
+        .replace(0, 0, "a\tb\n\tend", "Fixture")
+        .unwrap();
+    app.session.editor.set_tab_interval(0, 0, Some(96)).unwrap();
+    app.session.editor.document.paragraphs[0]
+        .spacing
+        .left_indent_half_points = Some(20);
+    app.sync_view();
+    let d = &app.session.editor.document;
+    let g = layout::galley(&ctx, d, &d.text(), CharacterFormat::default(), 0, 300., 11.);
+    assert!((g.rows[0].glyphs[2].pos.x - 48.).abs() < 1.1);
+    assert_eq!(g.rows.iter().filter(|r| r.ends_with_newline).count(), 1);
+    for index in [0, 1, 2, 3, 4, 5, 6, 7, 8] {
+        let pos = g.pos_from_cursor(CCursor::new(index));
+        assert_eq!(g.cursor_from_pos(pos.center().to_vec2()).index, index);
+    }
+    app.execute(Action::SelectAll, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    let before = app.session.editor.document.clone();
+    frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(Key::Tab, Modifiers::SHIFT)],
+        [1366., 900.],
+        1.,
+    );
+    assert_eq!(app.session.editor.document, before);
+}

@@ -580,6 +580,9 @@ pub enum Alignment {
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ParagraphSpacing {
+    /// Direct tab grid interval; None uses the 36 pt document default.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tab_interval_half_points: Option<u16>,
     pub line_height_percent: Option<u16>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub space_before_half_points: Option<u16>,
@@ -594,6 +597,12 @@ pub struct ParagraphSpacing {
 }
 impl ParagraphSpacing {
     pub fn validate(self) -> Result<()> {
+        if self
+            .tab_interval_half_points
+            .is_some_and(|v| !(1..=288).contains(&v))
+        {
+            return Err("Tab interval must be 0.5–144 pt.".into());
+        }
         if self
             .line_height_percent
             .is_some_and(|v| !(100..=300).contains(&v))

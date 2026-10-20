@@ -9,6 +9,8 @@ use eframe::egui::{
     text::LayoutJob,
 };
 use std::sync::Arc;
+#[path = "tab_layout.rs"]
+mod tab_layout;
 
 pub fn configure_fonts(ctx: &egui::Context) -> String {
     let mut fonts = FontDefinitions::default();
@@ -150,7 +152,17 @@ pub fn galley(
             };
             job.append("", 0., format(style, size, resolved.line_height()));
         }
-        let mut paragraph = layout_first_line(ctx, job, first_width, text_width);
+        let mut paragraph = if p.text.contains('\t') {
+            tab_layout::layout(
+                ctx,
+                job,
+                [first_width, text_width],
+                [first_left, body_left],
+                f32::from(p.spacing.tab_interval_half_points.unwrap_or(72)) * size / 22.,
+            )
+        } else {
+            layout_first_line(ctx, job, first_width, text_width)
+        };
         for (row_index, placed) in paragraph.rows.iter_mut().enumerate() {
             let row = Arc::make_mut(&mut placed.row);
             let row_width = if row_index == 0 {

@@ -563,6 +563,33 @@ impl Editor {
         Ok(())
     }
 
+    /// Set a direct tab interval, or restore the default grid, in one transaction.
+    pub fn set_tab_interval(
+        &mut self,
+        start: usize,
+        end: usize,
+        interval: Option<u16>,
+    ) -> Result<()> {
+        validate_range(&self.document.text(), start, end)?;
+        ParagraphSpacing {
+            tab_interval_half_points: interval,
+            ..Default::default()
+        }
+        .validate()?;
+        let (first, _) = self.document.locate(start)?;
+        let (mut last, offset) = self.document.locate(end)?;
+        if end > start && offset == 0 && last > first {
+            last -= 1;
+        }
+        let mut result = self.document.clone();
+        for p in &mut result.paragraphs[first..=last] {
+            p.spacing.tab_interval_half_points = interval;
+        }
+        result.validate()?;
+        self.commit(result, "Tab interval", (start, end), self.typing_style);
+        Ok(())
+    }
+
     pub fn align(&mut self, start: usize, end: usize, alignment: Alignment) -> Result<()> {
         validate_range(&self.document.text(), start, end)?;
         let (first, _) = self.document.locate(start)?;

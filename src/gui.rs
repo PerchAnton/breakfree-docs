@@ -2886,6 +2886,10 @@ impl DocsApp {
                                 if ui.memory(|m|m.has_focus(id)) {
                                     ui.input_mut(|i|for event in &mut i.events {if let egui::Event::Paste(text)=event {*text=text.replace("\r\n","\n").replace('\r',"\n");}});
                                 }
+                                // Modified Tab is reserved; never let Shift+Tab delete selected text.
+                                if ui.memory(|m|m.has_focus(id)) {
+                                    ui.input_mut(|i|i.events.retain(|e| !matches!(e, egui::Event::Key { key: Key::Tab, modifiers, .. } if *modifiers != Modifiers::NONE)));
+                                }
                                 let events=ui.input(|i|i.events.clone());
                                 let focused=ui.memory(|m|m.has_focus(id));
                                 let mut commit=false;let mut cancel=false;
@@ -2902,7 +2906,7 @@ impl DocsApp {
                                     }
                                     galley
                                 };
-                                let mut output=egui::TextEdit::multiline(&mut self.buffer).id(id).frame(false).margin(0).desired_width(text_width).desired_rows(1).font(FontId::new(font_size,egui::FontFamily::Name("body".into()))).layouter(&mut layouter).show(ui);
+                                let mut output=egui::TextEdit::multiline(&mut self.buffer).lock_focus(true).id(id).frame(false).margin(0).desired_width(text_width).desired_rows(1).font(FontId::new(font_size,egui::FontFamily::Name("body".into()))).layouter(&mut layouter).show(ui);
                                 if self.focus_document {
                                     if !output.response.has_focus() {output.response.request_focus();}
                                     ui.memory_mut(|m|m.set_focus_lock_filter(id,egui::EventFilter{horizontal_arrows:true,vertical_arrows:true,..Default::default()}));

@@ -754,3 +754,13 @@ Home **Increase indent / Decrease indent** changes the selected paragraphs' left
 indents by 36 pt within 0–144 pt, preserving right and special indents. One Undo
 restores the selection's prior formatting. Each paragraph steps from its own
 resolved value. Command search and Home KeyTips II/DI offer the same actions.
+
+## Alpha.61 tab grid
+
+Plain Tab in the document inserts a stored tab, advancing to a left grid stop
+every 36 pt. Existing tabs survive save/reopen in native v14. Modified Tab is
+reserved; keyboard routes to the ribbon remain available. The engine can store
+a custom paragraph interval; a GUI interval editor is not included yet.
+Tab paragraphs use fixed spacing: Justify displays left placement, while
+Center/Right align the row as a block. Arbitrary ruler stops, leaders and decimal
+tabs remain future work. The ribbon, palette and icons are unchanged.

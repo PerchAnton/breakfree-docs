@@ -145,7 +145,7 @@ fn indent_edit_preservation_roundtrip_and_legacy_gate() {
         assert_eq!(std::fs::read(&path).unwrap(), bytes);
     }
     let mut json: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
-    assert_eq!(json["content_version"], 13);
+    assert_eq!(json["content_version"], 14);
     for version in 6..12 {
         json["content_version"] = version.into();
         assert!(storage::decode(&serde_json::to_vec(&json).unwrap()).is_err());

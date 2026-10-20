@@ -142,7 +142,7 @@ fn v7_roundtrip_strict_references_legacy_migration_and_failed_save_preserve_byte
     let bytes = storage::encode(&e.document).unwrap();
     assert_eq!(storage::decode(&bytes).unwrap(), e.document);
     let value: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
-    assert_eq!(value["content_version"], 13);
+    assert_eq!(value["content_version"], 14);
     for pointer in [
         "/paragraphs/0/runs/0/character_style",
         "/paragraphs/0/runs/0/direct/character_style",

@@ -1813,3 +1813,17 @@ mapping. Geometry, palette and icons are unchanged; enabled states now reflect
 working commands. Lists, tab stops and editable page margins remain future work.
 
 Native Home capture (1366 × 900 DIP): [alpha.60](screenshots/rust-home-indents-alpha60-macos.png). SHA-256 `15894f725603d6f6f710ca58d30bbcb020994b17b942564d070394b41ae51c5d`. Existing emoji fallback limitation remains visible; no shaping claim.
+
+## Alpha.61 tab grid
+
+Plain Tab in the document inserts a stored tab, advancing to a left grid stop
+every 36 pt. Existing tabs survive save/reopen in native v14. Modified Tab is
+reserved; keyboard routes to the ribbon remain available. The engine can store
+a custom paragraph interval; a GUI interval editor is not included yet.
+Tab paragraphs use fixed spacing: Justify displays left placement, while
+Center/Right align the row as a block. Arbitrary ruler stops, leaders and decimal
+tabs remain future work. The ribbon, palette and icons are unchanged.
+
+Native render capture: [rust-tabs-alpha61-macos.png](screenshots/rust-tabs-alpha61-macos.png), SHA-256 `842c03ac7e182c15cff507496b34aa441f6663008375945b8f3f2fa09d8424fc`.
+
+Native render capture: [rust-tabs-alpha61-compact-macos.png](screenshots/rust-tabs-alpha61-compact-macos.png), SHA-256 `11476d748cf8a58427de8cf02733335949ce5691321c585ad035f92c9370a2c5`.
