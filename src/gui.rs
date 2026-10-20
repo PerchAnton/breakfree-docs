@@ -40,8 +40,11 @@ use ribbon_navigation::{RibbonFocus, RibbonTarget, TargetKind};
 mod keytips;
 use keytips::KeyTips;
 
+#[path = "tab_dialog.rs"]
+mod tab_dialog;
 #[path = "zoom_dialog.rs"]
 mod zoom_dialog;
+use tab_dialog::{TabDialog, TabOutcome};
 use zoom_dialog::{ZoomDialog, ZoomOutcome};
 
 #[path = "quick_order.rs"]
@@ -86,6 +89,7 @@ pub enum Action {
     FontSize,
     FontDialog,
     ParagraphSpacing,
+    TabInterval,
     IncreaseIndent,
     DecreaseIndent,
     ModifyStyle,
@@ -137,6 +141,7 @@ impl Action {
             Self::IncreaseIndent => "Increase indent",
             Self::DecreaseIndent => "Decrease indent",
             Self::ParagraphSpacing => "Paragraph spacing",
+            Self::TabInterval => "Tab interval",
             Self::ModifyStyle => "Modify style…",
             Self::CreateStyle => "Create style…",
             Self::ModifyCharacterStyle => "Modify character style…",
@@ -186,6 +191,7 @@ const COMMANDS: &[Action] = &[
     Action::FontSize,
     Action::FontDialog,
     Action::ParagraphSpacing,
+    Action::TabInterval,
     Action::IncreaseIndent,
     Action::DecreaseIndent,
     Action::ModifyStyle,
@@ -232,6 +238,7 @@ pub struct DocsApp {
     keytips: KeyTips,
     more_tabs_id: Option<Id>,
     zoom_dialog: Option<ZoomDialog>,
+    tab_dialog: Option<TabDialog>,
     quick_access: Vec<Action>,
     quick_access_below: bool,
     quick_access_targets: Vec<RibbonTarget>,
@@ -360,6 +367,7 @@ impl DocsApp {
             keytips: KeyTips::default(),
             more_tabs_id: None,
             zoom_dialog: None,
+            tab_dialog: None,
             quick_access: quick_access::DEFAULT.to_vec(),
             quick_access_below: false,
             quick_access_targets: Vec::new(),
@@ -450,6 +458,7 @@ impl DocsApp {
             || self.style_dialog.is_some()
             || self.delete_style_dialog.is_some()
             || self.zoom_dialog.is_some()
+            || self.tab_dialog.is_some()
             || self.quick_reset
             || self.quick_order.is_some()
         {
@@ -466,6 +475,7 @@ impl DocsApp {
                 | Action::DeleteCharacterStyle
                 | Action::DeleteStyle
                 | Action::Zoom
+                | Action::TabInterval
         ) && (self.pending.is_some() || self.error.is_some())
         {
             return false;
@@ -758,6 +768,13 @@ impl DocsApp {
                 self.fail(result);
                 self.sync_view();
             }
+            Action::TabInterval => {
+                self.tab_dialog = Some(TabDialog::new(&self.session.editor));
+                self.focus_document = false;
+                self.focus_font_size = false;
+                self.palette = false;
+                ctx.memory_mut(|m| m.surrender_focus(Id::new(EDIT_ID)));
+            }
             Action::ParagraphSpacing => {
                 self.paragraph_dialog = Some(ParagraphDialog::default());
                 self.focus_document = false;
@@ -845,6 +862,7 @@ impl DocsApp {
                     | Action::DeleteCharacterStyle
                     | Action::DeleteStyle
                     | Action::Zoom
+                    | Action::TabInterval
                     | Action::File
             ) {
                 self.focus_document = true;
@@ -2516,6 +2534,7 @@ impl DocsApp {
             || self.style_dialog.is_some()
             || self.delete_style_dialog.is_some()
             || self.zoom_dialog.is_some()
+            || self.tab_dialog.is_some()
             || self.quick_reset
             || self.quick_order.is_some()
         {
@@ -3153,7 +3172,7 @@ impl DocsApp {
                     ui.add_space(18.);
 
                     ui.small("Local document format: BreakFree Docs (.bfdoc)");
-                    ui.small("Saves use format v6. Earlier builds cannot open new saves.");
+                    ui.small("Saves use format v14. Earlier builds cannot open new saves.");
 
                     ui.small("Continuous layout. Pagination and printing are planned.");
                 }
@@ -3248,10 +3267,17 @@ impl DocsApp {
                 }
             }
         }
-        if let Some(mut dialog) = self.paragraph_dialog.take() {
+        if self.tab_dialog.is_none()
+            && let Some(mut dialog) = self.paragraph_dialog.take()
+        {
             match dialog.show(ctx, &mut self.regions) {
                 ParagraphOutcome::Open => self.paragraph_dialog = Some(dialog),
                 ParagraphOutcome::Cancel => self.sync_view(),
+                ParagraphOutcome::Tabs => {
+                    self.tab_dialog = Some(TabDialog::new(&self.session.editor));
+                    dialog.restore_focus();
+                    self.paragraph_dialog = Some(dialog);
+                }
                 ParagraphOutcome::Apply(patch) => {
                     let (start, end) = self.session.editor.selection;
                     let result = self
@@ -3260,6 +3286,19 @@ impl DocsApp {
                         .set_paragraph_geometry(start, end, patch);
                     self.fail(result);
                     self.sync_view();
+                }
+            }
+        }
+        if let Some(mut dialog) = self.tab_dialog.take() {
+            match dialog.show(ctx, &mut self.regions) {
+                TabOutcome::Open => self.tab_dialog = Some(dialog),
+                TabOutcome::Cancel => self.focus_document = self.paragraph_dialog.is_none(),
+                TabOutcome::Apply(value) => {
+                    let (start, end) = self.session.editor.selection;
+                    let result = self.session.editor.set_tab_interval(start, end, value);
+                    self.fail(result);
+                    self.sync_view();
+                    self.focus_document = self.paragraph_dialog.is_none();
                 }
             }
         }
@@ -3412,6 +3451,7 @@ impl DocsApp {
                 || self.style_dialog.is_some()
                 || self.delete_style_dialog.is_some()
                 || self.zoom_dialog.is_some()
+                || self.tab_dialog.is_some()
                 || self.quick_reset
                 || self.quick_order.is_some())
         {

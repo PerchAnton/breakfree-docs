@@ -8880,3 +8880,152 @@ fn tab_interval_indents_cursor_and_modified_tab_safety() {
     );
     assert_eq!(app.session.editor.document, before);
 }
+
+#[test]
+fn tab_dialog_selection_transaction_cancel_and_default() {
+    let (ctx, mut app) = setup();
+    app.session
+        .editor
+        .replace(0, 0, "a\tb\nc\td\nlast", "Fixture")
+        .unwrap();
+    app.session.editor.set_tab_interval(0, 0, Some(48)).unwrap();
+    app.session.editor.selection = (0, 8); // Excludes the third paragraph.
+    app.sync_view();
+    let before = app.session.editor.document.clone();
+    app.execute(Action::TabInterval, &ctx);
+    frame(&ctx, &mut app, vec![], [640., 480.], 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("48.5".into())],
+        [640., 480.],
+        1.,
+    );
+    click_region_at(&ctx, &mut app, "tab-ok", [640., 480.]);
+    assert!(app.tab_dialog.is_none());
+    let after = app.session.editor.document.clone();
+    assert_eq!(
+        after.paragraphs[0].spacing.tab_interval_half_points,
+        Some(97)
+    );
+    assert_eq!(
+        after.paragraphs[1].spacing.tab_interval_half_points,
+        Some(97)
+    );
+    assert_eq!(after.paragraphs[2].spacing.tab_interval_half_points, None);
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.document, before);
+    app.execute(Action::Redo, &ctx);
+    assert_eq!(app.session.editor.document, after);
+    app.execute(Action::TabInterval, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("0.25".into())],
+        [1366., 900.],
+        1.,
+    );
+    click_region(&ctx, &mut app, "tab-ok");
+    assert!(app.tab_dialog.is_some());
+    assert_eq!(app.session.editor.document, after);
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Escape, false)],
+        [1366., 900.],
+        1.,
+    );
+    assert!(app.tab_dialog.is_none());
+    assert_eq!(app.session.editor.document, after);
+    app.execute(Action::TabInterval, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    click_region(&ctx, &mut app, "tab-default");
+    click_region(&ctx, &mut app, "tab-ok");
+    assert_eq!(
+        app.session.editor.document.paragraphs[0]
+            .spacing
+            .tab_interval_half_points,
+        None
+    );
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.document, after);
+}
+
+#[test]
+fn tab_dialog_nested_cancel_preserves_paragraph_draft_and_redo() {
+    let (ctx, mut app) = setup();
+    app.session
+        .editor
+        .replace(0, 0, "e\u{301}\tУкраїна", "Fixture")
+        .unwrap();
+    app.session.editor.set_tab_interval(0, 0, Some(96)).unwrap();
+    app.session.editor.undo();
+    let before = app.session.editor.document.clone();
+    app.sync_view();
+    app.execute(Action::ParagraphSpacing, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    click_region(&ctx, &mut app, "paragraph-tabs");
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    assert!(app.tab_dialog.is_some());
+    assert!(app.paragraph_dialog.is_some());
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Escape, false)],
+        [1366., 900.],
+        1.,
+    );
+    assert!(app.tab_dialog.is_none());
+    assert!(app.paragraph_dialog.is_some());
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    click_region(&ctx, &mut app, "paragraph-cancel");
+    assert_eq!(app.session.editor.document, before);
+    app.execute(Action::Redo, &ctx);
+    assert_eq!(
+        app.session.editor.document.paragraphs[0]
+            .spacing
+            .tab_interval_half_points,
+        Some(96)
+    );
+}
+
+#[test]
+fn tab_dialog_keyboard_bounds_and_noop_history() {
+    for dpi in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        app.session.editor.replace(0, 0, "a\tb", "Fixture").unwrap();
+        app.session.editor.set_tab_interval(0, 0, Some(96)).unwrap();
+        app.session.editor.undo();
+        app.sync_view();
+        let before = app.session.editor.document.clone();
+        app.execute(Action::TabInterval, &ctx);
+        let size = [640. * dpi, 480. * dpi];
+        frame(&ctx, &mut app, vec![], size, dpi);
+        let rect = app
+            .regions
+            .iter()
+            .find(|r| r.name == "tab-dialog")
+            .unwrap()
+            .rect;
+        assert!(rect.min.x >= 0. && rect.min.y >= 0. && rect.max.x <= 640. && rect.max.y <= 480.);
+        assert_eq!(
+            ctx.memory(|m| m.focused()),
+            Some(Id::new("tab-interval-value"))
+        );
+        // Field -> default checkbox -> Cancel -> OK, then activate focused OK.
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![key(Key::Tab, false)], size, dpi);
+        }
+        frame(&ctx, &mut app, vec![key(Key::Enter, false)], size, dpi);
+        assert!(app.tab_dialog.is_none());
+        assert_eq!(app.session.editor.document, before);
+        app.execute(Action::Redo, &ctx);
+        assert_eq!(
+            app.session.editor.document.paragraphs[0]
+                .spacing
+                .tab_interval_half_points,
+            Some(96)
+        );
+    }
+}

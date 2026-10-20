@@ -379,4 +379,5 @@ Use public specifications and original test cases, not copied application code. 
 - [ ] Next D2 increment: define tab-stop storage/layout semantics before adding editable ruler tab stops; list structure remains a separate feature.
 
 - [x] Alpha.61: literal Tab storage/input, validated paragraph grid interval, native v14 migration and left-stop layout with Unicode/cursor/history tests.
-- [ ] Next: expose the stored tab interval in a transactional paragraph dialog; custom stops/types require additional layout semantics.
+- [x] Alpha.62: transactional interval dialog, mixed selection, validation/default reset, cancel and one Undo/Redo through the shared command.
+- [ ] Next: design explicit left tab-stop positions and their storage/layout tests before editable ruler stops; other types and leaders remain later work.

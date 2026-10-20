@@ -417,6 +417,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         || ![
             "home",
             "tabs",
+            "tab-dialog",
             "styles",
             "styles-menu",
             "styles-character",
@@ -506,7 +507,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "examples/Welcome.bfdoc"
         },
     );
-    let session = if args[2] == "tabs" {
+    let session = if matches!(args[2].as_str(), "tabs" | "tab-dialog") {
         let mut session = Session::default();
         session.editor.replace(0, 0, "Name\t\tValue\nEnglish\t\t36 pt grid\nУкраїна\t\tТабуляція\nРусский\t\tТабуляция\nCombining e\u{301}\t\tEnd", "Tab fixture")?;
         session
@@ -667,6 +668,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 DocsApp::new(session, &cc.egui_ctx)
             };
             match mode.as_str() {
+                "tab-dialog" => app.execute(Action::TabInterval, &cc.egui_ctx),
                 "view" | "view-fit" | "keytips-qat-below" => {
                     app.tab = 8;
                     if mode == "view-fit" {

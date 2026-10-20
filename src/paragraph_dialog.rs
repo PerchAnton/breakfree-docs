@@ -4,6 +4,7 @@ use super::*;
 pub(super) enum ParagraphOutcome {
     Open,
     Cancel,
+    Tabs,
     Apply(crate::commands::ParagraphGeometryPatch),
 }
 #[derive(Default)]
@@ -26,6 +27,9 @@ pub(super) struct ParagraphDialog {
 }
 
 impl ParagraphDialog {
+    pub fn restore_focus(&mut self) {
+        self.focused = false;
+    }
     fn values(&self) -> Result<crate::commands::ParagraphGeometryPatch> {
         let line = if !self.change_line {
             None
@@ -114,6 +118,7 @@ impl ParagraphDialog {
     }
     pub fn show(&mut self, ctx: &egui::Context, regions: &mut Vec<Region>) -> ParagraphOutcome {
         let mut cancel = false;
+        let mut tabs = false;
         let mut accept = false;
         let record = |regions: &mut Vec<Region>, name: &str, rect| {
             regions.push(Region {
@@ -240,6 +245,9 @@ impl ParagraphDialog {
                     ui.colored_label(Color32::from_rgb(165, 30, 30), error);
                 }
                 ui.separator();
+                let response = ui.button("Tab interval…");
+                record(regions, "paragraph-tabs", response.rect);
+                tabs = response.clicked();
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                     let response = ui.add_sized([82., 27.], Button::new("Cancel"));
                     record(regions, "paragraph-cancel", response.rect);
@@ -263,6 +271,9 @@ impl ParagraphDialog {
                 Ok(patch) => return ParagraphOutcome::Apply(patch),
                 Err(error) => self.error = Some(error),
             }
+        }
+        if tabs {
+            return ParagraphOutcome::Tabs;
         }
         ParagraphOutcome::Open
     }

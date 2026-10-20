@@ -3,6 +3,12 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.62 — 2026-10-20
+
+- Add a native Tab interval dialog from Home → Paragraph spacing and command search. Apply 0.5–144 pt in half-point steps, or restore the default 36 pt, to selected paragraphs in one Undo/Redo operation.
+- Show mixed interval settings, reject invalid input, preserve the paragraph dialog draft and leave the document unchanged on Cancel/Escape. Keep native v14 and the existing tab-layout limitations.
+- Preserve design, palette and icons. Correct the File pane's stale native-format label. Alpha.61 approved; alpha.62 awaits approval. VoiceOver final review and Windows remain deferred.
+
 ## 0.1.0-alpha.61 — 2026-10-20
 
 - Add left tab-grid layout, literal Tab input and per-paragraph interval storage in native v14. Default stops repeat every 36 pt; the validated engine interval API is one Undo/Redo operation.

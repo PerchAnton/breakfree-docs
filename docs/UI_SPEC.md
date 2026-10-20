@@ -1827,3 +1827,25 @@ tabs remain future work. The ribbon, palette and icons are unchanged.
 Native render capture: [rust-tabs-alpha61-macos.png](screenshots/rust-tabs-alpha61-macos.png), SHA-256 `842c03ac7e182c15cff507496b34aa441f6663008375945b8f3f2fa09d8424fc`.
 
 Native render capture: [rust-tabs-alpha61-compact-macos.png](screenshots/rust-tabs-alpha61-compact-macos.png), SHA-256 `11476d748cf8a58427de8cf02733335949ce5691321c585ad035f92c9370a2c5`.
+
+## Alpha.62 tab interval dialog
+
+Home → Paragraph spacing → Tab interval opens a native modal over the existing
+canvas. Command search also exposes Tab interval. The modal uses the existing
+neutral surfaces, purple field focus, typography and 78 × 27 DIP action buttons,
+with 290 DIP content width. No ribbon icons or palette change. Initial field focus
+selects the current value; mixed stored settings show a blank field and explicit
+notice. Tab/Shift+Tab traverse controls, Enter/Space activate focused controls,
+and Escape cancels. The parent paragraph draft is retained; interval acceptance
+is a separate transaction. Default restores 36 pt without a direct override.
+
+Native macOS captures at 1366 × 900 and 640 × 480 DIP were visually inspected:
+field, hints and actions fit without clipping. Widget bounds/keyboard tests also
+pass at synthetic 100/125/150% scales; these are not native Windows acceptance.
+No matched Word capture or physical keyboard/IME/VoiceOver test this iteration.
+Custom stops, leaders and style inheritance remain unavailable.
+
+| Capture | SHA-256 |
+| :--- | :--- |
+| [rust-tab-dialog-alpha62-macos.png](screenshots/rust-tab-dialog-alpha62-macos.png) | `3da4f182e739dd042ef6a098ebcb7a549633df7c6e1118eb7658a912edd628dd` |
+| [rust-tab-dialog-alpha62-compact-macos.png](screenshots/rust-tab-dialog-alpha62-compact-macos.png) | `6b4eeee0a269baa50ead4bf6f61055626010c07ad6dc251118f8dca0d37cac36` |

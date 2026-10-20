@@ -1591,3 +1591,21 @@ right/center/decimal tab types. Justify uses left placement for tab paragraphs;
 Center/Right align the fixed-spacing row as a block. No Word fidelity claim.
 VoiceOver final review and Windows remain deferred. Content v14 is rejected by
 older readers; retain older files separately when using alpha.60 or earlier.
+
+## Alpha.62 tab interval dialog validation
+
+Validated on macOS arm64 with Rust 1.99.1. The full suite passes **322 tests**;
+`--no-default-features` passes **153 tests**. New real-widget cases cover mixed
+paragraph selection and exclusive end, interval apply/reset in one Undo/Redo,
+invalid input and Escape without mutation, nested cancellation and retained
+paragraph dialog, no-op acceptance preserving Redo, keyboard activation and modal
+bounds at synthetic 100/125/150% scales. Exact half-point parsing rejects fractional
+rounding, overflow and non-finite/exponential inputs. Existing v14 save/reopen,
+legacy rejection and failed-write preservation tests still pass.
+
+Formatting, both normal/capture all-target Clippy, release/capture builds,
+repository references/contract/artwork, workflow YAML and whitespace checks pass.
+Two native captures were inspected (see UI_SPEC); physical keyboard/IME were not
+repeated. Isolated executable version/capabilities checks pass without Office.
+VoiceOver final acceptance, Windows scaling/input and matched reference comparison
+remain deferred. Local results do not establish server CI; see PROJECT_LOG.

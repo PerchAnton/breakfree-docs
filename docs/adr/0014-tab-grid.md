@@ -29,6 +29,9 @@ stops, leaders, style inheritance and interactive ruler editing are not supporte
 
 Plain Tab in the focused editor inserts a literal Tab through the existing shared
 text-edit transaction. Modified Tab is reserved and does not delete selections;
-F6/Alt routes remain available for leaving the editor. The stored interval has a
-validated engine API, but no GUI interval editor yet; normal typing uses 36 pt.
+F6/Alt routes remain available for leaving the editor. Alpha.62 exposes the validated interval command through a native draft dialog.
+Each acceptance applies to the half-open paragraph selection in one history entry;
+Cancel/Escape and invalid input do not mutate it. The parent paragraph draft stays
+open and unchanged while the interval dialog runs as a separate transaction.
+Absent overrides use 36 pt.
 No ribbon/palette/icon change, dependency or license change is required.

@@ -764,3 +764,13 @@ a custom paragraph interval; a GUI interval editor is not included yet.
 Tab paragraphs use fixed spacing: Justify displays left placement, while
 Center/Right align the row as a block. Arbitrary ruler stops, leaders and decimal
 tabs remain future work. The ribbon, palette and icons are unchanged.
+
+## Alpha.62 tab interval dialog
+
+Open Home → Paragraph spacing → **Tab interval…**, or search commands for
+**Tab interval**. Enter 0.5–144 pt in half-point steps, or select **Use default
+interval (36 pt)**. OK applies to the selected paragraphs as one Undo/Redo step;
+Cancel/Escape changes nothing. Mixed selections are labeled and require an explicit
+value or default choice. The paragraph dialog retains its independent draft.
+The interval is direct formatting in native v14; custom stops and style inheritance
+remain planned. VoiceOver final review and Windows validation remain deferred.
