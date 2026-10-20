@@ -576,10 +576,13 @@ pub enum Alignment {
     Justify,
 }
 
-/// Optional direct paragraph spacing; None inherits the paragraph style.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+/// Direct paragraph geometry; tab properties do not inherit from named styles.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ParagraphSpacing {
+    /// Strictly increasing left stops in half points from the text-column origin.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub left_tab_stops_half_points: Vec<u16>,
     /// Direct tab grid interval; None uses the 36 pt document default.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tab_interval_half_points: Option<u16>,
@@ -596,7 +599,21 @@ pub struct ParagraphSpacing {
     pub first_line_half_points: Option<i16>,
 }
 impl ParagraphSpacing {
-    pub fn validate(self) -> Result<()> {
+    pub fn validate(&self) -> Result<()> {
+        if self.left_tab_stops_half_points.len() > 32
+            || self
+                .left_tab_stops_half_points
+                .iter()
+                .any(|p| !(1..=2880).contains(p))
+            || self
+                .left_tab_stops_half_points
+                .windows(2)
+                .any(|pair| pair[0] >= pair[1])
+        {
+            return Err(
+                "Left tab stops require up to 32 increasing unique positions, 0.5–1440 pt.".into(),
+            );
+        }
         if self
             .tab_interval_half_points
             .is_some_and(|v| !(1..=288).contains(&v))

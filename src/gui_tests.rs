@@ -9029,3 +9029,80 @@ fn tab_dialog_keyboard_bounds_and_noop_history() {
         );
     }
 }
+
+#[test]
+fn explicit_tab_positions_grid_fallback_zoom_and_cursor() {
+    let (ctx, _) = setup();
+    let mut e = crate::commands::Editor::default();
+    e.replace(0, 0, "\t\t\tX", "Fixture").unwrap();
+    e.set_left_tab_stops(0, 0, vec![97, 192]).unwrap();
+    for dpi in [1., 1.25, 1.5] {
+        ctx.set_pixels_per_point(dpi);
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            for scale in [0.5, 1., 2.] {
+                let g = layout::galley(
+                    ctx,
+                    &e.document,
+                    &e.document.text(),
+                    CharacterFormat::default(),
+                    0,
+                    500. * scale,
+                    11. * scale,
+                );
+                assert_eq!(g.rows.len(), 1);
+                let glyphs = &g.rows[0].glyphs;
+                for (index, x) in [(1, 48.5), (2, 96.), (3, 108.)] {
+                    assert!(
+                        (glyphs[index].pos.x - x * scale).abs() < 1.1,
+                        "{dpi} {scale} {index}: {}",
+                        glyphs[index].pos.x
+                    );
+                }
+                for index in 0..=4 {
+                    let r = g.pos_from_cursor(CCursor::new(index));
+                    assert_eq!(g.cursor_from_pos(r.center().to_vec2()).index, index);
+                }
+            }
+        });
+    }
+}
+
+#[test]
+fn explicit_tabs_indents_unicode_wrap_and_formatting() {
+    let (ctx, _) = setup();
+    let _ = ctx.run(egui::RawInput::default(), |ctx| {
+        let mut e = crate::commands::Editor::default();
+        e.replace(0, 0, "\tУкраїна e\u{301}\tРусский English\t", "Fixture")
+            .unwrap();
+        e.set_left_tab_stops(0, 0, vec![72, 144]).unwrap();
+        e.emphasize(1, 5, true, true).unwrap();
+        for first in [-24, 0, 24] {
+            e.document.paragraphs[0].spacing.left_indent_half_points = Some(24);
+            e.document.paragraphs[0].spacing.first_line_half_points = Some(first);
+            for width in [40., 80., 500.] {
+                let g = layout::galley(
+                    ctx,
+                    &e.document,
+                    &e.document.text(),
+                    CharacterFormat::default(),
+                    0,
+                    width,
+                    11.,
+                );
+                assert_eq!(
+                    g.rows.iter().map(|r| r.glyphs.len()).sum::<usize>(),
+                    e.document.text().chars().count()
+                );
+                // Text glyphs are pixel-snapped; tab advances retain fractional geometry.
+                assert!(g.rows.iter().all(|r| {
+                    r.glyphs
+                        .windows(2)
+                        .all(|w| w[0].pos.x <= w[1].pos.x + 1. / ctx.pixels_per_point())
+                }));
+                if width == 500. {
+                    assert!((g.rows[0].glyphs[1].pos.x - 36.).abs() < 1.1);
+                }
+            }
+        }
+    });
+}

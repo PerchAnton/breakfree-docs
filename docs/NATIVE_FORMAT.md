@@ -1,12 +1,12 @@
 # Native BreakFree Docs document format
 
-Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v14.
+Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v15.
 This is not a DOCX container. Process protocol and file-content versions are independent.
 
 ```json
 {
   "format": "breakfree.docs.native",
-  "content_version": 14,
+  "content_version": 15,
   "character_styles": [],
   "style_catalog": {
     "custom": [],
@@ -224,3 +224,19 @@ This is a direct paragraph property, not named-style inheritance. Readers v1–v
 reject the new key even when null; v14 validates bounds and rejects unknown fields.
 Older applications reject v14 saves: retain an older copy when required.
 [Storage/layout policy](adr/0014-tab-grid.md).
+
+## Content v15: explicit left tab positions
+
+Paragraph `spacing.left_tab_stops_half_points` is an optional array of up to 32
+strictly increasing unique integers from 1 to 2880 (0.5–1440 pt). Omitted/empty
+means no explicit positions; null, duplicates, descending order and invalid types
+or bounds are rejected. Example: `[97, 192]` stores 48.5 pt and 96 pt. Stops are
+measured from the unindented text-column origin. The next explicit position takes
+precedence; after the final position, resume the paragraph's interval grid from
+that origin. Positions beyond the current column are retained, not clamped in
+storage. See ADR 0014 for line-edge/indent/layout policy and remaining limitations.
+
+Native v1–v14 files without this field import an empty list; the new key in those
+versions is rejected even when empty/null. Alpha.62 and older reject v15 saves.
+Keep a separate earlier copy if an older build must still read the document.
+The tested temporary-file replacement and failure-preservation behavior is unchanged.

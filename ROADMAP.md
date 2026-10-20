@@ -380,4 +380,5 @@ Use public specifications and original test cases, not copied application code. 
 
 - [x] Alpha.61: literal Tab storage/input, validated paragraph grid interval, native v14 migration and left-stop layout with Unicode/cursor/history tests.
 - [x] Alpha.62: transactional interval dialog, mixed selection, validation/default reset, cancel and one Undo/Redo through the shared command.
-- [ ] Next: design explicit left tab-stop positions and their storage/layout tests before editable ruler stops; other types and leaders remain later work.
+- [x] Alpha.63: bounded explicit left positions, native v15 storage, shared one-step history and layout with interval fallback; local migration/editing/Unicode/indent/zoom/cursor checks.
+- [ ] Next: transactional GUI editing of explicit left positions before interactive ruler stops; other tab types, leaders and named-style inheritance remain later work.

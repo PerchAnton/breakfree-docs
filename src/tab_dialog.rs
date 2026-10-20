@@ -13,6 +13,7 @@ pub(super) struct TabDialog {
     focus: bool,
     error: bool,
     mixed: bool,
+    explicit_positions: bool,
 }
 
 impl TabDialog {
@@ -38,6 +39,9 @@ impl TabDialog {
             focus: true,
             error: false,
             mixed,
+            explicit_positions: values
+                .iter()
+                .any(|p| !p.spacing.left_tab_stops_half_points.is_empty()),
         }
     }
 
@@ -118,7 +122,10 @@ impl TabDialog {
                     self.error = false;
                 }
                 ui.small("0.5–144 pt, in 0.5 pt steps. Left tab grid only.");
-                ui.small("Named style inheritance and custom stops are planned.");
+                if self.explicit_positions {
+                    ui.small("Explicit positions take precedence over this interval.");
+                }
+                ui.small("Position editing and style inheritance are planned.");
                 if self.error {
                     ui.colored_label(Color32::DARK_RED, "Enter 0.5–144 pt in half-point steps.");
                 }

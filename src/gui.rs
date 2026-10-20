@@ -3172,7 +3172,10 @@ impl DocsApp {
                     ui.add_space(18.);
 
                     ui.small("Local document format: BreakFree Docs (.bfdoc)");
-                    ui.small("Saves use format v14. Earlier builds cannot open new saves.");
+                    ui.small(format!(
+                        "Saves use format v{}. Earlier builds cannot open new saves.",
+                        crate::storage::CONTENT_VERSION
+                    ));
 
                     ui.small("Continuous layout. Pagination and printing are planned.");
                 }

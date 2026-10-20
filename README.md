@@ -774,3 +774,13 @@ Cancel/Escape changes nothing. Mixed selections are labeled and require an expli
 value or default choice. The paragraph dialog retains its independent draft.
 The interval is direct formatting in native v14; custom stops and style inheritance
 remain planned. VoiceOver final review and Windows validation remain deferred.
+
+## Alpha.63 explicit left tab positions
+
+The engine and native v15 files support up to 32 explicit left tab positions in
+half-point units (0.5–1440 pt). Tabs advance to the next position and resume the
+regular interval grid after the final one. The shared command preserves one-step
+Undo/Redo and paragraph editing; empty lists restore interval-only behavior.
+This increment adds storage and layout; GUI/ruler position editing follows next.
+The existing interval dialog preserves explicit positions when changing the grid.
+Alpha.62 and older cannot read v15 saves. See [format details](docs/NATIVE_FORMAT.md).

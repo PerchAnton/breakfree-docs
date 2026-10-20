@@ -417,6 +417,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         || ![
             "home",
             "tabs",
+            "explicit-tabs",
             "tab-dialog",
             "styles",
             "styles-menu",
@@ -507,9 +508,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "examples/Welcome.bfdoc"
         },
     );
-    let session = if matches!(args[2].as_str(), "tabs" | "tab-dialog") {
+    let session = if matches!(args[2].as_str(), "tabs" | "tab-dialog" | "explicit-tabs") {
         let mut session = Session::default();
         session.editor.replace(0, 0, "Name\t\tValue\nEnglish\t\t36 pt grid\nУкраїна\t\tТабуляція\nРусский\t\tТабуляция\nCombining e\u{301}\t\tEnd", "Tab fixture")?;
+        if args[2] == "explicit-tabs" {
+            let end = session.editor.document.text().chars().count();
+            session
+                .editor
+                .set_left_tab_stops(0, end, vec![144, 288, 432])?;
+        }
         session
     } else if matches!(
         args[2].as_str(),

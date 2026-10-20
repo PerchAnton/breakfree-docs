@@ -35,3 +35,30 @@ Cancel/Escape and invalid input do not mutate it. The parent paragraph draft sta
 open and unchanged while the interval dialog runs as a separate transaction.
 Absent overrides use 36 pt.
 No ribbon/palette/icon change, dependency or license change is required.
+
+## Alpha.63: explicit left positions
+
+Paragraph spacing now owns `left_tab_stops_half_points`, a sorted unique vector
+with at most 32 entries, each 1–2880 (0.5–1440 pt). Empty means interval grid only.
+These bounded direct paragraph settings are independent of named styles; retain
+positions outside the current visible column when resizing. The shared
+`set_left_tab_stops` command rejects invalid order/duplicates/ranges, uses half-open
+paragraph selection and commits one undoable snapshot. No-op preserves Redo.
+Enter, joins, paste and Replace All use the existing paragraph-geometry policy.
+
+A Tab uses the first explicit stop strictly greater than the current coordinate,
+measured from the unindented text-column origin. Explicit stops suppress the
+regular interval grid before the last stop. After the last stop, resume the next
+regular grid multiple from the same origin (not last-stop plus interval). At or
+beyond the line edge, preserve the existing edge/wrap policy without altering stored
+positions. First-line/hanging indents, continuation rows and zoom use the same
+coordinates. This is a prototype policy, not a claim of Word layout equivalence.
+
+Native v15 stores the list in paragraph spacing. Absence imports an empty list;
+null is invalid. v1–v14 import without positions and reject this new key even when
+empty/null. Readers from alpha.62 and earlier reject v15. The application and
+process protocol versions remain independent. No dependency/license change.
+
+The interval dialog remains available and changes only the interval, preserving
+explicit stops. Editing positions through the GUI/ruler is the next increment;
+right/center/decimal stops, leaders and style inheritance remain future work.

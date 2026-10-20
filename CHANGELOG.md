@@ -3,6 +3,12 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.63 — 2026-10-20
+
+- Store explicit left tab positions in native v15: up to 32 strictly increasing unique positions, 0.5–1440 pt from the text-column origin. A shared command changes selected paragraphs in one Undo/Redo operation; empty lists restore interval-only layout.
+- Lay out each Tab at the next explicit position, then resume the existing interval grid after the last position. Preserve indents, zoom, Unicode boundaries, cursor indices, formatting, paragraph editing and save/reopen. Reject malformed lists and the new field in older file versions.
+- Preserve design, palette and icons. Position editing in the GUI/ruler, other tab types, leaders and named-style inheritance remain planned. Alpha.62 approved; alpha.63 awaits approval. VoiceOver final review and Windows remain deferred.
+
 ## 0.1.0-alpha.62 — 2026-10-20
 
 - Add a native Tab interval dialog from Home → Paragraph spacing and command search. Apply 0.5–144 pt in half-point steps, or restore the default 36 pt, to selected paragraphs in one Undo/Redo operation.

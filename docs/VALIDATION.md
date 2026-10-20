@@ -1609,3 +1609,26 @@ Two native captures were inspected (see UI_SPEC); physical keyboard/IME were not
 repeated. Isolated executable version/capabilities checks pass without Office.
 VoiceOver final acceptance, Windows scaling/input and matched reference comparison
 remain deferred. Local results do not establish server CI; see PROJECT_LOG.
+
+## Alpha.63 explicit left tab validation
+
+macOS arm64, Rust 1.99.1: **327 full tests / 156 without GUI** pass. New cases
+cover v15 save/reopen, mixed selection/exclusive paragraph end, set/clear/no-op
+history, invalid/duplicate/descending/oversized/out-of-range lists, malformed JSON
+types and pre-v15 rejection of the key even when empty/null. Enter, join and
+Replace All preserve the relevant positions; changing the interval leaves them
+intact. Existing file failure-preservation and formatting suites still pass.
+
+Layout tests exercise next explicit stops, exact-stop progression, fallback to the
+original grid origin, zoom and synthetic DPI, cursor roundtrip, first/hanging
+indents, narrow wrapping, Unicode combining boundaries and mixed formatting.
+Text glyph coordinates use the renderer's one-pixel rounding tolerance; tab
+positions retain fractional geometry. This is not full writing-system acceptance.
+
+fmt, normal/capture all-target Clippy, release/capture builds, repository/artwork,
+workflow YAML, whitespace and isolated executable version/capabilities checks pass.
+After the final precedence hint and interval-preservation assertion, focused dialog
+and storage/history tests and capture Clippy were repeated successfully. Two native
+screenshots inspected (UI_SPEC). Physical keyboard/IME, matched reference, Windows
+and VoiceOver acceptance were not performed. Position editing UI, other stop types,
+leaders and named-style inheritance remain later work; CI is reported separately.

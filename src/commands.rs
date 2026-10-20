@@ -132,7 +132,7 @@ impl Editor {
                 text: part.into(),
                 styles: styles[offset..offset + len].to_vec(),
                 alignment: a.alignment,
-                spacing: a.spacing,
+                spacing: a.spacing.clone(),
                 paragraph_style,
             });
             offset += len + 1;
@@ -560,6 +560,33 @@ impl Editor {
             (start, end),
             self.typing_style,
         );
+        Ok(())
+    }
+
+    /// Replace explicit left stops on selected paragraphs as one history entry.
+    pub fn set_left_tab_stops(
+        &mut self,
+        start: usize,
+        end: usize,
+        positions: Vec<u16>,
+    ) -> Result<()> {
+        validate_range(&self.document.text(), start, end)?;
+        ParagraphSpacing {
+            left_tab_stops_half_points: positions.clone(),
+            ..Default::default()
+        }
+        .validate()?;
+        let (first, _) = self.document.locate(start)?;
+        let (mut last, offset) = self.document.locate(end)?;
+        if end > start && offset == 0 && last > first {
+            last -= 1;
+        }
+        let mut result = self.document.clone();
+        for p in &mut result.paragraphs[first..=last] {
+            p.spacing.left_tab_stops_half_points = positions.clone();
+        }
+        result.validate()?;
+        self.commit(result, "Left tab stops", (start, end), self.typing_style);
         Ok(())
     }
 

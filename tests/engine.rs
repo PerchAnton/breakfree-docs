@@ -264,8 +264,8 @@ fn rejects_corrupt_foreign_unknown_and_duplicate_fields() {
     }
     let mut duplicate = String::from_utf8(storage::encode(&sample().document).unwrap()).unwrap();
     duplicate = duplicate.replacen(
-        "\"content_version\": 14",
-        "\"content_version\": 14, \"content_version\": 14",
+        "\"content_version\": 15",
+        "\"content_version\": 15, \"content_version\": 15",
         1,
     );
     assert!(storage::decode(duplicate.as_bytes()).is_err());
@@ -500,7 +500,7 @@ fn v1_load_is_read_only_and_v8_roundtrip_preserves_new_styles() {
     s.save(&path).unwrap();
     let new = fs::read(&path).unwrap();
     let json: serde_json::Value = serde_json::from_slice(&new).unwrap();
-    assert_eq!(json["content_version"], 14);
+    assert_eq!(json["content_version"], storage::CONTENT_VERSION);
     assert_eq!(storage::load(&path).unwrap(), s.editor.document);
     assert!(!s.dirty());
 }

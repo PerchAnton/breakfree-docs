@@ -23,7 +23,7 @@ impl ReplacementPlan {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 struct Unit {
     ch: char,
     style: CharacterFormat,
@@ -40,7 +40,7 @@ fn append(paragraphs: &mut Vec<Paragraph>, unit: Unit) {
                 .unwrap_or(paragraphs.last().unwrap().paragraph_style),
             spacing: unit
                 .next_spacing
-                .unwrap_or(paragraphs.last().unwrap().spacing),
+                .unwrap_or_else(|| paragraphs.last().unwrap().spacing.clone()),
             alignment: unit
                 .next_alignment
                 .unwrap_or(paragraphs.last().unwrap().alignment),
@@ -109,21 +109,21 @@ impl Editor {
                     style: paragraph.styles.last().copied().unwrap_or_default(),
                     next_alignment: Some(next.alignment),
                     next_style: Some(next.paragraph_style),
-                    next_spacing: Some(next.spacing),
+                    next_spacing: Some(next.spacing.clone()),
                 });
             }
         }
         let mut paragraphs = vec![Paragraph {
             alignment: self.document.paragraphs[0].alignment,
-            spacing: self.document.paragraphs[0].spacing,
+            spacing: self.document.paragraphs[0].spacing.clone(),
             paragraph_style: self.document.paragraphs[0].paragraph_style,
             ..Paragraph::default()
         }];
         let (mut offset, mut output_length, mut changes, mut caret) = (0, 0, 0, 0);
         let mut typing = self.typing_style;
         for &(start, end) in ranges {
-            for &unit in &units[offset..start] {
-                append(&mut paragraphs, unit);
+            for unit in &units[offset..start] {
+                append(&mut paragraphs, unit.clone());
             }
             output_length += start - offset;
             if units[start..end]
@@ -131,8 +131,8 @@ impl Editor {
                 .map(|u| u.ch)
                 .eq(inserted.iter().copied())
             {
-                for &unit in &units[start..end] {
-                    append(&mut paragraphs, unit);
+                for unit in &units[start..end] {
+                    append(&mut paragraphs, unit.clone());
                 }
                 output_length += end - start;
             } else {
@@ -155,8 +155,8 @@ impl Editor {
             }
             offset = end;
         }
-        for &unit in &units[offset..] {
-            append(&mut paragraphs, unit);
+        for unit in &units[offset..] {
+            append(&mut paragraphs, unit.clone());
         }
         let result = Document {
             paragraphs,

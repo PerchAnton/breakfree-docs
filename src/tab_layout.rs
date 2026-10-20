@@ -7,6 +7,7 @@ pub(super) fn layout(
     widths: [f32; 2],
     origins: [f32; 2],
     interval: f32,
+    stops: &[f32],
 ) -> Galley {
     let mut measurement = job.clone();
     measurement.wrap.max_width = f32::INFINITY;
@@ -35,7 +36,7 @@ pub(super) fn layout(
         while end < glyphs.len() {
             let g = &glyphs[end];
             let advance = if g.chr == '\t' {
-                tab_advance(x, origin, interval, width)
+                tab_advance(x, origin, interval, width, stops)
             } else {
                 g.advance_width
             };
@@ -85,7 +86,7 @@ pub(super) fn layout(
                 cursor += measure(ctx, &job.text[chunk..at], &section.format);
                 let scalar = bytes.binary_search(&at).unwrap() - start;
                 let natural = glyphs[start + scalar].advance_width;
-                let advance = tab_advance(cursor, origin, interval, width);
+                let advance = tab_advance(cursor, origin, interval, width, stops);
                 let delta = advance - natural;
                 append(&mut row_job, section, at..at + 1, bytes[start], delta);
                 row_job.sections.last_mut().unwrap().format.underline = egui::Stroke::NONE;
@@ -126,10 +127,13 @@ pub(super) fn layout(
     result
 }
 
-fn tab_advance(x: f32, origin: f32, interval: f32, width: f32) -> f32 {
-    let next = ((origin + x) / interval)
-        .floor()
-        .mul_add(interval, interval)
+fn tab_advance(x: f32, origin: f32, interval: f32, width: f32, stops: &[f32]) -> f32 {
+    let absolute = origin + x;
+    let next = stops
+        .iter()
+        .copied()
+        .find(|stop| *stop > absolute + 0.001)
+        .unwrap_or_else(|| (absolute / interval).floor().mul_add(interval, interval))
         - origin;
     (next.min(width) - x).max(0.)
 }

@@ -1849,3 +1849,23 @@ Custom stops, leaders and style inheritance remain unavailable.
 | :--- | :--- |
 | [rust-tab-dialog-alpha62-macos.png](screenshots/rust-tab-dialog-alpha62-macos.png) | `3da4f182e739dd042ef6a098ebcb7a549633df7c6e1118eb7658a912edd628dd` |
 | [rust-tab-dialog-alpha62-compact-macos.png](screenshots/rust-tab-dialog-alpha62-compact-macos.png) | `6b4eeee0a269baa50ead4bf6f61055626010c07ad6dc251118f8dca0d37cac36` |
+
+## Alpha.63 explicit left tabs
+
+The existing document canvas renders stored explicit left stops before falling
+back to the interval grid. No ribbon, palette, icon or ruler geometry change.
+The interval dialog explains the precedence when the selection contains explicit
+positions; it preserves those positions. Position editing is not yet available
+in the GUI. The File pane reports the current native format from its version
+constant rather than duplicating a version label.
+
+Two native macOS captures were inspected at 1366 × 900 and 640 × 480 DIP: the
+synthetic fixture uses stops at 72, 144 and 216 pt; two tabs place each second
+column at 144 pt. This demonstrates left-stop rendering, not a table or pagination.
+Synthetic 100/125/150% and zoom 50/100/200% layout tests cover cursor placement.
+Native Windows/Word comparison and physical input/VoiceOver were not tested.
+
+| Capture | SHA-256 |
+| :--- | :--- |
+| [rust-left-tabs-alpha63-macos.png](screenshots/rust-left-tabs-alpha63-macos.png) | `9311947f80fe4775591b722c8e732e446950b9bcb6c702b6852fb8d90c2f1387` |
+| [rust-left-tabs-alpha63-compact-macos.png](screenshots/rust-left-tabs-alpha63-compact-macos.png) | `fd19cad326613d85ca1c06141dc8d8e1e1759f13b751c04f110dc1b3bb66bdac` |

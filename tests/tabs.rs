@@ -40,7 +40,7 @@ fn tab_interval_validation_and_strict_legacy_import() {
     }
     let mut value: serde_json::Value =
         serde_json::from_slice(&storage::encode(&before).unwrap()).unwrap();
-    assert_eq!(value["content_version"], 14);
+    assert_eq!(value["content_version"], storage::CONTENT_VERSION);
     value["content_version"] = 13.into();
     assert_eq!(
         storage::decode(&serde_json::to_vec(&value).unwrap()).unwrap(),
