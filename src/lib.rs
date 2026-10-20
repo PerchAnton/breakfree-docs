@@ -16,6 +16,7 @@ pub mod search;
 pub mod session;
 pub mod storage;
 pub mod style_filter;
+pub mod tab_ruler;
 
 pub type Result<T> = std::result::Result<T, String>;
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

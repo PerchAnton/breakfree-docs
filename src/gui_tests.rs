@@ -9298,3 +9298,210 @@ fn tab_positions_keyboard_nested_cancel_and_compact_bounds() {
         assert_eq!(app.session.editor.document, before);
     }
 }
+
+#[test]
+fn tab_ruler_pointer_preview_release_history_at_scales() {
+    for dpi in [1., 1.25, 1.5] {
+        for zoom in [50., 100., 200.] {
+            let (ctx, mut app) = setup();
+            app.zoom = zoom;
+            app.session
+                .editor
+                .replace(0, 0, "a\tb\nc\td", "Fixture")
+                .unwrap();
+            app.session
+                .editor
+                .set_left_tab_stops(0, 7, vec![144, 288])
+                .unwrap();
+            app.session.editor.selection = (0, 7);
+            app.sync_view();
+            let size = [1366. * dpi, 900. * dpi];
+            for _ in 0..3 {
+                frame(&ctx, &mut app, vec![], size, dpi);
+            }
+            let before = app.session.editor.document.clone();
+            let count = app.session.editor.undo_stack.len();
+            let pos = app
+                .regions
+                .iter()
+                .find(|r| r.name == "ruler-tab-144")
+                .unwrap()
+                .rect
+                .center();
+            frame(
+                &ctx,
+                &mut app,
+                vec![egui::Event::PointerMoved(pos), ruler_pointer(pos, true)],
+                size,
+                dpi,
+            );
+            assert!(app.tab_ruler_drag.is_some(), "{dpi} {zoom}");
+            assert!(app.ruler_drag.is_none());
+            let to = pos + vec2(24. * zoom / 100., 0.);
+            frame(
+                &ctx,
+                &mut app,
+                vec![egui::Event::PointerMoved(to)],
+                size,
+                dpi,
+            );
+            assert_eq!(app.session.editor.document, before);
+            assert_eq!(app.session.editor.undo_stack.len(), count);
+            assert_eq!(app.tab_ruler_drag.as_ref().unwrap().draft.position, 180);
+            frame(&ctx, &mut app, vec![ruler_pointer(to, false)], size, dpi);
+            assert!(app.tab_ruler_drag.is_none());
+            assert_eq!(app.session.editor.undo_stack.len(), count + 1);
+            let after = app.session.editor.document.clone();
+            assert_eq!(
+                after.paragraphs[0].spacing.left_tab_stops_half_points,
+                [180, 288]
+            );
+            app.execute(Action::Undo, &ctx);
+            assert_eq!(app.session.editor.document, before);
+            app.execute(Action::Redo, &ctx);
+            assert_eq!(app.session.editor.document, after);
+        }
+    }
+}
+
+#[test]
+fn tab_ruler_cancellation_collision_and_input_isolation() {
+    for scenario in 0..7 {
+        let (ctx, mut app) = setup();
+        app.session.editor.replace(0, 0, "a\tb", "Fixture").unwrap();
+        app.session
+            .editor
+            .set_left_tab_stops(0, 0, vec![144, 288])
+            .unwrap();
+        app.sync_view();
+        frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+        let before = app.session.editor.document.clone();
+        let count = app.session.editor.undo_stack.len();
+        let pos = app
+            .regions
+            .iter()
+            .find(|r| r.name == "ruler-tab-144")
+            .unwrap()
+            .rect
+            .center();
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::PointerMoved(pos), ruler_pointer(pos, true)],
+            [1366., 900.],
+            1.,
+        );
+        assert!(app.tab_ruler_drag.is_some());
+        let to = pos + vec2(24., 0.);
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                egui::Event::PointerMoved(to),
+                egui::Event::Text("must not insert".into()),
+            ],
+            [1366., 900.],
+            1.,
+        );
+        let mut size = [1366., 900.];
+        let events = match scenario {
+            0 => vec![key(Key::Escape, false)],
+            1 => vec![egui::Event::PointerGone],
+            2 => vec![egui::Event::WindowFocused(false)],
+            3 => {
+                size = [1024., 768.];
+                vec![]
+            }
+            4 => {
+                let outside = pos + vec2(24., 80.);
+                vec![
+                    egui::Event::PointerMoved(outside),
+                    ruler_pointer(outside, false),
+                ]
+            }
+            5 => {
+                let duplicate = pos + vec2(96., 0.);
+                vec![
+                    egui::Event::PointerMoved(duplicate),
+                    ruler_pointer(duplicate, false),
+                ]
+            }
+            _ => {
+                app.zoom = 125.;
+                vec![]
+            }
+        };
+        frame(&ctx, &mut app, events, size, 1.);
+        assert!(app.tab_ruler_drag.is_none(), "{scenario}");
+        assert_eq!(app.session.editor.document, before);
+        assert_eq!(app.session.editor.undo_stack.len(), count);
+    }
+}
+
+#[test]
+fn tab_ruler_mixed_and_indent_overlap_do_not_start_tab_drag() {
+    let (ctx, mut app) = setup();
+    app.session
+        .editor
+        .replace(0, 0, "a\tb\nc\td", "Fixture")
+        .unwrap();
+    app.session
+        .editor
+        .set_left_tab_stops(0, 0, vec![144])
+        .unwrap();
+    app.session.editor.selection = (0, 7);
+    app.sync_view();
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    let pos = app
+        .regions
+        .iter()
+        .find(|r| r.name == "ruler-tab-144")
+        .unwrap()
+        .rect
+        .center();
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::PointerMoved(pos), ruler_pointer(pos, true)],
+        [1366., 900.],
+        1.,
+    );
+    assert!(app.tab_ruler_drag.is_none());
+    frame(
+        &ctx,
+        &mut app,
+        vec![ruler_pointer(pos, false)],
+        [1366., 900.],
+        1.,
+    );
+    app.session.editor.selection = (0, 0);
+    app.session
+        .editor
+        .set_left_tab_stops(0, 0, vec![1])
+        .unwrap();
+    app.sync_view();
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    let pos = app
+        .regions
+        .iter()
+        .find(|r| r.name == "ruler-first")
+        .unwrap()
+        .rect
+        .center();
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::PointerMoved(pos), ruler_pointer(pos, true)],
+        [1366., 900.],
+        1.,
+    );
+    assert!(app.tab_ruler_drag.is_none());
+    assert!(app.ruler_drag.is_some());
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Escape, false)],
+        [1366., 900.],
+        1.,
+    );
+}

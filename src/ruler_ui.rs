@@ -13,6 +13,9 @@ pub(super) struct Drag {
 }
 impl DocsApp {
     pub(super) fn prepare_ruler_input(&mut self, ctx: &egui::Context) {
+        if self.prepare_tab_ruler_input(ctx) {
+            return;
+        }
         // egui derives scroll deltas before UI dispatch. Consume those as well as
         // events, and drain smoothing after dismissal so the canvas cannot jump.
         if self.ruler_sources || self.ruler_sources_wheel_guard {
@@ -142,11 +145,13 @@ impl DocsApp {
             ),
         ];
         let enabled = self.enabled(Action::ParagraphSpacing) && !self.composing && !self.backstage;
+        let mut indent_targets = Vec::new();
         for (handle, name, label, x, y) in handles {
             let target = Rect::from_center_size(
                 pos2(x, y),
                 vec2(12., if handle == Handle::Left { 4. } else { 8. }),
             );
+            indent_targets.push(target);
             self.record(name, target);
             let response = ui.interact(
                 target,
@@ -296,6 +301,7 @@ impl DocsApp {
             });
             response.on_hover_text(format!("{label} — drag to preview; release to apply; Esc cancels. Half-point steps. Uses the first selected paragraph; applies to selected paragraphs. Ctrl+Shift+F8 enters keyboard control; Tab changes marker, arrows nudge 0.5 pt, Shift+arrows 5 pt, Enter applies, Esc cancels, F1 shows sources, Delete previews all-indent reset; Shift+Delete resets the focused property to style indents. {}", summary.marker_details(handle)));
         }
+        self.tab_markers(ui, rect, left, right, zoom, &indent_targets);
         if let Some(drag) = &mut self.ruler_drag
             && !drag.keyboard
         {

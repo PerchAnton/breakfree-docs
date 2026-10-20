@@ -3,6 +3,12 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.65 — 2026-10-20
+
+- Show explicit left tab markers on the horizontal ruler. Drag an existing marker to preview half-point movement; release applies one shared Undo/Redo transaction across paragraphs with identical lists.
+- Escape, focus/pointer loss, resize/zoom and release outside the ruler cancel. Duplicate destinations cancel without merging stops. Stale document/selection drafts cannot overwrite edits; no-op movement preserves Redo.
+- Preserve indent marker priority: overlapping positions and mixed lists remain editable through Tab positions. No drag-to-create/delete or tab keyboard controller yet. Preserve design, palette, icons and native v15. Alpha.64 approved; alpha.65 awaits approval. VoiceOver final review and Windows remain deferred.
+
 ## 0.1.0-alpha.64 — 2026-10-20
 
 - Add a native Tab positions dialog through Home → Paragraph spacing and command search. Add, update, remove or clear explicit left stops in a draft; OK commits the entire selected-paragraph change as one Undo/Redo operation.

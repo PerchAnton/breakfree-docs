@@ -60,6 +60,8 @@ mod navigation;
 mod quick_access;
 #[path = "ruler_ui.rs"]
 mod ruler_ui;
+#[path = "tab_ruler_ui.rs"]
+mod tab_ruler_ui;
 #[path = "view_ribbon.rs"]
 mod view_ribbon;
 
@@ -266,6 +268,7 @@ pub struct DocsApp {
     pub navigation: bool,
     pub rulers: bool,
     ruler_drag: Option<ruler_ui::Drag>,
+    tab_ruler_drag: Option<tab_ruler_ui::TabDrag>,
     ruler_key_focus: Option<crate::ruler::Handle>,
     ruler_menu: Option<usize>,
     ruler_menu_activate: bool,
@@ -396,6 +399,7 @@ impl DocsApp {
             navigation: false,
             rulers: true,
             ruler_drag: None,
+            tab_ruler_drag: None,
             ruler_key_focus: None,
             ruler_menu: None,
             ruler_menu_activate: false,
@@ -460,6 +464,7 @@ impl DocsApp {
     }
     fn enabled(&self, action: Action) -> bool {
         if self.ruler_drag.is_some()
+            || self.tab_ruler_drag.is_some()
             || self.replace_all_dialog.is_some()
             || self.font_dialog.is_some()
             || self.paragraph_dialog.is_some()
@@ -2876,9 +2881,10 @@ impl DocsApp {
         let text_width = width - 2. * margin;
         let font_size = 14.6667 * zoom;
         let model = self
-            .ruler_drag
+            .tab_ruler_drag
             .as_ref()
             .map(|drag| &drag.draft.preview)
+            .or_else(|| self.ruler_drag.as_ref().map(|drag| &drag.draft.preview))
             .unwrap_or(&self.session.editor.document)
             .clone();
         let typing = self.session.editor.typing_style;
@@ -2917,7 +2923,7 @@ impl DocsApp {
                         ui.horizontal_top(|ui|{
                             ui.add_space(margin);
                             ui.allocate_ui_with_layout(vec2(text_width,natural.max(40.)),Layout::top_down(Align::Min),|ui|{
-                                if self.ruler_drag.is_some() {ui.disable();}
+                                if self.ruler_drag.is_some() || self.tab_ruler_drag.is_some() {ui.disable();}
                                 let id=Id::new(EDIT_ID);
                                 let mut state=egui::TextEdit::load_state(ui.ctx(),id).unwrap_or_default();state.clear_undoer();
                                 if let Some(range)=self.cursor_override.take(){state.cursor.set_char_range(Some(range));}state.store(ui.ctx(),id);

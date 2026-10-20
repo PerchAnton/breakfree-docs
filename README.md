@@ -794,3 +794,14 @@ interval-only layout. The scrollable list supports up to 32 left positions.
 **OK** applies the complete draft to the selected paragraphs in one Undo/Redo;
 **Cancel/Escape** changes nothing. For mixed lists, explicitly build a replacement
 or choose Clear all. Native v15, palette and icons are unchanged.
+
+## Alpha.65 ruler tab markers
+
+Existing explicit left positions appear as L markers on the horizontal ruler.
+Drag a marker to preview its position; release applies one Undo/Redo operation.
+**Escape** or release outside the ruler cancels. Focus loss, resizing and zoom
+changes also cancel; a duplicate destination cannot overwrite another stop.
+Selected paragraphs must have identical lists. Mixed lists, overlaps with indent
+markers and off-column positions remain editable through **Tab positions**.
+The prototype moves existing stops; add/remove and keyboard editing use the dialog.
+Native v15, design, palette and icons remain unchanged.

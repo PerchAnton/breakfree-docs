@@ -1890,3 +1890,29 @@ Interactive ruler tabs and other tab types remain future work.
 | :--- | :--- |
 | [rust-tab-positions-alpha64-macos.png](screenshots/rust-tab-positions-alpha64-macos.png) | `7717311f9937aa955208ea9859195e34643793217f1040f4f5189a7c8f721a62` |
 | [rust-tab-positions-alpha64-compact-macos.png](screenshots/rust-tab-positions-alpha64-compact-macos.png) | `4e332b47f05b4c13c47f7844bd99a33c7a911af1c6ef8040823ca211db3b9d81` |
+
+## Alpha.65 tab ruler markers
+
+Explicit left stops use a small L at the bottom of the existing 24 DIP ruler,
+below its scale numerals: vertical stem from y+17 to y+23, 5 DIP foot and 2 DIP
+stroke. The 10 × 8 DIP hit target is centered at y+20. Neutral ink, purple
+hover/active state and muted mixed/overlap state retain the palette. No ribbon,
+icon, ruler-height or document-margin change. A contextual exact-value preview
+appears below the ruler only while dragging.
+
+Only existing visible positions are shown. Identical selected lists support
+half-point dragging; mixed lists and collisions with indent targets are read-only
+with a dialog explanation. Indent controls retain hit priority. Release outside
+the ruler (12 DIP tolerance), duplicate destinations, Escape, focus/pointer loss,
+resize or zoom cancel. Keyboard/add/delete use the existing Tab positions dialog;
+tab-specific ruler keyboard control remains the next increment.
+
+Native macOS captures at 1366 × 900 and 640 × 480 DIP were inspected: markers sit
+below 1/2/3 scale labels with no digit overlap. Widget tests cover synthetic DPI
+100/125/150%, zoom 50/100/200%, preview/history and cancellation. Physical pointer,
+keyboard/IME, Word comparison, Windows and VoiceOver acceptance were not performed.
+
+| Capture | SHA-256 |
+| :--- | :--- |
+| [rust-tab-ruler-alpha65-macos.png](screenshots/rust-tab-ruler-alpha65-macos.png) | `091bafdb5b603478dc609200c18a994465f3344efad6188ddcd4af4bcbb358aa` |
+| [rust-tab-ruler-alpha65-compact-macos.png](screenshots/rust-tab-ruler-alpha65-compact-macos.png) | `5599d0b9cc101fa480692cbd53b0727c13ce69d1cb85c09955e6bb3f17dc46ae` |

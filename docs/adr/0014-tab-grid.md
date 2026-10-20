@@ -78,3 +78,27 @@ an empty replacement. Pending typed input must be added/updated or cleared befor
 OK. No-op acceptance preserves Redo. The independent paragraph draft survives
 nested opening/cancellation; interval values stay unchanged. Native v15 and
 layout semantics remain unchanged. Interactive ruler editing is a later increment.
+
+## Alpha.65: ruler drag prototype
+
+A toolkit-independent `tab_ruler::Draft` snapshots the document and half-open
+selection. It requires identical explicit lists in the selected paragraphs and an
+existing source position. Movement rounds to half points, clamps to 0.5–1440 pt,
+reorders the list and changes only a preview document. A duplicate destination
+invalidates the draft; release cancels rather than merging positions. Commit checks
+both source document and selection, then invokes the existing list command once.
+Discarding a draft and no-op acceptance preserve document/history/Redo.
+
+The native ruler paints small left-stop L markers in existing ruler coordinates;
+tab geometry uses the unindented column scale, not the indent-compression scale.
+Only visible positions are painted. Indent hit targets keep priority; overlapping
+tab targets are read-only. Mixed lists show first-paragraph markers as read-only.
+Use Tab positions to edit mixed lists, overlaps and off-column positions.
+
+Pointer dragging temporarily locks document input and commands. Escape, pointer
+loss, window-focus loss, close request, resize/zoom or release outside the ruler
+(with a 12 DIP tolerance) discards the draft. Preview includes a contextual exact
+value; the canvas renders the draft and release produces one history entry.
+No ruler click-to-create, drag-to-delete or tab-specific keyboard controller in this
+increment; the existing keyboard-accessible dialog remains available. Indent
+keyboard/source controls, native v15, palette and icons remain unchanged.

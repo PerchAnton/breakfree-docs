@@ -1650,3 +1650,26 @@ and 640 × 480 DIP (UI_SPEC). Native v15 and existing failure-preservation tests
 remain unchanged. Physical keyboard/IME, matched Word comparison, Windows and
 VoiceOver were not tested this iteration. Interactive ruler tabs, other tab types,
 leaders and named-style inheritance remain planned. CI is reported separately.
+
+## Alpha.65 tab ruler validation
+
+macOS arm64 / Rust 1.99.1: **337 full tests / 159 without GUI** pass. Core draft
+tests cover isolated preview, crossing/sorted positions, half-open selection,
+clamping/rounding, duplicate/non-finite rejection, mixed lists, stale selection and
+document protection, no-op Redo and one-step history. The moved snapshot roundtrips
+through native v15. Existing save-failure and tab-dialog suites still pass.
+
+Real-widget pointer tests exercise 50/100/200% zoom and synthetic 100/125/150% DPI,
+preview without model/history mutation, release as one operation, Undo/Redo,
+Escape, pointer/focus loss, resize/zoom, outside release, duplicate release and
+suppression of text input during a drag. Mixed lists cannot start a tab drag;
+overlapping indent markers keep their existing interaction. No physical input or
+screen-reader acceptance is inferred from these tests.
+
+fmt, normal/capture all-target Clippy, release/capture builds, repository/artwork,
+workflow YAML, whitespace and isolated version/capabilities pass. After lowering
+markers below scale numerals and adding hover feedback, focused widget/core tests,
+capture Clippy and release builds were repeated. Two native screenshots inspected
+(UI_SPEC). Native v15, palette and icons unchanged. Physical keyboard/IME, matched
+Word comparison, Windows and VoiceOver remain untested/deferred. Ruler tab keyboard
+control, add/delete and mixed-list dragging are not implemented. CI is separate.
