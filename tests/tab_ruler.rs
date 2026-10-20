@@ -268,3 +268,34 @@ fn mixed_add_capacity_failure_cannot_commit_partial_preview() {
     assert!(d.commit(&mut e).is_err());
     assert_eq!(e.document, before);
 }
+
+#[test]
+fn keyboard_creation_draft_validation_recovery_and_stale_source() {
+    let mut e = Editor::default();
+    assert!(Draft::creation_preview(&e).unwrap().commit(&mut e).is_err());
+    e.set_left_tab_stops(0, 0, vec![72]).unwrap();
+    let before = e.document.clone();
+    let count = e.undo_stack.len();
+    let mut d = Draft::creation_preview(&e).unwrap();
+    assert!(d.is_creation());
+    assert!(d.move_to(72.).is_err());
+    assert_eq!(d.preview, before);
+    d.move_to(73.).unwrap();
+    d.move_to(82.).unwrap();
+    d.commit(&mut e).unwrap();
+    assert_eq!(e.undo_stack.len(), count + 1);
+    assert_eq!(
+        e.document.paragraphs[0].spacing.left_tab_stops_half_points,
+        [72, 82]
+    );
+    let after = e.document.clone();
+    e.undo();
+    assert_eq!(e.document, before);
+    drop(Draft::creation_preview(&e).unwrap());
+    e.redo();
+    assert_eq!(e.document, after);
+    let mut d = Draft::creation_preview(&e).unwrap();
+    d.move_to(100.).unwrap();
+    e.replace(0, 0, "changed", "Edit").unwrap();
+    assert!(d.commit(&mut e).is_err());
+}

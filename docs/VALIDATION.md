@@ -1742,3 +1742,22 @@ Injected events verify rendered state, not physical input or Windows DPI behavio
 - Capture mode `tab-mixed` explicitly selects all fixture paragraphs before entering
   keyboard preview. No physical OS keyboard/IME, Word comparison or VoiceOver speech
   acceptance this iteration. VoiceOver final review and Windows remain deferred.
+
+## Alpha.69 keyboard ruler tab creation validation
+
+2026-10-20, macOS arm64, Rust 1.99.1. Alpha.68 approved; alpha.69 awaits approval.
+
+- 354 full / 166 core-only tests pass. New creation draft cannot commit before
+  validation; duplicate recovery and stale-source rejection are covered.
+- Widget checks cover direct creation shortcut, empty-list entry, fine/coarse steps,
+  isolated text input, one-step Undo/Redo, invalid acceptance blocking, mixed-list
+  missing-only insertion, Enter/Tab exit, Escape/Delete/focus/resize cancellation
+  and retained Redo. Synthetic 100/125/150% scales are not Windows acceptance.
+- Existing mixed-list conflict/capacity, range, persistence and pointer checks pass.
+  fmt, normal/capture all-target Clippy, release/capture builds, repository/artwork,
+  YAML and whitespace checks pass. Isolated CLI reports alpha.69 without Office.
+- Two native captures at 1366 × 900 and 640 × 480 DIP inspected: new 41.0 pt marker
+  and exact new-tab readout fit; prior markers, palette/icons and ribbon preserved.
+  Mode `tab-create` injects the creation shortcut and one coarse arrow step.
+- No physical OS keyboard/IME, matched Word reference or spoken screen-reader test
+  this iteration. VoiceOver remains final review; Windows remains deferred.

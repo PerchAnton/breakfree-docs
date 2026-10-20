@@ -14,19 +14,27 @@ pub(super) struct TabDrag {
 }
 impl DocsApp {
     pub(super) fn prepare_tab_ruler_input(&mut self, ctx: &egui::Context) -> bool {
-        let enter = self.tab_ruler_drag.is_none()
+        let eligible = self.tab_ruler_drag.is_none()
             && self.enabled(Action::TabPositions)
             && !self.composing
             && !self.backstage
             && self.ruler_key_focus.is_none()
-            && !egui::Popup::is_any_open(ctx)
-            && ctx.input_mut(|i| i.consume_key(Modifiers::CTRL | Modifiers::ALT, Key::F8));
+            && !egui::Popup::is_any_open(ctx);
+        let create = eligible
+            && ctx.input_mut(|i| {
+                i.consume_key(Modifiers::CTRL | Modifiers::ALT | Modifiers::SHIFT, Key::F8)
+            });
+        let enter = create
+            || (eligible
+                && ctx.input_mut(|i| i.consume_key(Modifiers::CTRL | Modifiers::ALT, Key::F8)));
         if enter {
             if !self.commit_font_size_input() {
                 return true;
             }
             self.rulers = true;
-            if let Some((value, _)) = crate::tab_ruler::positions(
+            if create {
+                self.start_tab_keyboard_mode(ctx, 72, true);
+            } else if let Some((value, _)) = crate::tab_ruler::positions(
                 &self.session.editor.document,
                 self.session.editor.selection,
             )
@@ -36,9 +44,7 @@ impl DocsApp {
             {
                 self.start_tab_keyboard(ctx, value);
             } else {
-                self.error = Some(
-                    "No explicit tab stops. Add positions through Tab positions first.".into(),
-                );
+                self.start_tab_keyboard_mode(ctx, 72, true);
             }
             return true;
         }
@@ -106,6 +112,11 @@ impl DocsApp {
                             .err();
                     }
                     Key::Delete => {
+                        if self.tab_ruler_drag.as_ref().unwrap().draft.is_creation() {
+                            self.tab_ruler_drag = None;
+                            self.sync_view();
+                            break;
+                        }
                         let drag = self.tab_ruler_drag.as_mut().unwrap();
                         drag.error = drag.draft.remove().err();
                     }
@@ -116,11 +127,12 @@ impl DocsApp {
                         let drag = self.tab_ruler_drag.take().unwrap();
                         let position = drag.draft.position;
                         let deleting = drag.draft.deleting;
+                        let creating = drag.draft.is_creation();
                         let result = drag.draft.commit(&mut self.session.editor);
                         let success = result.is_ok();
                         self.fail(result);
                         self.sync_view();
-                        if success && key == Key::Tab && !deleting {
+                        if success && key == Key::Tab && !deleting && !creating {
                             let stops = crate::tab_ruler::positions(
                                 &self.session.editor.document,
                                 self.session.editor.selection,
@@ -175,8 +187,21 @@ impl DocsApp {
         true
     }
     fn start_tab_keyboard(&mut self, ctx: &egui::Context, value: u16) {
-        match crate::tab_ruler::Draft::new(&self.session.editor, value) {
-            Ok(draft) => {
+        self.start_tab_keyboard_mode(ctx, value, false);
+    }
+    fn start_tab_keyboard_mode(&mut self, ctx: &egui::Context, value: u16, creating: bool) {
+        let result = if creating {
+            crate::tab_ruler::Draft::creation_preview(&self.session.editor)
+        } else {
+            crate::tab_ruler::Draft::new(&self.session.editor, value)
+        };
+        match result {
+            Ok(mut draft) => {
+                let error = if creating {
+                    draft.move_to(f32::from(value)).err()
+                } else {
+                    None
+                };
                 self.tab_ruler_drag = Some(TabDrag {
                     draft,
                     rect: Rect::NOTHING,
@@ -185,7 +210,7 @@ impl DocsApp {
                     origin: 0.,
                     start: value,
                     unit: 1.,
-                    error: None,
+                    error,
                     keyboard: true,
                 });
                 self.focus_document = false;
@@ -317,7 +342,7 @@ impl DocsApp {
                     ui.close();
                 }
             });
-            response.on_hover_text(format!("Left tab: {:.1} pt. Present in {coverage}/{total} selected paragraphs. Movement/deletion affects only paragraphs containing this stop. {}",f32::from(value)/2.,if collision {"Overlaps an indent marker; use Ctrl+Alt+F8 or Tab positions to edit."} else {"Drag to preview; release to apply; Escape cancels. Release outside the ruler cancels. Ctrl+Alt+F8 selects tabs; arrows move, Shift accelerates, Enter applies, Tab applies and selects next, Delete previews removal, Escape cancels. Right-click to delete."}));
+            response.on_hover_text(format!("Left tab: {:.1} pt. Present in {coverage}/{total} selected paragraphs. Movement/deletion affects only paragraphs containing this stop. {}",f32::from(value)/2.,if collision {"Overlaps an indent marker; use Ctrl+Alt+F8 or Tab positions to edit."} else {"Drag to preview; release to apply; Escape cancels. Release outside the ruler cancels. Ctrl+Alt+F8 selects tabs; Ctrl+Alt+Shift+F8 creates; arrows move, Shift accelerates, Enter applies, Tab applies and selects next, Delete previews removal, Escape cancels. Right-click to delete."}));
         }
         if let Some(drag) = &mut self.tab_ruler_drag {
             if !drag.keyboard
@@ -329,30 +354,47 @@ impl DocsApp {
                     .err();
                 ui.ctx().request_repaint();
             }
-            let text = drag.error.clone().unwrap_or_else(|| {
-                if drag.draft.deleting {
-                    return format!(
-                        "Delete tab {:.1} pt — Enter applies; Esc cancels",
-                        f32::from(drag.start) / 2.
-                    );
-                }
-                format!(
-                    "Left tab {:.1} pt — preview; {}; Esc cancels",
-                    f32::from(drag.draft.position) / 2.,
+            let text = drag
+                .error
+                .clone()
+                .map(|error| {
                     if drag.keyboard {
-                        "Enter applies"
+                        format!("{error} Arrows adjust; Esc cancels.")
                     } else {
-                        "release applies"
+                        error
                     }
-                )
-            });
+                })
+                .unwrap_or_else(|| {
+                    if drag.draft.is_creation() {
+                        return format!(
+                            "New tab {:.1} pt — Enter applies; Esc cancels",
+                            f32::from(drag.draft.position) / 2.
+                        );
+                    }
+                    if drag.draft.deleting {
+                        return format!(
+                            "Delete tab {:.1} pt — Enter applies; Esc cancels",
+                            f32::from(drag.start) / 2.
+                        );
+                    }
+                    format!(
+                        "Left tab {:.1} pt — preview; {}; Esc cancels",
+                        f32::from(drag.draft.position) / 2.,
+                        if drag.keyboard {
+                            "Enter applies"
+                        } else {
+                            "release applies"
+                        }
+                    )
+                });
             egui::Area::new(Id::new("tab-ruler-preview"))
                 .order(egui::Order::Tooltip)
                 .fixed_pos(pos2(rect.left() + 12., rect.bottom() + 4.))
                 .interactable(false)
                 .show(ui.ctx(), |ui| {
                     egui::Frame::popup(ui.style()).show(ui, |ui| {
-                        ui.label(text);
+                        ui.set_max_width((ui.ctx().content_rect().width() - 48.).max(120.));
+                        ui.add(egui::Label::new(text).wrap());
                     });
                 });
             if !drag.keyboard && ui.input(|i| i.pointer.primary_released()) {

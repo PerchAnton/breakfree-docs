@@ -9630,8 +9630,14 @@ fn tab_keyboard_entry_guards_reverse_traversal_and_redo() {
     let (ctx, mut app) = setup();
     let enter = || ruler_key(Key::F8, Modifiers::CTRL | Modifiers::ALT);
     frame(&ctx, &mut app, vec![enter()], [1366., 900.], 1.);
-    assert!(app.tab_ruler_drag.is_none());
-    assert!(app.error.take().unwrap().contains("No explicit"));
+    assert!(app.tab_ruler_drag.as_ref().unwrap().draft.is_creation());
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Escape, false)],
+        [1366., 900.],
+        1.,
+    );
     app.session.editor.replace(0, 0, "a\nb", "Fixture").unwrap();
     app.session
         .editor
@@ -9947,6 +9953,160 @@ fn mixed_tab_union_keyboard_edits_later_paragraph_without_flattening() {
             [288]
         );
         app.session.editor.undo();
+        assert_eq!(app.session.editor.document, after);
+    }
+}
+
+#[test]
+fn tab_keyboard_creation_shortcut_preview_and_single_history() {
+    for dpi in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        let size = [1366. * dpi, 900. * dpi];
+        frame(&ctx, &mut app, vec![], size, dpi);
+        let before = app.session.editor.document.clone();
+        let count = app.session.editor.undo_stack.len();
+        frame(
+            &ctx,
+            &mut app,
+            vec![ruler_key(
+                Key::F8,
+                Modifiers::CTRL | Modifiers::ALT | Modifiers::SHIFT,
+            )],
+            size,
+            dpi,
+        );
+        assert!(app.tab_ruler_drag.as_ref().unwrap().draft.is_creation());
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                key(Key::ArrowRight, false),
+                ruler_key(Key::ArrowRight, Modifiers::SHIFT),
+                egui::Event::Text("blocked".into()),
+            ],
+            size,
+            dpi,
+        );
+        assert_eq!(app.tab_ruler_drag.as_ref().unwrap().draft.position, 83);
+        assert_eq!(app.session.editor.document, before);
+        frame(&ctx, &mut app, vec![key(Key::Enter, false)], size, dpi);
+        assert!(app.tab_ruler_drag.is_none());
+        assert_eq!(app.session.editor.undo_stack.len(), count + 1);
+        assert_eq!(
+            app.session.editor.document.paragraphs[0]
+                .spacing
+                .left_tab_stops_half_points,
+            [83]
+        );
+        let after = app.session.editor.document.clone();
+        app.session.editor.undo();
+        assert_eq!(app.session.editor.document, before);
+        app.session.editor.redo();
+        assert_eq!(app.session.editor.document, after);
+    }
+}
+
+#[test]
+fn tab_keyboard_creation_duplicate_recovery_and_mixed_fill() {
+    let (ctx, mut app) = setup();
+    app.session.editor.replace(0, 0, "a\nb", "Fixture").unwrap();
+    app.session
+        .editor
+        .set_left_tab_stops(0, 3, vec![72])
+        .unwrap();
+    app.session.editor.selection = (0, 3);
+    app.sync_view();
+    let count = app.session.editor.undo_stack.len();
+    let enter = || ruler_key(Key::F8, Modifiers::CTRL | Modifiers::ALT | Modifiers::SHIFT);
+    frame(&ctx, &mut app, vec![enter()], [1366., 900.], 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Enter, false)],
+        [1366., 900.],
+        1.,
+    );
+    assert!(app.tab_ruler_drag.is_some());
+    assert_eq!(app.session.editor.undo_stack.len(), count);
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::ArrowRight, false), key(Key::Tab, false)],
+        [1366., 900.],
+        1.,
+    );
+    assert!(app.tab_ruler_drag.is_none());
+    assert_eq!(app.session.editor.undo_stack.len(), count + 1);
+    for p in &app.session.editor.document.paragraphs {
+        assert_eq!(p.spacing.left_tab_stops_half_points, [72, 73]);
+    }
+    app.session
+        .editor
+        .set_left_tab_stops(0, 0, vec![100])
+        .unwrap();
+    app.session.editor.selection = (0, 3);
+    let before = app.session.editor.document.clone();
+    frame(
+        &ctx,
+        &mut app,
+        vec![enter(), egui::Event::PointerGone],
+        [1366., 900.],
+        1.,
+    );
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Enter, false)],
+        [1366., 900.],
+        1.,
+    );
+    assert_eq!(
+        app.session.editor.document.paragraphs[0]
+            .spacing
+            .left_tab_stops_half_points,
+        [72, 100]
+    );
+    assert_eq!(
+        app.session.editor.document.paragraphs[1],
+        before.paragraphs[1]
+    );
+    app.session.editor.undo();
+    assert_eq!(app.session.editor.document, before);
+}
+
+#[test]
+fn tab_keyboard_creation_cancels_without_discarding_redo() {
+    for scenario in 0..4 {
+        let (ctx, mut app) = setup();
+        app.session
+            .editor
+            .set_left_tab_stops(0, 0, vec![100])
+            .unwrap();
+        let after = app.session.editor.document.clone();
+        app.session.editor.undo();
+        let before = app.session.editor.document.clone();
+        frame(
+            &ctx,
+            &mut app,
+            vec![ruler_key(Key::F8, Modifiers::CTRL | Modifiers::ALT)],
+            [1366., 900.],
+            1.,
+        );
+        assert!(app.tab_ruler_drag.as_ref().unwrap().draft.is_creation());
+        let mut size = [1366., 900.];
+        let events = match scenario {
+            0 => vec![key(Key::Escape, false)],
+            1 => vec![key(Key::Delete, false)],
+            2 => vec![egui::Event::WindowFocused(false)],
+            _ => {
+                size = [1024., 768.];
+                vec![]
+            }
+        };
+        frame(&ctx, &mut app, events, size, 1.);
+        assert!(app.tab_ruler_drag.is_none());
+        assert_eq!(app.session.editor.document, before);
+        app.session.editor.redo();
         assert_eq!(app.session.editor.document, after);
     }
 }

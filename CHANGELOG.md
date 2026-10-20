@@ -3,6 +3,15 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.69 — 2026-10-20
+
+- Ctrl+Alt+Shift+F8 starts a ruler tab creation preview at 36 pt. Ctrl+Alt+F8
+  also creates when the selected paragraphs have no explicit stops.
+- Arrows adjust by 0.5 pt, Shift+arrows by 5 pt; Enter/Tab applies once and exits.
+  Escape/Delete cancels creation. Duplicate/capacity errors remain editable drafts.
+- Preserve mixed-list missing-only insertion, one Undo/Redo, cancellation/Redo,
+  native v15, design, palette and icons. Windows and VoiceOver remain deferred.
+
 ## 0.1.0-alpha.68 — 2026-10-20
 
 - Show the sorted union of selected paragraph tab positions, with partial coverage

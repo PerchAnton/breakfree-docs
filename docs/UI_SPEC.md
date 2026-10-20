@@ -2003,3 +2003,33 @@ Native macOS mixed-selection captures (injected keys; physical input not verifie
 | :--- | :--- | :--- |
 | 1366 × 900 | [Preview](screenshots/rust-tab-mixed-alpha68-macos.png) | `c137ca1af1db65563c712b1e1820bdbf288504c4ec80f8317f7fa27738809fa3` |
 | 640 × 480 | [Preview](screenshots/rust-tab-mixed-alpha68-compact-macos.png) | `24b64716856bc35c71157d2b77b11e461c5b9326ac12c105121832c94cd944e1` |
+
+## Alpha.69: keyboard ruler tab creation
+
+Ctrl+Alt+Shift+F8 starts a new tab preview, including when existing positions are
+present. Ctrl+Alt+F8 keeps existing-marker traversal, but starts creation if the
+selected union is empty. These are Docs shortcuts, not verified Word mappings.
+Creation begins at 36 pt independently of the paragraph's automatic grid interval.
+Left/Right adjusts by 0.5 pt; Shift uses 5 pt, bounded to 0.5–1440 pt.
+
+The exact readout says **New tab**; the canvas and accent marker show the preview.
+Enter or Tab applies once and exits. Escape or Delete cancels only the new draft.
+Focus loss, pointer press, resize/zoom and hidden-ruler cancellation retain the same
+policy as marker editing. Input is isolated; a second creation shortcut during an
+active preview cannot silently commit or replace it.
+
+A duplicate in every selected paragraph or a capacity error blocks acceptance,
+leaves the real document unchanged and keeps arrow correction/Escape available.
+The draft is invalid until a position validates. Mixed selections add only missing
+occurrences, preserving every unrelated position. Commit uses the existing shared
+validated command and one Undo/Redo; cancellation preserves Redo. Native v15,
+ruler geometry, palette, icons and pointer behavior remain unchanged. The numeric
+Tab positions dialog is still available. Physical keyboard/IME, matched Word,
+Windows and VoiceOver acceptance remain deferred.
+
+Native macOS creation captures (injected keys; physical input not verified):
+
+| Size (DIP) | Capture | SHA-256 |
+| :--- | :--- | :--- |
+| 1366 × 900 | [Preview](screenshots/rust-tab-create-alpha69-macos.png) | `9540510c5d88391026d0e1ed9fd43f1abe99de62e74e931a635165cc5d464c2e` |
+| 640 × 480 | [Preview](screenshots/rust-tab-create-alpha69-compact-macos.png) | `6ada1e53497b656f25010906b215411761b7f1b7e677f5f2e8035c9c5e658148` |

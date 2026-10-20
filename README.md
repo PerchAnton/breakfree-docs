@@ -844,3 +844,17 @@ remove affect only paragraphs containing the original source position. A destina
 in a paragraph without that source is not a collision. A destination conflict in
 any affected paragraph, or a 32-stop capacity failure when adding, rejects the whole
 operation. Failed preview returns to the original document, never a partial result.
+
+## Alpha.69: keyboard ruler tab creation
+
+Ctrl+Alt+Shift+F8 starts a new tab preview, including when existing positions are
+present. Ctrl+Alt+F8 keeps existing-marker traversal, but starts creation if the
+selected union is empty. These are Docs shortcuts, not verified Word mappings.
+Creation begins at 36 pt independently of the paragraph's automatic grid interval.
+Left/Right adjusts by 0.5 pt; Shift uses 5 pt, bounded to 0.5–1440 pt.
+
+The exact readout says **New tab**; the canvas and accent marker show the preview.
+Enter or Tab applies once and exits. Escape or Delete cancels only the new draft.
+Focus loss, pointer press, resize/zoom and hidden-ruler cancellation retain the same
+policy as marker editing. Input is isolated; a second creation shortcut during an
+active preview cannot silently commit or replace it.

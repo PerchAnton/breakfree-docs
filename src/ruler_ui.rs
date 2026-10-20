@@ -466,7 +466,7 @@ impl DocsApp {
                 }
             }
         }
-        let menu_response = menu_response.on_hover_text("Click empty text-column ruler space to add a left tab. Right-click a tab to delete it. Right-click or Shift+F10 on an indent marker for sources or reset. Ctrl+Shift+F8 enters markers; Enter applies; Esc cancels.");
+        let menu_response = menu_response.on_hover_text("Click empty text-column ruler space or press Ctrl+Alt+Shift+F8 to add a left tab. Right-click a tab to delete it. Right-click or Shift+F10 on an indent marker for sources or reset. Ctrl+Shift+F8 enters markers; Enter applies; Esc cancels.");
         let mut popup = egui::Popup::context_menu(&menu_response);
         if self.ruler_menu.is_some() {
             let marker = self.ruler_key_focus.unwrap_or(Handle::First);

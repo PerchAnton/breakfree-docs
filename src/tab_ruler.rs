@@ -16,6 +16,16 @@ impl Draft {
     pub fn new(editor: &Editor, source: u16) -> Result<Self> {
         Self::snapshot(editor, Some(source))
     }
+    /// Uncommitted creation session; invalid until a position passes validation.
+    pub fn creation_preview(editor: &Editor) -> Result<Self> {
+        let mut draft = Self::snapshot(editor, None)?;
+        draft.position = 72;
+        draft.valid = false;
+        Ok(draft)
+    }
+    pub fn is_creation(&self) -> bool {
+        self.source.is_none()
+    }
     pub fn create(editor: &Editor, position: u16) -> Result<Self> {
         if !(1..=2880).contains(&position) {
             return Err("Tab position must be 0.5–1440 pt.".into());

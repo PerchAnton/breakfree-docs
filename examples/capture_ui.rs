@@ -20,7 +20,7 @@ impl eframe::App for Capture {
     fn raw_input_hook(&mut self, _ctx: &egui::Context, input: &mut egui::RawInput) {
         if matches!(
             self.mode.as_str(),
-            "tab-keyboard" | "tab-delete" | "tab-mixed"
+            "tab-keyboard" | "tab-delete" | "tab-mixed" | "tab-create"
         ) {
             input.focused = true;
             if matches!(self.frames, 3 | 5) {
@@ -38,7 +38,13 @@ impl eframe::App for Capture {
                     pressed: true,
                     repeat: false,
                     modifiers: if self.frames == 3 {
-                        egui::Modifiers::CTRL | egui::Modifiers::ALT
+                        egui::Modifiers::CTRL
+                            | egui::Modifiers::ALT
+                            | if self.mode == "tab-create" {
+                                egui::Modifiers::SHIFT
+                            } else {
+                                egui::Modifiers::NONE
+                            }
                     } else {
                         egui::Modifiers::SHIFT
                     },
@@ -451,6 +457,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "tab-keyboard",
             "tab-delete",
             "tab-mixed",
+            "tab-create",
             "tab-positions",
             "tab-dialog",
             "styles",
@@ -550,13 +557,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             | "tab-keyboard"
             | "tab-delete"
             | "tab-mixed"
+            | "tab-create"
             | "tab-positions"
     ) {
         let mut session = Session::default();
         session.editor.replace(0, 0, "Name\t\tValue\nEnglish\t\t36 pt grid\nУкраїна\t\tТабуляція\nРусский\t\tТабуляция\nCombining e\u{301}\t\tEnd", "Tab fixture")?;
         if matches!(
             args[2].as_str(),
-            "explicit-tabs" | "tab-keyboard" | "tab-delete" | "tab-mixed" | "tab-positions"
+            "explicit-tabs"
+                | "tab-keyboard"
+                | "tab-delete"
+                | "tab-mixed"
+                | "tab-create"
+                | "tab-positions"
         ) {
             let end = session.editor.document.text().chars().count();
             session
