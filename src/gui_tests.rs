@@ -7837,6 +7837,17 @@ fn ruler_sources_dismissal_preserves_preview_until_separate_commit_or_cancel() {
             1.,
         );
         let preview = app.ruler_drag.as_ref().unwrap().draft.preview.clone();
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                key(Key::ArrowDown, false),
+                key(Key::End, false),
+                key(Key::PageUp, false),
+            ],
+            [1366., 900.],
+            1.,
+        );
         frame(&ctx, &mut app, vec![key(dismiss, false)], [1366., 900.], 1.);
         assert!(!app.ruler_sources);
         assert_eq!(app.ruler_drag.as_ref().unwrap().draft.preview, preview);
@@ -7892,5 +7903,80 @@ fn ruler_sources_compact_bounds_and_focus_loss_cleanup() {
         );
         assert!(!app.ruler_sources);
         assert!(app.ruler_key_focus.is_none());
+    }
+}
+
+#[test]
+fn full_ruler_sources_scroll_clamp_and_reopen_without_editing() {
+    for dpi in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        app.zoom = 50.;
+        let text = vec!["Sample"; 32].join("\n");
+        app.session.editor.replace(0, 0, &text, "Fixture").unwrap();
+        for i in 0..32 {
+            let id = app
+                .session
+                .editor
+                .create_style(
+                    &format!("Source {i:02} {}", "W".repeat(40)),
+                    crate::model::StyleDefinition {
+                        left_indent_half_points: Some(i as u16),
+                        ..Default::default()
+                    },
+                    false,
+                )
+                .unwrap();
+            app.session.editor.document.paragraphs[i].paragraph_style = id;
+        }
+        app.session.editor.selection = (0, text.chars().count());
+        app.sync_view();
+        let size = [640. * dpi, 480. * dpi];
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![], size, dpi);
+        }
+        let before = app.session.editor.document.clone();
+        let n = app.session.editor.undo_stack.len();
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                ruler_key(Key::F8, Modifiers::CTRL | Modifiers::SHIFT),
+                key(Key::F1, false),
+            ],
+            size,
+            dpi,
+        );
+        assert_eq!(app.ruler_sources_scroll, 0.);
+        frame(&ctx, &mut app, vec![key(Key::PageDown, false)], size, dpi);
+        assert!(app.ruler_sources_scroll > 0.);
+        frame(&ctx, &mut app, vec![key(Key::End, false)], size, dpi);
+        let end = app.ruler_sources_scroll;
+        assert!(end > app.ruler_sources_height);
+        frame(&ctx, &mut app, vec![key(Key::ArrowDown, false)], size, dpi);
+        assert_eq!(app.ruler_sources_scroll, end);
+        frame(&ctx, &mut app, vec![key(Key::PageUp, false)], size, dpi);
+        assert!(app.ruler_sources_scroll < end);
+        frame(
+            &ctx,
+            &mut app,
+            vec![key(Key::Home, false), key(Key::ArrowUp, false)],
+            size,
+            dpi,
+        );
+        assert_eq!(app.ruler_sources_scroll, 0.);
+        let r = app
+            .regions
+            .iter()
+            .find(|r| r.name == "ruler-sources")
+            .unwrap()
+            .rect;
+        assert!(r.right() <= 640. && r.bottom() <= 480., "{r:?}");
+        frame(&ctx, &mut app, vec![key(Key::End, false)], size, dpi);
+        frame(&ctx, &mut app, vec![key(Key::Escape, false)], size, dpi);
+        frame(&ctx, &mut app, vec![key(Key::F1, false)], size, dpi);
+        assert_eq!(app.ruler_sources_scroll, 0.);
+        assert_eq!(app.session.editor.document, before);
+        assert_eq!(app.session.editor.undo_stack.len(), n);
+        assert!(app.ruler_drag.is_none());
     }
 }

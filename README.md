@@ -719,3 +719,7 @@ returns to the same marker. Pending indentation previews remain untouched; apply
 or cancel them separately after closing details. Other editing/navigation keys
 are ignored while inspecting. Existing focus-loss/pointer-takeover cancellation
 still applies. This is a Docs-specific shortcut, not verified Word equivalence.
+
+Ruler source inspection: focus a marker with Ctrl+Shift+F8, then press F1.
+Use Up/Down, Page Up/Down or Home/End to read all source groups; Enter, Escape
+or F1 returns to the marker without accepting or cancelling an indent preview.

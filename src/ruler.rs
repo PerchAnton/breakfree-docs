@@ -144,6 +144,12 @@ impl SelectionValues {
         Ok(result)
     }
     pub fn source_details(&self, handle: Handle) -> String {
+        self.source_list(handle, 3)
+    }
+    pub fn full_source_details(&self, handle: Handle) -> String {
+        self.source_list(handle, usize::MAX)
+    }
+    fn source_list(&self, handle: Handle, limit: usize) -> String {
         let indices: &[usize] = match handle {
             Handle::Left => &[0],
             Handle::Right => &[1],
@@ -156,12 +162,12 @@ impl SelectionValues {
                 let label = ["Left indent", "Right indent", "First-line/hanging"][index];
                 let mut detail = sources
                     .iter()
-                    .take(3)
+                    .take(limit)
                     .map(|(source, count)| format!("{source} ({count} paragraph(s))"))
                     .collect::<Vec<_>>()
-                    .join("; ");
-                if sources.len() > 3 {
-                    detail.push_str(&format!("; {} more source(s)", sources.len() - 3));
+                    .join(if limit == usize::MAX { "\n" } else { "; " });
+                if sources.len() > limit {
+                    detail.push_str(&format!("; {} more source(s)", sources.len() - limit));
                 }
                 format!(
                     "{label} source: {}{detail}",
@@ -203,6 +209,12 @@ impl SelectionValues {
             .join("; ")
     }
     pub fn marker_details(&self, handle: Handle) -> String {
+        self.marker_details_with_sources(handle, self.source_details(handle))
+    }
+    pub fn full_marker_details(&self, handle: Handle) -> String {
+        self.marker_details_with_sources(handle, self.full_source_details(handle))
+    }
+    fn marker_details_with_sources(&self, handle: Handle, sources: String) -> String {
         format!(
             "{} paragraph(s). {} Marker {}: {}. Markers are anchored to the first selected paragraph; editing applies changed properties to the selection.\n{}",
             self.count,
@@ -213,7 +225,7 @@ impl SelectionValues {
                 "origin from left"
             },
             self.position(handle).detail(),
-            self.source_details(handle)
+            sources
         )
     }
 }
@@ -468,6 +480,25 @@ mod tests {
             s.source_details(Handle::Left)
                 .contains("Direct paragraph formatting")
         );
+    }
+    #[test]
+    fn full_sources_keep_all_groups_while_hover_stays_compact() {
+        let mut s = SelectionValues::read(&editor().document, (0, 0)).unwrap();
+        s.sources[0] = (0..32)
+            .map(|i| (format!("Paragraph style: Source {i:02}"), i + 1))
+            .collect();
+        s.sources[2] = vec![("Document default".into(), 528)];
+        assert!(
+            s.source_details(Handle::First)
+                .contains("29 more source(s)")
+        );
+        let full = s.full_source_details(Handle::First);
+        for i in 0..32 {
+            assert!(full.contains(&format!("Source {i:02} ({} paragraph(s))", i + 1)));
+        }
+        assert!(full.contains("Document default (528 paragraph(s))"));
+        assert!(!full.contains("more source(s)"));
+        assert!(!s.full_source_details(Handle::Right).contains("Source"));
     }
     #[test]
     fn individual_resets_preserve_other_overrides_and_one_history_roundtrip() {

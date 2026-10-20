@@ -1661,3 +1661,30 @@ SHA-256: `76e710a9309a3305353725e0b77adc87728369f33e6950ecbc1b4a98a32f1796`.
 SHA-256: `eb63fed359ee03c298262d251b0ff6f11f9b6b29ca1c13a8e7bce7135e3fc712`.
 
 Both native macOS capture fixtures were inspected: marker focus, wrapped mixed-source details and the dismissal hint remain visible within the viewport. These inject widget keystrokes; ordinary OS input and Windows/reference validation remain unperformed.
+
+
+## Alpha.54 complete ruler source lists
+
+The F1 view expands every source group; hover retains the compact three-group
+summary. Keep the 11-DIP type, neutral surface and maximum 440-DIP text width.
+The scroll viewport is at most 320 DIP high and shrinks to leave the two-line
+keyboard footer inside the visible workspace. A 2-DIP neutral track indicates
+scroll position. Long names wrap, and content is clipped above the fixed footer.
+Up/Down scroll by 24 DIP, Page Up/Down by one viewport minus 24 DIP of overlap;
+Home/End reach the first/last content. Each opening starts at the top.
+The existing values, marker origin and selection policy remain in the full view.
+Scrolling does not change the document, selection, marker or pending indent draft.
+Enter/Escape/F1 still dismiss only the information view.
+
+This is a Docs prototype interaction; matched Windows/Word acceptance remains
+deferred. There are no new assets, palette changes or page-layout claims.
+
+![Full source list at 1366 × 900 DIP](screenshots/rust-ruler-full-sources-alpha54-macos.png)
+
+SHA-256: `d0187c2d754635fa5aa682d35efa0ceb522292313c9ef89025b9f5f0d9426e85`.
+
+![Full source list at 640 × 480 DIP](screenshots/rust-ruler-full-sources-alpha54-compact-macos.png)
+
+SHA-256: `64958def09edf0aa314a005c23a76bc28b690eb9b12416debb36cb46752cf97d`.
+
+Both native macOS fixtures were inspected after End: the final named source, special-indent default, scroll indicator and footer remain visible. Widget keystrokes are injected; ordinary OS keyboard and Windows/reference acceptance are not established.

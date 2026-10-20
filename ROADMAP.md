@@ -366,4 +366,5 @@ Use public specifications and original test cases, not copied application code. 
 - [x] Alpha.51: individual left/right/first-line-hanging reset commands, focused-marker Shift+Delete, preview/cancel and one Undo/Redo; unrelated overrides preserved (local tests).
 - [x] Alpha.52: inherited/direct/default indent sources and mixed-source counts in marker tooltips/accessibility labels; preview/history and read-only inspection verified locally.
 - [x] Alpha.53: F1 opens read-only marker provenance, dismissal restores marker focus without accepting/cancelling preview; keyboard/focus/compact bounds verified locally.
-- [ ] Next: inspect complete source lists when mixed selections have more than three source groups.
+- [x] Alpha.54: complete ruler source lists, bounded scrolling with arrows/Page Up/Down/Home/End, preserved drafts and reopening at the top (local core/widget tests).
+- [ ] Next: pointer-wheel scrolling in source inspection, including pointer takeover and draft cancellation regression coverage.

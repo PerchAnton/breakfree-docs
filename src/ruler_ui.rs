@@ -286,9 +286,9 @@ impl DocsApp {
                 let handle = self.ruler_key_focus.unwrap_or(Handle::Left);
                 painter.layout(
                     format!(
-                        "{} — value sources\n{}\nEnter / Esc / F1: return to marker",
+                        "{} — value sources\n{}",
                         marker_name(handle),
-                        summary.marker_details(handle)
+                        summary.full_marker_details(handle)
                     ),
                     FontId::proportional(11.),
                     INK,
@@ -304,7 +304,33 @@ impl DocsApp {
                     INK,
                 )
             };
-            let readout = Rect::from_min_size(origin, galley.size() + vec2(12., 8.));
+            let footer = self.ruler_sources.then(|| {
+                painter.layout(
+                    "Up/Down · PgUp/PgDn · Home/End: scroll\nEnter / Esc / F1: return to marker"
+                        .into(),
+                    FontId::proportional(11.),
+                    INK,
+                    (ui.clip_rect().right() - origin.x - 16.).clamp(80., 440.),
+                )
+            });
+            let footer_height = footer.as_ref().map_or(0., |g| g.size().y + 8.);
+            let height = if self.ruler_sources {
+                galley
+                    .size()
+                    .y
+                    .min((ui.clip_rect().bottom() - origin.y - footer_height - 12.).clamp(1., 320.))
+            } else {
+                galley.size().y
+            };
+            self.ruler_sources_height = height;
+            let max_scroll = (galley.size().y - height).max(0.);
+            self.ruler_sources_scroll = self.ruler_sources_scroll.clamp(0., max_scroll);
+            let width = galley
+                .size()
+                .x
+                .max(footer.as_ref().map_or(0., |g| g.size().x));
+            let readout =
+                Rect::from_min_size(origin, vec2(width + 12., height + footer_height + 8.));
             self.record("ruler-values", readout);
             if self.ruler_sources {
                 self.record("ruler-sources", readout);
@@ -316,7 +342,34 @@ impl DocsApp {
                 Stroke::new(1.0_f32, Color32::from_gray(180)),
                 egui::StrokeKind::Inside,
             );
-            painter.galley(origin + vec2(6., 4.), galley, INK);
+            let content = Rect::from_min_size(origin + vec2(6., 4.), vec2(width, height));
+            let offset = if self.ruler_sources {
+                self.ruler_sources_scroll
+            } else {
+                0.
+            };
+            painter
+                .with_clip_rect(content.intersect(ui.clip_rect()))
+                .galley(content.min - vec2(0., offset), galley, INK);
+            if let Some(footer) = footer {
+                painter.galley(pos2(content.left(), content.bottom() + 8.), footer, INK);
+                if max_scroll > 0. {
+                    let track = Rect::from_min_size(
+                        pos2(readout.right() - 4., content.top()),
+                        vec2(2., height),
+                    );
+                    painter.rect_filled(track, 1., Color32::from_gray(215));
+                    let thumb_height = (height * height / (height + max_scroll))
+                        .max(8.)
+                        .min(height);
+                    let y = track.top() + (height - thumb_height) * offset / max_scroll;
+                    painter.rect_filled(
+                        Rect::from_min_size(pos2(track.left(), y), vec2(2., thumb_height)),
+                        1.,
+                        Color32::from_gray(120),
+                    );
+                }
+            }
         }
         menu_response.on_hover_text("Right-click for Reset indents to style. Ctrl+Shift+F8 enters markers; Delete previews all-indent reset; Shift+Delete resets the focused property; Enter applies; Esc cancels.")
             .context_menu(|ui| {
@@ -426,6 +479,26 @@ impl DocsApp {
             && ctx
                 .input(|i| i.focused && !i.viewport().close_requested() && !i.pointer.any_pressed())
         {
+            for event in &events {
+                if let egui::Event::Key {
+                    key, pressed: true, ..
+                } = event
+                {
+                    match key {
+                        Key::ArrowDown => self.ruler_sources_scroll += 24.,
+                        Key::ArrowUp => self.ruler_sources_scroll -= 24.,
+                        Key::PageDown => {
+                            self.ruler_sources_scroll += (self.ruler_sources_height - 24.).max(24.)
+                        }
+                        Key::PageUp => {
+                            self.ruler_sources_scroll -= (self.ruler_sources_height - 24.).max(24.)
+                        }
+                        Key::Home => self.ruler_sources_scroll = 0.,
+                        Key::End => self.ruler_sources_scroll = f32::MAX,
+                        _ => {}
+                    }
+                }
+            }
             if events.iter().any(|e| {
                 matches!(
                     e,
@@ -522,6 +595,7 @@ impl DocsApp {
             }
             match key {
                 Key::F1 => {
+                    self.ruler_sources_scroll = 0.;
                     self.ruler_sources = true;
                     break;
                 }

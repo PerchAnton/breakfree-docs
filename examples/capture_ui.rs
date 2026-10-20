@@ -30,7 +30,11 @@ impl eframe::App for Capture {
         if self.mode.starts_with("keytips")
             || matches!(
                 self.mode.as_str(),
-                "ruler-keyboard" | "ruler-reset" | "ruler-reset-single" | "ruler-source-keyboard"
+                "ruler-keyboard"
+                    | "ruler-reset"
+                    | "ruler-reset-single"
+                    | "ruler-source-keyboard"
+                    | "ruler-source-list"
             )
             || self.mode == "temporary"
             || self.mode == "replace-all"
@@ -42,7 +46,11 @@ impl eframe::App for Capture {
         }
         if matches!(
             self.mode.as_str(),
-            "ruler-keyboard" | "ruler-reset" | "ruler-reset-single" | "ruler-source-keyboard"
+            "ruler-keyboard"
+                | "ruler-reset"
+                | "ruler-reset-single"
+                | "ruler-source-keyboard"
+                | "ruler-source-list"
         ) && matches!(self.frames, 3 | 5)
         {
             let (key, modifiers) = if self.frames == 3 {
@@ -51,7 +59,10 @@ impl eframe::App for Capture {
                     egui::Modifiers::CTRL | egui::Modifiers::SHIFT,
                 )
             } else {
-                if self.mode == "ruler-source-keyboard" {
+                if matches!(
+                    self.mode.as_str(),
+                    "ruler-source-keyboard" | "ruler-source-list"
+                ) {
                     (egui::Key::F1, egui::Modifiers::NONE)
                 } else if self.mode == "ruler-reset-single" {
                     (egui::Key::Delete, egui::Modifiers::SHIFT)
@@ -70,6 +81,15 @@ impl eframe::App for Capture {
                     modifiers,
                 });
             }
+        }
+        if self.mode == "ruler-source-list" && self.frames == 7 {
+            input.events.push(egui::Event::Key {
+                key: egui::Key::End,
+                physical_key: None,
+                pressed: true,
+                repeat: false,
+                modifiers: egui::Modifiers::NONE,
+            });
         }
         if self.frames == 2 && self.mode.starts_with("keytips") {
             let mut keys = vec![egui::Key::F10];
@@ -350,6 +370,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "ruler-reset-single",
             "ruler-sources",
             "ruler-source-keyboard",
+            "ruler-source-list",
             "collapsed",
             "temporary",
             "view",
@@ -369,7 +390,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ]
         .contains(&args[2].as_str())
     {
-        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|styles-modify|styles-following|styles-create|styles-rename|styles-delete|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|paragraph|indent-layout|ruler-keyboard|ruler-mixed|ruler-reset|ruler-reset-single|ruler-sources|ruler-source-keyboard|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
+        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|styles-modify|styles-following|styles-create|styles-rename|styles-delete|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|paragraph|indent-layout|ruler-keyboard|ruler-mixed|ruler-reset|ruler-reset-single|ruler-sources|ruler-source-keyboard|ruler-source-list|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
     }
     let path = std::env::var("BREAKFREE_CAPTURE_TO")
         .map_err(|_| "Set BREAKFREE_CAPTURE_TO to an output PNG path")?;
@@ -415,6 +436,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             | "ruler-reset-single"
             | "ruler-sources"
             | "ruler-source-keyboard"
+            | "ruler-source-list"
     ) {
         let mut session = Session::default();
         let sample =
@@ -436,7 +458,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 breakfree_docs::model::Alignment::Left
             };
         }
-        if matches!(args[2].as_str(), "ruler-sources" | "ruler-source-keyboard") {
+        if matches!(
+            args[2].as_str(),
+            "ruler-sources" | "ruler-source-keyboard" | "ruler-source-list"
+        ) {
             session
                 .editor
                 .document
@@ -448,6 +473,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .left_indent_half_points = None;
             session.editor.document.paragraphs[0].paragraph_style =
                 breakfree_docs::model::ParagraphStyle::Heading1;
+        }
+        if args[2] == "ruler-source-list" {
+            session = Session::default();
+            session.editor.replace(
+                0,
+                0,
+                &vec!["Source inspection fixture"; 32].join("\n"),
+                "Fixture",
+            )?;
+            for i in 0..32 {
+                let id = session.editor.create_style(
+                    &format!("Source {i:02} — inherited paragraph geometry"),
+                    breakfree_docs::model::StyleDefinition {
+                        left_indent_half_points: Some(i as u16),
+                        ..Default::default()
+                    },
+                    false,
+                )?;
+                session.editor.document.paragraphs[i].paragraph_style = id;
+            }
         }
         session.editor.document.validate()?;
         session.editor.selection = (0, 0);
@@ -574,9 +619,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 | "ruler-reset"
                 | "ruler-reset-single"
                 | "ruler-sources"
-                | "ruler-source-keyboard" => {
+                | "ruler-source-keyboard"
+                | "ruler-source-list" => {
                     if mode == "ruler-mixed"
-                        || matches!(mode.as_str(), "ruler-sources" | "ruler-source-keyboard")
+                        || matches!(
+                            mode.as_str(),
+                            "ruler-sources" | "ruler-source-keyboard" | "ruler-source-list"
+                        )
                     {
                         app.execute(Action::SelectAll, &cc.egui_ctx);
                     }

@@ -3,6 +3,12 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.54 — 2026-10-20
+
+- Show every indent source group in the F1 ruler information view, with paragraph counts and wrapped style names. Hover tooltips retain their compact three-group summary.
+- Add Up/Down, Page Up/Down and Home/End scrolling inside a bounded panel, with a scroll-position indicator and a fixed keyboard hint. Reopening starts at the top; inspection preserves marker focus, pending drafts and history.
+- Preserve the two-axis ruler design, palette/icons, native v13 and protocol/settings v1. Add full-list and compact keyboard regression coverage. Alpha.54 awaits approval; the last explicit approval is alpha.52. Windows remains deferred.
+
 ## 0.1.0-alpha.53 — 2026-10-18
 
 - Add F1 access to value/source details while a ruler marker has keyboard focus. Enter, Escape or F1 returns to that marker without applying or discarding its pending indent preview.

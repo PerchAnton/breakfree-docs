@@ -1,6 +1,6 @@
 # Rust editor validation and remaining gates
 
-Evaluation: **2026-10-18, Europe/Kyiv**, macOS 27.0.1 arm64, rustc/cargo 1.99.1,
+Evaluation: **2026-10-20, Europe/Kyiv**, macOS 27.0.1 arm64, rustc/cargo 1.99.1,
 eframe 0.33.0 and locked egui/epaint 0.33.3. Rust is owner-approved; toolkit adoption,
 license, supported-platform and full D1 reviews remain separate gates. Historical
 Python/Qt results are preserved in [history/python-validation.md](history/python-validation.md)
@@ -8,14 +8,14 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.53**. Historical evidence retains its scope.
+Current local checkpoint: **0.1.0-alpha.54**. Historical evidence retains its scope.
 
 | Local check | Observed result |
 | --- | --- |
-| Full / no-default-features tests | 296 / 148 passed; keyboard provenance, draft-preserving dismissal, focus and bounds checked |
+| Full / no-default-features tests | 298 / 149 passed; full source lists, scroll bounds/reopening and draft-preserving keyboard inspection checked |
 | fmt / Clippy | Passed; normal/capture all-target checks with warnings denied |
 | Release builds | Native binary and capture harness passed without Office/sibling inputs |
-| CLI | Version/capabilities report alpha.53; existing CLI subprocess tests pass |
+| CLI | Version/capabilities report alpha.54; existing CLI subprocess tests pass |
 | Repository/artwork/YAML/whitespace | Passed |
 | Native rendering | Keyboard ruler sources inspected at 1366 × 900 / 640 × 480 DIP |
 | Native input | Not repeated this iteration; previous automation lost its window. CPU widget events are separate evidence |
@@ -1413,3 +1413,23 @@ widget-injected keyboard fixtures, not ordinary OS input. Windows/Word matching,
 native display scaling and full accessibility acceptance remain deferred. Source
 summaries retain the three-group limit. Native v13 and process/settings v1 unchanged.
 Alpha.52 code/journal CI succeeded; alpha.53 CI is recorded separately. No merge/tag/release.
+
+
+## Alpha.54 complete source-list validation
+
+2026-10-20: full/core suites pass with 298/149 tests on macOS arm64, Rust 1.99.1.
+The source-list regression checks every group and count beyond the hover limit,
+including the independent special-indent default. The widget fixture uses 32
+styles with long names at 640 × 480 DIP and synthetic scales 1/1.25/1.5.
+It verifies Page Up/Down, End clamping, Home/Up clamping, viewport bounds, reopening
+at zero and unchanged document/history. Existing pending-preview tests now also
+scroll before each dismissal and retain the separate one-operation acceptance.
+
+Native capture fixtures at 1366 × 900 and 640 × 480 DIP inject F1 then End.
+Both show the final source and special-indent default above the fixed footer.
+Initial inspection found missing arrow glyphs in the footer; use the explicit
+Up/Down key names instead. Captures are widget-injected rendering evidence, not
+ordinary OS keyboard, physical DPI, IME, accessibility or Windows/Word acceptance.
+Windows remains deferred. No format/dependency/license change; native v13 and
+protocol/settings v1 remain unchanged. Alpha.53 CI succeeded; current CI is
+recorded separately in the journal.
