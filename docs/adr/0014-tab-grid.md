@@ -102,3 +102,21 @@ value; the canvas renders the draft and release produces one history entry.
 No ruler click-to-create, drag-to-delete or tab-specific keyboard controller in this
 increment; the existing keyboard-accessible dialog remains available. Indent
 keyboard/source controls, native v15, palette and icons remain unchanged.
+
+## Alpha.66: keyboard ruler tabs
+
+Ctrl+Alt+F8 enters existing explicit tab stops (a Docs shortcut, not a verified
+Word mapping). Left/Right previews 0.5 pt steps; Shift changes the step to 5 pt.
+Enter applies and exits; Tab/Shift+Tab applies once and selects the next/previous
+stop in sorted order, wrapping. Escape cancels only the current preview. Exact
+values appear below the ruler. A no-op does not consume Undo or discard Redo.
+A duplicate destination blocks acceptance until corrected or cancelled.
+
+The controller uses the same engine draft and half-open selection as pointer
+movement. Common lists are required; mixed/empty lists give an explicit message.
+Keyboard access includes overlapping and off-column positions via the exact-value
+preview. Pointer indent priority is unchanged. Text/paste/IME/scroll input cannot
+edit the document during preview. Window focus loss, close, pointer press,
+resize/zoom or hidden rulers cancel. Add/delete still use Tab positions.
+Physical keyboard, VoiceOver and Windows acceptance remain unverified for this
+increment. No storage, palette, icon, dependency or license change.

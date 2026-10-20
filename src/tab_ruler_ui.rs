@@ -1,4 +1,4 @@
-//! Pointer adapter for explicit tab stops; existing indent controls keep priority.
+//! Pointer and keyboard adapter for explicit tab stops; existing indent controls keep priority.
 use super::*;
 
 pub(super) struct TabDrag {
@@ -10,9 +10,138 @@ pub(super) struct TabDrag {
     start: u16,
     unit: f32,
     error: Option<String>,
+    keyboard: bool,
 }
 impl DocsApp {
     pub(super) fn prepare_tab_ruler_input(&mut self, ctx: &egui::Context) -> bool {
+        let enter = self.tab_ruler_drag.is_none()
+            && self.enabled(Action::TabPositions)
+            && !self.composing
+            && !self.backstage
+            && self.ruler_key_focus.is_none()
+            && !egui::Popup::is_any_open(ctx)
+            && ctx.input_mut(|i| i.consume_key(Modifiers::CTRL | Modifiers::ALT, Key::F8));
+        if enter {
+            if !self.commit_font_size_input() {
+                return true;
+            }
+            self.rulers = true;
+            let (index, _) = self
+                .session
+                .editor
+                .document
+                .locate(self.session.editor.selection.0)
+                .unwrap();
+            if let Some(value) = self.session.editor.document.paragraphs[index]
+                .spacing
+                .left_tab_stops_half_points
+                .first()
+                .copied()
+            {
+                self.start_tab_keyboard(ctx, value);
+            } else {
+                self.error = Some(
+                    "No explicit tab stops. Add positions through Tab positions first.".into(),
+                );
+            }
+            return true;
+        }
+        if self.tab_ruler_drag.as_ref().is_some_and(|d| d.keyboard) {
+            let events = ctx.input(|i| i.events.clone());
+            let lost_window = events
+                .iter()
+                .any(|e| matches!(e, egui::Event::WindowFocused(false)));
+            let transform_changed = self
+                .tab_ruler_drag
+                .as_ref()
+                .is_some_and(|d| d.zoom != self.zoom / 100. || d.screen != ctx.content_rect());
+            let cancel = transform_changed
+                || lost_window
+                || !self.rulers
+                || self.backstage
+                || ctx.input(|i| {
+                    !i.focused
+                        || i.viewport().close_requested()
+                        || i.pointer.any_pressed()
+                        || i.key_pressed(Key::Escape)
+                });
+            ctx.memory_mut(|m| m.move_focus(egui::FocusDirection::None));
+            ctx.input_mut(|i| {
+                i.events.retain(|e| {
+                    !matches!(
+                        e,
+                        egui::Event::Key { .. }
+                            | egui::Event::Text(_)
+                            | egui::Event::Paste(_)
+                            | egui::Event::Ime(_)
+                            | egui::Event::MouseWheel { .. }
+                            | egui::Event::PointerButton { .. }
+                    )
+                });
+                i.raw_scroll_delta = Vec2::ZERO;
+                i.smooth_scroll_delta = Vec2::ZERO;
+            });
+            if cancel {
+                self.tab_ruler_drag = None;
+                self.sync_view();
+                return true;
+            }
+            for event in events {
+                let egui::Event::Key {
+                    key,
+                    pressed: true,
+                    modifiers,
+                    ..
+                } = event
+                else {
+                    continue;
+                };
+                if modifiers.ctrl || modifiers.alt || modifiers.command {
+                    continue;
+                }
+                match key {
+                    Key::ArrowLeft | Key::ArrowRight => {
+                        let drag = self.tab_ruler_drag.as_mut().unwrap();
+                        let step = if modifiers.shift { 10. } else { 1. };
+                        let delta = if key == Key::ArrowLeft { -step } else { step };
+                        drag.error = drag
+                            .draft
+                            .move_to(f32::from(drag.draft.position) + delta)
+                            .err();
+                    }
+                    Key::Enter | Key::Tab => {
+                        if self.tab_ruler_drag.as_ref().unwrap().error.is_some() {
+                            continue;
+                        }
+                        let drag = self.tab_ruler_drag.take().unwrap();
+                        let position = drag.draft.position;
+                        let result = drag.draft.commit(&mut self.session.editor);
+                        let success = result.is_ok();
+                        self.fail(result);
+                        self.sync_view();
+                        if success && key == Key::Tab {
+                            let (index, _) = self
+                                .session
+                                .editor
+                                .document
+                                .locate(self.session.editor.selection.0)
+                                .unwrap();
+                            let stops = &self.session.editor.document.paragraphs[index]
+                                .spacing
+                                .left_tab_stops_half_points;
+                            let current = stops.iter().position(|p| *p == position).unwrap();
+                            let next = stops[(current
+                                + if modifiers.shift { stops.len() - 1 } else { 1 })
+                                % stops.len()];
+                            self.start_tab_keyboard(ctx, next);
+                        }
+                        break;
+                    }
+                    _ => {}
+                }
+            }
+            return true;
+        }
         if self.tab_ruler_drag.is_none() {
             return false;
         }
@@ -47,6 +176,27 @@ impl DocsApp {
         }
         true
     }
+    fn start_tab_keyboard(&mut self, ctx: &egui::Context, value: u16) {
+        match crate::tab_ruler::Draft::new(&self.session.editor, value) {
+            Ok(draft) => {
+                self.tab_ruler_drag = Some(TabDrag {
+                    draft,
+                    rect: Rect::NOTHING,
+                    screen: ctx.content_rect(),
+                    zoom: self.zoom / 100.,
+                    origin: 0.,
+                    start: value,
+                    unit: 1.,
+                    error: None,
+                    keyboard: true,
+                });
+                self.focus_document = false;
+                self.leave_ribbon(ctx);
+                ctx.memory_mut(|m| m.surrender_focus(Id::new(EDIT_ID)));
+            }
+            Err(error) => self.error = Some(error),
+        }
+    }
     pub(super) fn tab_markers(
         &mut self,
         ui: &mut Ui,
@@ -56,6 +206,11 @@ impl DocsApp {
         zoom: f32,
         indent_targets: &[Rect],
     ) {
+        if let Some(drag) = &mut self.tab_ruler_drag
+            && drag.rect == Rect::NOTHING
+        {
+            drag.rect = rect;
+        }
         if self.tab_ruler_drag.as_ref().is_some_and(|d| {
             d.rect != rect || d.zoom != zoom || d.screen != ui.ctx().content_rect()
         }) {
@@ -142,6 +297,7 @@ impl DocsApp {
                             start: value,
                             unit,
                             error: None,
+                            keyboard: false,
                         });
                         self.focus_document = false;
                         self.leave_ribbon(ui.ctx());
@@ -150,10 +306,12 @@ impl DocsApp {
                     Err(error) => self.error = Some(error),
                 }
             }
-            response.on_hover_text(format!("Left tab: {:.1} pt. {}",f32::from(value)/2.,if mixed {"Different lists selected; edit them through Tab positions."} else if collision {"Overlaps an indent marker; use Tab positions to edit."} else {"Drag to preview; release to apply; Escape cancels. Release outside the ruler cancels. Use Tab positions for keyboard editing."}));
+            response.on_hover_text(format!("Left tab: {:.1} pt. {}",f32::from(value)/2.,if mixed {"Different lists selected; edit them through Tab positions."} else if collision {"Overlaps an indent marker; use Ctrl+Alt+F8 or Tab positions to edit."} else {"Drag to preview; release to apply; Escape cancels. Release outside the ruler cancels. Ctrl+Alt+F8 selects tabs; arrows move, Shift accelerates, Enter applies, Tab applies and selects next, Escape cancels."}));
         }
         if let Some(drag) = &mut self.tab_ruler_drag {
-            if let Some(pointer) = ui.input(|i| i.pointer.interact_pos()) {
+            if !drag.keyboard
+                && let Some(pointer) = ui.input(|i| i.pointer.interact_pos())
+            {
                 drag.error = drag
                     .draft
                     .move_to(f32::from(drag.start) + (pointer.x - drag.origin) / drag.unit)
@@ -162,8 +320,13 @@ impl DocsApp {
             }
             let text = drag.error.clone().unwrap_or_else(|| {
                 format!(
-                    "Left tab {:.1} pt — preview; Esc cancels",
-                    f32::from(drag.draft.position) / 2.
+                    "Left tab {:.1} pt — preview; {}; Esc cancels",
+                    f32::from(drag.draft.position) / 2.,
+                    if drag.keyboard {
+                        "Enter applies"
+                    } else {
+                        "release applies"
+                    }
                 )
             });
             egui::Area::new(Id::new("tab-ruler-preview"))
@@ -175,7 +338,7 @@ impl DocsApp {
                         ui.label(text);
                     });
                 });
-            if ui.input(|i| i.pointer.primary_released()) {
+            if !drag.keyboard && ui.input(|i| i.pointer.primary_released()) {
                 let drag = self.tab_ruler_drag.take().unwrap();
                 let inside = ui.input(|i| {
                     i.pointer

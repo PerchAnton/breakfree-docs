@@ -18,6 +18,26 @@ struct Capture {
 
 impl eframe::App for Capture {
     fn raw_input_hook(&mut self, _ctx: &egui::Context, input: &mut egui::RawInput) {
+        if self.mode == "tab-keyboard" {
+            input.focused = true;
+            if matches!(self.frames, 3 | 5) {
+                input.events.push(egui::Event::Key {
+                    key: if self.frames == 3 {
+                        egui::Key::F8
+                    } else {
+                        egui::Key::ArrowRight
+                    },
+                    physical_key: None,
+                    pressed: true,
+                    repeat: false,
+                    modifiers: if self.frames == 3 {
+                        egui::Modifiers::CTRL | egui::Modifiers::ALT
+                    } else {
+                        egui::Modifiers::SHIFT
+                    },
+                });
+            }
+        }
         // Deterministic render fixture, including focus; this does not prove OS input.
         if self.mode == "ruler-sources" {
             input.focused = true;
@@ -418,6 +438,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "home",
             "tabs",
             "explicit-tabs",
+            "tab-keyboard",
             "tab-positions",
             "tab-dialog",
             "styles",
@@ -511,11 +532,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     let session = if matches!(
         args[2].as_str(),
-        "tabs" | "tab-dialog" | "explicit-tabs" | "tab-positions"
+        "tabs" | "tab-dialog" | "explicit-tabs" | "tab-keyboard" | "tab-positions"
     ) {
         let mut session = Session::default();
         session.editor.replace(0, 0, "Name\t\tValue\nEnglish\t\t36 pt grid\nУкраїна\t\tТабуляція\nРусский\t\tТабуляция\nCombining e\u{301}\t\tEnd", "Tab fixture")?;
-        if matches!(args[2].as_str(), "explicit-tabs" | "tab-positions") {
+        if matches!(
+            args[2].as_str(),
+            "explicit-tabs" | "tab-keyboard" | "tab-positions"
+        ) {
             let end = session.editor.document.text().chars().count();
             session
                 .editor

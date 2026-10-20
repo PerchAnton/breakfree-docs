@@ -383,4 +383,5 @@ Use public specifications and original test cases, not copied application code. 
 - [x] Alpha.63: bounded explicit left positions, native v15 storage, shared one-step history and layout with interval fallback; local migration/editing/Unicode/indent/zoom/cursor checks.
 - [x] Alpha.64: transactional left-position dialog with add/update/remove/clear, mixed selection, validation, cancel and one-step history; local keyboard/bounds and save/reopen tests.
 - [x] Alpha.65: visible existing left-stop markers with isolated drag preview, cancellation and one shared commit; common-list requirement and indent priority tested locally.
-- [ ] Next: keyboard control for ruler tab markers with exact values and the same cancellation/history policy; add/delete, mixed-list marker policy, other types, leaders and style inheritance remain later work.
+- [x] Alpha.66: keyboard ruler tab selection, exact preview, fine/coarse movement, cancellation and one shared Undo/Redo (local widget checks).
+- [ ] Next: ruler tab add/delete controls; mixed-list marker policy, other types, leaders and style inheritance remain later work.

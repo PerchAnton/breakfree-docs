@@ -805,3 +805,12 @@ Selected paragraphs must have identical lists. Mixed lists, overlaps with indent
 markers and off-column positions remain editable through **Tab positions**.
 The prototype moves existing stops; add/remove and keyboard editing use the dialog.
 Native v15, design, palette and icons remain unchanged.
+
+## Alpha.66: keyboard ruler tabs
+
+Ctrl+Alt+F8 enters existing explicit tab stops (a Docs shortcut, not a verified
+Word mapping). Left/Right previews 0.5 pt steps; Shift changes the step to 5 pt.
+Enter applies and exits; Tab/Shift+Tab applies once and selects the next/previous
+stop in sorted order, wrapping. Escape cancels only the current preview. Exact
+values appear below the ruler. A no-op does not consume Undo or discard Redo.
+A duplicate destination blocks acceptance until corrected or cancelled.

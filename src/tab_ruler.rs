@@ -57,7 +57,9 @@ impl Draft {
         }
         let position = half_points.round().clamp(1., 2880.) as u16;
         if position != self.source && self.positions.contains(&position) {
-            return Err("A tab already occupies this position. Release cancels.".into());
+            return Err(
+                "A tab already occupies this position. Choose another position or cancel.".into(),
+            );
         }
         let mut positions = self.positions.clone();
         positions.retain(|p| *p != self.source);

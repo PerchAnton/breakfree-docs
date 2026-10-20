@@ -3,6 +3,15 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.66 — 2026-10-20
+
+- Add Ctrl+Alt+F8 access to existing ruler tab stops, half-point arrow movement,
+  Shift+arrow 5 pt movement and exact preview values. Enter applies and exits;
+  Tab/Shift+Tab applies and selects the next/previous stop. Escape cancels.
+- Reuse the validated preview and single Undo/Redo transaction; isolate text input,
+  reject duplicate destinations and cancel on focus/geometry changes.
+- Preserve native v15, palette and icons. Windows and VoiceOver remain deferred.
+
 ## 0.1.0-alpha.65 — 2026-10-20
 
 - Show explicit left tab markers on the horizontal ruler. Drag an existing marker to preview half-point movement; release applies one shared Undo/Redo transaction across paragraphs with identical lists.

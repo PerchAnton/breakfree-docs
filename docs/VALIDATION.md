@@ -1673,3 +1673,27 @@ capture Clippy and release builds were repeated. Two native screenshots inspecte
 (UI_SPEC). Native v15, palette and icons unchanged. Physical keyboard/IME, matched
 Word comparison, Windows and VoiceOver remain untested/deferred. Ruler tab keyboard
 control, add/delete and mixed-list dragging are not implemented. CI is separate.
+
+## Alpha.66 keyboard ruler validation
+
+2026-10-20, macOS arm64, Rust 1.99.1. Alpha.65 approved; alpha.66 awaits approval.
+
+- Full suite: 340 tests; core-only: 159 tests. Fine/coarse movement, one Undo/Redo,
+  Tab/reverse traversal, duplicate rejection, cancellation, empty/mixed lists,
+  overlapping/off-column access and no-op Redo preservation are covered.
+- Widget input tests run at synthetic 100/125/150% scale. They exposed a missing
+  explicit window-focus-loss cancellation, now covered and fixed.
+- Native capture exposed overbroad event filtering; the controller now preserves
+  screenshot/service events while suppressing editing input. Two captures at
+  1366 × 900 and 640 × 480 DIP were inspected: existing palette/icons and compact
+  ribbon remain; active L marker and exact 77.0 pt preview are visible and fit.
+- fmt, normal/capture all-target Clippy, full/core tests, release/capture builds,
+  repository/artwork/YAML/whitespace and isolated CLI checks pass.
+- Native v15 and pointer-drag/storage/layout regression tests remain unchanged.
+  No physical OS keyboard/IME or matched Word comparison was performed in this
+  increment. VoiceOver remains deferred to final review; Windows is deferred.
+
+Reproduce native captures with `cargo build --release --features capture --example
+capture_ui`, then `BREAKFREE_CAPTURE_TO=/tmp/tab-keyboard.png
+./target/release/examples/capture_ui 1366 900 tab-keyboard` (environment assignment
+and command on one shell line). Injected harness keys are not physical input evidence.

@@ -1916,3 +1916,28 @@ keyboard/IME, Word comparison, Windows and VoiceOver acceptance were not perform
 | :--- | :--- |
 | [rust-tab-ruler-alpha65-macos.png](screenshots/rust-tab-ruler-alpha65-macos.png) | `091bafdb5b603478dc609200c18a994465f3344efad6188ddcd4af4bcbb358aa` |
 | [rust-tab-ruler-alpha65-compact-macos.png](screenshots/rust-tab-ruler-alpha65-compact-macos.png) | `5599d0b9cc101fa480692cbd53b0727c13ce69d1cb85c09955e6bb3f17dc46ae` |
+
+## Alpha.66: keyboard ruler tabs
+
+Ctrl+Alt+F8 enters existing explicit tab stops (a Docs shortcut, not a verified
+Word mapping). Left/Right previews 0.5 pt steps; Shift changes the step to 5 pt.
+Enter applies and exits; Tab/Shift+Tab applies once and selects the next/previous
+stop in sorted order, wrapping. Escape cancels only the current preview. Exact
+values appear below the ruler. A no-op does not consume Undo or discard Redo.
+A duplicate destination blocks acceptance until corrected or cancelled.
+
+The controller uses the same engine draft and half-open selection as pointer
+movement. Common lists are required; mixed/empty lists give an explicit message.
+Keyboard access includes overlapping and off-column positions via the exact-value
+preview. Pointer indent priority is unchanged. Text/paste/IME/scroll input cannot
+edit the document during preview. Window focus loss, close, pointer press,
+resize/zoom or hidden rulers cancel. Add/delete still use Tab positions.
+Physical keyboard, VoiceOver and Windows acceptance remain unverified for this
+increment. No storage, palette, icon, dependency or license change.
+
+Native macOS captures (deterministic injected keys, not physical keyboard evidence):
+
+| Size (DIP) | Capture | SHA-256 |
+| :--- | :--- | :--- |
+| 1366 × 900 | [Preview](screenshots/rust-tab-keyboard-alpha66-macos.png) | `bcbed193182a3748a056d60c64662836644b74e2588348d09b6d747af9616972` |
+| 640 × 480 | [Preview](screenshots/rust-tab-keyboard-alpha66-compact-macos.png) | `ec1ca079295244e2d8fcabbf679a6b6e2491755e8092220a3e3b70d267233cc2` |
