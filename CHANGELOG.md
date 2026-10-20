@@ -3,6 +3,12 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.55 — 2026-10-20
+
+- Scroll the open ruler source list with the mouse wheel while hovering its panel. Point, line and page input respect the list bounds; horizontal or modified wheel input does not change it.
+- Consume background scroll and drain residual smoothing after dismissal, preserving the canvas position, marker focus and pending indent preview. A fresh wheel gesture after inspection can scroll the document again.
+- Add unit/direction/bounds, pointer scope, synthetic-scale, cancellation and one-operation undo/redo coverage. Preserve design, palette/icons and native v13. Alpha.54 approved; alpha.55 awaits approval. Windows remains deferred.
+
 ## 0.1.0-alpha.54 — 2026-10-20
 
 - Show every indent source group in the F1 ruler information view, with paragraph counts and wrapped style names. Hover tooltips retain their compact three-group summary.

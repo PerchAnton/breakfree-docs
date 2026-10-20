@@ -1688,3 +1688,30 @@ SHA-256: `d0187c2d754635fa5aa682d35efa0ceb522292313c9ef89025b9f5f0d9426e85`.
 SHA-256: `64958def09edf0aa314a005c23a76bc28b690eb9b12416debb36cb46752cf97d`.
 
 Both native macOS fixtures were inspected after End: the final named source, special-indent default, scroll indicator and footer remain visible. Widget keystrokes are injected; ordinary OS keyboard and Windows/reference acceptance are not established.
+
+
+## Alpha.55 wheel access to ruler sources
+
+Hover the open F1 source panel, including its fixed footer, to scroll with the
+wheel. Point events move by their vertical DIP delta; line events use 24 DIP per
+line; page events use the viewport height minus 24 DIP overlap, minimum 24 DIP.
+Movement clamps at both ends and uses the existing position indicator.
+Horizontal and modified wheel input does not move the list. Outside the panel,
+wheel input remains blocked while inspection is active. Keyboard behavior, panel
+geometry, palette and icons are unchanged.
+
+Consume both wheel events and egui's derived scroll deltas. After dismissal,
+drain residual smoothing so it cannot move the canvas; a new wheel event after
+inspection restores normal scrolling. Pointer clicks retain the existing takeover
+and draft-cancellation behavior. This is a prototype policy, not verified Word
+equivalence. Physical mouse/trackpad and Windows acceptance remain separate gates.
+
+![Wheel inspection at 1366 × 900 DIP](screenshots/rust-ruler-wheel-sources-alpha55-macos.png)
+
+SHA-256: `82c0c0ebf87cde4e377d1669f84b109a659b9da2277b1aadf0fe48329052952d`.
+
+![Wheel inspection at 640 × 480 DIP](screenshots/rust-ruler-wheel-sources-alpha55-compact-macos.png)
+
+SHA-256: `6c5031572b3d434481aec6bba56d788ec73e0922b0e71d0fd1d19032ba1ddea5`.
+
+Both native macOS fixtures were inspected: the last named source, default source and fixed footer remain visible after wheel input. The canvas stays at its initial position. Input is widget-injected, not a physical mouse acceptance test.

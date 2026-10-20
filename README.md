@@ -723,3 +723,8 @@ still applies. This is a Docs-specific shortcut, not verified Word equivalence.
 Ruler source inspection: focus a marker with Ctrl+Shift+F8, then press F1.
 Use Up/Down, Page Up/Down or Home/End to read all source groups; Enter, Escape
 or F1 returns to the marker without accepting or cancelling an indent preview.
+
+Mouse wheel source inspection (alpha.55): hover the open F1 panel to scroll its
+list. The wheel stays isolated from the document while inspecting, including at
+list edges. Horizontal/modified wheel input is ignored; click takeover retains
+the existing draft-cancellation policy. Keyboard scrolling remains available.

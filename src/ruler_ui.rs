@@ -13,7 +13,33 @@ pub(super) struct Drag {
 }
 impl DocsApp {
     pub(super) fn prepare_ruler_input(&mut self, ctx: &egui::Context) {
+        // egui derives scroll deltas before UI dispatch. Consume those as well as
+        // events, and drain smoothing after dismissal so the canvas cannot jump.
+        if self.ruler_sources || self.ruler_sources_wheel_guard {
+            ctx.input_mut(|i| {
+                let new_wheel = i
+                    .events
+                    .iter()
+                    .any(|e| matches!(e, egui::Event::MouseWheel { .. }));
+                if !self.ruler_sources && new_wheel {
+                    self.ruler_sources_wheel_guard = false;
+                } else {
+                    self.ruler_sources_wheel_guard = self.ruler_sources
+                        || i.smooth_scroll_delta != Vec2::ZERO
+                        || i.raw_scroll_delta != Vec2::ZERO;
+                    i.raw_scroll_delta = Vec2::ZERO;
+                    i.smooth_scroll_delta = Vec2::ZERO;
+                }
+            });
+        }
         if self.ruler_keyboard_input(ctx) {
+            if self.ruler_sources {
+                self.ruler_sources_wheel_guard = true;
+                ctx.input_mut(|i| {
+                    i.raw_scroll_delta = Vec2::ZERO;
+                    i.smooth_scroll_delta = Vec2::ZERO;
+                });
+            }
             return;
         }
         if self.ruler_drag.is_none() {
@@ -479,7 +505,28 @@ impl DocsApp {
             && ctx
                 .input(|i| i.focused && !i.viewport().close_requested() && !i.pointer.any_pressed())
         {
+            let over_sources = ctx.input(|i| i.pointer.hover_pos()).is_some_and(|pos| {
+                self.regions
+                    .iter()
+                    .any(|r| r.name == "ruler-sources" && r.rect.contains(pos))
+            });
             for event in &events {
+                if let egui::Event::MouseWheel {
+                    unit,
+                    delta,
+                    modifiers,
+                } = event
+                    && over_sources
+                    && modifiers.is_none()
+                    && delta.y.is_finite()
+                {
+                    let scale = match unit {
+                        egui::MouseWheelUnit::Point => 1.,
+                        egui::MouseWheelUnit::Line => 24.,
+                        egui::MouseWheelUnit::Page => (self.ruler_sources_height - 24.).max(24.),
+                    };
+                    self.ruler_sources_scroll -= delta.y * scale;
+                }
                 if let egui::Event::Key {
                     key, pressed: true, ..
                 } = event

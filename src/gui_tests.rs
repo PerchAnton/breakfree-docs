@@ -7909,31 +7909,7 @@ fn ruler_sources_compact_bounds_and_focus_loss_cleanup() {
 #[test]
 fn full_ruler_sources_scroll_clamp_and_reopen_without_editing() {
     for dpi in [1., 1.25, 1.5] {
-        let (ctx, mut app) = setup();
-        app.zoom = 50.;
-        let text = vec!["Sample"; 32].join("\n");
-        app.session.editor.replace(0, 0, &text, "Fixture").unwrap();
-        for i in 0..32 {
-            let id = app
-                .session
-                .editor
-                .create_style(
-                    &format!("Source {i:02} {}", "W".repeat(40)),
-                    crate::model::StyleDefinition {
-                        left_indent_half_points: Some(i as u16),
-                        ..Default::default()
-                    },
-                    false,
-                )
-                .unwrap();
-            app.session.editor.document.paragraphs[i].paragraph_style = id;
-        }
-        app.session.editor.selection = (0, text.chars().count());
-        app.sync_view();
-        let size = [640. * dpi, 480. * dpi];
-        for _ in 0..3 {
-            frame(&ctx, &mut app, vec![], size, dpi);
-        }
+        let (ctx, mut app, size) = ruler_source_fixture(dpi);
         let before = app.session.editor.document.clone();
         let n = app.session.editor.undo_stack.len();
         frame(
@@ -7978,5 +7954,252 @@ fn full_ruler_sources_scroll_clamp_and_reopen_without_editing() {
         assert_eq!(app.session.editor.document, before);
         assert_eq!(app.session.editor.undo_stack.len(), n);
         assert!(app.ruler_drag.is_none());
+    }
+}
+
+fn ruler_source_fixture(dpi: f32) -> (egui::Context, DocsApp, [f32; 2]) {
+    let (ctx, mut app) = setup();
+    app.zoom = 50.;
+    let text = vec!["Sample"; 32].join("\n");
+    app.session.editor.replace(0, 0, &text, "Fixture").unwrap();
+    for i in 0..32 {
+        let id = app
+            .session
+            .editor
+            .create_style(
+                &format!("Source {i:02} {}", "W".repeat(40)),
+                crate::model::StyleDefinition {
+                    left_indent_half_points: Some(i as u16),
+                    ..Default::default()
+                },
+                false,
+            )
+            .unwrap();
+        app.session.editor.document.paragraphs[i].paragraph_style = id;
+    }
+    app.session.editor.selection = (0, text.chars().count());
+    app.sync_view();
+    let size = [640. * dpi, 480. * dpi];
+    for _ in 0..3 {
+        frame(&ctx, &mut app, vec![], size, dpi);
+    }
+    (ctx, app, size)
+}
+
+#[test]
+fn ruler_source_wheel_units_bounds_and_canvas_isolation() {
+    for dpi in [1., 1.25, 1.5] {
+        let (ctx, mut app, size) = ruler_source_fixture(dpi);
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                ruler_key(Key::F8, Modifiers::CTRL | Modifiers::SHIFT),
+                key(Key::F1, false),
+            ],
+            size,
+            dpi,
+        );
+        let before = app.session.editor.document.clone();
+        let n = app.session.editor.undo_stack.len();
+        let canvas = region(&app, "continuous-canvas");
+        let inside = region(&app, "ruler-sources").center();
+        for (unit, amount) in [
+            (egui::MouseWheelUnit::Point, 12.),
+            (egui::MouseWheelUnit::Line, 24.),
+            (
+                egui::MouseWheelUnit::Page,
+                (app.ruler_sources_height - 24.).max(24.),
+            ),
+        ] {
+            frame(&ctx, &mut app, vec![key(Key::Home, false)], size, dpi);
+            let delta = if unit == egui::MouseWheelUnit::Point {
+                -12.
+            } else {
+                -1.
+            };
+            frame(
+                &ctx,
+                &mut app,
+                vec![egui::Event::PointerMoved(inside), source_wheel(unit, delta)],
+                size,
+                dpi,
+            );
+            assert!((app.ruler_sources_scroll - amount).abs() < 0.01);
+            assert_eq!(region(&app, "continuous-canvas"), canvas);
+        }
+        frame(
+            &ctx,
+            &mut app,
+            vec![source_wheel(egui::MouseWheelUnit::Page, -1000.)],
+            size,
+            dpi,
+        );
+        let end = app.ruler_sources_scroll;
+        frame(
+            &ctx,
+            &mut app,
+            vec![source_wheel(egui::MouseWheelUnit::Line, -1.)],
+            size,
+            dpi,
+        );
+        assert_eq!(app.ruler_sources_scroll, end);
+        frame(
+            &ctx,
+            &mut app,
+            vec![source_wheel(egui::MouseWheelUnit::Page, 1000.)],
+            size,
+            dpi,
+        );
+        assert_eq!(app.ruler_sources_scroll, 0.);
+        // Outside the overlay, horizontal/modified wheel and missing pointer do not scroll it.
+        let outside = pos2(region(&app, "workspace").right() - 5., canvas.top() + 100.);
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                egui::Event::PointerMoved(outside),
+                source_wheel(egui::MouseWheelUnit::Line, -2.),
+            ],
+            size,
+            dpi,
+        );
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                egui::Event::PointerGone,
+                source_wheel(egui::MouseWheelUnit::Line, -2.),
+            ],
+            size,
+            dpi,
+        );
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                egui::Event::PointerMoved(inside),
+                egui::Event::MouseWheel {
+                    unit: egui::MouseWheelUnit::Point,
+                    delta: vec2(-50., 0.),
+                    modifiers: Modifiers::NONE,
+                },
+            ],
+            size,
+            dpi,
+        );
+        assert_eq!(app.ruler_sources_scroll, 0.);
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::MouseWheel {
+                unit: egui::MouseWheelUnit::Line,
+                delta: vec2(0., -2.),
+                modifiers: Modifiers::CTRL,
+            }],
+            size,
+            dpi,
+        );
+        assert_eq!(app.ruler_sources_scroll, 0.);
+        assert_eq!(app.zoom, 50.);
+        frame(
+            &ctx,
+            &mut app,
+            vec![source_wheel(egui::MouseWheelUnit::Line, -10.)],
+            size,
+            dpi,
+        );
+        frame(&ctx, &mut app, vec![key(Key::Escape, false)], size, dpi);
+        for _ in 0..90 {
+            frame(&ctx, &mut app, vec![], size, dpi);
+        }
+        assert_eq!(region(&app, "continuous-canvas"), canvas);
+        assert_eq!(app.session.editor.document, before);
+        assert_eq!(app.session.editor.undo_stack.len(), n);
+        assert!(app.ruler_drag.is_none());
+        // Fresh input after leaving inspection can scroll the document again.
+        frame(
+            &ctx,
+            &mut app,
+            vec![key(Key::Escape, false), egui::Event::PointerMoved(outside)],
+            size,
+            dpi,
+        );
+        frame(
+            &ctx,
+            &mut app,
+            vec![source_wheel(egui::MouseWheelUnit::Point, -100.)],
+            size,
+            dpi,
+        );
+        frame(&ctx, &mut app, vec![], size, dpi);
+        assert!(region(&app, "continuous-canvas").top() < canvas.top());
+    }
+}
+fn source_wheel(unit: egui::MouseWheelUnit, y: f32) -> egui::Event {
+    egui::Event::MouseWheel {
+        unit,
+        delta: vec2(0., y),
+        modifiers: Modifiers::NONE,
+    }
+}
+fn region(app: &DocsApp, name: &str) -> Rect {
+    app.regions.iter().find(|r| r.name == name).unwrap().rect
+}
+
+#[test]
+fn ruler_source_wheel_preserves_draft_until_commit_and_pointer_cancel() {
+    for cancel in [false, true] {
+        let (ctx, mut app, size) = ruler_source_fixture(1.);
+        for p in &mut app.session.editor.document.paragraphs {
+            p.spacing.first_line_half_points = Some(20);
+        }
+        app.sync_view();
+        let before = app.session.editor.document.clone();
+        let n = app.session.editor.undo_stack.len();
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                ruler_key(Key::F8, Modifiers::CTRL | Modifiers::SHIFT),
+                ruler_key(Key::Delete, Modifiers::SHIFT),
+                key(Key::F1, false),
+            ],
+            size,
+            1.,
+        );
+        let preview = app.ruler_drag.as_ref().unwrap().draft.preview.clone();
+        let inside = region(&app, "ruler-sources").center();
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                egui::Event::PointerMoved(inside),
+                source_wheel(egui::MouseWheelUnit::Line, -3.),
+            ],
+            size,
+            1.,
+        );
+        assert!(app.ruler_sources_scroll > 0.);
+        assert_eq!(app.ruler_drag.as_ref().unwrap().draft.preview, preview);
+        assert_eq!(app.session.editor.document, before);
+        assert_eq!(app.session.editor.undo_stack.len(), n);
+        if cancel {
+            frame(&ctx, &mut app, vec![ruler_pointer(inside, true)], size, 1.);
+            assert!(!app.ruler_sources);
+            assert!(app.ruler_drag.is_none());
+            assert_eq!(app.session.editor.document, before);
+            assert_eq!(app.session.editor.undo_stack.len(), n);
+        } else {
+            frame(&ctx, &mut app, vec![key(Key::Escape, false)], size, 1.);
+            assert_eq!(app.ruler_drag.as_ref().unwrap().draft.preview, preview);
+            frame(&ctx, &mut app, vec![key(Key::Enter, false)], size, 1.);
+            assert_eq!(app.session.editor.document, preview);
+            assert_eq!(app.session.editor.undo_stack.len(), n + 1);
+            app.session.editor.undo();
+            assert_eq!(app.session.editor.document, before);
+            app.session.editor.redo();
+            assert_eq!(app.session.editor.document, preview);
+        }
     }
 }

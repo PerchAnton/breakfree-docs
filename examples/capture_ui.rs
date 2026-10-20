@@ -35,6 +35,7 @@ impl eframe::App for Capture {
                     | "ruler-reset-single"
                     | "ruler-source-keyboard"
                     | "ruler-source-list"
+                    | "ruler-source-wheel"
             )
             || self.mode == "temporary"
             || self.mode == "replace-all"
@@ -51,6 +52,7 @@ impl eframe::App for Capture {
                 | "ruler-reset-single"
                 | "ruler-source-keyboard"
                 | "ruler-source-list"
+                | "ruler-source-wheel"
         ) && matches!(self.frames, 3 | 5)
         {
             let (key, modifiers) = if self.frames == 3 {
@@ -61,7 +63,7 @@ impl eframe::App for Capture {
             } else {
                 if matches!(
                     self.mode.as_str(),
-                    "ruler-source-keyboard" | "ruler-source-list"
+                    "ruler-source-keyboard" | "ruler-source-list" | "ruler-source-wheel"
                 ) {
                     (egui::Key::F1, egui::Modifiers::NONE)
                 } else if self.mode == "ruler-reset-single" {
@@ -88,6 +90,19 @@ impl eframe::App for Capture {
                 physical_key: None,
                 pressed: true,
                 repeat: false,
+                modifiers: egui::Modifiers::NONE,
+            });
+        }
+        if self.mode == "ruler-source-wheel"
+            && self.frames == 7
+            && let Some(r) = self.app.regions.iter().find(|r| r.name == "ruler-sources")
+        {
+            input
+                .events
+                .push(egui::Event::PointerMoved(r.rect.center()));
+            input.events.push(egui::Event::MouseWheel {
+                unit: egui::MouseWheelUnit::Line,
+                delta: egui::vec2(0., -40.),
                 modifiers: egui::Modifiers::NONE,
             });
         }
@@ -371,6 +386,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "ruler-sources",
             "ruler-source-keyboard",
             "ruler-source-list",
+            "ruler-source-wheel",
             "collapsed",
             "temporary",
             "view",
@@ -390,7 +406,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ]
         .contains(&args[2].as_str())
     {
-        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|styles-modify|styles-following|styles-create|styles-rename|styles-delete|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|paragraph|indent-layout|ruler-keyboard|ruler-mixed|ruler-reset|ruler-reset-single|ruler-sources|ruler-source-keyboard|ruler-source-list|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
+        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|styles-modify|styles-following|styles-create|styles-rename|styles-delete|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|paragraph|indent-layout|ruler-keyboard|ruler-mixed|ruler-reset|ruler-reset-single|ruler-sources|ruler-source-keyboard|ruler-source-list|ruler-source-wheel|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
     }
     let path = std::env::var("BREAKFREE_CAPTURE_TO")
         .map_err(|_| "Set BREAKFREE_CAPTURE_TO to an output PNG path")?;
@@ -437,6 +453,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             | "ruler-sources"
             | "ruler-source-keyboard"
             | "ruler-source-list"
+            | "ruler-source-wheel"
     ) {
         let mut session = Session::default();
         let sample =
@@ -460,7 +477,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         if matches!(
             args[2].as_str(),
-            "ruler-sources" | "ruler-source-keyboard" | "ruler-source-list"
+            "ruler-sources" | "ruler-source-keyboard" | "ruler-source-list" | "ruler-source-wheel"
         ) {
             session
                 .editor
@@ -474,7 +491,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             session.editor.document.paragraphs[0].paragraph_style =
                 breakfree_docs::model::ParagraphStyle::Heading1;
         }
-        if args[2] == "ruler-source-list" {
+        if matches!(args[2].as_str(), "ruler-source-list" | "ruler-source-wheel") {
             session = Session::default();
             session.editor.replace(
                 0,
@@ -620,11 +637,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 | "ruler-reset-single"
                 | "ruler-sources"
                 | "ruler-source-keyboard"
-                | "ruler-source-list" => {
+                | "ruler-source-list"
+                | "ruler-source-wheel" => {
                     if mode == "ruler-mixed"
                         || matches!(
                             mode.as_str(),
-                            "ruler-sources" | "ruler-source-keyboard" | "ruler-source-list"
+                            "ruler-sources"
+                                | "ruler-source-keyboard"
+                                | "ruler-source-list"
+                                | "ruler-source-wheel"
                         )
                     {
                         app.execute(Action::SelectAll, &cc.egui_ctx);

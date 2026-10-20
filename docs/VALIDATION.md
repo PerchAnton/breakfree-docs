@@ -8,14 +8,14 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.54**. Historical evidence retains its scope.
+Current local checkpoint: **0.1.0-alpha.55**. Historical evidence retains its scope.
 
 | Local check | Observed result |
 | --- | --- |
-| Full / no-default-features tests | 298 / 149 passed; full source lists, scroll bounds/reopening and draft-preserving keyboard inspection checked |
+| Full / no-default-features tests | 300 / 149 passed; wheel units/bounds, pointer scope, residual scroll isolation and draft/history checked |
 | fmt / Clippy | Passed; normal/capture all-target checks with warnings denied |
 | Release builds | Native binary and capture harness passed without Office/sibling inputs |
-| CLI | Version/capabilities report alpha.54; existing CLI subprocess tests pass |
+| CLI | Version/capabilities report alpha.55; existing CLI subprocess tests pass |
 | Repository/artwork/YAML/whitespace | Passed |
 | Native rendering | Keyboard ruler sources inspected at 1366 × 900 / 640 × 480 DIP |
 | Native input | Not repeated this iteration; previous automation lost its window. CPU widget events are separate evidence |
@@ -1433,3 +1433,20 @@ ordinary OS keyboard, physical DPI, IME, accessibility or Windows/Word acceptanc
 Windows remains deferred. No format/dependency/license change; native v13 and
 protocol/settings v1 remain unchanged. Alpha.53 CI succeeded; current CI is
 recorded separately in the journal.
+
+
+## Alpha.55 source-wheel validation
+
+2026-10-20, macOS arm64 / Rust 1.99.1: 300 full and 149 core tests.
+The actual-widget matrix at synthetic scales 1/1.25/1.5 checks point/line/page
+units, direction, upper/lower bounds, hover outside the panel, missing pointer,
+horizontal and Ctrl-wheel input. The canvas rectangle stays fixed throughout
+inspection and 90 frames after dismissal; a fresh document wheel event works.
+A separate reset-preview case verifies scroll without mutation, pointer takeover
+cancellation and keyboard dismissal followed by a single commit/Undo/Redo.
+
+Native capture fixtures at 1366 × 900 and 640 × 480 DIP open F1 and inject a
+wheel event over the panel to reach the last source. They establish rendering
+only, not ordinary OS mouse/trackpad behavior or Windows/Word equivalence.
+Windows remains deferred. Native v13, protocol/settings v1, dependencies and
+license are unchanged. Alpha.54 CI succeeded; current CI is recorded separately.
