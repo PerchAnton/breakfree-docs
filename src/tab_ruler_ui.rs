@@ -26,17 +26,13 @@ impl DocsApp {
                 return true;
             }
             self.rulers = true;
-            let (index, _) = self
-                .session
-                .editor
-                .document
-                .locate(self.session.editor.selection.0)
-                .unwrap();
-            if let Some(value) = self.session.editor.document.paragraphs[index]
-                .spacing
-                .left_tab_stops_half_points
-                .first()
-                .copied()
+            if let Some((value, _)) = crate::tab_ruler::positions(
+                &self.session.editor.document,
+                self.session.editor.selection,
+            )
+            .unwrap_or_default()
+            .first()
+            .copied()
             {
                 self.start_tab_keyboard(ctx, value);
             } else {
@@ -125,19 +121,16 @@ impl DocsApp {
                         self.fail(result);
                         self.sync_view();
                         if success && key == Key::Tab && !deleting {
-                            let (index, _) = self
-                                .session
-                                .editor
-                                .document
-                                .locate(self.session.editor.selection.0)
-                                .unwrap();
-                            let stops = &self.session.editor.document.paragraphs[index]
-                                .spacing
-                                .left_tab_stops_half_points;
-                            let current = stops.iter().position(|p| *p == position).unwrap();
+                            let stops = crate::tab_ruler::positions(
+                                &self.session.editor.document,
+                                self.session.editor.selection,
+                            )
+                            .unwrap();
+                            let current = stops.iter().position(|(p, _)| *p == position).unwrap();
                             let next = stops[(current
                                 + if modifiers.shift { stops.len() - 1 } else { 1 })
-                                % stops.len()];
+                                % stops.len()]
+                            .0;
                             self.start_tab_keyboard(ctx, next);
                         }
                         break;
@@ -237,26 +230,22 @@ impl DocsApp {
         if end > start && offset == 0 && last > first {
             last -= 1;
         }
-        let positions = model.paragraphs[first]
-            .spacing
-            .left_tab_stops_half_points
-            .clone();
-        let mixed = model.paragraphs[first..=last]
-            .iter()
-            .any(|p| p.spacing.left_tab_stops_half_points != positions);
+        let positions = crate::tab_ruler::positions(model, (start, end)).unwrap_or_default();
+        let total = last - first + 1;
         let unit = 14.6667 * zoom / 22.;
         let enabled = self.enabled(Action::TabPositions)
             && !self.composing
             && !self.backstage
             && self.ruler_key_focus.is_none();
-        for value in positions {
+        for (value, coverage) in positions {
+            let mixed = coverage != total;
             let x = left + f32::from(value) * unit;
             if x < left || x > right {
                 continue;
             }
             let target = Rect::from_center_size(pos2(x, rect.top() + 20.), vec2(10., 8.));
             let collision = indent_targets.iter().any(|r| r.intersects(target));
-            let available = enabled && !mixed && !collision;
+            let available = enabled && !collision;
             self.record(&format!("ruler-tab-{value}"), target);
             let response = ui.interact(
                 target,
@@ -328,7 +317,7 @@ impl DocsApp {
                     ui.close();
                 }
             });
-            response.on_hover_text(format!("Left tab: {:.1} pt. {}",f32::from(value)/2.,if mixed {"Different lists selected; edit them through Tab positions."} else if collision {"Overlaps an indent marker; use Ctrl+Alt+F8 or Tab positions to edit."} else {"Drag to preview; release to apply; Escape cancels. Release outside the ruler cancels. Ctrl+Alt+F8 selects tabs; arrows move, Shift accelerates, Enter applies, Tab applies and selects next, Delete previews removal, Escape cancels. Right-click to delete."}));
+            response.on_hover_text(format!("Left tab: {:.1} pt. Present in {coverage}/{total} selected paragraphs. Movement/deletion affects only paragraphs containing this stop. {}",f32::from(value)/2.,if collision {"Overlaps an indent marker; use Ctrl+Alt+F8 or Tab positions to edit."} else {"Drag to preview; release to apply; Escape cancels. Release outside the ruler cancels. Ctrl+Alt+F8 selects tabs; arrows move, Shift accelerates, Enter applies, Tab applies and selects next, Delete previews removal, Escape cancels. Right-click to delete."}));
         }
         if let Some(drag) = &mut self.tab_ruler_drag {
             if !drag.keyboard

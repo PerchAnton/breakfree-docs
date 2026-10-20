@@ -9439,7 +9439,7 @@ fn tab_ruler_cancellation_collision_and_input_isolation() {
 }
 
 #[test]
-fn tab_ruler_mixed_and_indent_overlap_do_not_start_tab_drag() {
+fn tab_ruler_partial_marker_drags_but_indent_overlap_keeps_priority() {
     let (ctx, mut app) = setup();
     app.session
         .editor
@@ -9466,7 +9466,7 @@ fn tab_ruler_mixed_and_indent_overlap_do_not_start_tab_drag() {
         [1366., 900.],
         1.,
     );
-    assert!(app.tab_ruler_drag.is_none());
+    assert!(app.tab_ruler_drag.is_some());
     frame(
         &ctx,
         &mut app,
@@ -9640,8 +9640,14 @@ fn tab_keyboard_entry_guards_reverse_traversal_and_redo() {
     app.session.editor.selection = (0, 3);
     app.sync_view();
     frame(&ctx, &mut app, vec![enter()], [1366., 900.], 1.);
-    assert!(app.tab_ruler_drag.is_none());
-    assert!(app.error.take().unwrap().contains("Different tab lists"));
+    assert!(app.tab_ruler_drag.is_some());
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Escape, false)],
+        [1366., 900.],
+        1.,
+    );
     app.session.editor.selection = (0, 0);
     frame(&ctx, &mut app, vec![enter()], [1366., 900.], 1.);
     frame(
@@ -9802,7 +9808,7 @@ fn ruler_tab_context_delete_and_menu_dismissal() {
 }
 
 #[test]
-fn ruler_tab_creation_rejects_mixed_duplicate_and_outside_release() {
+fn ruler_tab_creation_fills_mixed_lists_rejects_duplicate_and_outside_release() {
     let (ctx, mut app) = setup();
     app.session.editor.replace(0, 0, "a\nb", "Fixture").unwrap();
     app.session
@@ -9833,13 +9839,19 @@ fn ruler_tab_creation_rejects_mixed_duplicate_and_outside_release() {
             [1366., 900.],
             1.,
         );
-        assert!(
-            app.error.take().is_some(),
-            "mixed={mixed}, stops={:?}",
-            app.session.editor.document.paragraphs[0]
-                .spacing
-                .left_tab_stops_half_points
-        );
+        if mixed {
+            assert!(app.error.is_none());
+            assert_eq!(
+                app.session.editor.document.paragraphs[1]
+                    .spacing
+                    .left_tab_stops_half_points,
+                [180]
+            );
+            assert_eq!(app.session.editor.undo_stack.len(), count + 1);
+            app.session.editor.undo();
+        } else {
+            assert!(app.error.take().is_some());
+        }
         assert_eq!(app.session.editor.document, before);
         assert_eq!(app.session.editor.undo_stack.len(), count);
     }
@@ -9862,4 +9874,79 @@ fn ruler_tab_creation_rejects_mixed_duplicate_and_outside_release() {
         1.,
     );
     assert_eq!(app.session.editor.document, before);
+}
+
+#[test]
+fn mixed_tab_union_keyboard_edits_later_paragraph_without_flattening() {
+    for dpi in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        let size = [1366. * dpi, 900. * dpi];
+        app.session.editor.replace(0, 0, "a\nb", "Fixture").unwrap();
+        app.session
+            .editor
+            .set_left_tab_stops(2, 2, vec![144, 288])
+            .unwrap();
+        app.session.editor.selection = (0, 3);
+        app.sync_view();
+        frame(&ctx, &mut app, vec![], size, dpi);
+        assert!(app.regions.iter().any(|r| r.name == "ruler-tab-144"));
+        let before = app.session.editor.document.clone();
+        let count = app.session.editor.undo_stack.len();
+        frame(
+            &ctx,
+            &mut app,
+            vec![ruler_key(Key::F8, Modifiers::CTRL | Modifiers::ALT)],
+            size,
+            dpi,
+        );
+        assert_eq!(app.tab_ruler_drag.as_ref().unwrap().draft.position, 144);
+        frame(
+            &ctx,
+            &mut app,
+            vec![key(Key::ArrowRight, false), key(Key::Tab, false)],
+            size,
+            dpi,
+        );
+        assert_eq!(app.tab_ruler_drag.as_ref().unwrap().draft.position, 288);
+        assert!(
+            app.session.editor.document.paragraphs[0]
+                .spacing
+                .left_tab_stops_half_points
+                .is_empty()
+        );
+        assert_eq!(
+            app.session.editor.document.paragraphs[1]
+                .spacing
+                .left_tab_stops_half_points,
+            [145, 288]
+        );
+        assert_eq!(app.session.editor.undo_stack.len(), count + 1);
+        frame(&ctx, &mut app, vec![key(Key::Escape, false)], size, dpi);
+        app.session.editor.undo();
+        assert_eq!(app.session.editor.document, before);
+        app.session.editor.redo();
+        let after = app.session.editor.document.clone();
+        frame(
+            &ctx,
+            &mut app,
+            vec![ruler_key(Key::F8, Modifiers::CTRL | Modifiers::ALT)],
+            size,
+            dpi,
+        );
+        frame(
+            &ctx,
+            &mut app,
+            vec![key(Key::Delete, false), key(Key::Enter, false)],
+            size,
+            dpi,
+        );
+        assert_eq!(
+            app.session.editor.document.paragraphs[1]
+                .spacing
+                .left_tab_stops_half_points,
+            [288]
+        );
+        app.session.editor.undo();
+        assert_eq!(app.session.editor.document, after);
+    }
 }

@@ -143,3 +143,28 @@ The existing dialog remains the keyboard route for creating positions, and the
 route for editing overlapping/off-column markers with the pointer. Native v15,
 palette, icons and ruler dimensions remain unchanged. Windows, physical OS input,
 VoiceOver and matched reference acceptance are not established by widget tests.
+
+## Alpha.68: mixed-list ruler editing
+
+The ruler and Ctrl+Alt+F8 traversal use the sorted union of positions in the
+half-open paragraph selection, including positions absent from its first paragraph.
+Partial-coverage markers retain the existing gray tone; tooltips report N/M selected
+paragraphs. Hover/active accents, indent hit priority, scale and icons are unchanged.
+
+Creation adds a position to each selected paragraph where it is missing, leaving
+existing occurrences and all other positions untouched. If all paragraphs already
+have that position, show an explicit message without modifying history. Move and
+remove affect only paragraphs containing the original source position. A destination
+in a paragraph without that source is not a collision. A destination conflict in
+any affected paragraph, or a 32-stop capacity failure when adding, rejects the whole
+operation. Failed preview returns to the original document, never a partial result.
+
+The shared command commits distinct per-paragraph lists as one Undo/Redo, retaining
+other geometry, styles, text and exclusive-boundary paragraphs. Stale document or
+selection rejects acceptance. Keyboard traversal follows the resulting sorted union;
+delete still exits after acceptance. The Tab positions dialog intentionally retains
+its explicit whole-list replacement policy. Native v15 remains unchanged.
+
+Pointer/keyboard preview, Escape/focus/transform cancellation and outside-release
+behavior remain as before. Physical input, VoiceOver, Windows DPI and matched Word
+acceptance remain deferred; this is an explicit Docs policy, not claimed equivalence.

@@ -1720,3 +1720,25 @@ and command on one shell line). Injected harness keys are not physical input evi
 
 Reproduce captures with the existing capture example and mode `tab-delete`.
 Injected events verify rendered state, not physical input or Windows DPI behavior.
+
+## Alpha.68 mixed-list ruler editing validation
+
+2026-10-20, macOS arm64, Rust 1.99.1. Alpha.67 approved; alpha.68 awaits approval.
+
+- 350 full / 165 core-only tests pass. Mixed-list union, first-paragraph-empty
+  selection, pointer entry and later-paragraph keyboard traversal/editing are covered.
+- Create adds missing occurrences; move/delete preserve nonowners and unrelated
+  positions. Tests verify one history operation, exact Undo/Redo, half-open range,
+  v15 roundtrip, stale selection, capacity failure and destination conflict without
+  partial preview or commit. A destination only in a nonowner is allowed.
+- Updated earlier mixed-list rejection tests to the new explicit policy; homogeneous
+  duplicate/invalid/no-op, cancellation, pointer priority and dialog tests remain.
+  Synthetic widget scales 100/125/150% do not establish Windows acceptance.
+- fmt, normal/capture all-target Clippy, release/capture builds, documentation,
+  artwork, YAML and whitespace pass. Isolated executable CLI reports alpha.68.
+- Two native captures (1366 × 900, 640 × 480 DIP) inspected: four union positions
+  visible, partial markers gray, active marker accented; exact preview fits and the
+  first paragraph keeps its separate grid. Palette/icons and ribbon unchanged.
+- Capture mode `tab-mixed` explicitly selects all fixture paragraphs before entering
+  keyboard preview. No physical OS keyboard/IME, Word comparison or VoiceOver speech
+  acceptance this iteration. VoiceOver final review and Windows remain deferred.

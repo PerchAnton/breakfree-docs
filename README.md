@@ -829,3 +829,18 @@ Enter or Tab applies once and exits (including when the last tab is removed).
 Escape cancels; arrows return to movement preview. Deleting after movement removes
 the original source in one transaction, without committing an intermediate move.
 Exact removal text appears below the ruler. No text input reaches the document.
+
+## Alpha.68: mixed-list ruler editing
+
+The ruler and Ctrl+Alt+F8 traversal use the sorted union of positions in the
+half-open paragraph selection, including positions absent from its first paragraph.
+Partial-coverage markers retain the existing gray tone; tooltips report N/M selected
+paragraphs. Hover/active accents, indent hit priority, scale and icons are unchanged.
+
+Creation adds a position to each selected paragraph where it is missing, leaving
+existing occurrences and all other positions untouched. If all paragraphs already
+have that position, show an explicit message without modifying history. Move and
+remove affect only paragraphs containing the original source position. A destination
+in a paragraph without that source is not a collision. A destination conflict in
+any affected paragraph, or a 32-stop capacity failure when adding, rejects the whole
+operation. Failed preview returns to the original document, never a partial result.

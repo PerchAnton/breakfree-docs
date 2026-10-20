@@ -18,7 +18,10 @@ struct Capture {
 
 impl eframe::App for Capture {
     fn raw_input_hook(&mut self, _ctx: &egui::Context, input: &mut egui::RawInput) {
-        if matches!(self.mode.as_str(), "tab-keyboard" | "tab-delete") {
+        if matches!(
+            self.mode.as_str(),
+            "tab-keyboard" | "tab-delete" | "tab-mixed"
+        ) {
             input.focused = true;
             if matches!(self.frames, 3 | 5) {
                 input.events.push(egui::Event::Key {
@@ -41,6 +44,9 @@ impl eframe::App for Capture {
                     },
                 });
             }
+        }
+        if self.mode == "tab-mixed" && self.frames == 3 {
+            self.app.execute(Action::SelectAll, _ctx);
         }
         // Deterministic render fixture, including focus; this does not prove OS input.
         if self.mode == "ruler-sources" {
@@ -444,6 +450,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "explicit-tabs",
             "tab-keyboard",
             "tab-delete",
+            "tab-mixed",
             "tab-positions",
             "tab-dialog",
             "styles",
@@ -537,18 +544,32 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     let session = if matches!(
         args[2].as_str(),
-        "tabs" | "tab-dialog" | "explicit-tabs" | "tab-keyboard" | "tab-delete" | "tab-positions"
+        "tabs"
+            | "tab-dialog"
+            | "explicit-tabs"
+            | "tab-keyboard"
+            | "tab-delete"
+            | "tab-mixed"
+            | "tab-positions"
     ) {
         let mut session = Session::default();
         session.editor.replace(0, 0, "Name\t\tValue\nEnglish\t\t36 pt grid\nУкраїна\t\tТабуляція\nРусский\t\tТабуляция\nCombining e\u{301}\t\tEnd", "Tab fixture")?;
         if matches!(
             args[2].as_str(),
-            "explicit-tabs" | "tab-keyboard" | "tab-delete" | "tab-positions"
+            "explicit-tabs" | "tab-keyboard" | "tab-delete" | "tab-mixed" | "tab-positions"
         ) {
             let end = session.editor.document.text().chars().count();
             session
                 .editor
                 .set_left_tab_stops(0, end, vec![144, 288, 432])?;
+        }
+        if args[2] == "tab-mixed" {
+            session.editor.set_left_tab_stops(0, 0, vec![])?;
+            let start = session.editor.document.text().find("Україна").unwrap();
+            session
+                .editor
+                .set_left_tab_stops(start, start, vec![180, 288])?;
+            session.editor.selection = (0, session.editor.document.text().chars().count());
         }
         session
     } else if matches!(

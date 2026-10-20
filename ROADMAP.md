@@ -385,4 +385,5 @@ Use public specifications and original test cases, not copied application code. 
 - [x] Alpha.65: visible existing left-stop markers with isolated drag preview, cancellation and one shared commit; common-list requirement and indent priority tested locally.
 - [x] Alpha.66: keyboard ruler tab selection, exact preview, fine/coarse movement, cancellation and one shared Undo/Redo (local widget checks).
 - [x] Alpha.67: ruler click creation, marker-menu deletion and keyboard deletion preview, cancellation and one shared Undo/Redo (local checks).
-- [ ] Next: review mixed-list ruler editing policy; other tab types, leaders and style inheritance remain separate increments.
+- [x] Alpha.68: union markers and coverage, mixed-list add/move/remove preserving unrelated positions, conflict rejection and one Undo/Redo (local checks).
+- [ ] Next: keyboard creation of ruler tab positions; other tab types, leaders and style inheritance remain separate increments.

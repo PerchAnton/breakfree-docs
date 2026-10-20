@@ -1971,3 +1971,35 @@ Native macOS deletion-preview captures (injected keys, not physical keyboard evi
 | :--- | :--- | :--- |
 | 1366 × 900 | [Preview](screenshots/rust-tab-delete-alpha67-macos.png) | `e39a3d8886c8cad17020d517e663760415171e3956e235178f7d5a5aa7f12457` |
 | 640 × 480 | [Preview](screenshots/rust-tab-delete-alpha67-compact-macos.png) | `992ee3606d2ae64e306f6a3edc6e449524425c87352f59a2e6b0d60086ed23dc` |
+
+## Alpha.68: mixed-list ruler editing
+
+The ruler and Ctrl+Alt+F8 traversal use the sorted union of positions in the
+half-open paragraph selection, including positions absent from its first paragraph.
+Partial-coverage markers retain the existing gray tone; tooltips report N/M selected
+paragraphs. Hover/active accents, indent hit priority, scale and icons are unchanged.
+
+Creation adds a position to each selected paragraph where it is missing, leaving
+existing occurrences and all other positions untouched. If all paragraphs already
+have that position, show an explicit message without modifying history. Move and
+remove affect only paragraphs containing the original source position. A destination
+in a paragraph without that source is not a collision. A destination conflict in
+any affected paragraph, or a 32-stop capacity failure when adding, rejects the whole
+operation. Failed preview returns to the original document, never a partial result.
+
+The shared command commits distinct per-paragraph lists as one Undo/Redo, retaining
+other geometry, styles, text and exclusive-boundary paragraphs. Stale document or
+selection rejects acceptance. Keyboard traversal follows the resulting sorted union;
+delete still exits after acceptance. The Tab positions dialog intentionally retains
+its explicit whole-list replacement policy. Native v15 remains unchanged.
+
+Pointer/keyboard preview, Escape/focus/transform cancellation and outside-release
+behavior remain as before. Physical input, VoiceOver, Windows DPI and matched Word
+acceptance remain deferred; this is an explicit Docs policy, not claimed equivalence.
+
+Native macOS mixed-selection captures (injected keys; physical input not verified):
+
+| Size (DIP) | Capture | SHA-256 |
+| :--- | :--- | :--- |
+| 1366 × 900 | [Preview](screenshots/rust-tab-mixed-alpha68-macos.png) | `c137ca1af1db65563c712b1e1820bdbf288504c4ec80f8317f7fa27738809fa3` |
+| 640 × 480 | [Preview](screenshots/rust-tab-mixed-alpha68-compact-macos.png) | `24b64716856bc35c71157d2b77b11e461c5b9326ac12c105121832c94cd944e1` |

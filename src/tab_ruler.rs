@@ -5,7 +5,6 @@ pub struct Draft {
     original: Document,
     selection: (usize, usize),
     source: Option<u16>,
-    positions: Vec<u16>,
     first: usize,
     last: usize,
     valid: bool,
@@ -36,25 +35,18 @@ impl Draft {
         if end > start && offset == 0 && last > first {
             last -= 1;
         }
-        let positions = editor.document.paragraphs[first]
-            .spacing
-            .left_tab_stops_half_points
-            .clone();
-        if source.is_some_and(|source| !positions.contains(&source)) {
+        if source.is_some_and(|value| {
+            !editor.document.paragraphs[first..=last]
+                .iter()
+                .any(|p| p.spacing.left_tab_stops_half_points.contains(&value))
+        }) {
             return Err("Tab position no longer exists.".into());
-        }
-        if editor.document.paragraphs[first..=last]
-            .iter()
-            .any(|p| p.spacing.left_tab_stops_half_points != positions)
-        {
-            return Err("Different tab lists: use the Tab positions dialog.".into());
         }
         Ok(Self {
             original: editor.document.clone(),
             preview: editor.document.clone(),
             selection: editor.selection,
             source,
-            positions,
             first,
             last,
             valid: true,
@@ -70,19 +62,30 @@ impl Draft {
             return Err("Invalid tab position.".into());
         }
         let position = half_points.round().clamp(1., 2880.) as u16;
-        if Some(position) != self.source && self.positions.contains(&position) {
-            return Err(
-                "A tab already occupies this position. Choose another position or cancel.".into(),
-            );
+        let mut preview = self.original.clone();
+        let mut added = false;
+        for paragraph in &mut preview.paragraphs[self.first..=self.last] {
+            let positions = &mut paragraph.spacing.left_tab_stops_half_points;
+            if let Some(source) = self.source {
+                if !positions.contains(&source) {
+                    continue;
+                }
+                if position != source && positions.contains(&position) {
+                    return Err("A selected paragraph already has a tab at this destination. Choose another position or cancel.".into());
+                }
+                positions.retain(|p| *p != source);
+            } else if positions.contains(&position) {
+                continue;
+            }
+            positions.push(position);
+            positions.sort_unstable();
+            added = true;
         }
-        let mut positions = self.positions.clone();
-        positions.retain(|p| Some(*p) != self.source);
-        positions.push(position);
-        positions.sort_unstable();
-        for p in &mut self.preview.paragraphs[self.first..=self.last] {
-            p.spacing.left_tab_stops_half_points = positions.clone();
+        if self.source.is_none() && !added {
+            return Err("All selected paragraphs already have this tab.".into());
         }
-        self.preview.validate()?;
+        preview.validate()?;
+        self.preview = preview;
         self.position = position;
         self.valid = true;
         Ok(())
@@ -109,13 +112,32 @@ impl Draft {
         if editor.document != self.original || editor.selection != self.selection {
             return Err("Tab drag cancelled because the document or selection changed.".into());
         }
-        editor.set_left_tab_stops(
+        editor.set_paragraph_tab_lists(
             self.selection.0,
             self.selection.1,
-            self.preview.paragraphs[self.first]
-                .spacing
-                .left_tab_stops_half_points
-                .clone(),
+            self.preview.paragraphs[self.first..=self.last]
+                .iter()
+                .map(|p| p.spacing.left_tab_stops_half_points.clone())
+                .collect(),
         )
     }
+}
+
+/// Sorted union with coverage counts for the half-open paragraph selection.
+pub fn positions(document: &Document, selection: (usize, usize)) -> Result<Vec<(u16, usize)>> {
+    if selection.0 > selection.1 {
+        return Err("Invalid tab ruler selection.".into());
+    }
+    let (first, _) = document.locate(selection.0)?;
+    let (mut last, offset) = document.locate(selection.1)?;
+    if selection.1 > selection.0 && offset == 0 && last > first {
+        last -= 1;
+    }
+    let mut counts = std::collections::BTreeMap::new();
+    for paragraph in &document.paragraphs[first..=last] {
+        for position in &paragraph.spacing.left_tab_stops_half_points {
+            *counts.entry(*position).or_insert(0) += 1;
+        }
+    }
+    Ok(counts.into_iter().collect())
 }

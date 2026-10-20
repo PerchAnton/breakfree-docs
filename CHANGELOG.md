@@ -3,6 +3,16 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.68 — 2026-10-20
+
+- Show the sorted union of selected paragraph tab positions, with partial coverage
+  in marker tooltips. Pointer and keyboard routes can edit mixed lists.
+- Add a position only where missing; move/remove only where the source exists.
+  Preserve every unrelated stop and commit the whole selection in one Undo/Redo.
+- Reject destination/capacity conflicts without partial edits; retain preview,
+  cancel, half-open selection and stale-source protection. Native v15, palette,
+  icons and dimensions unchanged. Windows and VoiceOver remain deferred.
+
 ## 0.1.0-alpha.67 — 2026-10-20
 
 - Click empty horizontal ruler space within the text column to create a left tab;

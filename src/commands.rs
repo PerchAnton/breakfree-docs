@@ -590,6 +590,31 @@ impl Editor {
         Ok(())
     }
 
+    /// Commit distinct selected-paragraph lists together without flattening geometry.
+    pub(crate) fn set_paragraph_tab_lists(
+        &mut self,
+        start: usize,
+        end: usize,
+        lists: Vec<Vec<u16>>,
+    ) -> Result<()> {
+        validate_range(&self.document.text(), start, end)?;
+        let (first, _) = self.document.locate(start)?;
+        let (mut last, offset) = self.document.locate(end)?;
+        if end > start && offset == 0 && last > first {
+            last -= 1;
+        }
+        if lists.len() != last - first + 1 {
+            return Err("Tab list selection mismatch.".into());
+        }
+        let mut result = self.document.clone();
+        for (paragraph, positions) in result.paragraphs[first..=last].iter_mut().zip(lists) {
+            paragraph.spacing.left_tab_stops_half_points = positions;
+        }
+        result.validate()?;
+        self.commit(result, "Left tab stops", (start, end), self.typing_style);
+        Ok(())
+    }
+
     /// Set a direct tab interval, or restore the default grid, in one transaction.
     pub fn set_tab_interval(
         &mut self,
