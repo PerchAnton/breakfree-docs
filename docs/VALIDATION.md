@@ -1527,3 +1527,25 @@ Remaining acceptance: a sustained VoiceOver session must read all sources, follo
 menu focus, announce unavailable commands and preview changes, return safely, and
 verify speech verbosity for long mixed selections. Windows/Narrator/NVDA and
 100/125/150% native display checks remain deferred by owner instruction.
+
+## Alpha.59 VoiceOver acceptance deferral
+
+2026-10-20: a direct VoiceOver launch attempt timed out. System Settings then
+briefly reported VoiceOver on and later off; VoiceOver Utility opened and showed
+the caption panel already enabled. The owner clarified in chat that they were
+manually switching VoiceOver off and requested postponement until the final
+review. The earlier observed deactivation therefore does **not** establish a
+VoiceOver crash, OS failure or editor defect. No further activation was attempted.
+
+Speech, VoiceOver cursor navigation, menu announcements and long-source verbosity
+remain **not verified**, now deferred by owner request. Alpha.58 native AX and
+ordinary keyboard evidence remains valid within its documented scope. The final
+accessibility review must establish sustained speech/caption output, traverse all
+four markers and all eight menu commands, inspect mixed-source content, distinguish
+preview/disabled states, cancel without changes and return to document focus.
+
+This increment changes version and documentation only; runtime behavior, design,
+palette/icons and native v13 are unchanged. The standard local Cargo checks and
+repository validation were rerun for alpha.59; 309 full / 149 core tests pass.
+Windows acceptance remains separately deferred. No native VoiceOver acceptance
+claim is based on these automated checks.

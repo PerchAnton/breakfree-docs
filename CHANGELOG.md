@@ -3,6 +3,12 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.59 — 2026-10-20
+
+- Record the owner's decision to postpone VoiceOver speech/navigation acceptance until the final accessibility review. The owner clarified that VoiceOver was manually turned off; observed deactivation is not evidence of an OS or application failure.
+- Preserve the alpha.58 AccessKit and native-keyboard evidence without claiming speech acceptance. No editor behavior, design, palette, icons or file-format changes. Windows remains deferred.
+- Alpha.58 approved; alpha.59 documentation/validation increment awaits approval.
+
 ## 0.1.0-alpha.58 — 2026-10-20
 
 - Expose full indent-source information on the focused marker while inspection is open, with keyboard instructions and an explicit uncommitted-preview indication for assistive technology.

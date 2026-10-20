@@ -746,3 +746,6 @@ assistive technology. F1 exposes the full source list through the focused marker
 accessible name; it does not depend on visually scrolling every row. Accessibility
 Focus/Click enters marker control without editing. Native speech acceptance is
 still open; see [validation](docs/VALIDATION.md#alpha58-ruler-accessibility-validation).
+
+VoiceOver speech/cursor acceptance is postponed to the final accessibility review
+by owner request (alpha.59). Existing keyboard/AX checks do not substitute for it.

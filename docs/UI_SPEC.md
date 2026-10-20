@@ -1791,3 +1791,8 @@ one complete marker description; verbosity and speech interruption require a
 real screen-reader acceptance session. Native macOS AX and keyboard routing were
 inspected on alpha.58; a screenshot of the normal release application confirmed
 unchanged appearance. VoiceOver speech and Windows acceptance remain unverified.
+
+Alpha.59: the owner deferred VoiceOver speech and cursor review until the final
+accessibility stage. Manual deactivation explains the observed switch change;
+it is not evidence of a crash. Preserve the alpha.58 interface and keep native
+speech acceptance open.

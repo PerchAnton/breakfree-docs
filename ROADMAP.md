@@ -370,7 +370,7 @@ Use public specifications and original test cases, not copied application code. 
 - [x] Alpha.55: pointer-wheel source inspection, viewport scoping, residual-scroll isolation and draft cancellation/commit regressions (local widget tests).
 - [x] Alpha.56: ruler context-menu source inspection for all four markers, focus restoration, read-only behavior and unchanged reset/cancellation policy (local widget tests).
 - [x] Alpha.57: Shift+F10 marker context menu, explicit keyboard navigation/activation, preview-preserving dismissal and cleanup on focus loss/resize (local widget tests).
-- [ ] Next: inspect and navigate ruler source panels with assistive technology when a suitable native test environment is available.
+- [ ] Final accessibility review: inspect and navigate ruler source panels with assistive technology; deferred by the owner in alpha.59.
 
 - [x] Alpha.58: AccessKit marker activation/full-source/preview descriptions, disabled states and menu focus/action regressions; native macOS AX and keyboard smoke verified.
-- [ ] Sustained screen-reader speech/cursor acceptance, including long source lists; alpha.58 could not establish a running VoiceOver session.
+- [ ] Sustained screen-reader speech/cursor acceptance, including long source lists; deferred to the final review by owner instruction in alpha.59. Observed deactivation was manual, not a confirmed system failure.
