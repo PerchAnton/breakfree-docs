@@ -125,7 +125,7 @@ impl TabDialog {
                 if self.explicit_positions {
                     ui.small("Explicit positions take precedence over this interval.");
                 }
-                ui.small("Position editing and style inheritance are planned.");
+                ui.small("Edit explicit positions through Paragraph → Tab positions.");
                 if self.error {
                     ui.colored_label(Color32::DARK_RED, "Enter 0.5–144 pt in half-point steps.");
                 }

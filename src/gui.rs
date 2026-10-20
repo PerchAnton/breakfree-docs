@@ -42,6 +42,9 @@ use keytips::KeyTips;
 
 #[path = "tab_dialog.rs"]
 mod tab_dialog;
+#[path = "tab_positions_dialog.rs"]
+mod tab_positions_dialog;
+use tab_positions_dialog::{PositionsDialog, PositionsOutcome};
 #[path = "zoom_dialog.rs"]
 mod zoom_dialog;
 use tab_dialog::{TabDialog, TabOutcome};
@@ -90,6 +93,7 @@ pub enum Action {
     FontDialog,
     ParagraphSpacing,
     TabInterval,
+    TabPositions,
     IncreaseIndent,
     DecreaseIndent,
     ModifyStyle,
@@ -142,6 +146,7 @@ impl Action {
             Self::DecreaseIndent => "Decrease indent",
             Self::ParagraphSpacing => "Paragraph spacing",
             Self::TabInterval => "Tab interval",
+            Self::TabPositions => "Tab positions",
             Self::ModifyStyle => "Modify style…",
             Self::CreateStyle => "Create style…",
             Self::ModifyCharacterStyle => "Modify character style…",
@@ -192,6 +197,7 @@ const COMMANDS: &[Action] = &[
     Action::FontDialog,
     Action::ParagraphSpacing,
     Action::TabInterval,
+    Action::TabPositions,
     Action::IncreaseIndent,
     Action::DecreaseIndent,
     Action::ModifyStyle,
@@ -239,6 +245,7 @@ pub struct DocsApp {
     more_tabs_id: Option<Id>,
     zoom_dialog: Option<ZoomDialog>,
     tab_dialog: Option<TabDialog>,
+    tab_positions_dialog: Option<PositionsDialog>,
     quick_access: Vec<Action>,
     quick_access_below: bool,
     quick_access_targets: Vec<RibbonTarget>,
@@ -368,6 +375,7 @@ impl DocsApp {
             more_tabs_id: None,
             zoom_dialog: None,
             tab_dialog: None,
+            tab_positions_dialog: None,
             quick_access: quick_access::DEFAULT.to_vec(),
             quick_access_below: false,
             quick_access_targets: Vec::new(),
@@ -459,6 +467,7 @@ impl DocsApp {
             || self.delete_style_dialog.is_some()
             || self.zoom_dialog.is_some()
             || self.tab_dialog.is_some()
+            || self.tab_positions_dialog.is_some()
             || self.quick_reset
             || self.quick_order.is_some()
         {
@@ -476,6 +485,7 @@ impl DocsApp {
                 | Action::DeleteStyle
                 | Action::Zoom
                 | Action::TabInterval
+                | Action::TabPositions
         ) && (self.pending.is_some() || self.error.is_some())
         {
             return false;
@@ -768,6 +778,13 @@ impl DocsApp {
                 self.fail(result);
                 self.sync_view();
             }
+            Action::TabPositions => {
+                self.tab_positions_dialog = Some(PositionsDialog::new(&self.session.editor));
+                self.focus_document = false;
+                self.focus_font_size = false;
+                self.palette = false;
+                ctx.memory_mut(|m| m.surrender_focus(Id::new(EDIT_ID)));
+            }
             Action::TabInterval => {
                 self.tab_dialog = Some(TabDialog::new(&self.session.editor));
                 self.focus_document = false;
@@ -863,6 +880,7 @@ impl DocsApp {
                     | Action::DeleteStyle
                     | Action::Zoom
                     | Action::TabInterval
+                    | Action::TabPositions
                     | Action::File
             ) {
                 self.focus_document = true;
@@ -2535,6 +2553,7 @@ impl DocsApp {
             || self.delete_style_dialog.is_some()
             || self.zoom_dialog.is_some()
             || self.tab_dialog.is_some()
+            || self.tab_positions_dialog.is_some()
             || self.quick_reset
             || self.quick_order.is_some()
         {
@@ -3271,11 +3290,17 @@ impl DocsApp {
             }
         }
         if self.tab_dialog.is_none()
+            && self.tab_positions_dialog.is_none()
             && let Some(mut dialog) = self.paragraph_dialog.take()
         {
             match dialog.show(ctx, &mut self.regions) {
                 ParagraphOutcome::Open => self.paragraph_dialog = Some(dialog),
                 ParagraphOutcome::Cancel => self.sync_view(),
+                ParagraphOutcome::Positions => {
+                    self.tab_positions_dialog = Some(PositionsDialog::new(&self.session.editor));
+                    dialog.restore_focus();
+                    self.paragraph_dialog = Some(dialog);
+                }
                 ParagraphOutcome::Tabs => {
                     self.tab_dialog = Some(TabDialog::new(&self.session.editor));
                     dialog.restore_focus();
@@ -3299,6 +3324,22 @@ impl DocsApp {
                 TabOutcome::Apply(value) => {
                     let (start, end) = self.session.editor.selection;
                     let result = self.session.editor.set_tab_interval(start, end, value);
+                    self.fail(result);
+                    self.sync_view();
+                    self.focus_document = self.paragraph_dialog.is_none();
+                }
+            }
+        }
+        if let Some(mut dialog) = self.tab_positions_dialog.take() {
+            match dialog.show(ctx, &mut self.regions) {
+                PositionsOutcome::Open => self.tab_positions_dialog = Some(dialog),
+                PositionsOutcome::Cancel => self.focus_document = self.paragraph_dialog.is_none(),
+                PositionsOutcome::Apply(positions) => {
+                    let (start, end) = self.session.editor.selection;
+                    let result = self
+                        .session
+                        .editor
+                        .set_left_tab_stops(start, end, positions);
                     self.fail(result);
                     self.sync_view();
                     self.focus_document = self.paragraph_dialog.is_none();
@@ -3455,6 +3496,7 @@ impl DocsApp {
                 || self.delete_style_dialog.is_some()
                 || self.zoom_dialog.is_some()
                 || self.tab_dialog.is_some()
+                || self.tab_positions_dialog.is_some()
                 || self.quick_reset
                 || self.quick_order.is_some())
         {

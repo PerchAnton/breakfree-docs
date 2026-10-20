@@ -3,6 +3,12 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.64 — 2026-10-20
+
+- Add a native Tab positions dialog through Home → Paragraph spacing and command search. Add, update, remove or clear explicit left stops in a draft; OK commits the entire selected-paragraph change as one Undo/Redo operation.
+- Preserve mixed selections until an explicit replacement is prepared, reject duplicates/range/limit errors, and prevent unsubmitted position input from being silently discarded by OK. Cancel/Escape and no-op acceptance preserve document/history; nested paragraph drafts are retained.
+- Preserve design, palette, icons and native v15. Interactive ruler tab editing, other stop types, leaders and style inheritance remain planned. Alpha.63 approved; alpha.64 awaits approval. VoiceOver final review and Windows remain deferred.
+
 ## 0.1.0-alpha.63 — 2026-10-20
 
 - Store explicit left tab positions in native v15: up to 32 strictly increasing unique positions, 0.5–1440 pt from the text-column origin. A shared command changes selected paragraphs in one Undo/Redo operation; empty lists restore interval-only layout.

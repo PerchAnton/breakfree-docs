@@ -1869,3 +1869,24 @@ Native Windows/Word comparison and physical input/VoiceOver were not tested.
 | :--- | :--- |
 | [rust-left-tabs-alpha63-macos.png](screenshots/rust-left-tabs-alpha63-macos.png) | `9311947f80fe4775591b722c8e732e446950b9bcb6c702b6852fb8d90c2f1387` |
 | [rust-left-tabs-alpha63-compact-macos.png](screenshots/rust-left-tabs-alpha63-compact-macos.png) | `fd19cad326613d85ca1c06141dc8d8e1e1759f13b751c04f110dc1b3bb66bdac` |
+
+## Alpha.64 tab positions dialog
+
+Home → Paragraph spacing → Tab positions and command search open a native modal
+with 320 DIP content width, a scrollable list capped at 115 DIP, a position field,
+Add/Update/Remove/Clear all controls and existing 78 × 27 DIP OK/Cancel buttons.
+Palette, icons and ribbon geometry are unchanged. Update/Remove require a selected
+row. Initial keyboard focus goes to the position field; normal Tab/Shift+Tab and
+focused-button Enter/Space apply. Escape cancels. Mixed lists require an explicit
+replacement; input not yet added/updated cannot be silently discarded by OK.
+
+Native macOS captures at 1366 × 900 and 640 × 480 DIP were inspected: list, field,
+labels and controls fit. Synthetic 100/125/150% tests include a 32-position list,
+keyboard draft clearing/cancellation and nested paragraph-dialog restoration.
+No matched Word comparison or physical keyboard/IME/VoiceOver check this iteration.
+Interactive ruler tabs and other tab types remain future work.
+
+| Capture | SHA-256 |
+| :--- | :--- |
+| [rust-tab-positions-alpha64-macos.png](screenshots/rust-tab-positions-alpha64-macos.png) | `7717311f9937aa955208ea9859195e34643793217f1040f4f5189a7c8f721a62` |
+| [rust-tab-positions-alpha64-compact-macos.png](screenshots/rust-tab-positions-alpha64-compact-macos.png) | `4e332b47f05b4c13c47f7844bd99a33c7a911af1c6ef8040823ca211db3b9d81` |

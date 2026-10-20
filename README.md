@@ -784,3 +784,13 @@ Undo/Redo and paragraph editing; empty lists restore interval-only behavior.
 This increment adds storage and layout; GUI/ruler position editing follows next.
 The existing interval dialog preserves explicit positions when changing the grid.
 Alpha.62 and older cannot read v15 saves. See [format details](docs/NATIVE_FORMAT.md).
+
+## Alpha.64 tab position editing
+
+Open **Home → Paragraph spacing → Tab positions…**, or search for **Tab positions**.
+Enter a position in points and use **Add**; select an existing position, change its
+value and use **Update**. **Remove** deletes the selected stop; **Clear all** restores
+interval-only layout. The scrollable list supports up to 32 left positions.
+**OK** applies the complete draft to the selected paragraphs in one Undo/Redo;
+**Cancel/Escape** changes nothing. For mixed lists, explicitly build a replacement
+or choose Clear all. Native v15, palette and icons are unchanged.

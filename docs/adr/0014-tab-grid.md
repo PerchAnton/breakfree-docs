@@ -62,3 +62,19 @@ process protocol versions remain independent. No dependency/license change.
 The interval dialog remains available and changes only the interval, preserving
 explicit stops. Editing positions through the GUI/ruler is the next increment;
 right/center/decimal stops, leaders and style inheritance remain future work.
+
+## Alpha.64: transactional position editing
+
+Home → Paragraph spacing → Tab positions and command search open a separate
+position-list draft. Add inserts in sorted order; Update replaces the selected
+position; Remove and Clear all edit only the draft. Duplicates, more than 32
+positions and non-half-point/out-of-range input fail without editing the list.
+OK submits the full list through `set_left_tab_stops`, preserving one history
+entry across all selected paragraphs. Cancel/Escape do not mutate the document.
+
+Common lists initialize the draft; mixed lists show a notice and start an empty
+replacement with OK disabled until a list action. Clear all explicitly enables
+an empty replacement. Pending typed input must be added/updated or cleared before
+OK. No-op acceptance preserves Redo. The independent paragraph draft survives
+nested opening/cancellation; interval values stay unchanged. Native v15 and
+layout semantics remain unchanged. Interactive ruler editing is a later increment.

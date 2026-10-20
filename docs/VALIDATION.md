@@ -1632,3 +1632,21 @@ and storage/history tests and capture Clippy were repeated successfully. Two nat
 screenshots inspected (UI_SPEC). Physical keyboard/IME, matched reference, Windows
 and VoiceOver acceptance were not performed. Position editing UI, other stop types,
 leaders and named-style inheritance remain later work; CI is reported separately.
+
+## Alpha.64 tab positions dialog validation
+
+macOS arm64 / Rust 1.99.1: **331 full tests / 156 without GUI** pass. Real-widget
+cases cover mixed replacement, exclusive paragraph end, Add/Update/Remove/Clear,
+uncommitted input and validation, Cancel/Escape, nested paragraph cancellation,
+no-op Redo preservation, one-operation undo/redo and disk save/reopen. Draft tests
+check exact half-point parsing, duplicate/limit rejection and updating a full list.
+Keyboard traversal/activation and modal bounds are tested at synthetic 100/125/150%
+with 32 positions. These tests do not establish physical Windows input behavior.
+
+fmt, both normal/capture all-target Clippy, release/capture builds, repository
+references/contract/artwork, workflow YAML, whitespace and isolated executable
+version/capabilities checks pass. Two native macOS captures inspected at 1366 × 900
+and 640 × 480 DIP (UI_SPEC). Native v15 and existing failure-preservation tests
+remain unchanged. Physical keyboard/IME, matched Word comparison, Windows and
+VoiceOver were not tested this iteration. Interactive ruler tabs, other tab types,
+leaders and named-style inheritance remain planned. CI is reported separately.

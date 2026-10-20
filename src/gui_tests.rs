@@ -9106,3 +9106,195 @@ fn explicit_tabs_indents_unicode_wrap_and_formatting() {
         }
     });
 }
+
+#[test]
+fn tab_positions_dialog_draft_apply_history_and_roundtrip() {
+    let (ctx, mut app) = setup();
+    app.session
+        .editor
+        .replace(0, 0, "a\tb\nc\td\nlast", "Fixture")
+        .unwrap();
+    app.session
+        .editor
+        .set_left_tab_stops(0, 0, vec![72, 144])
+        .unwrap();
+    app.session
+        .editor
+        .set_left_tab_stops(4, 4, vec![97])
+        .unwrap();
+    app.session.editor.selection = (0, 8);
+    app.sync_view();
+    let before = app.session.editor.document.clone();
+    app.execute(Action::TabPositions, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    click_region(&ctx, &mut app, "tab-positions-ok");
+    assert!(app.tab_positions_dialog.is_some());
+    assert_eq!(app.session.editor.document, before);
+    click_region(&ctx, &mut app, "tab-position-input");
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("48.5".into())],
+        [1366., 900.],
+        1.,
+    );
+    click_region(&ctx, &mut app, "tab-position-add");
+    assert_eq!(app.session.editor.document, before);
+    click_region(&ctx, &mut app, "tab-position-input");
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::A, true), egui::Event::Text("72".into())],
+        [1366., 900.],
+        1.,
+    );
+    click_region(&ctx, &mut app, "tab-position-add");
+    click_region(&ctx, &mut app, "tab-position-97");
+    click_region(&ctx, &mut app, "tab-position-input");
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::A, true), egui::Event::Text("36".into())],
+        [1366., 900.],
+        1.,
+    );
+    click_region(&ctx, &mut app, "tab-position-update");
+    assert_eq!(app.session.editor.document, before);
+    click_region(&ctx, &mut app, "tab-positions-ok");
+    assert!(app.tab_positions_dialog.is_none());
+    let after = app.session.editor.document.clone();
+    assert_eq!(
+        after.paragraphs[0].spacing.left_tab_stops_half_points,
+        [72, 144]
+    );
+    assert_eq!(
+        after.paragraphs[1].spacing.left_tab_stops_half_points,
+        [72, 144]
+    );
+    assert_eq!(after.paragraphs[2], before.paragraphs[2]);
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.document, before);
+    app.execute(Action::Redo, &ctx);
+    assert_eq!(app.session.editor.document, after);
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("positions.bfdoc");
+    crate::storage::save(&after, &path).unwrap();
+    assert_eq!(crate::storage::load(&path).unwrap(), after);
+}
+
+#[test]
+fn tab_positions_dialog_invalid_pending_cancel_and_clear() {
+    let (ctx, mut app) = setup();
+    app.session
+        .editor
+        .set_left_tab_stops(0, 0, vec![72, 144])
+        .unwrap();
+    app.sync_view();
+    let before = app.session.editor.document.clone();
+    app.execute(Action::TabPositions, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    for text in ["0.25", "1440.5", "36"] {
+        click_region(&ctx, &mut app, "tab-position-input");
+        frame(
+            &ctx,
+            &mut app,
+            vec![key(Key::A, true), egui::Event::Text(text.into())],
+            [1366., 900.],
+            1.,
+        );
+        click_region(&ctx, &mut app, "tab-position-add");
+        click_region(&ctx, &mut app, "tab-positions-ok");
+        assert!(app.tab_positions_dialog.is_some());
+        assert_eq!(app.session.editor.document, before);
+    }
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Escape, false)],
+        [1366., 900.],
+        1.,
+    );
+    assert!(app.tab_positions_dialog.is_none());
+    assert_eq!(app.session.editor.document, before);
+    app.execute(Action::TabPositions, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    click_region(&ctx, &mut app, "tab-position-72");
+    click_region(&ctx, &mut app, "tab-position-remove");
+    click_region(&ctx, &mut app, "tab-position-clear");
+    assert_eq!(app.session.editor.document, before);
+    click_region(&ctx, &mut app, "tab-positions-ok");
+    assert!(
+        app.session.editor.document.paragraphs[0]
+            .spacing
+            .left_tab_stops_half_points
+            .is_empty()
+    );
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.document, before);
+    app.execute(Action::TabPositions, &ctx);
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    click_region(&ctx, &mut app, "tab-positions-ok"); // No-op retains Redo.
+    app.execute(Action::Redo, &ctx);
+    assert!(
+        app.session.editor.document.paragraphs[0]
+            .spacing
+            .left_tab_stops_half_points
+            .is_empty()
+    );
+}
+
+#[test]
+fn tab_positions_keyboard_nested_cancel_and_compact_bounds() {
+    for dpi in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        app.session
+            .editor
+            .set_left_tab_stops(0, 0, (1..=32).map(|p| p * 72).collect())
+            .unwrap();
+        app.sync_view();
+        let before = app.session.editor.document.clone();
+        app.execute(Action::TabPositions, &ctx);
+        let size = [640. * dpi, 480. * dpi];
+        frame(&ctx, &mut app, vec![], size, dpi);
+        let r = app
+            .regions
+            .iter()
+            .find(|r| r.name == "tab-positions-dialog")
+            .unwrap()
+            .rect;
+        assert!(r.min.x >= 0. && r.min.y >= 0. && r.max.x <= 640. && r.max.y <= 480.);
+        assert_eq!(
+            ctx.memory(|m| m.focused()),
+            Some(Id::new("tab-position-input"))
+        );
+        // Input -> Add -> Clear all (Update/Remove disabled); activate the draft change.
+        for _ in 0..2 {
+            frame(&ctx, &mut app, vec![key(Key::Tab, false)], size, dpi);
+        }
+        frame(&ctx, &mut app, vec![key(Key::Enter, false)], size, dpi);
+        assert_eq!(app.session.editor.document, before);
+        frame(&ctx, &mut app, vec![], size, dpi);
+        assert!(!app.regions.iter().any(|r| r.name == "tab-position-72"));
+        frame(&ctx, &mut app, vec![key(Key::Escape, false)], size, dpi);
+        assert!(app.tab_positions_dialog.is_none());
+        assert_eq!(app.session.editor.document, before);
+        app.execute(Action::ParagraphSpacing, &ctx);
+        frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+        click_region(&ctx, &mut app, "paragraph-positions");
+        frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+        assert!(app.tab_positions_dialog.is_some());
+        assert!(app.paragraph_dialog.is_some());
+        frame(
+            &ctx,
+            &mut app,
+            vec![key(Key::Escape, false)],
+            [1366., 900.],
+            1.,
+        );
+        assert!(app.tab_positions_dialog.is_none());
+        assert!(app.paragraph_dialog.is_some());
+        frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+        click_region(&ctx, &mut app, "paragraph-cancel");
+        assert_eq!(app.session.editor.document, before);
+    }
+}
