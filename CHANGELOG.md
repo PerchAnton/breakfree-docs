@@ -3,6 +3,12 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.58 — 2026-10-20
+
+- Expose full indent-source information on the focused marker while inspection is open, with keyboard instructions and an explicit uncommitted-preview indication for assistive technology.
+- Route accessibility Focus/Click actions into the ruler keyboard controller without pointer dragging or document changes. Report unavailable markers as disabled.
+- Audit ruler/menu focus and keyboard behavior through the actual AccessKit output; preserve design, palette/icons and native v13. Native screen-reader evidence is recorded separately in VALIDATION. Alpha.57 approved; alpha.58 awaits approval. Windows remains deferred.
+
 ## 0.1.0-alpha.57 — 2026-10-20
 
 - Open the ruler context menu with Shift+F10 while a marker is focused. Anchor it to that marker and initially select its source command; arrows, Tab/Shift+Tab, Home/End navigate, Enter/Space activates, Escape returns to the marker.

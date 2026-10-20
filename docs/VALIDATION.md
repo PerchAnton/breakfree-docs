@@ -1493,3 +1493,37 @@ runs were still running; current CI is recorded separately in the journal.
 
 Initial compact capture exposed the value readout covering the first menu item.
 Suppress it during keyboard-menu display; the widget matrix asserts its absence.
+
+## Alpha.58 ruler accessibility validation
+
+2026-10-20, macOS 27.0.1 arm64, Rust 1.99.1. Full suite: 309 tests; core-only:
+149 tests. fmt, normal/capture Clippy with warnings denied, normal/capture release
+builds, repository/artwork checks, workflow YAML and diff whitespace checks pass.
+An isolated copy of the executable answers version/capabilities without Office.
+
+Three AccessKit-output regressions exercise all four markers with Focus/Click,
+full source summaries, preview naming, all eight menu entries, keyboard focus
+and Escape return, native-style accessibility menu activation, and disabled
+commands during a draft. These complement existing three-scale keyboard/widget
+coverage; they are not Windows or speech tests. Inspection preserves the document
+and history; the existing apply/cancel/undo/redo regression suite passes.
+
+A disposable app bundle of the normal release executable opened on macOS. Native
+AX inspection exposed all four marker names/help. Ctrl+Shift+F8 then Shift+F10
+focused First line sources; Down/Enter opened continuation sources and restored
+marker focus. Escape, Right and Escape exposed a 0.5 pt hanging preview with
+“Preview; not yet applied”, then restored zero and document focus without edits.
+The native screenshot retained the approved design/palette/icons.
+
+VoiceOver acceptance is **not passed**: Command+F5 did not confirm activation.
+System Settings showed VoiceOver off; clicking its switch briefly showed on, but
+a later read showed off again. Native AX/keyboard checks continued, but sustained
+VoiceOver execution and spoken output could not be established. Final observed
+switch state was off, matching the initial state. The native tool subsequently
+reported procNotFound for the temporary app and System Settings. No speech,
+VoiceOver cursor navigation, braille or complete accessibility claim is made.
+
+Remaining acceptance: a sustained VoiceOver session must read all sources, follow
+menu focus, announce unavailable commands and preview changes, return safely, and
+verify speech verbosity for long mixed selections. Windows/Narrator/NVDA and
+100/125/150% native display checks remain deferred by owner instruction.

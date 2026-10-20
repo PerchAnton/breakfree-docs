@@ -157,6 +157,18 @@ impl DocsApp {
                     Sense::focusable_noninteractive()
                 },
             );
+            // Assistive activation enters the same keyboard controller as Ctrl+Shift+F8.
+            // A native accessibility click has no pointer-down event to start a drag.
+            let accessible_entry = ui.input(|i| {
+                i.has_accesskit_action_request(response.id, egui::accesskit::Action::Click)
+                    || i.has_accesskit_action_request(response.id, egui::accesskit::Action::Focus)
+            });
+            if enabled && self.ruler_drag.is_none() && accessible_entry {
+                self.leave_ribbon(ui.ctx());
+                self.focus_document = false;
+                self.ruler_key_focus = Some(handle);
+                response.request_focus();
+            }
             // Marker widgets own their clicks; forward secondary clicks to the
             // shared ruler menu without changing primary drag behavior.
             if response.secondary_clicked() {
@@ -257,8 +269,30 @@ impl DocsApp {
                 egui::WidgetInfo::labeled(
                     egui::WidgetType::Button,
                     enabled || self.ruler_key_focus == Some(handle),
-                    format!("{label}. {}", summary.marker_details(handle)),
+                    format!(
+                        "{label}. {}{}",
+                        if self.ruler_sources && self.ruler_key_focus == Some(handle) {
+                            summary.full_marker_details(handle)
+                        } else {
+                            summary.marker_details(handle)
+                        },
+                        if active {
+                            " Preview; not yet applied."
+                        } else {
+                            ""
+                        }
+                    ),
                 )
+            });
+            ui.ctx().accesskit_node_builder(response.id, |node| {
+                if !enabled && self.ruler_key_focus != Some(handle) {
+                    node.set_disabled();
+                }
+                node.set_description(if self.ruler_sources && self.ruler_key_focus == Some(handle) {
+                    "All indent sources. Up/Down, Page Up/Page Down, Home/End scroll visually. Enter, Escape or F1 returns to the marker."
+                } else {
+                    "Tab changes marker. Arrows preview 0.5 pt; Shift+arrows 5 pt. Enter applies; Escape cancels. F1 reads all sources. Shift+F10 opens the context menu."
+                });
             });
             response.on_hover_text(format!("{label} — drag to preview; release to apply; Esc cancels. Half-point steps. Uses the first selected paragraph; applies to selected paragraphs. Ctrl+Shift+F8 enters keyboard control; Tab changes marker, arrows nudge 0.5 pt, Shift+arrows 5 pt, Enter applies, Esc cancels, F1 shows sources, Delete previews all-indent reset; Shift+Delete resets the focused property to style indents. {}", summary.marker_details(handle)));
         }

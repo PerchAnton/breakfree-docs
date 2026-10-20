@@ -740,3 +740,9 @@ command and Escape returns to the marker. Opening/closing with the keyboard
 preserves a pending preview; until it is applied/cancelled, only that marker's
 source command is available. The dedicated Menu key is not exposed by the current
 GUI key abstraction; use Shift+F10. Windows acceptance remains deferred.
+
+Alpha.58 exposes marker keyboard instructions and uncommitted-preview status to
+assistive technology. F1 exposes the full source list through the focused marker's
+accessible name; it does not depend on visually scrolling every row. Accessibility
+Focus/Click enters marker control without editing. Native speech acceptance is
+still open; see [validation](docs/VALIDATION.md#alpha58-ruler-accessibility-validation).

@@ -8507,3 +8507,194 @@ fn ruler_keyboard_context_focus_loss_and_resize_cancel_safely() {
         assert_eq!(app.session.editor.document, before);
     }
 }
+
+fn ruler_accessibility_frame(
+    ctx: &egui::Context,
+    app: &mut DocsApp,
+    events: Vec<egui::Event>,
+) -> egui::accesskit::TreeUpdate {
+    ctx.enable_accesskit();
+    ctx.run(
+        egui::RawInput {
+            screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(640., 480.))),
+            events,
+            ..Default::default()
+        },
+        |ctx| app.update_ui(ctx),
+    )
+    .platform_output
+    .accesskit_update
+    .unwrap()
+}
+
+#[test]
+fn ruler_accessibility_focus_activation_sources_and_preview() {
+    use egui::accesskit::{Action, ActionRequest, Role};
+    for action in [Action::Focus, Action::Click] {
+        for (name, handle) in [
+            ("ruler-first", crate::ruler::Handle::First),
+            ("ruler-body", crate::ruler::Handle::Body),
+            ("ruler-left", crate::ruler::Handle::Left),
+            ("ruler-right", crate::ruler::Handle::Right),
+        ] {
+            let (ctx, mut app, _) = ruler_source_fixture(1.);
+            let before = app.session.editor.document.clone();
+            let n = app.session.editor.undo_stack.len();
+            let tree = ruler_accessibility_frame(&ctx, &mut app, vec![]);
+            let (id, node) = tree
+                .nodes
+                .iter()
+                .find(|(_, node)| {
+                    node.description()
+                        .is_some_and(|s| s.contains("F1 reads all sources"))
+                        && node.bounds().is_some_and(|b| {
+                            b.x0 == f64::from(region(&app, name).left())
+                                && b.y0 == f64::from(region(&app, name).top())
+                        })
+                })
+                .unwrap();
+            assert_eq!(node.role(), Role::Button);
+            assert!(node.supports_action(action));
+            let id = *id;
+            ruler_accessibility_frame(
+                &ctx,
+                &mut app,
+                vec![egui::Event::AccessKitActionRequest(ActionRequest {
+                    action,
+                    target: id,
+                    data: None,
+                })],
+            );
+            let tree = ruler_accessibility_frame(&ctx, &mut app, vec![]);
+            assert_eq!(app.ruler_key_focus, Some(handle));
+            assert_eq!(tree.focus, id);
+            ruler_accessibility_frame(&ctx, &mut app, vec![key(Key::F1, false)]);
+            let tree = ruler_accessibility_frame(&ctx, &mut app, vec![]);
+            let node = &tree
+                .nodes
+                .iter()
+                .find(|(node_id, _)| *node_id == id)
+                .unwrap()
+                .1;
+            let full = crate::ruler::SelectionValues::read(
+                &app.session.editor.document,
+                app.session.editor.selection,
+            )
+            .unwrap()
+            .full_marker_details(handle);
+            assert!(node.label().unwrap().contains(&full));
+            assert!(
+                node.description()
+                    .unwrap()
+                    .starts_with("All indent sources.")
+            );
+            assert_eq!(tree.focus, id);
+            ruler_accessibility_frame(&ctx, &mut app, vec![key(Key::Escape, false)]);
+            ruler_accessibility_frame(&ctx, &mut app, vec![key(Key::ArrowRight, false)]);
+            let tree = ruler_accessibility_frame(&ctx, &mut app, vec![]);
+            let node = &tree
+                .nodes
+                .iter()
+                .find(|(node_id, _)| *node_id == id)
+                .unwrap()
+                .1;
+            assert!(node.label().unwrap().contains("Preview; not yet applied"));
+            ruler_accessibility_frame(&ctx, &mut app, vec![key(Key::Escape, false)]);
+            assert_eq!(app.session.editor.document, before);
+            assert_eq!(app.session.editor.undo_stack.len(), n);
+        }
+    }
+}
+
+#[test]
+fn ruler_accessibility_menu_focus_and_return() {
+    let (ctx, mut app, _) = ruler_source_fixture(1.);
+    ruler_accessibility_frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(Key::F8, Modifiers::CTRL | Modifiers::SHIFT)],
+    );
+    let marker = ruler_accessibility_frame(&ctx, &mut app, vec![]).focus;
+    ruler_accessibility_frame(&ctx, &mut app, vec![ruler_key(Key::F10, Modifiers::SHIFT)]);
+    for index in 0..8 {
+        let tree = ruler_accessibility_frame(&ctx, &mut app, vec![]);
+        let node = &tree
+            .nodes
+            .iter()
+            .find(|(id, _)| *id == tree.focus)
+            .unwrap()
+            .1;
+        assert_eq!(app.ruler_menu, Some(index));
+        assert!(node.label().is_some());
+        assert!(!node.is_disabled());
+        assert!(node.supports_action(egui::accesskit::Action::Click));
+        if index < 7 {
+            ruler_accessibility_frame(&ctx, &mut app, vec![key(Key::ArrowDown, false)]);
+        }
+    }
+    ruler_accessibility_frame(&ctx, &mut app, vec![key(Key::Escape, false)]);
+    assert_eq!(
+        ruler_accessibility_frame(&ctx, &mut app, vec![]).focus,
+        marker
+    );
+}
+
+#[test]
+fn ruler_accessibility_menu_activation_and_disabled_preview_commands() {
+    use egui::accesskit::{Action, ActionRequest};
+    let (ctx, mut app, _) = ruler_source_fixture(1.);
+    let before = app.session.editor.document.clone();
+    ruler_accessibility_frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(Key::F8, Modifiers::CTRL | Modifiers::SHIFT)],
+    );
+    ruler_accessibility_frame(&ctx, &mut app, vec![ruler_key(Key::F10, Modifiers::SHIFT)]);
+    let tree = ruler_accessibility_frame(&ctx, &mut app, vec![]);
+    let id = tree
+        .nodes
+        .iter()
+        .find(|(_, n)| n.label() == Some("Right indent sources"))
+        .unwrap()
+        .0;
+    ruler_accessibility_frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::AccessKitActionRequest(ActionRequest {
+            action: Action::Click,
+            target: id,
+            data: None,
+        })],
+    );
+    assert!(app.ruler_sources);
+    assert_eq!(app.ruler_key_focus, Some(crate::ruler::Handle::Right));
+    ruler_accessibility_frame(&ctx, &mut app, vec![key(Key::Escape, false)]);
+    ruler_accessibility_frame(&ctx, &mut app, vec![key(Key::ArrowLeft, false)]);
+    ruler_accessibility_frame(&ctx, &mut app, vec![ruler_key(Key::F10, Modifiers::SHIFT)]);
+    let tree = ruler_accessibility_frame(&ctx, &mut app, vec![]);
+    for label in [
+        "First line sources",
+        "Continuation line sources",
+        "Left indent sources",
+        "Reset all indents to style",
+        "Reset right indent to style",
+    ] {
+        let node = &tree
+            .nodes
+            .iter()
+            .find(|(_, n)| n.label() == Some(label))
+            .unwrap()
+            .1;
+        assert!(node.is_disabled(), "{label}");
+    }
+    assert!(
+        !tree
+            .nodes
+            .iter()
+            .find(|(_, n)| n.label() == Some("Right indent sources"))
+            .unwrap()
+            .1
+            .is_disabled()
+    );
+    assert_eq!(app.session.editor.document, before);
+}

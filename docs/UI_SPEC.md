@@ -1775,3 +1775,19 @@ SHA-256: `1ebcc3449053d6ce8d8b959e5cde799b19d6f3eccd77425e381b1b576be6ac97`.
 SHA-256: `0dde2556d99c060d61900211f2670dabc83f833c60560f7266e9ccbcc71a9306`.
 
 Both final macOS fixtures were inspected: the first source item has visible focus, no value readout covers it, and all labels fit within the window. These inject widget keys; physical/native Windows acceptance is not established.
+
+## Alpha.58 ruler accessibility
+
+Keep the existing ruler, palette, icons, source overlay and menu geometry. Markers
+remain named buttons: activation enters the keyboard controller, rather than
+immediately editing. Their accessibility description lists Tab, arrows, commit,
+cancel, F1 and Shift+F10. While source inspection is open, the focused marker's
+name contains the complete source summary, including entries outside the painted
+viewport. Preview values explicitly say they are not yet applied. Unavailable
+markers expose the disabled state; native menu buttons retain their names/actions.
+
+The painted list is not a separate navigable accessibility list. It is exposed as
+one complete marker description; verbosity and speech interruption require a
+real screen-reader acceptance session. Native macOS AX and keyboard routing were
+inspected on alpha.58; a screenshot of the normal release application confirmed
+unchanged appearance. VoiceOver speech and Windows acceptance remain unverified.
