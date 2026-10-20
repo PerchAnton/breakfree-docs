@@ -1715,3 +1715,32 @@ SHA-256: `82c0c0ebf87cde4e377d1669f84b109a659b9da2277b1aadf0fe48329052952d`.
 SHA-256: `6c5031572b3d434481aec6bba56d788ec73e0922b0e71d0fd1d19032ba1ddea5`.
 
 Both native macOS fixtures were inspected: the last named source, default source and fixed footer remain visible after wheel input. The canvas stays at its initial position. Input is widget-injected, not a physical mouse acceptance test.
+
+
+## Alpha.56 context-menu ruler sources
+
+Right-click the horizontal ruler. Above the unchanged reset commands, an
+Inspect indent sources label groups four explicit commands: First line sources,
+Continuation line sources, Left indent sources and Right indent sources. Use the
+existing popup/button styles and separator; no new icons or colors.
+Selecting a command closes the menu, focuses that marker and opens its full F1
+source view at the top. Enter/Escape/F1 dismisses to the selected marker. Existing
+keyboard and wheel scrolling remains available.
+
+Right-click takeover retains cancellation of an uncommitted ruler preview; it
+never commits it. F1 remains the way to inspect a pending preview without cancelling
+it. Context commands share the existing enabled/composition/backstage guards.
+Native Windows/Word comparison and physical input acceptance remain deferred.
+
+Secondary clicks on all four marker widgets open the same menu as the scale;
+primary clicks and dragging retain their existing behavior.
+
+![Ruler source context menu at 1366 × 900 DIP](screenshots/rust-ruler-source-menu-alpha56-macos.png)
+
+SHA-256: `e4b3f4d4f525aef6a0d5478db96479eaace516886a5e992074a407d6f100e2d4`.
+
+![Source inspection selected through the menu at 640 × 480 DIP](screenshots/rust-ruler-source-context-alpha56-compact-macos.png)
+
+SHA-256: `bc36645baf32665d093401fa9040a060704c22d9abe8dbd22ddc7d00e28a14bd`.
+
+Both macOS capture fixtures were inspected: menu labels/reset commands fit, and the selected source panel begins at the top with marker focus and visible dismissal hints. These use injected pointer events, not physical-input acceptance.

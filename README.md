@@ -728,3 +728,8 @@ Mouse wheel source inspection (alpha.55): hover the open F1 panel to scroll its
 list. The wheel stays isolated from the document while inspecting, including at
 list edges. Horizontal/modified wheel input is ignored; click takeover retains
 the existing draft-cancellation policy. Keyboard scrolling remains available.
+
+Right-click the horizontal ruler and choose First line sources, Continuation line
+sources, Left indent sources or Right indent sources (alpha.56). Enter/Escape/F1
+returns to the chosen marker. Right-click cancels any uncommitted ruler preview;
+use F1 on its focused marker to inspect that preview without cancelling it.

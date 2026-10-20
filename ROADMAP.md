@@ -368,4 +368,5 @@ Use public specifications and original test cases, not copied application code. 
 - [x] Alpha.53: F1 opens read-only marker provenance, dismissal restores marker focus without accepting/cancelling preview; keyboard/focus/compact bounds verified locally.
 - [x] Alpha.54: complete ruler source lists, bounded scrolling with arrows/Page Up/Down/Home/End, preserved drafts and reopening at the top (local core/widget tests).
 - [x] Alpha.55: pointer-wheel source inspection, viewport scoping, residual-scroll isolation and draft cancellation/commit regressions (local widget tests).
-- [ ] Next: pointer access to source inspection from the ruler context menu, with focus restoration.
+- [x] Alpha.56: ruler context-menu source inspection for all four markers, focus restoration, read-only behavior and unchanged reset/cancellation policy (local widget tests).
+- [ ] Next: keyboard context-menu access from a focused ruler marker.

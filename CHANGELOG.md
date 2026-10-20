@@ -3,6 +3,13 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.56 — 2026-10-20
+
+- Add explicit first-line, continuation-line, left and right source inspection commands to the horizontal ruler context menu. Opening resets list scroll and focuses the chosen marker; dismissal returns to that marker.
+- Open the same context menu on ruler markers as on the scale; preserve primary-button dragging.
+- Reuse the full source panel and its keyboard/wheel scrolling without document or history changes. Right-click takeover retains the existing cancellation of uncommitted ruler previews; F1 remains the draft-preserving route.
+- Preserve menu reset commands, design, palette/icons and native v13. Add all-marker focus/read-only/compact-scale and takeover regressions. Alpha.55 approved; alpha.56 awaits approval. Windows remains deferred.
+
 ## 0.1.0-alpha.55 — 2026-10-20
 
 - Scroll the open ruler source list with the mouse wheel while hovering its panel. Point, line and page input respect the list bounds; horizontal or modified wheel input does not change it.

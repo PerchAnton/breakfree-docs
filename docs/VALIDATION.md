@@ -8,14 +8,14 @@ and must not be presented as Rust results.
 
 ## Checks actually run
 
-Current local checkpoint: **0.1.0-alpha.55**. Historical evidence retains its scope.
+Current local checkpoint: **0.1.0-alpha.56**. Historical evidence retains its scope.
 
 | Local check | Observed result |
 | --- | --- |
-| Full / no-default-features tests | 300 / 149 passed; wheel units/bounds, pointer scope, residual scroll isolation and draft/history checked |
+| Full / no-default-features tests | 303 / 149 passed; context source commands, focus, read-only behavior and takeover cancellation checked |
 | fmt / Clippy | Passed; normal/capture all-target checks with warnings denied |
 | Release builds | Native binary and capture harness passed without Office/sibling inputs |
-| CLI | Version/capabilities report alpha.55; existing CLI subprocess tests pass |
+| CLI | Version/capabilities report alpha.56; existing CLI subprocess tests pass |
 | Repository/artwork/YAML/whitespace | Passed |
 | Native rendering | Keyboard ruler sources inspected at 1366 × 900 / 640 × 480 DIP |
 | Native input | Not repeated this iteration; previous automation lost its window. CPU widget events are separate evidence |
@@ -1450,3 +1450,23 @@ wheel event over the panel to reach the last source. They establish rendering
 only, not ordinary OS mouse/trackpad behavior or Windows/Word equivalence.
 Windows remains deferred. Native v13, protocol/settings v1, dependencies and
 license are unchanged. Alpha.54 CI succeeded; current CI is recorded separately.
+
+
+## Alpha.56 context-source validation
+
+2026-10-20, macOS arm64 / Rust 1.99.1: 303 full and 149 core tests.
+The actual-widget matrix opens the real ruler context menu and selects each of
+four source commands at synthetic scales 1/1.25/1.5 in 640 × 480 DIP. It checks
+item bounds, popup closure, chosen marker, zero initial scroll, wheel access and
+focus after Escape, with unchanged document, selection and undo history.
+An additional regression exposed marker widgets intercepting secondary clicks;
+forwarding them to the shared menu now passes on all four markers.
+A separate right-click takeover regression cancels a pending ruler edit before
+inspection without accepting it. Existing context reset, F1 preview-preserving
+inspection, wheel and keyboard cases remain passing.
+
+Native macOS capture fixtures show the open menu and a source panel selected
+through it. Events are injected into widgets; ordinary OS input, physical DPI,
+accessibility and Windows/Word acceptance are unverified. No native-format,
+protocol/settings, dependency or license change. Alpha.55 CI was still running
+at the audit; current CI is recorded separately in the journal.

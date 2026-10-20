@@ -36,6 +36,8 @@ impl eframe::App for Capture {
                     | "ruler-source-keyboard"
                     | "ruler-source-list"
                     | "ruler-source-wheel"
+                    | "ruler-source-menu"
+                    | "ruler-source-context"
             )
             || self.mode == "temporary"
             || self.mode == "replace-all"
@@ -53,6 +55,11 @@ impl eframe::App for Capture {
                 | "ruler-source-keyboard"
                 | "ruler-source-list"
                 | "ruler-source-wheel"
+                | "ruler-source-menu"
+                | "ruler-source-context"
+        ) && !matches!(
+            self.mode.as_str(),
+            "ruler-source-menu" | "ruler-source-context"
         ) && matches!(self.frames, 3 | 5)
         {
             let (key, modifiers) = if self.frames == 3 {
@@ -63,7 +70,11 @@ impl eframe::App for Capture {
             } else {
                 if matches!(
                     self.mode.as_str(),
-                    "ruler-source-keyboard" | "ruler-source-list" | "ruler-source-wheel"
+                    "ruler-source-keyboard"
+                        | "ruler-source-list"
+                        | "ruler-source-wheel"
+                        | "ruler-source-menu"
+                        | "ruler-source-context"
                 ) {
                     (egui::Key::F1, egui::Modifiers::NONE)
                 } else if self.mode == "ruler-reset-single" {
@@ -105,6 +116,32 @@ impl eframe::App for Capture {
                 delta: egui::vec2(0., -40.),
                 modifiers: egui::Modifiers::NONE,
             });
+        }
+        if matches!(
+            self.mode.as_str(),
+            "ruler-source-menu" | "ruler-source-context"
+        ) {
+            let target = if self.frames == 3 {
+                Some(("ruler", egui::PointerButton::Secondary))
+            } else if self.frames == 6 && self.mode == "ruler-source-context" {
+                Some(("ruler-sources-first", egui::PointerButton::Primary))
+            } else {
+                None
+            };
+            if let Some((name, button)) = target
+                && let Some(r) = self.app.regions.iter().find(|r| r.name == name)
+            {
+                let pos = r.rect.center();
+                input.events.push(egui::Event::PointerMoved(pos));
+                for pressed in [true, false] {
+                    input.events.push(egui::Event::PointerButton {
+                        pos,
+                        button,
+                        pressed,
+                        modifiers: egui::Modifiers::NONE,
+                    });
+                }
+            }
         }
         if self.frames == 2 && self.mode.starts_with("keytips") {
             let mut keys = vec![egui::Key::F10];
@@ -387,6 +424,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "ruler-source-keyboard",
             "ruler-source-list",
             "ruler-source-wheel",
+            "ruler-source-menu",
+            "ruler-source-context",
             "collapsed",
             "temporary",
             "view",
@@ -406,7 +445,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ]
         .contains(&args[2].as_str())
     {
-        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|styles-modify|styles-following|styles-create|styles-rename|styles-delete|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|paragraph|indent-layout|ruler-keyboard|ruler-mixed|ruler-reset|ruler-reset-single|ruler-sources|ruler-source-keyboard|ruler-source-list|ruler-source-wheel|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
+        return Err("Usage: capture_ui <width-DIP> <height-DIP> <home|styles|styles-menu|styles-modify|styles-following|styles-create|styles-rename|styles-delete|view|view-fit|keytips-qat|keytips-qat-below|file|navigation|navigation-options|replace-all|clear-formatting|clear-formatting-tips|formatting|font|paragraph|indent-layout|ruler-keyboard|ruler-mixed|ruler-reset|ruler-reset-single|ruler-sources|ruler-source-keyboard|ruler-source-list|ruler-source-wheel|ruler-source-menu|ruler-source-context|collapsed|temporary|keytips-root|keytips-home|keytips-prefix|keytips-tabs|keytips-view|keytips-zoom>; set BREAKFREE_CAPTURE_TO".into());
     }
     let path = std::env::var("BREAKFREE_CAPTURE_TO")
         .map_err(|_| "Set BREAKFREE_CAPTURE_TO to an output PNG path")?;
@@ -454,6 +493,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             | "ruler-source-keyboard"
             | "ruler-source-list"
             | "ruler-source-wheel"
+            | "ruler-source-menu"
+            | "ruler-source-context"
     ) {
         let mut session = Session::default();
         let sample =
@@ -477,7 +518,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         if matches!(
             args[2].as_str(),
-            "ruler-sources" | "ruler-source-keyboard" | "ruler-source-list" | "ruler-source-wheel"
+            "ruler-sources"
+                | "ruler-source-keyboard"
+                | "ruler-source-list"
+                | "ruler-source-wheel"
+                | "ruler-source-menu"
+                | "ruler-source-context"
         ) {
             session
                 .editor
@@ -491,7 +537,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             session.editor.document.paragraphs[0].paragraph_style =
                 breakfree_docs::model::ParagraphStyle::Heading1;
         }
-        if matches!(args[2].as_str(), "ruler-source-list" | "ruler-source-wheel") {
+        if matches!(
+            args[2].as_str(),
+            "ruler-source-list"
+                | "ruler-source-wheel"
+                | "ruler-source-menu"
+                | "ruler-source-context"
+        ) {
             session = Session::default();
             session.editor.replace(
                 0,
@@ -638,7 +690,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 | "ruler-sources"
                 | "ruler-source-keyboard"
                 | "ruler-source-list"
-                | "ruler-source-wheel" => {
+                | "ruler-source-wheel"
+                | "ruler-source-menu"
+                | "ruler-source-context" => {
                     if mode == "ruler-mixed"
                         || matches!(
                             mode.as_str(),
@@ -646,6 +700,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 | "ruler-source-keyboard"
                                 | "ruler-source-list"
                                 | "ruler-source-wheel"
+                                | "ruler-source-menu"
+                                | "ruler-source-context"
                         )
                     {
                         app.execute(Action::SelectAll, &cc.egui_ctx);

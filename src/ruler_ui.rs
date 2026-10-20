@@ -78,7 +78,7 @@ impl DocsApp {
         // Keep the horizontal ruler at the viewport top while the canvas scrolls.
         let rect = rect.translate(vec2(0., (ui.clip_rect().top() - rect.top()).max(0.)));
         self.record("ruler", rect);
-        let menu_response = ui.interact(rect, Id::new("ruler-menu"), Sense::click());
+        let mut menu_response = ui.interact(rect, Id::new("ruler-menu"), Sense::click());
         if let Some(drag) = &mut self.ruler_drag
             && drag.rect == Rect::NOTHING
         {
@@ -157,6 +157,11 @@ impl DocsApp {
                     Sense::focusable_noninteractive()
                 },
             );
+            // Marker widgets own their clicks; forward secondary clicks to the
+            // shared ruler menu without changing primary drag behavior.
+            if response.secondary_clicked() {
+                menu_response = menu_response.union(response.clone());
+            }
             let active = self
                 .ruler_drag
                 .as_ref()
@@ -397,8 +402,30 @@ impl DocsApp {
                 }
             }
         }
-        menu_response.on_hover_text("Right-click for Reset indents to style. Ctrl+Shift+F8 enters markers; Delete previews all-indent reset; Shift+Delete resets the focused property; Enter applies; Esc cancels.")
+        menu_response.on_hover_text("Right-click for indent sources or Reset indents to style. Ctrl+Shift+F8 enters markers; Delete previews all-indent reset; Shift+Delete resets the focused property; Enter applies; Esc cancels.")
             .context_menu(|ui| {
+                ui.label("Inspect indent sources");
+                for (handle, name, label) in [
+                    (Handle::First, "ruler-sources-first", "First line sources"),
+                    (Handle::Body, "ruler-sources-body", "Continuation line sources"),
+                    (Handle::Left, "ruler-sources-left", "Left indent sources"),
+                    (Handle::Right, "ruler-sources-right", "Right indent sources"),
+                ] {
+                    let inspect = ui.add_enabled(enabled && self.ruler_drag.is_none(), Button::new(label));
+                    self.record(name, inspect.rect);
+                    if inspect.clicked() {
+                        self.leave_ribbon(ui.ctx());
+                        self.focus_document = false;
+                        self.ruler_key_focus = Some(handle);
+                        self.ruler_sources_scroll = 0.;
+                        self.ruler_sources = true;
+                        self.ruler_sources_wheel_guard = true;
+                        let id = MARKERS.iter().find(|(h, _)| *h == handle).unwrap().1;
+                        ui.ctx().memory_mut(|m| m.request_focus(Id::new(id)));
+                        ui.close();
+                    }
+                }
+                ui.separator();
                 for (scope, name, label) in [
                     (ResetIndent::All, "ruler-reset", "Reset all indents to style"),
                     (ResetIndent::Left, "ruler-reset-left", "Reset left indent to style"),

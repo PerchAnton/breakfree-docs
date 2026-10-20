@@ -8203,3 +8203,156 @@ fn ruler_source_wheel_preserves_draft_until_commit_and_pointer_cancel() {
         }
     }
 }
+
+fn open_ruler_context(ctx: &egui::Context, app: &mut DocsApp, size: [f32; 2], dpi: f32) {
+    let pos = region(app, "ruler").center();
+    let button = |pressed| egui::Event::PointerButton {
+        pos,
+        button: egui::PointerButton::Secondary,
+        pressed,
+        modifiers: Modifiers::NONE,
+    };
+    frame(
+        ctx,
+        app,
+        vec![egui::Event::PointerMoved(pos), button(true), button(false)],
+        size,
+        dpi,
+    );
+    frame(ctx, app, vec![], size, dpi);
+}
+
+#[test]
+fn ruler_context_sources_all_markers_focus_scroll_and_read_only() {
+    for dpi in [1., 1.25, 1.5] {
+        for (name, handle, marker) in [
+            (
+                "ruler-sources-first",
+                crate::ruler::Handle::First,
+                "ruler-first",
+            ),
+            (
+                "ruler-sources-body",
+                crate::ruler::Handle::Body,
+                "ruler-body",
+            ),
+            (
+                "ruler-sources-left",
+                crate::ruler::Handle::Left,
+                "ruler-left",
+            ),
+            (
+                "ruler-sources-right",
+                crate::ruler::Handle::Right,
+                "ruler-right",
+            ),
+        ] {
+            let (ctx, mut app, size) = ruler_source_fixture(dpi);
+            let before = app.session.editor.document.clone();
+            let selection = app.session.editor.selection;
+            let n = app.session.editor.undo_stack.len();
+            open_ruler_context(&ctx, &mut app, size, dpi);
+            let item = region(&app, name);
+            assert!(item.left() >= 0. && item.right() <= 640. && item.bottom() <= 480.);
+            let pos = item.center();
+            frame(
+                &ctx,
+                &mut app,
+                vec![
+                    egui::Event::PointerMoved(pos),
+                    ruler_pointer(pos, true),
+                    ruler_pointer(pos, false),
+                ],
+                size,
+                dpi,
+            );
+            frame(&ctx, &mut app, vec![], size, dpi);
+            assert!(app.ruler_sources);
+            assert!(!egui::Popup::is_any_open(&ctx));
+            assert_eq!(app.ruler_key_focus, Some(handle));
+            assert_eq!(app.ruler_sources_scroll, 0.);
+            let pos = region(&app, "ruler-sources").center();
+            frame(
+                &ctx,
+                &mut app,
+                vec![
+                    egui::Event::PointerMoved(pos),
+                    source_wheel(egui::MouseWheelUnit::Line, -3.),
+                ],
+                size,
+                dpi,
+            );
+            if handle != crate::ruler::Handle::Right {
+                assert!(app.ruler_sources_scroll > 0.);
+            }
+            frame(&ctx, &mut app, vec![key(Key::Escape, false)], size, dpi);
+            assert!(!app.ruler_sources);
+            assert!(ctx.memory(|m| m.has_focus(Id::new(marker))));
+            assert_eq!(app.session.editor.document, before);
+            assert_eq!(app.session.editor.selection, selection);
+            assert_eq!(app.session.editor.undo_stack.len(), n);
+        }
+    }
+}
+
+#[test]
+fn ruler_context_takeover_cancels_preview_without_applying_it() {
+    let (ctx, mut app, size) = ruler_source_fixture(1.);
+    let before = app.session.editor.document.clone();
+    let n = app.session.editor.undo_stack.len();
+    frame(
+        &ctx,
+        &mut app,
+        vec![
+            ruler_key(Key::F8, Modifiers::CTRL | Modifiers::SHIFT),
+            key(Key::ArrowRight, false),
+        ],
+        size,
+        1.,
+    );
+    assert!(app.ruler_drag.is_some());
+    open_ruler_context(&ctx, &mut app, size, 1.);
+    assert!(app.ruler_drag.is_none());
+    let pos = region(&app, "ruler-sources-left").center();
+    frame(
+        &ctx,
+        &mut app,
+        vec![
+            egui::Event::PointerMoved(pos),
+            ruler_pointer(pos, true),
+            ruler_pointer(pos, false),
+        ],
+        size,
+        1.,
+    );
+    frame(&ctx, &mut app, vec![], size, 1.);
+    assert!(app.ruler_sources);
+    assert_eq!(app.session.editor.document, before);
+    assert_eq!(app.session.editor.undo_stack.len(), n);
+}
+
+#[test]
+fn ruler_context_sources_open_when_right_clicking_a_marker() {
+    for marker in ["ruler-first", "ruler-body", "ruler-left", "ruler-right"] {
+        let (ctx, mut app) = setup();
+        let pos = region(&app, marker).center();
+        let button = |pressed| egui::Event::PointerButton {
+            pos,
+            button: egui::PointerButton::Secondary,
+            pressed,
+            modifiers: Modifiers::NONE,
+        };
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::PointerMoved(pos), button(true), button(false)],
+            [1366., 900.],
+            1.,
+        );
+        frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+        assert!(
+            app.regions.iter().any(|r| r.name == "ruler-sources-first"),
+            "{marker}"
+        );
+    }
+}
