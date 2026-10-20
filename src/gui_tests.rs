@@ -8698,3 +8698,76 @@ fn ruler_accessibility_menu_activation_and_disabled_preview_commands() {
     );
     assert_eq!(app.session.editor.document, before);
 }
+
+#[test]
+fn home_indent_controls_use_shared_command_and_preserve_history() {
+    let (ctx, mut app) = setup();
+    app.session
+        .editor
+        .replace(0, 0, "English\nУкраїна\nРусский e\u{301}", "Fixture")
+        .unwrap();
+    let end = app.session.editor.document.text().chars().count();
+    app.session.editor.selection = (0, end);
+    app.sync_view();
+    let before = app.session.editor.document.clone();
+    let n = app.session.editor.undo_stack.len();
+    click_region(&ctx, &mut app, "command-IncreaseIndent");
+    assert!(
+        app.session
+            .editor
+            .document
+            .paragraphs
+            .iter()
+            .all(|p| p.spacing.left_indent_half_points == Some(72))
+    );
+    assert_eq!(app.session.editor.undo_stack.len(), n + 1);
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.document, before);
+    app.execute(Action::Redo, &ctx);
+    click_region(&ctx, &mut app, "command-DecreaseIndent");
+    assert!(
+        app.session
+            .editor
+            .document
+            .paragraphs
+            .iter()
+            .all(|p| p.spacing.left_indent_half_points == Some(0))
+    );
+    app.composing = true;
+    assert!(!app.enabled(Action::IncreaseIndent));
+    assert!(!app.enabled(Action::DecreaseIndent));
+}
+
+#[test]
+fn home_indent_keytips_keep_collapsed_ribbon_selection() {
+    let (ctx, mut app) = setup();
+    app.ribbon_collapsed = true;
+    let before = app.session.editor.document.clone();
+    tip_sequence(
+        &ctx,
+        &mut app,
+        &[Key::F10, Key::H, Key::I, Key::I],
+        [1366., 900.],
+    );
+    assert_eq!(
+        app.session.editor.document.paragraphs[0]
+            .spacing
+            .left_indent_half_points,
+        Some(72)
+    );
+    tip_sequence(
+        &ctx,
+        &mut app,
+        &[Key::F10, Key::H, Key::D, Key::I],
+        [1366., 900.],
+    );
+    assert_eq!(
+        app.session.editor.document.paragraphs[0]
+            .spacing
+            .left_indent_half_points,
+        Some(0)
+    );
+    app.execute(Action::Undo, &ctx);
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.document, before);
+}

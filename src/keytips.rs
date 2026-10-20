@@ -131,6 +131,8 @@ impl DocsApp {
                 Tip::action("FK", Action::ShrinkFont),
                 Tip::action("FN", Action::FontDialog),
                 Tip::action("PS", Action::ParagraphSpacing),
+                Tip::action("DI", Action::DecreaseIndent),
+                Tip::action("II", Action::IncreaseIndent),
                 Tip::action("AL", Action::Left),
                 Tip::action("AC", Action::Center),
                 Tip::action("AR", Action::Right),

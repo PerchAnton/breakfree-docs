@@ -86,6 +86,8 @@ pub enum Action {
     FontSize,
     FontDialog,
     ParagraphSpacing,
+    IncreaseIndent,
+    DecreaseIndent,
     ModifyStyle,
     CreateStyle,
     CreateCharacterStyle,
@@ -132,6 +134,8 @@ impl Action {
             }
             Self::FontSize => "Font size",
             Self::FontDialog => "Font dialog",
+            Self::IncreaseIndent => "Increase indent",
+            Self::DecreaseIndent => "Decrease indent",
             Self::ParagraphSpacing => "Paragraph spacing",
             Self::ModifyStyle => "Modify style…",
             Self::CreateStyle => "Create style…",
@@ -182,6 +186,8 @@ const COMMANDS: &[Action] = &[
     Action::FontSize,
     Action::FontDialog,
     Action::ParagraphSpacing,
+    Action::IncreaseIndent,
+    Action::DecreaseIndent,
     Action::ModifyStyle,
     Action::CreateStyle,
     Action::CreateCharacterStyle,
@@ -743,6 +749,15 @@ impl DocsApp {
                     ));
                 }
             }
+            Action::IncreaseIndent | Action::DecreaseIndent => {
+                let result = self.session.editor.step_paragraph_indent(
+                    start,
+                    end,
+                    action == Action::IncreaseIndent,
+                );
+                self.fail(result);
+                self.sync_view();
+            }
             Action::ParagraphSpacing => {
                 self.paragraph_dialog = Some(ParagraphDialog::default());
                 self.focus_document = false;
@@ -1273,6 +1288,9 @@ impl DocsApp {
             if shortcut.is_empty() { "" } else { " · " },
             shortcut
         );
+        if matches!(action, Action::IncreaseIndent | Action::DecreaseIndent) {
+            tip.push_str("\nChange each selected paragraph's left indent by 36 pt, within 0–144 pt. Preserve right and first-line/hanging indents. One Undo restores the change.");
+        }
         if action == Action::ClearFormatting {
             tip.push_str("\nRemove direct bold, italic, underline and size overrides; inherit the paragraph style. Paragraph alignment stays unchanged. At a caret, reset the next text you type.");
         }
@@ -1730,22 +1748,29 @@ impl DocsApp {
                     [origin + vec2(95., 7.), origin + vec2(95., 28.)],
                     Stroke::new(1.0_f32, chrome::LINE),
                 );
-                for (i, (icon, name)) in [
-                    (Icon::Indent(false), "Decrease indent"),
-                    (Icon::Indent(true), "Increase indent"),
-                    (Icon::Sort, "Sort"),
-                    (Icon::Text("¶"), "Show marks"),
-                ]
-                .into_iter()
-                .enumerate()
+                for (i, action) in [Action::DecreaseIndent, Action::IncreaseIndent]
+                    .into_iter()
+                    .enumerate()
+                {
+                    self.ribbon_control(
+                        ui,
+                        r(99. + i as f32 * 26., 5., 25., 25.),
+                        Icon::Indent(i == 1),
+                        "",
+                        action,
+                    );
+                }
+                for (i, (icon, name)) in [(Icon::Sort, "Sort"), (Icon::Text("¶"), "Show marks")]
+                    .into_iter()
+                    .enumerate()
                 {
                     self.unavailable(
                         ui,
-                        r(99. + i as f32 * 26., 5., 25., 25.),
+                        r(151. + i as f32 * 26., 5., 25., 25.),
                         icon,
                         "",
                         name,
-                        "Indentation, sorting and formatting marks are planned.",
+                        "Sorting and formatting marks are planned.",
                     );
                 }
                 for (i, action) in [Action::Left, Action::Center, Action::Right, Action::Justify]

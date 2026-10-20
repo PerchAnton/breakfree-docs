@@ -155,3 +155,18 @@ First-line and hanging remain two signs of one property, not independent fields.
 The detached draft previews the result; acceptance commits one shared command,
 with existing no-op history preservation and stale document/selection rejection.
 No native schema or model property is added.
+
+## Alpha.60 stepped paragraph indentation
+
+Home Increase indent / Decrease indent changes each selected paragraph's resolved
+left indent by 36 pt (72 half points), bounded to 0–144 pt. Changed values become
+direct overrides; paragraphs already at the boundary retain their exact authored
+value or inheritance. Right and first-line/hanging properties stay untouched.
+The half-open selection rule excludes the paragraph at an exclusive end; a caret
+acts on its paragraph. One command creates one history entry; a complete no-op
+preserves redo. The existing native v13 schema persists the result.
+
+The existing two Home icons now dispatch the shared command. Command search also
+exposes both actions; Docs-specific KeyTips H → II / DI are not a verified Word
+mapping. Geometry, palette and icons are unchanged; enabled states now reflect
+working commands. Lists, tab stops and editable page margins remain future work.

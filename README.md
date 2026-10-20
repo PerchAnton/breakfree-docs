@@ -749,3 +749,8 @@ still open; see [validation](docs/VALIDATION.md#alpha58-ruler-accessibility-vali
 
 VoiceOver speech/cursor acceptance is postponed to the final accessibility review
 by owner request (alpha.59). Existing keyboard/AX checks do not substitute for it.
+
+Home **Increase indent / Decrease indent** changes the selected paragraphs' left
+indents by 36 pt within 0–144 pt, preserving right and special indents. One Undo
+restores the selection's prior formatting. Each paragraph steps from its own
+resolved value. Command search and Home KeyTips II/DI offer the same actions.

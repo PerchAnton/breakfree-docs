@@ -3,6 +3,12 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.60 — 2026-10-20
+
+- Enable Home Increase/Decrease indent using shared Rust commands: change each selected paragraph's resolved left indent by 36 pt, clamped to 0–144 pt, in one Undo/Redo operation.
+- Preserve right and first-line/hanging indents, unrelated formatting and clamped inheritance. Exclude the paragraph beginning at an exclusive selection end. No-op steps preserve redo.
+- Add command-search entries and Docs-specific Home KeyTips II/DI. Preserve ribbon geometry, palette/icons and native v13. Alpha.59 approved; alpha.60 awaits approval. VoiceOver final review and Windows remain deferred.
+
 ## 0.1.0-alpha.59 — 2026-10-20
 
 - Record the owner's decision to postpone VoiceOver speech/navigation acceptance until the final accessibility review. The owner clarified that VoiceOver was manually turned off; observed deactivation is not evidence of an OS or application failure.

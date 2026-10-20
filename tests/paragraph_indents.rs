@@ -194,3 +194,73 @@ fn indent_parser_and_noop_preserve_redo() {
         .unwrap();
     assert_eq!(e.redo_stack.len(), redo);
 }
+
+#[test]
+fn stepped_indents_preserve_mixed_geometry_inheritance_history_and_storage() {
+    let mut e = Editor::default();
+    e.replace(0, 0, "e\u{301}\nУкраїна\nРусский", "Fixture")
+        .unwrap();
+    e.document.style_catalog.normal.left_indent_half_points = Some(36);
+    e.document.paragraphs[1].spacing.left_indent_half_points = Some(270);
+    e.document.paragraphs[0].spacing.first_line_half_points = Some(-24);
+    e.document.paragraphs[0].spacing.right_indent_half_points = Some(48);
+    let before = e.document.clone();
+    let n = e.undo_stack.len();
+    let end = e.document.text().chars().count();
+    e.step_paragraph_indent(0, end, true).unwrap();
+    assert_eq!(
+        e.document.paragraphs[0].spacing.left_indent_half_points,
+        Some(108)
+    );
+    assert_eq!(
+        e.document.paragraphs[1].spacing.left_indent_half_points,
+        Some(288)
+    );
+    assert_eq!(
+        e.document.paragraphs[0].spacing.first_line_half_points,
+        Some(-24)
+    );
+    assert_eq!(
+        e.document.paragraphs[0].spacing.right_indent_half_points,
+        Some(48)
+    );
+    assert_eq!(e.undo_stack.len(), n + 1);
+    let after = e.document.clone();
+    assert_eq!(
+        storage::decode(&storage::encode(&after).unwrap()).unwrap(),
+        after
+    );
+    e.undo();
+    assert_eq!(e.document, before);
+    e.redo();
+    assert_eq!(e.document, after);
+    e.step_paragraph_indent(0, 3, false).unwrap();
+    assert_eq!(
+        e.document.paragraphs[0].spacing.left_indent_half_points,
+        Some(36)
+    );
+    assert_eq!(e.document.paragraphs[1..], after.paragraphs[1..]);
+}
+
+#[test]
+fn stepped_indent_noop_preserves_inheritance_redo_and_rejects_invalid_range() {
+    let mut e = Editor::default();
+    e.replace(0, 0, "text", "Fixture").unwrap();
+    e.undo();
+    let redo = e.redo_stack.len();
+    e.step_paragraph_indent(0, 0, false).unwrap();
+    assert_eq!(e.redo_stack.len(), redo);
+    assert_eq!(
+        e.document.paragraphs[0].spacing.left_indent_half_points,
+        None
+    );
+    e.document.style_catalog.normal.left_indent_half_points = Some(288);
+    e.step_paragraph_indent(0, 0, true).unwrap();
+    assert_eq!(
+        e.document.paragraphs[0].spacing.left_indent_half_points,
+        None
+    );
+    let before = e.document.clone();
+    assert!(e.step_paragraph_indent(1, 0, true).is_err());
+    assert_eq!(e.document, before);
+}

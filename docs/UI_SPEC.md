@@ -1796,3 +1796,20 @@ Alpha.59: the owner deferred VoiceOver speech and cursor review until the final
 accessibility stage. Manual deactivation explains the observed switch change;
 it is not evidence of a crash. Preserve the alpha.58 interface and keep native
 speech acceptance open.
+
+## Alpha.60 stepped paragraph indentation
+
+Home Increase indent / Decrease indent changes each selected paragraph's resolved
+left indent by 36 pt (72 half points), bounded to 0–144 pt. Changed values become
+direct overrides; paragraphs already at the boundary retain their exact authored
+value or inheritance. Right and first-line/hanging properties stay untouched.
+The half-open selection rule excludes the paragraph at an exclusive end; a caret
+acts on its paragraph. One command creates one history entry; a complete no-op
+preserves redo. The existing native v13 schema persists the result.
+
+The existing two Home icons now dispatch the shared command. Command search also
+exposes both actions; Docs-specific KeyTips H → II / DI are not a verified Word
+mapping. Geometry, palette and icons are unchanged; enabled states now reflect
+working commands. Lists, tab stops and editable page margins remain future work.
+
+Native Home capture (1366 × 900 DIP): [alpha.60](screenshots/rust-home-indents-alpha60-macos.png). SHA-256 `15894f725603d6f6f710ca58d30bbcb020994b17b942564d070394b41ae51c5d`. Existing emoji fallback limitation remains visible; no shaping claim.

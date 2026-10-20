@@ -374,3 +374,6 @@ Use public specifications and original test cases, not copied application code. 
 
 - [x] Alpha.58: AccessKit marker activation/full-source/preview descriptions, disabled states and menu focus/action regressions; native macOS AX and keyboard smoke verified.
 - [ ] Sustained screen-reader speech/cursor acceptance, including long source lists; deferred to the final review by owner instruction in alpha.59. Observed deactivation was manual, not a confirmed system failure.
+
+- [x] Alpha.60: functional Home left-indent stepping through a shared command, mixed/inherited values, clamping, one Undo/Redo and v13 roundtrip tests.
+- [ ] Next D2 increment: define tab-stop storage/layout semantics before adding editable ruler tab stops; list structure remains a separate feature.

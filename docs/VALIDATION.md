@@ -1549,3 +1549,19 @@ palette/icons and native v13 are unchanged. The standard local Cargo checks and
 repository validation were rerun for alpha.59; 309 full / 149 core tests pass.
 Windows acceptance remains separately deferred. No native VoiceOver acceptance
 claim is based on these automated checks.
+
+## Alpha.60 indent command validation
+
+2026-10-20, macOS arm64, Rust 1.99.1: 313 full / 151 core tests pass.
+fmt, normal/capture Clippy, release/capture builds, repository/artwork/YAML and
+diff checks pass. Isolated version/capabilities identify alpha.60 without Office.
+Two core regressions cover inherited/mixed/clamped indents, Unicode selection,
+exclusive-end exclusion, unchanged right/special indents, one Undo/Redo, native
+v13 encoding/decoding, no-op inheritance/redo and invalid ranges. Two widget tests
+activate the actual Home controls and collapsed-ribbon KeyTips; IME guards hold.
+
+A native capture at 1366 × 900 DIP was inspected: the two existing indent icons
+are enabled, with unchanged group geometry and palette. The known missing emoji
+glyph in the Welcome fixture remains. Capture uses the development harness, not
+physical OS input. Native keyboard/input was not repeated this iteration.
+VoiceOver final review, Windows and matched Word comparison remain deferred.

@@ -520,6 +520,49 @@ impl Editor {
         Ok(())
     }
 
+    /// Change each selected paragraph's resolved left indent by 36 pt.
+    /// Clamped paragraphs retain their authored override (including inheritance).
+    pub fn step_paragraph_indent(
+        &mut self,
+        start: usize,
+        end: usize,
+        increase: bool,
+    ) -> Result<()> {
+        validate_range(&self.document.text(), start, end)?;
+        let (first, _) = self.document.locate(start)?;
+        let (mut last, offset) = self.document.locate(end)?;
+        if end > start && offset == 0 && last > first {
+            last -= 1;
+        }
+        let mut result = self.document.clone();
+        for index in first..=last {
+            let current = self
+                .document
+                .resolved_paragraph(&self.document.paragraphs[index])
+                .left_indent_half_points;
+            let next = if increase {
+                current.saturating_add(72).min(288)
+            } else {
+                current.saturating_sub(72)
+            };
+            if next != current {
+                result.paragraphs[index].spacing.left_indent_half_points = Some(next);
+            }
+        }
+        result.validate()?;
+        self.commit(
+            result,
+            if increase {
+                "Increase indent"
+            } else {
+                "Decrease indent"
+            },
+            (start, end),
+            self.typing_style,
+        );
+        Ok(())
+    }
+
     pub fn align(&mut self, start: usize, end: usize, alignment: Alignment) -> Result<()> {
         validate_range(&self.document.text(), start, end)?;
         let (first, _) = self.document.locate(start)?;
