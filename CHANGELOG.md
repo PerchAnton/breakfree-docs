@@ -3,6 +3,15 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.67 — 2026-10-20
+
+- Click empty horizontal ruler space within the text column to create a left tab;
+  right-click an existing tab to delete it. Each action uses one shared Undo/Redo.
+- In keyboard tab mode, Delete previews removal; Enter or Tab applies and exits,
+  Escape cancels. Existing movement and outside-release cancellation are retained.
+- Reject duplicate/full/mixed lists without mutation. Preserve half-open selection,
+  native v15, design, palette and icons. Windows and VoiceOver remain deferred.
+
 ## 0.1.0-alpha.66 — 2026-10-20
 
 - Add Ctrl+Alt+F8 access to existing ruler tab stops, half-point arrow movement,

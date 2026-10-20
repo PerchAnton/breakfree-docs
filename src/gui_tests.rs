@@ -9675,3 +9675,191 @@ fn tab_keyboard_entry_guards_reverse_traversal_and_redo() {
     app.session.editor.redo();
     assert_eq!(app.session.editor.document, after);
 }
+
+#[test]
+fn ruler_tab_create_click_and_keyboard_delete_are_single_transactions() {
+    for dpi in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        let size = [1366. * dpi, 900. * dpi];
+        frame(&ctx, &mut app, vec![], size, dpi);
+        let ruler = app.regions.iter().find(|r| r.name == "ruler").unwrap().rect;
+        let point = pos2(ruler.left() + CANVAS_MARGIN + 120., ruler.top() + 10.);
+        let before = app.session.editor.document.clone();
+        let count = app.session.editor.undo_stack.len();
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::PointerMoved(point), ruler_pointer(point, true)],
+            size,
+            dpi,
+        );
+        assert_eq!(app.session.editor.document, before);
+        frame(&ctx, &mut app, vec![ruler_pointer(point, false)], size, dpi);
+        assert_eq!(
+            app.session.editor.document.paragraphs[0]
+                .spacing
+                .left_tab_stops_half_points,
+            [180]
+        );
+        assert_eq!(app.session.editor.undo_stack.len(), count + 1);
+        let created = app.session.editor.document.clone();
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                ruler_key(Key::F8, Modifiers::CTRL | Modifiers::ALT),
+                egui::Event::PointerGone,
+            ],
+            size,
+            dpi,
+        );
+        frame(&ctx, &mut app, vec![key(Key::Delete, false)], size, dpi);
+        assert!(app.tab_ruler_drag.as_ref().unwrap().draft.deleting);
+        assert_eq!(app.session.editor.document, created);
+        frame(&ctx, &mut app, vec![key(Key::Escape, false)], size, dpi);
+        assert_eq!(app.session.editor.document, created);
+        frame(
+            &ctx,
+            &mut app,
+            vec![ruler_key(Key::F8, Modifiers::CTRL | Modifiers::ALT)],
+            size,
+            dpi,
+        );
+        frame(
+            &ctx,
+            &mut app,
+            vec![key(Key::Delete, false), key(Key::Tab, false)],
+            size,
+            dpi,
+        );
+        assert!(app.tab_ruler_drag.is_none());
+        assert_eq!(app.session.editor.document, before);
+        assert_eq!(app.session.editor.undo_stack.len(), count + 2);
+        app.session.editor.undo();
+        assert_eq!(app.session.editor.document, created);
+        app.session.editor.redo();
+        assert_eq!(app.session.editor.document, before);
+    }
+}
+
+#[test]
+fn ruler_tab_context_delete_and_menu_dismissal() {
+    let (ctx, mut app) = setup();
+    app.session
+        .editor
+        .set_left_tab_stops(0, 0, vec![144, 288])
+        .unwrap();
+    app.sync_view();
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    let before = app.session.editor.document.clone();
+    let count = app.session.editor.undo_stack.len();
+    for cancel in [true, false] {
+        let point = app
+            .regions
+            .iter()
+            .find(|r| r.name == "ruler-tab-144")
+            .unwrap()
+            .rect
+            .center();
+        let secondary = |pressed| egui::Event::PointerButton {
+            pos: point,
+            button: egui::PointerButton::Secondary,
+            pressed,
+            modifiers: Modifiers::NONE,
+        };
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::PointerMoved(point), secondary(true)],
+            [1366., 900.],
+            1.,
+        );
+        frame(&ctx, &mut app, vec![secondary(false)], [1366., 900.], 1.);
+        frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+        assert!(app.regions.iter().any(|r| r.name == "ruler-tab-delete"));
+        if cancel {
+            frame(
+                &ctx,
+                &mut app,
+                vec![key(Key::Escape, false)],
+                [1366., 900.],
+                1.,
+            );
+            assert_eq!(app.session.editor.document, before);
+        } else {
+            click_region(&ctx, &mut app, "ruler-tab-delete");
+        }
+    }
+    assert_eq!(
+        app.session.editor.document.paragraphs[0]
+            .spacing
+            .left_tab_stops_half_points,
+        [288]
+    );
+    assert_eq!(app.session.editor.undo_stack.len(), count + 1);
+    app.session.editor.undo();
+    assert_eq!(app.session.editor.document, before);
+}
+
+#[test]
+fn ruler_tab_creation_rejects_mixed_duplicate_and_outside_release() {
+    let (ctx, mut app) = setup();
+    app.session.editor.replace(0, 0, "a\nb", "Fixture").unwrap();
+    app.session
+        .editor
+        .set_left_tab_stops(0, 0, vec![180])
+        .unwrap();
+    app.sync_view();
+    frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    let ruler = app.regions.iter().find(|r| r.name == "ruler").unwrap().rect;
+    let point = pos2(ruler.left() + CANVAS_MARGIN + 120., ruler.top() + 5.);
+    let before = app.session.editor.document.clone();
+    let count = app.session.editor.undo_stack.len();
+    for mixed in [false, true] {
+        app.session.editor.selection = if mixed { (0, 3) } else { (0, 0) };
+        frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+        frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::PointerMoved(point), ruler_pointer(point, true)],
+            [1366., 900.],
+            1.,
+        );
+        frame(
+            &ctx,
+            &mut app,
+            vec![ruler_pointer(point, false)],
+            [1366., 900.],
+            1.,
+        );
+        assert!(
+            app.error.take().is_some(),
+            "mixed={mixed}, stops={:?}",
+            app.session.editor.document.paragraphs[0]
+                .spacing
+                .left_tab_stops_half_points
+        );
+        assert_eq!(app.session.editor.document, before);
+        assert_eq!(app.session.editor.undo_stack.len(), count);
+    }
+    let free = point + vec2(30., 0.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::PointerMoved(free), ruler_pointer(free, true)],
+        [1366., 900.],
+        1.,
+    );
+    frame(
+        &ctx,
+        &mut app,
+        vec![
+            egui::Event::PointerMoved(free + vec2(0., 80.)),
+            ruler_pointer(free + vec2(0., 80.), false),
+        ],
+        [1366., 900.],
+        1.,
+    );
+    assert_eq!(app.session.editor.document, before);
+}

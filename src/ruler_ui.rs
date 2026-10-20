@@ -302,6 +302,28 @@ impl DocsApp {
             response.on_hover_text(format!("{label} — drag to preview; release to apply; Esc cancels. Half-point steps. Uses the first selected paragraph; applies to selected paragraphs. Ctrl+Shift+F8 enters keyboard control; Tab changes marker, arrows nudge 0.5 pt, Shift+arrows 5 pt, Enter applies, Esc cancels, F1 shows sources, Delete previews all-indent reset; Shift+Delete resets the focused property to style indents. {}", summary.marker_details(handle)));
         }
         self.tab_markers(ui, rect, left, right, zoom, &indent_targets);
+        if menu_response.clicked()
+            && self.enabled(Action::TabPositions)
+            && !self.composing
+            && !self.backstage
+            && self.ruler_key_focus.is_none()
+            && let Some(pointer) = menu_response.interact_pointer_pos()
+            && pointer.x > left
+            && pointer.x < right
+            && !indent_targets.iter().any(|target| target.contains(pointer))
+            && !self
+                .regions
+                .iter()
+                .any(|r| r.name.starts_with("ruler-tab-") && r.rect.contains(pointer))
+        {
+            let value = ((pointer.x - left) / (14.6667 * zoom / 22.))
+                .round()
+                .clamp(1., 2880.) as u16;
+            let result = crate::tab_ruler::Draft::create(&self.session.editor, value)
+                .and_then(|draft| draft.commit(&mut self.session.editor));
+            self.fail(result);
+            self.sync_view();
+        }
         if let Some(drag) = &mut self.ruler_drag
             && !drag.keyboard
         {
@@ -444,7 +466,7 @@ impl DocsApp {
                 }
             }
         }
-        let menu_response = menu_response.on_hover_text("Right-click or Shift+F10 on a focused marker for indent sources or reset. Ctrl+Shift+F8 enters markers; Enter applies; Esc cancels.");
+        let menu_response = menu_response.on_hover_text("Click empty text-column ruler space to add a left tab. Right-click a tab to delete it. Right-click or Shift+F10 on an indent marker for sources or reset. Ctrl+Shift+F8 enters markers; Enter applies; Esc cancels.");
         let mut popup = egui::Popup::context_menu(&menu_response);
         if self.ruler_menu.is_some() {
             let marker = self.ruler_key_focus.unwrap_or(Handle::First);

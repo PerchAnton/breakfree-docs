@@ -1,19 +1,31 @@
-//! Toolkit-independent preview of one existing explicit left tab stop.
+//! Toolkit-independent creation, movement and removal of explicit left tab stops.
 use crate::{Result, commands::Editor, model::Document};
 
 pub struct Draft {
     original: Document,
     selection: (usize, usize),
-    source: u16,
+    source: Option<u16>,
     positions: Vec<u16>,
     first: usize,
     last: usize,
     valid: bool,
     pub preview: Document,
     pub position: u16,
+    pub deleting: bool,
 }
 impl Draft {
     pub fn new(editor: &Editor, source: u16) -> Result<Self> {
+        Self::snapshot(editor, Some(source))
+    }
+    pub fn create(editor: &Editor, position: u16) -> Result<Self> {
+        if !(1..=2880).contains(&position) {
+            return Err("Tab position must be 0.5–1440 pt.".into());
+        }
+        let mut draft = Self::snapshot(editor, None)?;
+        draft.move_to(f32::from(position))?;
+        Ok(draft)
+    }
+    fn snapshot(editor: &Editor, source: Option<u16>) -> Result<Self> {
         editor.document.validate()?;
         let (start, end) = editor.selection;
         if start > end {
@@ -28,7 +40,7 @@ impl Draft {
             .spacing
             .left_tab_stops_half_points
             .clone();
-        if !positions.contains(&source) {
+        if source.is_some_and(|source| !positions.contains(&source)) {
             return Err("Tab position no longer exists.".into());
         }
         if editor.document.paragraphs[first..=last]
@@ -46,23 +58,25 @@ impl Draft {
             first,
             last,
             valid: true,
-            position: source,
+            position: source.unwrap_or(1),
+            deleting: false,
         })
     }
     pub fn move_to(&mut self, half_points: f32) -> Result<()> {
+        self.deleting = false;
         self.valid = false;
         self.preview = self.original.clone();
         if !half_points.is_finite() {
             return Err("Invalid tab position.".into());
         }
         let position = half_points.round().clamp(1., 2880.) as u16;
-        if position != self.source && self.positions.contains(&position) {
+        if Some(position) != self.source && self.positions.contains(&position) {
             return Err(
                 "A tab already occupies this position. Choose another position or cancel.".into(),
             );
         }
         let mut positions = self.positions.clone();
-        positions.retain(|p| *p != self.source);
+        positions.retain(|p| Some(*p) != self.source);
         positions.push(position);
         positions.sort_unstable();
         for p in &mut self.preview.paragraphs[self.first..=self.last] {
@@ -70,6 +84,21 @@ impl Draft {
         }
         self.preview.validate()?;
         self.position = position;
+        self.valid = true;
+        Ok(())
+    }
+    pub fn remove(&mut self) -> Result<()> {
+        self.valid = false;
+        let source = self.source.ok_or("Cannot remove an uncommitted new tab.")?;
+        self.preview = self.original.clone();
+        for paragraph in &mut self.preview.paragraphs[self.first..=self.last] {
+            paragraph
+                .spacing
+                .left_tab_stops_half_points
+                .retain(|p| *p != source);
+        }
+        self.preview.validate()?;
+        self.deleting = true;
         self.valid = true;
         Ok(())
     }

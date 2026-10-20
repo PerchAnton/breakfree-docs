@@ -814,3 +814,18 @@ Enter applies and exits; Tab/Shift+Tab applies once and selects the next/previou
 stop in sorted order, wrapping. Escape cancels only the current preview. Exact
 values appear below the ruler. A no-op does not consume Undo or discard Redo.
 A duplicate destination blocks acceptance until corrected or cancelled.
+
+## Alpha.67: ruler tab creation and deletion
+
+Click empty horizontal ruler space inside the text column to create a left tab at
+the nearest half point. The click must finish on the ruler; indent/tab hit targets
+keep priority. Right-click a tab and choose **Delete tab at … pt** to remove it.
+Each completed action uses the same validated list command in one Undo/Redo.
+Dismissing the menu changes nothing. Dragging outside still cancels movement;
+this increment deliberately does not change that gesture into deletion.
+
+In Ctrl+Alt+F8 tab mode, Delete previews removal of the original selected tab.
+Enter or Tab applies once and exits (including when the last tab is removed).
+Escape cancels; arrows return to movement preview. Deleting after movement removes
+the original source in one transaction, without committing an intermediate move.
+Exact removal text appears below the ruler. No text input reaches the document.

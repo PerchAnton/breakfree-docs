@@ -80,3 +80,85 @@ fn clamped_bounds_rounding_and_empty_source_rejection() {
     d.move_to(96.4).unwrap();
     assert_eq!(d.position, 96);
 }
+
+#[test]
+fn create_and_remove_preserve_half_open_selection_and_history() {
+    let mut e = editor();
+    let before = e.document.clone();
+    let count = e.undo_stack.len();
+    let create = Draft::create(&e, 100).unwrap();
+    assert_eq!(e.document, before);
+    create.commit(&mut e).unwrap();
+    let created = e.document.clone();
+    assert_eq!(e.undo_stack.len(), count + 1);
+    assert_eq!(
+        created.paragraphs[0].spacing.left_tab_stops_half_points,
+        [72, 100, 144, 216]
+    );
+    assert_eq!(created.paragraphs[2], before.paragraphs[2]);
+    e.undo();
+    assert_eq!(e.document, before);
+    e.redo();
+    assert_eq!(e.document, created);
+    let mut remove = Draft::new(&e, 100).unwrap();
+    remove.move_to(110.).unwrap();
+    remove.remove().unwrap();
+    assert!(remove.deleting);
+    assert_eq!(remove.preview, before);
+    assert_eq!(e.document, created);
+    remove.commit(&mut e).unwrap();
+    assert_eq!(e.undo_stack.len(), count + 2);
+    assert_eq!(e.document, before);
+    e.undo();
+    assert_eq!(e.document, created);
+    e.redo();
+    assert_eq!(e.document, before);
+    assert_eq!(
+        breakfree_docs::storage::decode(&breakfree_docs::storage::encode(&created).unwrap())
+            .unwrap(),
+        created
+    );
+}
+
+#[test]
+fn create_remove_reject_invalid_mixed_stale_and_full_lists() {
+    let mut e = editor();
+    for value in [0, 2881, 72] {
+        assert!(Draft::create(&e, value).is_err());
+    }
+    let mut remove = Draft::new(&e, 72).unwrap();
+    remove.remove().unwrap();
+    drop(remove);
+    let create = Draft::create(&e, 100).unwrap();
+    e.selection = (0, 0);
+    assert!(create.commit(&mut e).is_err());
+    e.set_left_tab_stops(0, 0, (1..=32).collect()).unwrap();
+    assert!(Draft::create(&e, 33).is_err());
+    e.selection = (0, 8);
+    assert!(Draft::create(&e, 100).is_err());
+    assert!(Draft::new(&e, 1).is_err());
+}
+
+#[test]
+fn create_empty_remove_last_and_cancel_preserve_redo() {
+    let mut e = Editor::default();
+    Draft::create(&e, 1).unwrap().commit(&mut e).unwrap();
+    let mut d = Draft::new(&e, 1).unwrap();
+    d.remove().unwrap();
+    d.commit(&mut e).unwrap();
+    assert!(
+        e.document.paragraphs[0]
+            .spacing
+            .left_tab_stops_half_points
+            .is_empty()
+    );
+    e.undo();
+    drop(Draft::create(&e, 2880).unwrap());
+    e.redo();
+    assert!(
+        e.document.paragraphs[0]
+            .spacing
+            .left_tab_stops_half_points
+            .is_empty()
+    );
+}

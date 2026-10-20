@@ -109,17 +109,22 @@ impl DocsApp {
                             .move_to(f32::from(drag.draft.position) + delta)
                             .err();
                     }
+                    Key::Delete => {
+                        let drag = self.tab_ruler_drag.as_mut().unwrap();
+                        drag.error = drag.draft.remove().err();
+                    }
                     Key::Enter | Key::Tab => {
                         if self.tab_ruler_drag.as_ref().unwrap().error.is_some() {
                             continue;
                         }
                         let drag = self.tab_ruler_drag.take().unwrap();
                         let position = drag.draft.position;
+                        let deleting = drag.draft.deleting;
                         let result = drag.draft.commit(&mut self.session.editor);
                         let success = result.is_ok();
                         self.fail(result);
                         self.sync_view();
-                        if success && key == Key::Tab {
+                        if success && key == Key::Tab && !deleting {
                             let (index, _) = self
                                 .session
                                 .editor
@@ -306,7 +311,24 @@ impl DocsApp {
                     Err(error) => self.error = Some(error),
                 }
             }
-            response.on_hover_text(format!("Left tab: {:.1} pt. {}",f32::from(value)/2.,if mixed {"Different lists selected; edit them through Tab positions."} else if collision {"Overlaps an indent marker; use Ctrl+Alt+F8 or Tab positions to edit."} else {"Drag to preview; release to apply; Escape cancels. Release outside the ruler cancels. Ctrl+Alt+F8 selects tabs; arrows move, Shift accelerates, Enter applies, Tab applies and selects next, Escape cancels."}));
+            response.context_menu(|ui| {
+                let remove = ui.add_enabled(
+                    available,
+                    Button::new(format!("Delete tab at {:.1} pt", f32::from(value) / 2.)),
+                );
+                self.record("ruler-tab-delete", remove.rect);
+                if remove.clicked() {
+                    let result = crate::tab_ruler::Draft::new(&self.session.editor, value)
+                        .and_then(|mut draft| {
+                            draft.remove()?;
+                            draft.commit(&mut self.session.editor)
+                        });
+                    self.fail(result);
+                    self.sync_view();
+                    ui.close();
+                }
+            });
+            response.on_hover_text(format!("Left tab: {:.1} pt. {}",f32::from(value)/2.,if mixed {"Different lists selected; edit them through Tab positions."} else if collision {"Overlaps an indent marker; use Ctrl+Alt+F8 or Tab positions to edit."} else {"Drag to preview; release to apply; Escape cancels. Release outside the ruler cancels. Ctrl+Alt+F8 selects tabs; arrows move, Shift accelerates, Enter applies, Tab applies and selects next, Delete previews removal, Escape cancels. Right-click to delete."}));
         }
         if let Some(drag) = &mut self.tab_ruler_drag {
             if !drag.keyboard
@@ -319,6 +341,12 @@ impl DocsApp {
                 ui.ctx().request_repaint();
             }
             let text = drag.error.clone().unwrap_or_else(|| {
+                if drag.draft.deleting {
+                    return format!(
+                        "Delete tab {:.1} pt — Enter applies; Esc cancels",
+                        f32::from(drag.start) / 2.
+                    );
+                }
                 format!(
                     "Left tab {:.1} pt — preview; {}; Esc cancels",
                     f32::from(drag.draft.position) / 2.,

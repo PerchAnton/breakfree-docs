@@ -120,3 +120,26 @@ edit the document during preview. Window focus loss, close, pointer press,
 resize/zoom or hidden rulers cancel. Add/delete still use Tab positions.
 Physical keyboard, VoiceOver and Windows acceptance remain unverified for this
 increment. No storage, palette, icon, dependency or license change.
+
+## Alpha.67: ruler tab creation and deletion
+
+Click empty horizontal ruler space inside the text column to create a left tab at
+the nearest half point. The click must finish on the ruler; indent/tab hit targets
+keep priority. Right-click a tab and choose **Delete tab at … pt** to remove it.
+Each completed action uses the same validated list command in one Undo/Redo.
+Dismissing the menu changes nothing. Dragging outside still cancels movement;
+this increment deliberately does not change that gesture into deletion.
+
+In Ctrl+Alt+F8 tab mode, Delete previews removal of the original selected tab.
+Enter or Tab applies once and exits (including when the last tab is removed).
+Escape cancels; arrows return to movement preview. Deleting after movement removes
+the original source in one transaction, without committing an intermediate move.
+Exact removal text appears below the ruler. No text input reaches the document.
+
+Creation/removal require identical lists across the half-open paragraph selection;
+mixed lists use Tab positions. Creation rejects duplicates, more than 32 stops and
+invalid positions. Source-document/selection checks prevent stale draft commits.
+The existing dialog remains the keyboard route for creating positions, and the
+route for editing overlapping/off-column markers with the pointer. Native v15,
+palette, icons and ruler dimensions remain unchanged. Windows, physical OS input,
+VoiceOver and matched reference acceptance are not established by widget tests.

@@ -1941,3 +1941,33 @@ Native macOS captures (deterministic injected keys, not physical keyboard eviden
 | :--- | :--- | :--- |
 | 1366 × 900 | [Preview](screenshots/rust-tab-keyboard-alpha66-macos.png) | `bcbed193182a3748a056d60c64662836644b74e2588348d09b6d747af9616972` |
 | 640 × 480 | [Preview](screenshots/rust-tab-keyboard-alpha66-compact-macos.png) | `ec1ca079295244e2d8fcabbf679a6b6e2491755e8092220a3e3b70d267233cc2` |
+
+## Alpha.67: ruler tab creation and deletion
+
+Click empty horizontal ruler space inside the text column to create a left tab at
+the nearest half point. The click must finish on the ruler; indent/tab hit targets
+keep priority. Right-click a tab and choose **Delete tab at … pt** to remove it.
+Each completed action uses the same validated list command in one Undo/Redo.
+Dismissing the menu changes nothing. Dragging outside still cancels movement;
+this increment deliberately does not change that gesture into deletion.
+
+In Ctrl+Alt+F8 tab mode, Delete previews removal of the original selected tab.
+Enter or Tab applies once and exits (including when the last tab is removed).
+Escape cancels; arrows return to movement preview. Deleting after movement removes
+the original source in one transaction, without committing an intermediate move.
+Exact removal text appears below the ruler. No text input reaches the document.
+
+Creation/removal require identical lists across the half-open paragraph selection;
+mixed lists use Tab positions. Creation rejects duplicates, more than 32 stops and
+invalid positions. Source-document/selection checks prevent stale draft commits.
+The existing dialog remains the keyboard route for creating positions, and the
+route for editing overlapping/off-column markers with the pointer. Native v15,
+palette, icons and ruler dimensions remain unchanged. Windows, physical OS input,
+VoiceOver and matched reference acceptance are not established by widget tests.
+
+Native macOS deletion-preview captures (injected keys, not physical keyboard evidence):
+
+| Size (DIP) | Capture | SHA-256 |
+| :--- | :--- | :--- |
+| 1366 × 900 | [Preview](screenshots/rust-tab-delete-alpha67-macos.png) | `e39a3d8886c8cad17020d517e663760415171e3956e235178f7d5a5aa7f12457` |
+| 640 × 480 | [Preview](screenshots/rust-tab-delete-alpha67-compact-macos.png) | `992ee3606d2ae64e306f6a3edc6e449524425c87352f59a2e6b0d60086ed23dc` |

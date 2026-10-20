@@ -18,14 +18,18 @@ struct Capture {
 
 impl eframe::App for Capture {
     fn raw_input_hook(&mut self, _ctx: &egui::Context, input: &mut egui::RawInput) {
-        if self.mode == "tab-keyboard" {
+        if matches!(self.mode.as_str(), "tab-keyboard" | "tab-delete") {
             input.focused = true;
             if matches!(self.frames, 3 | 5) {
                 input.events.push(egui::Event::Key {
                     key: if self.frames == 3 {
                         egui::Key::F8
                     } else {
-                        egui::Key::ArrowRight
+                        if self.mode == "tab-delete" {
+                            egui::Key::Delete
+                        } else {
+                            egui::Key::ArrowRight
+                        }
                     },
                     physical_key: None,
                     pressed: true,
@@ -439,6 +443,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "tabs",
             "explicit-tabs",
             "tab-keyboard",
+            "tab-delete",
             "tab-positions",
             "tab-dialog",
             "styles",
@@ -532,13 +537,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     let session = if matches!(
         args[2].as_str(),
-        "tabs" | "tab-dialog" | "explicit-tabs" | "tab-keyboard" | "tab-positions"
+        "tabs" | "tab-dialog" | "explicit-tabs" | "tab-keyboard" | "tab-delete" | "tab-positions"
     ) {
         let mut session = Session::default();
         session.editor.replace(0, 0, "Name\t\tValue\nEnglish\t\t36 pt grid\nУкраїна\t\tТабуляція\nРусский\t\tТабуляция\nCombining e\u{301}\t\tEnd", "Tab fixture")?;
         if matches!(
             args[2].as_str(),
-            "explicit-tabs" | "tab-keyboard" | "tab-positions"
+            "explicit-tabs" | "tab-keyboard" | "tab-delete" | "tab-positions"
         ) {
             let end = session.editor.document.text().chars().count();
             session

@@ -1697,3 +1697,26 @@ Reproduce native captures with `cargo build --release --features capture --examp
 capture_ui`, then `BREAKFREE_CAPTURE_TO=/tmp/tab-keyboard.png
 ./target/release/examples/capture_ui 1366 900 tab-keyboard` (environment assignment
 and command on one shell line). Injected harness keys are not physical input evidence.
+
+## Alpha.67 ruler tab creation and deletion validation
+
+2026-10-20, macOS arm64, Rust 1.99.1. Alpha.66 approved; alpha.67 awaits approval.
+
+- 346 full tests / 162 core-only tests pass. New engine coverage checks creation,
+  removal after movement, one-step history, v15 roundtrip, half-open selection,
+  duplicate/full/mixed/stale rejection, empty lists and last-stop deletion.
+- Widget tests exercise empty-ruler click, context deletion/menu dismissal,
+  keyboard removal preview/cancel/apply, exact Undo/Redo at synthetic 100/125/150%,
+  duplicate/mixed-list rejection and outside-release cancellation. Existing ruler,
+  keyboard, layout, Unicode, persistence and failed-write tests remain passing.
+- fmt, normal/capture all-target Clippy, release/capture builds, documentation,
+  artwork, YAML and whitespace checks pass. Isolated executable --version and
+  --capabilities report alpha.67 without Office or neighboring repositories.
+- Native macOS captures at 1366 × 900 and 640 × 480 DIP were inspected: the exact
+  deletion notice fits below the ruler, the preview removes the chosen marker and
+  relayouts only the selected paragraph; palette/icons and compact Home remain.
+- No physical OS keyboard/IME, matched Word comparison or screen-reader speech
+  acceptance this increment. VoiceOver remains final-stage work; Windows deferred.
+
+Reproduce captures with the existing capture example and mode `tab-delete`.
+Injected events verify rendered state, not physical input or Windows DPI behavior.
