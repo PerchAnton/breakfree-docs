@@ -291,3 +291,16 @@ Capacity, stale-source and half-open paragraph-selection validation remain share
 
 Native v16, existing layout policy, palette and icons remain unchanged. Physical
 keyboard/IME, matched Word, Windows and VoiceOver acceptance remain separate.
+
+## Interaction recovery (alpha.74)
+
+A draft records the last attempted bounded position independently of preview
+validity. Collision leaves the preview equal to the original document and commit
+invalid, while the next arrow advances from the attempted position. This avoids
+trapping keyboard movement before adjacent occupied stops. Invalid numeric syntax
+still invalidates the preview without inventing a coordinate. Delete targets the
+original source, even after a rejected move; a valid later move cancels deletion.
+
+Pointer drafts now cancel when rulers are hidden or File view becomes active,
+matching the keyboard controller. Cancellation does not change history or Redo.
+No storage, layout policy, palette, icon or dependency changes are introduced.

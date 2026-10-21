@@ -10828,3 +10828,197 @@ fn typed_pointer_creation_single_frame_click_commits_once() {
     frame(&ctx, &mut app, vec![], size, 1.);
     assert_eq!(app.session.editor.undo_stack.len(), count + 1);
 }
+
+#[test]
+fn typed_tab_keyboard_crosses_conflicts_without_committing_them() {
+    use crate::model::TabKind as K;
+    for creating in [false, true] {
+        let (ctx, mut app) = setup();
+        let size = [1366., 900.];
+        app.session
+            .editor
+            .set_tab_positions(0, 0, vec![(72, K::Center), (73, K::Right), (74, K::Left)])
+            .unwrap();
+        app.tab_creation_kind = K::Right;
+        app.sync_view();
+        let before = app.session.editor.document.clone();
+        let count = app.session.editor.undo_stack.len();
+        frame(
+            &ctx,
+            &mut app,
+            vec![ruler_key(
+                Key::F8,
+                Modifiers::CTRL
+                    | Modifiers::ALT
+                    | if creating {
+                        Modifiers::SHIFT
+                    } else {
+                        Modifiers::NONE
+                    },
+            )],
+            size,
+            1.,
+        );
+        for position in [73, 74] {
+            frame(
+                &ctx,
+                &mut app,
+                vec![key(Key::ArrowRight, false), key(Key::Enter, false)],
+                size,
+                1.,
+            );
+            assert_eq!(
+                app.tab_ruler_drag.as_ref().unwrap().draft.position,
+                position
+            );
+            assert_eq!(app.session.editor.document, before);
+            assert_eq!(app.session.editor.undo_stack.len(), count);
+        }
+        frame(
+            &ctx,
+            &mut app,
+            vec![key(Key::ArrowRight, false), key(Key::Enter, false)],
+            size,
+            1.,
+        );
+        assert!(app.tab_ruler_drag.is_none());
+        let after = app.session.editor.document.clone();
+        assert!(
+            after.paragraphs[0]
+                .spacing
+                .tab_positions()
+                .contains(&(75, if creating { K::Right } else { K::Center }))
+        );
+        assert_eq!(app.session.editor.undo_stack.len(), count + 1);
+        app.session.editor.undo();
+        assert_eq!(app.session.editor.document, before);
+        app.session.editor.redo();
+        assert_eq!(app.session.editor.document, after);
+    }
+}
+
+#[test]
+fn typed_creation_transform_cancel_then_keyboard_reentry_preserves_redo() {
+    use crate::model::TabKind as K;
+    for kind in [K::Left, K::Center, K::Right] {
+        for scenario in 0..4 {
+            let (ctx, mut app) = setup();
+            let size = [1366., 900.];
+            app.session
+                .editor
+                .set_tab_positions(0, 0, vec![(180, kind)])
+                .unwrap();
+            let redo = app.session.editor.document.clone();
+            app.session.editor.undo();
+            app.tab_creation_kind = kind;
+            app.sync_view();
+            let before = app.session.editor.document.clone();
+            let count = app.session.editor.undo_stack.len();
+            frame(
+                &ctx,
+                &mut app,
+                vec![ruler_key(
+                    Key::F8,
+                    Modifiers::CTRL | Modifiers::ALT | Modifiers::SHIFT,
+                )],
+                size,
+                1.,
+            );
+            assert!(app.tab_ruler_drag.is_some());
+            match scenario {
+                0 => {
+                    app.zoom = 150.;
+                    frame(&ctx, &mut app, vec![], size, 1.);
+                }
+                1 => {
+                    frame(&ctx, &mut app, vec![], [640., 480.], 1.);
+                }
+                2 => {
+                    app.rulers = false;
+                    frame(&ctx, &mut app, vec![], size, 1.);
+                }
+                _ => {
+                    let p = pos2(400., 400.);
+                    frame(
+                        &ctx,
+                        &mut app,
+                        vec![egui::Event::PointerMoved(p), ruler_pointer(p, true)],
+                        size,
+                        1.,
+                    );
+                    frame(&ctx, &mut app, vec![ruler_pointer(p, false)], size, 1.);
+                }
+            }
+            assert!(app.tab_ruler_drag.is_none(), "{scenario}");
+            assert_eq!(app.session.editor.document, before);
+            assert_eq!(app.session.editor.undo_stack.len(), count);
+            app.session.editor.redo();
+            assert_eq!(app.session.editor.document, redo);
+            app.session.editor.undo();
+            app.sync_view();
+            frame(
+                &ctx,
+                &mut app,
+                vec![ruler_key(
+                    Key::F8,
+                    Modifiers::CTRL | Modifiers::ALT | Modifiers::SHIFT,
+                )],
+                size,
+                1.,
+            );
+            frame(&ctx, &mut app, vec![key(Key::Enter, false)], size, 1.);
+            assert!(app.tab_ruler_drag.is_none());
+            assert_eq!(
+                app.session.editor.document.paragraphs[0]
+                    .spacing
+                    .tab_positions(),
+                vec![(72, kind)]
+            );
+            assert_eq!(app.session.editor.undo_stack.len(), count + 1);
+        }
+    }
+}
+
+#[test]
+fn typed_pointer_draft_hidden_ruler_cancel_allows_keyboard_reentry() {
+    use crate::model::TabKind as K;
+    let (ctx, mut app) = setup();
+    let size = [1366., 900.];
+    app.tab_creation_kind = K::Center;
+    let before = app.session.editor.document.clone();
+    let count = app.session.editor.undo_stack.len();
+    let r = app.regions.iter().find(|r| r.name == "ruler").unwrap().rect;
+    let p = pos2(r.left() + CANVAS_MARGIN + 120., r.top() + 8.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::PointerMoved(p), ruler_pointer(p, true)],
+        size,
+        1.,
+    );
+    assert!(app.tab_ruler_drag.is_some());
+    app.rulers = false;
+    frame(&ctx, &mut app, vec![], size, 1.);
+    assert!(app.tab_ruler_drag.is_none());
+    frame(&ctx, &mut app, vec![ruler_pointer(p, false)], size, 1.);
+    assert_eq!(app.session.editor.document, before);
+    assert_eq!(app.session.editor.undo_stack.len(), count);
+    frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(
+            Key::F8,
+            Modifiers::CTRL | Modifiers::ALT | Modifiers::SHIFT,
+        )],
+        size,
+        1.,
+    );
+    frame(&ctx, &mut app, vec![key(Key::Enter, false)], size, 1.);
+    assert_eq!(
+        app.session.editor.document.paragraphs[0]
+            .spacing
+            .tab_positions(),
+        vec![(72, K::Center)]
+    );
+    assert_eq!(app.session.editor.undo_stack.len(), count + 1);
+}

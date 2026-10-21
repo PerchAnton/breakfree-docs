@@ -939,3 +939,10 @@ Capacity, stale-source and half-open paragraph-selection validation remain share
 
 Native v16, existing layout policy, palette and icons remain unchanged. Physical
 keyboard/IME, matched Word, Windows and VoiceOver acceptance remain separate.
+
+### Tab interaction fixes (alpha.74)
+
+Keyboard tab movement can cross occupied positions with repeated arrows. A rejected
+position never changes the document; Enter stays blocked until the destination is
+valid. Hiding rulers cancels pointer previews, preserving history. Mixed-owner,
+transform-cancellation and re-entry regression checks precede tab leaders.

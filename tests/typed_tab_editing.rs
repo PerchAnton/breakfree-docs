@@ -164,3 +164,81 @@ fn typed_creation_capacity_invalid_and_cancel_preserve_redo() {
     e.redo();
     assert_eq!(e.document, before);
 }
+
+#[test]
+fn mixed_typed_draft_recovers_from_conflict_delete_and_numeric_error() {
+    for kind in [K::Left, K::Center, K::Right] {
+        let mut e = Editor::default();
+        e.replace(0, 0, "English\nУкраїна\nРусский\ne\u{301}", "Fixture")
+            .unwrap();
+        e.set_tab_positions(0, 0, vec![(72, kind)]).unwrap();
+        e.set_tab_positions(8, 8, vec![(72, K::Right), (73, K::Center)])
+            .unwrap();
+        e.selection = (0, 16); // Exclude the paragraph beginning at this boundary.
+        let before = e.document.clone();
+        let count = e.undo_stack.len();
+        let mut d = Draft::new(&e, 72).unwrap();
+        assert!(d.move_to(73.).is_err());
+        assert_eq!(d.preview, before); // The first owner's valid edit must not leak.
+        d.remove().unwrap();
+        assert!(d.deleting);
+        assert_eq!(
+            d.preview.paragraphs[1].spacing.tab_positions(),
+            vec![(73, K::Center)]
+        );
+        assert!(d.move_to_text("nan").is_err());
+        assert!(!d.deleting);
+        assert_eq!(d.preview, before);
+        d.move_to_text("37").unwrap();
+        d.commit(&mut e).unwrap();
+        let after = e.document.clone();
+        assert_eq!(
+            after.paragraphs[0].spacing.tab_positions(),
+            vec![(74, kind)]
+        );
+        assert_eq!(
+            after.paragraphs[1].spacing.tab_positions(),
+            vec![(73, K::Center), (74, K::Right)]
+        );
+        assert_eq!(after.paragraphs[2..], before.paragraphs[2..]);
+        assert_eq!(e.undo_stack.len(), count + 1);
+        assert_eq!(
+            storage::decode(&storage::encode(&after).unwrap()).unwrap(),
+            after
+        );
+        e.undo();
+        assert_eq!(e.document, before);
+        e.redo();
+        assert_eq!(e.document, after);
+    }
+}
+
+#[test]
+fn typed_draft_selection_change_and_noop_preserve_redo() {
+    for kind in [K::Left, K::Center, K::Right] {
+        let mut e = Editor::default();
+        e.replace(0, 0, "a\nb", "Fixture").unwrap();
+        e.set_tab_positions(0, 0, vec![(72, kind)]).unwrap();
+        e.selection = (0, 0);
+        let before = e.document.clone();
+        let mut d = Draft::new(&e, 72).unwrap();
+        d.move_to(74.).unwrap();
+        e.selection = (2, 2);
+        assert!(d.commit(&mut e).is_err());
+        assert_eq!(e.document, before);
+        e.selection = (0, 0);
+        let mut d = Draft::new(&e, 72).unwrap();
+        d.move_to(74.).unwrap();
+        d.commit(&mut e).unwrap();
+        let after = e.document.clone();
+        e.undo();
+        let count = e.undo_stack.len();
+        let mut d = Draft::new(&e, 72).unwrap();
+        d.move_to(72.).unwrap();
+        d.commit(&mut e).unwrap();
+        assert_eq!(e.undo_stack.len(), count);
+        assert_eq!(e.document, before);
+        e.redo();
+        assert_eq!(e.document, after);
+    }
+}

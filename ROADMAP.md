@@ -395,4 +395,7 @@ Use public specifications and original test cases, not copied application code. 
 - [x] Alpha.73 step 1: window-local creation-type selector, pointer/context-menu and keyboard access.
 - [x] Alpha.73 step 2: typed pointer creation with drag preview, cancellation and one transaction.
 - [x] Alpha.73 step 3: selected-type keyboard creation and exact F2 input, preserving conflicts, mixed lists and Undo/Redo.
-- [ ] Next: review extended typed-tab interaction cases before adding leaders; style inheritance remains separate.
+- [x] Review extended typed-tab interaction cases before leaders (alpha.74 local model/widget tests); physical input acceptance remains open.
+
+- [x] Alpha.74: extended typed-tab recovery tests; adjacent collision traversal, mixed-owner atomicity, numeric/deletion recovery and cancellation/re-entry.
+- [ ] Next: define tab leader storage/layout and bounded rendering before adding leader controls; style inheritance remains separate.

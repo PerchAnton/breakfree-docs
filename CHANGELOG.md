@@ -3,6 +3,18 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.74 — 2026-10-21
+
+- Fix keyboard tab previews getting stuck on occupied positions: arrows now move
+  beyond a rejected destination while invalid previews remain uncommittable.
+- Cancel pointer tab drafts if rulers are hidden or File view becomes active,
+  keeping document/history unchanged and allowing keyboard re-entry.
+- Extend typed-tab regression coverage for adjacent conflicts, mixed owners,
+  numeric error/deletion recovery, stale selections, no-op Redo, transform
+  cancellation and pointer-to-keyboard transitions. Preserve native v16 and design.
+- Owner approved alpha.73; alpha.74 is a candidate for review, not a release.
+  Windows and VoiceOver acceptance remain deferred.
+
 ## 0.1.0-alpha.73 — 2026-10-21
 
 - Add a ruler creation-type selector: click/Ctrl+Alt+F7 cycles Left/Center/Right;

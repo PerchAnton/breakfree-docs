@@ -1848,3 +1848,25 @@ have no explicit approval recorded. Alpha.73 combines three related creation ste
 - Three native captures inspected: Center/Right creation at 1366 × 900 and Right
   creation at 640 × 480 DIP. Selector, type-specific preview and markers fit;
   palette/icons are retained. Screenshot hashes are recorded in UI_SPEC.md.
+
+## Alpha.74 tab interaction recovery validation
+
+2026-10-21, macOS arm64, Rust 1.99.1. Owner approved alpha.73; alpha.74 awaits review.
+
+- Reproduced two failing regressions before fixes: repeated arrows could not pass
+  a conflicting tab position; hiding rulers left a pointer preview active.
+- 382 full / 177 core-only tests cover adjacent conflict recovery in creation and
+  movement, mixed-owner atomicity, numeric-error/deletion recovery, stale selection,
+  no-op Redo, typed save/reopen and one-operation Undo/Redo. Unicode paragraph
+  fixtures include English, Ukrainian, Russian and a combining character.
+- Widget scenarios cover zoom/compact resize/hidden-ruler/pointer cancellation,
+  subsequent keyboard re-entry and preserved Redo for all three creation types.
+  These are synthetic event checks, not physical OS keyboard or Windows acceptance.
+- Native v16, layout policy, palette/icons and geometry remain unchanged. Leaders
+  are not implemented. Windows and matched reference review remain deferred;
+  VoiceOver is reserved for final review.
+- fmt, normal/capture all-target Clippy, release/capture builds, repository/artwork,
+  YAML, whitespace and isolated CLI version/capabilities checks pass.
+- Fresh native 1366 × 900 Center and 640 × 480 Right creation PNGs are byte-identical
+  to the corresponding alpha.73 captures linked in UI_SPEC.md. This establishes
+  unchanged rendering for those fixtures, not all interaction states.

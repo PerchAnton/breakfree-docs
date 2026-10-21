@@ -2143,3 +2143,19 @@ synthetic input and do not establish physical OS keyboard acceptance.
 | Center / 1366 × 900 | [View](screenshots/rust-tab-create-center-alpha73-macos.png) | `aab7ecf88631e4823775341e62daeff4b4b87e0499aedb5beabdaccaff4fdafa` |
 | Right / 1366 × 900 | [View](screenshots/rust-tab-create-right-alpha73-macos.png) | `8b9559d278da6be376549f4d808ef54f3948c881ce4014c12e05a94ec5ae9369` |
 | Right / 640 × 480 | [View](screenshots/rust-tab-create-right-alpha73-compact-macos.png) | `96582f35775a630053558a69e2493c0e62b0993cfbe67446c3ef650ad3df991f` |
+
+## Alpha.74: tab interaction recovery
+
+The alpha.73 selector, ruler dimensions, icons and palette are unchanged. Repeated
+arrows can pass occupied stops: the error preview blocks Enter, then clears at a
+free destination. A hidden ruler cancels any pointer draft. Undo/Redo retains one
+entry only for a successful operation; no-op/cancel preserves Redo. Automated
+widget checks cover all three types and compact resize cancellation. Physical
+OS input, Windows, matched Word comparison and VoiceOver remain unverified here.
+
+Fresh alpha.74 native captures matched the alpha.73 PNG bytes exactly:
+[Center, 1366 × 900](screenshots/rust-tab-create-center-alpha73-macos.png), SHA-256
+`aab7ecf88631e4823775341e62daeff4b4b87e0499aedb5beabdaccaff4fdafa`;
+[Right, 640 × 480](screenshots/rust-tab-create-right-alpha73-compact-macos.png), SHA-256
+`96582f35775a630053558a69e2493c0e62b0993cfbe67446c3ef650ad3df991f`.
+No duplicate image assets are added. This comparison covers those fixtures only.

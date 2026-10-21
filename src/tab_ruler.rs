@@ -112,6 +112,9 @@ impl Draft {
             return Err("Invalid tab position.".into());
         }
         let position = half_points.round().clamp(1., 2880.) as u16;
+        // Track the attempted coordinate even when occupied, so another arrow can
+        // cross a conflict. The preview remains original and commit stays invalid.
+        self.position = position;
         let mut preview = self.original.clone();
         let mut added = false;
         for paragraph in &mut preview.paragraphs[self.first..=self.last] {

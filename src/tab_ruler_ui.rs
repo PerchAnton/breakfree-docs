@@ -335,18 +335,20 @@ impl DocsApp {
         if self.tab_ruler_drag.is_none() {
             return false;
         }
-        let cancel = ctx.input(|i| {
-            i.key_pressed(Key::Escape)
-                || !i.focused
-                || i.viewport().close_requested()
-                || i.events.iter().any(|e| {
-                    matches!(
-                        e,
-                        egui::Event::PointerGone | egui::Event::WindowFocused(false)
-                    )
-                })
-                || (!i.pointer.primary_down() && !i.pointer.primary_released())
-        });
+        let cancel = !self.rulers
+            || self.backstage
+            || ctx.input(|i| {
+                i.key_pressed(Key::Escape)
+                    || !i.focused
+                    || i.viewport().close_requested()
+                    || i.events.iter().any(|e| {
+                        matches!(
+                            e,
+                            egui::Event::PointerGone | egui::Event::WindowFocused(false)
+                        )
+                    })
+                    || (!i.pointer.primary_down() && !i.pointer.primary_released())
+            });
         ctx.input_mut(|i| {
             i.events.retain(|e| {
                 matches!(
