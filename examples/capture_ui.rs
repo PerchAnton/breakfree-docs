@@ -468,6 +468,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "home",
             "tabs",
             "explicit-tabs",
+            "aligned-tabs",
             "tab-keyboard",
             "tab-delete",
             "tab-mixed",
@@ -560,6 +561,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "examples/Styles.bfdoc"
         } else if ["formatting", "font"].contains(&args[2].as_str()) {
             "examples/Formatting.bfdoc"
+        } else if args[2] == "aligned-tabs" {
+            "examples/AlignedTabs.bfdoc"
         } else {
             "examples/Welcome.bfdoc"
         },

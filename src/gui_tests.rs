@@ -10248,3 +10248,161 @@ fn tab_numeric_existing_movement_cancel_and_redo() {
     app.session.editor.redo();
     assert_eq!(app.session.editor.document, after);
 }
+
+#[test]
+fn aligned_tabs_layout_center_right_fields_zoom_and_cursor() {
+    use crate::model::{AlignedTabStop, TabStopAlignment};
+    let (ctx, _) = setup();
+    let _ = ctx.run(egui::RawInput::default(), |ctx| {
+        for alignment in [TabStopAlignment::Center, TabStopAlignment::Right] {
+            for text in ["\tEnglish", "\tУкраїна", "\tРусский e\u{301}"] {
+                let mut e = crate::commands::Editor::default();
+                e.replace(0, 0, text, "Fixture").unwrap();
+                e.emphasize(1, 3, true, true).unwrap();
+                e.set_aligned_tab_stops(
+                    0,
+                    0,
+                    vec![AlignedTabStop {
+                        position_half_points: 400,
+                        alignment,
+                    }],
+                )
+                .unwrap();
+                for scale in [0.5, 1., 2.] {
+                    let g = layout::galley(
+                        ctx,
+                        &e.document,
+                        text,
+                        CharacterFormat::default(),
+                        0,
+                        600. * scale,
+                        11. * scale,
+                    );
+                    assert_eq!(g.rows.len(), 1);
+                    let glyphs = &g.rows[0].glyphs;
+                    let left = glyphs[1].pos.x;
+                    let last = glyphs.last().unwrap();
+                    let right = last.pos.x + last.advance_width;
+                    let anchor = if alignment == TabStopAlignment::Center {
+                        (left + right) / 2.
+                    } else {
+                        right
+                    };
+                    assert!(
+                        (anchor - 200. * scale).abs() < 2.,
+                        "{text} {alignment:?} {scale}: {anchor}"
+                    );
+                    for index in crate::model::boundaries(text) {
+                        let r = g.pos_from_cursor(CCursor::new(index));
+                        // Combining scalars can share a visual caret; storage remains intact.
+                        let hit = g.cursor_from_pos(r.center().to_vec2()).index;
+                        assert!(hit <= text.chars().count());
+                        if text.is_ascii() {
+                            assert_eq!(hit, index);
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+#[test]
+fn aligned_tabs_mixed_fields_and_overflow_keep_scalar_order() {
+    use crate::model::{AlignedTabStop, TabStopAlignment};
+    let (ctx, _) = setup();
+    let _ = ctx.run(egui::RawInput::default(), |ctx| {
+        let mut e = crate::commands::Editor::default();
+        e.replace(0, 0, "L\tcenter\tright\tgrid", "Fixture")
+            .unwrap();
+        e.set_aligned_tab_stops(
+            0,
+            0,
+            vec![
+                AlignedTabStop {
+                    position_half_points: 200,
+                    alignment: TabStopAlignment::Center,
+                },
+                AlignedTabStop {
+                    position_half_points: 400,
+                    alignment: TabStopAlignment::Right,
+                },
+            ],
+        )
+        .unwrap();
+        for first in [-24, 0, 24] {
+            e.document.paragraphs[0].spacing.left_indent_half_points = Some(24);
+            e.document.paragraphs[0].spacing.first_line_half_points = Some(first);
+            for width in [32., 80., 500.] {
+                let g = layout::galley(
+                    ctx,
+                    &e.document,
+                    &e.document.text(),
+                    CharacterFormat::default(),
+                    0,
+                    width,
+                    11.,
+                );
+                assert_eq!(
+                    g.rows.iter().map(|r| r.glyphs.len()).sum::<usize>(),
+                    e.document.text().chars().count()
+                );
+                assert!(
+                    g.rows
+                        .iter()
+                        .all(|r| r.glyphs.windows(2).all(|w| w[0].pos.x <= w[1].pos.x + 1.))
+                );
+                if width == 500. {
+                    let glyphs = &g.rows[0].glyphs;
+                    assert!((glyphs[13].pos.x + glyphs[13].advance_width - 200.).abs() < 2.);
+                    assert!(
+                        (glyphs[15].pos.x - 216.).abs() < 2.,
+                        "first {first}: {:?}",
+                        glyphs
+                            .iter()
+                            .map(|g| (g.chr, g.pos.x, g.advance_width))
+                            .collect::<Vec<_>>()
+                    );
+                }
+            }
+        }
+    });
+}
+
+#[test]
+fn aligned_tabs_empty_fields_and_trailing_spaces_keep_anchors() {
+    use crate::model::{AlignedTabStop, TabStopAlignment};
+    let (ctx, _) = setup();
+    let _ = ctx.run(egui::RawInput::default(), |ctx| {
+        let mut e = crate::commands::Editor::default();
+        e.replace(0, 0, "\t\tX  ", "Fixture").unwrap();
+        e.set_aligned_tab_stops(
+            0,
+            0,
+            vec![
+                AlignedTabStop {
+                    position_half_points: 200,
+                    alignment: TabStopAlignment::Center,
+                },
+                AlignedTabStop {
+                    position_half_points: 400,
+                    alignment: TabStopAlignment::Right,
+                },
+            ],
+        )
+        .unwrap();
+        let g = layout::galley(
+            ctx,
+            &e.document,
+            &e.document.text(),
+            CharacterFormat::default(),
+            0,
+            500.,
+            11.,
+        );
+        let glyphs = &g.rows[0].glyphs;
+        assert!((glyphs[1].pos.x - 100.).abs() < 1.1);
+        let last = glyphs.last().unwrap();
+        assert!((last.pos.x + last.advance_width - 200.).abs() < 1.1);
+        assert_eq!(glyphs.len(), 5);
+    });
+}

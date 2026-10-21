@@ -159,11 +159,25 @@ pub fn galley(
                 [first_width, text_width],
                 [first_left, body_left],
                 f32::from(p.spacing.tab_interval_half_points.unwrap_or(72)) * size / 22.,
-                &p.spacing
-                    .left_tab_stops_half_points
-                    .iter()
-                    .map(|p| f32::from(*p) * size / 22.)
-                    .collect::<Vec<_>>(),
+                &{
+                    let mut stops: Vec<_> = p
+                        .spacing
+                        .left_tab_stops_half_points
+                        .iter()
+                        .map(|p| (f32::from(*p) * size / 22., 0.))
+                        .collect();
+                    stops.extend(p.spacing.aligned_tab_stops.iter().map(|s| {
+                        (
+                            f32::from(s.position_half_points) * size / 22.,
+                            match s.alignment {
+                                crate::model::TabStopAlignment::Center => 0.5,
+                                crate::model::TabStopAlignment::Right => 1.,
+                            },
+                        )
+                    }));
+                    stops.sort_by(|a, b| a.0.total_cmp(&b.0));
+                    stops
+                },
             )
         } else {
             layout_first_line(ctx, job, first_width, text_width)

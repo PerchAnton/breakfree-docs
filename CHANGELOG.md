@@ -3,6 +3,17 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.71 — 2026-10-21
+
+- Store typed center/right tab stops beside existing left stops; validate sorted,
+  distinct positions and a combined 32-stop limit. Shared edits use one Undo/Redo.
+- Align each following field to its center or right edge, including formatting,
+  Unicode and zoom; preserve forward tab progression, wrapping and grid fallback.
+- Write native v16 and retain strict v1–v15 readers. Older applications reject v16;
+  retain an older copy when necessary. Add a runnable AlignedTabs.bfdoc example.
+- Preserve palette/icons and existing left-tab controls; type selection/markers
+  follow separately. Windows and VoiceOver acceptance remain deferred.
+
 ## 0.1.0-alpha.70 — 2026-10-21
 
 - F2 opens exact numeric position input in keyboard ruler tab previews, for

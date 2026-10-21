@@ -576,10 +576,28 @@ pub enum Alignment {
     Justify,
 }
 
+/// Alignment of a field following a tab, up to the next tab or paragraph end.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TabStopAlignment {
+    Center,
+    Right,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AlignedTabStop {
+    pub position_half_points: u16,
+    pub alignment: TabStopAlignment,
+}
+
 /// Direct paragraph geometry; tab properties do not inherit from named styles.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ParagraphSpacing {
+    /// Center/right stops; separate from the retained left-stop representation.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub aligned_tab_stops: Vec<AlignedTabStop>,
     /// Strictly increasing left stops in half points from the text-column origin.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub left_tab_stops_half_points: Vec<u16>,
@@ -600,6 +618,23 @@ pub struct ParagraphSpacing {
 }
 impl ParagraphSpacing {
     pub fn validate(&self) -> Result<()> {
+        if self.aligned_tab_stops.len() + self.left_tab_stops_half_points.len() > 32
+            || self.aligned_tab_stops.iter().any(|s| {
+                !(1..=2880).contains(&s.position_half_points)
+                    || self
+                        .left_tab_stops_half_points
+                        .contains(&s.position_half_points)
+            })
+            || self
+                .aligned_tab_stops
+                .windows(2)
+                .any(|p| p[0].position_half_points >= p[1].position_half_points)
+        {
+            return Err(
+                "Tab stops require at most 32 distinct positions, sorted by position, 0.5–1440 pt."
+                    .into(),
+            );
+        }
         if self.left_tab_stops_half_points.len() > 32
             || self
                 .left_tab_stops_half_points

@@ -1,4 +1,4 @@
-//! Left tab grids retain one glyph/cursor position per stored scalar.
+//! Left, center and right tab fields retain one glyph/cursor position per stored scalar.
 use super::*;
 
 pub(super) fn layout(
@@ -7,13 +7,25 @@ pub(super) fn layout(
     widths: [f32; 2],
     origins: [f32; 2],
     interval: f32,
-    stops: &[f32],
+    stops: &[(f32, f32)],
 ) -> Galley {
     let mut measurement = job.clone();
     measurement.wrap.max_width = f32::INFINITY;
     measurement.justify = false;
     let measured = ctx.fonts_mut(|f| f.layout_job(measurement));
     let glyphs = &measured.rows[0].glyphs;
+    // Measure each complete logical field once, including trailing spaces and formatting.
+    // A long field is allowed to wrap; alignment never moves backwards over preceding text.
+    let mut field_widths = vec![0.; glyphs.len()];
+    let mut field_width = 0.;
+    for (index, glyph) in glyphs.iter().enumerate().rev() {
+        if glyph.chr == '\t' {
+            field_widths[index] = field_width;
+            field_width = 0.;
+        } else {
+            field_width += glyph.advance_width;
+        }
+    }
     let bytes: Vec<_> = job
         .text
         .char_indices()
@@ -31,12 +43,23 @@ pub(super) fn layout(
         let width = widths[which];
         let origin = origins[which];
         let mut x = 0.;
+        let mut previous_stop = f32::NEG_INFINITY;
         let mut end = start;
         let mut last_break = None;
         while end < glyphs.len() {
             let g = &glyphs[end];
             let advance = if g.chr == '\t' {
-                tab_advance(x, origin, interval, width, stops)
+                let (advance, stop) = tab_advance(
+                    x,
+                    origin,
+                    interval,
+                    width,
+                    stops,
+                    field_widths[end],
+                    previous_stop,
+                );
+                previous_stop = stop;
+                advance
             } else {
                 g.advance_width
             };
@@ -63,6 +86,7 @@ pub(super) fn layout(
         row_job.justify = false;
         row_job.sections.clear();
         let mut cursor = 0.;
+        let mut previous_stop = f32::NEG_INFINITY;
         let mut tabs = Vec::new();
         let section_start = job
             .sections
@@ -86,7 +110,16 @@ pub(super) fn layout(
                 cursor += measure(ctx, &job.text[chunk..at], &section.format);
                 let scalar = bytes.binary_search(&at).unwrap() - start;
                 let natural = glyphs[start + scalar].advance_width;
-                let advance = tab_advance(cursor, origin, interval, width, stops);
+                let (advance, stop) = tab_advance(
+                    cursor,
+                    origin,
+                    interval,
+                    width,
+                    stops,
+                    field_widths[start + scalar],
+                    previous_stop,
+                );
+                previous_stop = stop;
                 let delta = advance - natural;
                 append(&mut row_job, section, at..at + 1, bytes[start], delta);
                 row_job.sections.last_mut().unwrap().format.underline = egui::Stroke::NONE;
@@ -127,15 +160,28 @@ pub(super) fn layout(
     result
 }
 
-fn tab_advance(x: f32, origin: f32, interval: f32, width: f32, stops: &[f32]) -> f32 {
-    let absolute = origin + x;
-    let next = stops
+fn tab_advance(
+    x: f32,
+    origin: f32,
+    interval: f32,
+    width: f32,
+    stops: &[(f32, f32)],
+    field_width: f32,
+    previous_stop: f32,
+) -> (f32, f32) {
+    let absolute = (origin + x).max(previous_stop);
+    let (position, factor) = stops
         .iter()
         .copied()
-        .find(|stop| *stop > absolute + 0.001)
-        .unwrap_or_else(|| (absolute / interval).floor().mul_add(interval, interval))
-        - origin;
-    (next.min(width) - x).max(0.)
+        .find(|(position, _)| *position > absolute + 0.001)
+        .unwrap_or_else(|| {
+            (
+                (absolute / interval).floor().mul_add(interval, interval),
+                0.,
+            )
+        });
+    let target = (position - origin).min(width);
+    ((target - factor * field_width - x).max(0.), position)
 }
 
 fn append(

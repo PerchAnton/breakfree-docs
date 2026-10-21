@@ -100,7 +100,7 @@ impl PositionsDialog {
                 if self.mixed {
                     ui.small("Different lists selected. Build a replacement or Clear all.");
                 }
-                ui.small("OK replaces positions in the selected paragraphs.");
+                ui.small("OK replaces left positions only; center/right stops are preserved.");
                 egui::ScrollArea::vertical()
                     .id_salt("positions-list")
                     .max_height(115.)
@@ -111,7 +111,7 @@ impl PositionsDialog {
                             ui.label(if self.mixed && !self.changed {
                                 "Mixed positions"
                             } else {
-                                "No explicit positions — interval grid only"
+                                "No explicit left positions"
                             });
                         }
                         for &value in &self.positions {

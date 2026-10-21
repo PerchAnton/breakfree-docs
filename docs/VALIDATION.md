@@ -1780,3 +1780,24 @@ Injected events verify rendered state, not physical input or Windows DPI behavio
   Capture mode `tab-numeric` injects keyboard entry/F2/text. Physical OS keyboard,
   IME and matched Word comparison were not checked. VoiceOver final review and
   Windows acceptance remain deferred.
+
+## Alpha.71 center/right tab storage and layout validation
+
+2026-10-21, macOS arm64, Rust 1.99.1. Alpha.70 approved; alpha.71 awaits approval.
+
+- 363 full / 170 core-only tests pass. New coverage checks one-operation history,
+  half-open paragraph ranges, save/reopen, Enter geometry copying, left-control
+  preservation/conflicts, combined capacity, invalid types and strict v15 migration.
+- Native renderer tests verify center/right anchors with mixed formatting,
+  English/Ukrainian/Russian/combining text, 50/100/200% zoom, empty fields, trailing
+  spaces, left/hanging/first-line indents, narrow wraps, forward cursor geometry,
+  ASCII cursor hit testing and subsequent grid fallback. Fixed repeated selection
+  of a consumed right stop caused by font measurement rounding.
+- fmt, normal/capture all-target Clippy, full/core tests, release/capture builds,
+  repository/artwork/YAML and whitespace checks pass. Isolated executable version
+  and capabilities identify alpha.71 without Office or adjacent repositories.
+- AlignedTabs.bfdoc v16 is tested and rendered in native captures at 1366 × 900 and
+  640 × 480 DIP. Centered fields share a center and right fields share a right edge;
+  palette/icons/ribbon retained. This does not establish physical keyboard/IME,
+  matched Word or Windows DPI acceptance. VoiceOver final review is deferred.
+- Type-selection controls and typed ruler markers are not implemented this increment.

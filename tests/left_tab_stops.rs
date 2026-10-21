@@ -66,7 +66,7 @@ fn invalid_positions_are_transactional_and_legacy_key_is_rejected() {
     }
     let mut json: serde_json::Value =
         serde_json::from_slice(&storage::encode(&before).unwrap()).unwrap();
-    assert_eq!(json["content_version"], 15);
+    assert_eq!(json["content_version"], 16);
     json["content_version"] = 14.into();
     assert_eq!(
         storage::decode(&serde_json::to_vec(&json).unwrap()).unwrap(),

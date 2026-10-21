@@ -870,3 +870,16 @@ Invalid input resets the visual preview and blocks acceptance, including after
 a previously valid value. No rounding/clamping of typed values is performed.
 Mixed-list and stale-source checks use the same validated draft transaction.
 This is a Docs-specific shortcut; native v15, palette and icons are unchanged.
+
+## Center/right tab stops (alpha.71)
+
+The model, transaction API and native layout support central and right tab stops.
+Open [AlignedTabs.bfdoc](examples/AlignedTabs.bfdoc) using `--open` with its absolute
+path to inspect alignment. Each following field extends to the next tab or end
+of the paragraph. Long fields never move backwards and may wrap; see the exact
+[layout/storage policy](docs/NATIVE_FORMAT.md#center-and-right-tab-storagelayout-alpha71).
+
+Saves now use native v16; v1–v15 remain readable. Alpha.70 and older reject v16,
+so keep an earlier copy if needed. Current dialog/ruler controls edit left stops
+and preserve center/right entries; choosing types and new markers is next.
+Palette/icons unchanged; Windows and VoiceOver acceptance remain deferred.

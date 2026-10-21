@@ -563,6 +563,28 @@ impl Editor {
         Ok(())
     }
 
+    /// Replace center/right stops, retaining left stops and other paragraph properties.
+    pub fn set_aligned_tab_stops(
+        &mut self,
+        start: usize,
+        end: usize,
+        stops: Vec<crate::model::AlignedTabStop>,
+    ) -> Result<()> {
+        validate_range(&self.document.text(), start, end)?;
+        let (first, _) = self.document.locate(start)?;
+        let (mut last, offset) = self.document.locate(end)?;
+        if end > start && offset == 0 && last > first {
+            last -= 1;
+        }
+        let mut result = self.document.clone();
+        for paragraph in &mut result.paragraphs[first..=last] {
+            paragraph.spacing.aligned_tab_stops = stops.clone();
+        }
+        result.validate()?;
+        self.commit(result, "Aligned tab stops", (start, end), self.typing_style);
+        Ok(())
+    }
+
     /// Replace explicit left stops on selected paragraphs as one history entry.
     pub fn set_left_tab_stops(
         &mut self,

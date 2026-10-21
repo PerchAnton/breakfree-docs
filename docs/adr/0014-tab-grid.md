@@ -203,3 +203,35 @@ Invalid input resets the visual preview and blocks acceptance, including after
 a previously valid value. No rounding/clamping of typed values is performed.
 Mixed-list and stale-source checks use the same validated draft transaction.
 This is a Docs-specific shortcut; native v15, palette and icons are unchanged.
+
+## Center and right tab storage/layout (alpha.71)
+
+Native v16 adds `spacing.aligned_tab_stops`, an optional sorted array of
+`{position_half_points, alignment}` objects. Alignment is `center` or `right`.
+Existing `left_tab_stops_half_points` is retained. Across both lists, at most 32
+positions are allowed, each distinct and within 1–2880 half points (0.5–1440 pt).
+Null, unknown fields/types/alignment, unsorted or duplicate positions are rejected.
+Missing arrays mean no aligned stops. v1–v15 reject the new key, even empty/null;
+v15 without it still opens. Alpha.70 and older reject v16 saves.
+
+All explicit types share one ordered sequence from the unindented text-column
+origin. A tab selects the next position strictly beyond the cursor and any stop
+already consumed on that row. After the final explicit stop, the original left
+interval grid resumes. Center/right alignment measures the complete field through
+the next tab or paragraph end, including trailing spaces and resolved formatting.
+Center uses half its measured width; Right uses all of it. Empty fields have zero
+width. The visible anchor is bounded by the available row edge, as for left tabs.
+
+Advances never become negative: oversized fields begin at the current cursor and
+wrap normally without overlapping preceding text. Continuation rows do not repeat
+the field alignment. This is a defined continuous-layout policy, not pagination
+or verified Word equivalence. Paragraph alignment and tab-row justification policy
+remain unchanged. Stops do not inherit from named styles; Enter copies geometry.
+
+`Editor::set_aligned_tab_stops` replaces only center/right entries in the selected
+paragraphs with one validated Undo/Redo; exclusive next-paragraph boundaries are
+excluded. Left-stop commands preserve aligned entries and reject conflicts.
+Current dialogs and ruler edit left stops only; type selection and center/right
+markers are a later increment. Palette and icons remain unchanged.
+
+Open [AlignedTabs.bfdoc](../../examples/AlignedTabs.bfdoc) to inspect the working layout.

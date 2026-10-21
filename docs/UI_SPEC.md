@@ -2052,3 +2052,20 @@ Native macOS captures use injected input, not physical keyboard acceptance.
 | :--- | :--- | :--- |
 | 1366 × 900 | [Preview](screenshots/rust-tab-numeric-alpha70-macos.png) | `ef224d40efdc79c99e669b0d6d930cec112c4e7a625e87a875dfc5c91b550540` |
 | 640 × 480 | [Preview](screenshots/rust-tab-numeric-alpha70-compact-macos.png) | `26a1e1d3ead9c4d5f4eb06e93f5a44ad2865ff71bb79380d682bda06b03d6a9a` |
+
+## Alpha.71: center/right tab layout
+
+Existing UI geometry, palette and icons are preserved. Native opened v16 documents
+render center/right fields at their stored anchors; the supplied AlignedTabs fixture
+uses center at 180 pt and right at 360 pt. Current ruler markers and tab editing
+controls remain left-only; the dialog now explicitly says its changes preserve
+center/right stops. No type-selector or interactive typed-marker claim is made.
+Long fields use the documented forward-only wrapping policy. Native Windows,
+matched-reference and VoiceOver acceptance remain deferred.
+
+Native macOS capture inspection (fixture rendering, not physical input acceptance):
+
+| Size (DIP) | Capture | SHA-256 |
+| :--- | :--- | :--- |
+| 1366 × 900 | [Layout](screenshots/rust-aligned-tabs-alpha71-macos.png) | `5808ac33c1ca282a7d715707118d51546d1147b484fbe871fd013827c3b950d3` |
+| 640 × 480 | [Layout](screenshots/rust-aligned-tabs-alpha71-compact-macos.png) | `7e6d1c616e7cd0470e567a6a57810495cd79645f70f33bef198127b7dc7f20e1` |
