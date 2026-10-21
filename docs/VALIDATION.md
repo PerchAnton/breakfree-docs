@@ -1870,3 +1870,28 @@ have no explicit approval recorded. Alpha.73 combines three related creation ste
 - Fresh native 1366 × 900 Center and 640 × 480 Right creation PNGs are byte-identical
   to the corresponding alpha.73 captures linked in UI_SPEC.md. This establishes
   unchanged rendering for those fixtures, not all interaction states.
+
+## Alpha.75 tab leader validation
+
+2026-10-21, macOS arm64, Rust 1.99.1. Owner approved alpha.74; alpha.75 awaits review.
+
+- 389 full / 182 core-only tests: per-type leader set/clear with one Undo/Redo,
+  exclusive paragraph boundaries, save/reopen, Enter, mixed-owner ruler movement,
+  collision/deletion, whole-list replacement and no-op Redo preservation.
+- Native v17 tests reject null/unknown/duplicate/unsorted/orphan leaders, leader
+  fields in v1–v16 (including empty/null), and unknown versions. Plain v16 opens.
+  An invalid leader save preserves the previous file bytes; the complete existing
+  write-failure/Unicode/storage suite also runs.
+- Renderer matrix compares leader/no-leader text, row count, every glyph position
+  and advance, and grapheme-boundary cursor rectangles across Left/Center/Right,
+  dots/dashes/line, English/Ukrainian/Russian/combining text, 50/100/200% zoom and
+  narrow/wide columns. Mesh tests verify bounded work and containment within the
+  tab advance. These examples do not establish all-script shaping support.
+- Leader controls are not exposed yet. Windows, physical OS keyboard/IME, matched
+  reference comparison and VoiceOver acceptance remain deferred.
+- fmt, normal/capture all-target Clippy, release/capture builds, repository/artwork,
+  YAML, whitespace and isolated CLI checks pass. Version/capabilities report alpha.75
+  independently of Office. Protocol/settings remain v1; document writer is v17.
+- Two native captures inspected at 1366 × 900 and 640 × 480 DIP using the openable
+  TabLeaders fixture. All leader kinds are visible with intact field alignment;
+  the palette/icons/ribbon remain unchanged. Hashes are recorded in UI_SPEC.md.

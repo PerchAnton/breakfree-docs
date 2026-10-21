@@ -8,7 +8,7 @@ use std::{
 };
 
 pub const FORMAT_ID: &str = "breakfree.docs.native";
-pub const CONTENT_VERSION: u32 = 16;
+pub const CONTENT_VERSION: u32 = 17;
 pub const MAX_FILE_BYTES: usize = 16 * 1024 * 1024;
 
 #[derive(Serialize, Deserialize)]
@@ -421,6 +421,21 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
             return Err("Explicit left tab stops require native content v15.".into());
         }
     }
+    if file.content_version < 17 {
+        fn has_leaders(value: &serde_json::Value) -> bool {
+            match value {
+                serde_json::Value::Object(map) => {
+                    map.contains_key("tab_leaders") || map.values().any(has_leaders)
+                }
+                serde_json::Value::Array(items) => items.iter().any(has_leaders),
+                _ => false,
+            }
+        }
+        let value = serde_json::from_slice(bytes).map_err(|e| e.to_string())?;
+        if has_leaders(&value) {
+            return Err("Tab leaders require native content v17.".into());
+        }
+    }
     if file.content_version < 16 {
         fn has_aligned_stops(value: &serde_json::Value) -> bool {
             match value {
@@ -492,7 +507,7 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
                 .map_err(|e| format!("Invalid native v6 document: {e}"))?;
             return decode_styled(file.paragraphs, file.style_catalog);
         }
-        10..=15 | CONTENT_VERSION => {
+        10..=16 | CONTENT_VERSION => {
             let file: NativeSpacing = serde_json::from_slice(bytes)
                 .map_err(|e| format!("Invalid native spacing document: {e}"))?;
             let (paragraphs, spacing): (Vec<_>, Vec<_>) = file

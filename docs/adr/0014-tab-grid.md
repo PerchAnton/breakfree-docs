@@ -304,3 +304,33 @@ original source, even after a rejected move; a valid later move cancels deletion
 Pointer drafts now cancel when rulers are hidden or File view becomes active,
 matching the keyboard controller. Cancellation does not change history or Redo.
 No storage, layout policy, palette, icon or dependency changes are introduced.
+
+## Tab leader storage and layout (alpha.75)
+
+Explicit Left/Center/Right positions may own a dot, dash or line leader. Absence
+means none; automatic grid stops never acquire leaders. Native v17 stores sorted
+`spacing.tab_leaders` objects with `position_half_points` and `leader` (`dots`,
+`dashes`, `line`). Every entry must reference an existing explicit stop; duplicates,
+unsorted/orphan positions, null and unknown keys/types are rejected. v1–v16 remain
+readable but reject this field even when empty/null. Alpha.74 and older reject v17.
+
+The shared `Editor::set_tab_leader` sets/clears a chosen position across a half-open
+paragraph selection in one Undo/Redo. A missing stop in any selected paragraph
+rejects the transaction. Ruler movement carries each owner's leader, deletion
+removes it, and cancel/invalid previews preserve the source. Whole-list replacement
+retains leaders at surviving coordinates and removes those at removed coordinates.
+Changing alignment at the same coordinate retains its leader. Enter copies the
+paragraph geometry under the existing policy; no style inheritance is added.
+
+Layout paints original geometric dots, dashes or a line inside the actual positive
+tab advance, with 0.15-em side clearance and the tab's resolved color/font size.
+Dot/dash pitch is 0.5 em; at most 512 marks are drawn per tab (a longer gap leaves
+its tail unfilled). Line rendering uses one rectangle. Very short/zero advances
+have no fill. Center/right fields keep their existing measured alignment; fills
+never extend into the following field. Wrapped rows, indentation, zoom and paragraph
+alignment use the existing tab geometry. Underline remains independent.
+
+Leaders add no stored characters, glyph entries or cursor stops. No layout-policy,
+palette/icon or dependency changes. This is a prototype rendering policy, not
+verified Word equivalence. UI selection of leader kind follows separately; open
+[TabLeaders.bfdoc](../../examples/TabLeaders.bfdoc) to inspect the current renderer.

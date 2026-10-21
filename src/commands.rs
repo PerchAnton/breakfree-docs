@@ -563,6 +563,44 @@ impl Editor {
         Ok(())
     }
 
+    /// Set/clear a leader on one explicit position in every selected paragraph.
+    /// Missing positions reject the complete transaction rather than creating stops.
+    pub fn set_tab_leader(
+        &mut self,
+        start: usize,
+        end: usize,
+        position: u16,
+        leader: Option<crate::model::TabLeader>,
+    ) -> Result<()> {
+        validate_range(&self.document.text(), start, end)?;
+        let (first, _) = self.document.locate(start)?;
+        let (mut last, offset) = self.document.locate(end)?;
+        if end > start && offset == 0 && last > first {
+            last -= 1;
+        }
+        let mut result = self.document.clone();
+        for p in &mut result.paragraphs[first..=last] {
+            if !p.spacing.tab_positions().iter().any(|s| s.0 == position) {
+                return Err("The selected paragraph has no explicit tab at this position.".into());
+            }
+            p.spacing
+                .tab_leaders
+                .retain(|s| s.position_half_points != position);
+            if let Some(leader) = leader {
+                p.spacing.tab_leaders.push(crate::model::TabLeaderStop {
+                    position_half_points: position,
+                    leader,
+                });
+                p.spacing
+                    .tab_leaders
+                    .sort_by_key(|s| s.position_half_points);
+            }
+        }
+        result.validate()?;
+        self.commit(result, "Tab leader", (start, end), self.typing_style);
+        Ok(())
+    }
+
     /// Replace center/right stops, retaining left stops and other paragraph properties.
     pub fn set_aligned_tab_stops(
         &mut self,
@@ -579,6 +617,7 @@ impl Editor {
         let mut result = self.document.clone();
         for paragraph in &mut result.paragraphs[first..=last] {
             paragraph.spacing.aligned_tab_stops = stops.clone();
+            paragraph.spacing.retain_tab_leaders();
         }
         result.validate()?;
         self.commit(result, "Aligned tab stops", (start, end), self.typing_style);
@@ -606,6 +645,7 @@ impl Editor {
         let mut result = self.document.clone();
         for p in &mut result.paragraphs[first..=last] {
             p.spacing.left_tab_stops_half_points = positions.clone();
+            p.spacing.retain_tab_leaders();
         }
         result.validate()?;
         self.commit(result, "Left tab stops", (start, end), self.typing_style);
@@ -635,6 +675,15 @@ impl Editor {
         end: usize,
         lists: Vec<Vec<(u16, crate::model::TabKind)>>,
     ) -> Result<()> {
+        self.set_paragraph_tab_settings(start, end, lists, None)
+    }
+    pub(crate) fn set_paragraph_tab_settings(
+        &mut self,
+        start: usize,
+        end: usize,
+        lists: Vec<Vec<(u16, crate::model::TabKind)>>,
+        leaders: Option<Vec<Vec<crate::model::TabLeaderStop>>>,
+    ) -> Result<()> {
         validate_range(&self.document.text(), start, end)?;
         let (first, _) = self.document.locate(start)?;
         let (mut last, offset) = self.document.locate(end)?;
@@ -647,6 +696,14 @@ impl Editor {
         let mut result = self.document.clone();
         for (paragraph, positions) in result.paragraphs[first..=last].iter_mut().zip(lists) {
             paragraph.spacing.set_tab_positions(&positions)?;
+        }
+        if let Some(leaders) = leaders {
+            if leaders.len() != last - first + 1 {
+                return Err("Tab leader selection mismatch.".into());
+            }
+            for (p, leaders) in result.paragraphs[first..=last].iter_mut().zip(leaders) {
+                p.spacing.tab_leaders = leaders;
+            }
         }
         result.validate()?;
         self.commit(result, "Tab positions", (start, end), self.typing_style);

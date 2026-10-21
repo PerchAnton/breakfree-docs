@@ -11022,3 +11022,68 @@ fn typed_pointer_draft_hidden_ruler_cancel_allows_keyboard_reentry() {
     );
     assert_eq!(app.session.editor.undo_stack.len(), count + 1);
 }
+
+#[test]
+fn tab_leaders_preserve_layout_scalars_cursors_and_wrapping() {
+    use crate::model::{TabKind as K, TabLeader as L};
+    let (ctx, _) = setup();
+    let _ = ctx.run(egui::RawInput::default(), |ctx| {
+        for kind in [K::Left, K::Center, K::Right] {
+            for leader in [L::Dots, L::Dashes, L::Line] {
+                for text in ["A\tEnglish\tend", "\tУкраїна\t", "Русский\te\u{301}"] {
+                    let mut e = crate::commands::Editor::default();
+                    e.replace(0, 0, text, "Fixture").unwrap();
+                    e.set_tab_positions(0, 0, vec![(400, kind)]).unwrap();
+                    e.emphasize(0, text.chars().count(), true, true).unwrap();
+                    for scale in [0.5, 1., 2.] {
+                        for width in [50., 600.] {
+                            let plain = e.document.clone();
+                            let g = layout::galley(
+                                ctx,
+                                &plain,
+                                text,
+                                CharacterFormat::default(),
+                                0,
+                                width * scale,
+                                11. * scale,
+                            );
+                            e.set_tab_leader(0, 0, 400, Some(leader)).unwrap();
+                            let filled = layout::galley(
+                                ctx,
+                                &e.document,
+                                text,
+                                CharacterFormat::default(),
+                                0,
+                                width * scale,
+                                11. * scale,
+                            );
+                            assert_eq!(g.rows.len(), filled.rows.len());
+                            assert_eq!(g.job.text, filled.job.text);
+                            for (a, b) in g.rows.iter().zip(&filled.rows) {
+                                assert_eq!(a.glyphs.len(), b.glyphs.len());
+                                for (a, b) in a.glyphs.iter().zip(&b.glyphs) {
+                                    assert_eq!(a.chr, b.chr);
+                                    assert_eq!(a.pos, b.pos);
+                                    assert_eq!(a.advance_width, b.advance_width);
+                                }
+                            }
+                            for index in crate::model::boundaries(text) {
+                                assert_eq!(
+                                    g.pos_from_cursor(CCursor::new(index)),
+                                    filled.pos_from_cursor(CCursor::new(index))
+                                );
+                            }
+                            if width == 600. {
+                                assert!(
+                                    filled.num_vertices > g.num_vertices,
+                                    "{kind:?} {leader:?} {text}"
+                                );
+                            }
+                            e.set_tab_leader(0, 0, 400, None).unwrap();
+                        }
+                    }
+                }
+            }
+        }
+    });
+}

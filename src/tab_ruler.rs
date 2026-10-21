@@ -137,6 +137,17 @@ impl Draft {
                 }
                 self.creation_kind
             };
+            if let Some(source) = self.source {
+                for leader in &mut paragraph.spacing.tab_leaders {
+                    if leader.position_half_points == source {
+                        leader.position_half_points = position;
+                    }
+                }
+                paragraph
+                    .spacing
+                    .tab_leaders
+                    .sort_by_key(|s| s.position_half_points);
+            }
             positions.push((position, kind));
             positions.sort_by_key(|s| s.0);
             paragraph.spacing.set_tab_positions(&positions)?;
@@ -176,13 +187,19 @@ impl Draft {
         if editor.document != self.original || editor.selection != self.selection {
             return Err("Tab drag cancelled because the document or selection changed.".into());
         }
-        editor.set_paragraph_tab_lists(
+        editor.set_paragraph_tab_settings(
             self.selection.0,
             self.selection.1,
             self.preview.paragraphs[self.first..=self.last]
                 .iter()
                 .map(|p| p.spacing.tab_positions())
                 .collect(),
+            Some(
+                self.preview.paragraphs[self.first..=self.last]
+                    .iter()
+                    .map(|p| p.spacing.tab_leaders.clone())
+                    .collect(),
+            ),
         )
     }
 }

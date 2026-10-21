@@ -946,3 +946,12 @@ Keyboard tab movement can cross occupied positions with repeated arrows. A rejec
 position never changes the document; Enter stays blocked until the destination is
 valid. Hiding rulers cancels pointer previews, preserving history. Mixed-owner,
 transform-cancellation and re-entry regression checks precede tab leaders.
+
+### Tab leaders (alpha.75)
+
+Open [TabLeaders.bfdoc](examples/TabLeaders.bfdoc) to see dots, dashes and lines
+between tab-aligned fields. Leaders are decorations, not inserted characters.
+They follow explicit stops during ruler movement and disappear with deletion.
+The shared engine supports one-operation set/clear; dialog controls follow later.
+Saves now use native v17; v1–v16 remain readable. Alpha.74 and older reject v17,
+so preserve an older copy when using those builds. Design/palette/icons are retained.

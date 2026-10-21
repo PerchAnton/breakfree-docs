@@ -609,10 +609,28 @@ pub struct AlignedTabStop {
     pub alignment: TabStopAlignment,
 }
 
+/// A visual fill for an explicit stop; absence means no leader.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TabLeader {
+    Dots,
+    Dashes,
+    Line,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TabLeaderStop {
+    pub position_half_points: u16,
+    pub leader: TabLeader,
+}
+
 /// Direct paragraph geometry; tab properties do not inherit from named styles.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ParagraphSpacing {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tab_leaders: Vec<TabLeaderStop>,
     /// Center/right stops; separate from the retained left-stop representation.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub aligned_tab_stops: Vec<AlignedTabStop>,
@@ -674,12 +692,38 @@ impl ParagraphSpacing {
                 }),
             }
         }
+        next.retain_tab_leaders();
         next.validate()?;
         *self = next;
         Ok(())
     }
 
+    pub fn retain_tab_leaders(&mut self) {
+        let positions = self.tab_positions();
+        self.tab_leaders
+            .retain(|s| positions.iter().any(|p| p.0 == s.position_half_points));
+    }
+    pub fn tab_leader(&self, position: u16) -> Option<TabLeader> {
+        self.tab_leaders
+            .iter()
+            .find(|s| s.position_half_points == position)
+            .map(|s| s.leader)
+    }
+
     pub fn validate(&self) -> Result<()> {
+        let positions = self.tab_positions();
+        if self.tab_leaders.len() > 32
+            || self
+                .tab_leaders
+                .windows(2)
+                .any(|w| w[0].position_half_points >= w[1].position_half_points)
+            || self
+                .tab_leaders
+                .iter()
+                .any(|s| !positions.iter().any(|p| p.0 == s.position_half_points))
+        {
+            return Err("Tab leaders require sorted unique existing explicit positions.".into());
+        }
         if self.aligned_tab_stops.len() + self.left_tab_stops_half_points.len() > 32
             || self.aligned_tab_stops.iter().any(|s| {
                 !(1..=2880).contains(&s.position_half_points)

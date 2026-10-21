@@ -3,6 +3,19 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.75 — 2026-10-21
+
+- Store per-stop dot, dash and line leaders for explicit Left/Center/Right tabs.
+  Add a validated shared set/clear command with one Undo/Redo; retain leader
+  identity during ruler movement and remove it with the stop.
+- Render bounded decorative leader meshes inside the tab advance without changing
+  stored text, cursor positions, wrapping or field alignment. Grid tabs stay plain.
+- Write native v17, retain v1–v16 reading and strictly reject malformed leaders
+  and leader fields in older versions. Alpha.74 and older reject v17 saves.
+- Add an openable TabLeaders fixture and regression coverage. Palette/icons remain
+  unchanged; leader dialog controls are a later step. Owner approved alpha.74;
+  alpha.75 awaits approval. Windows/VoiceOver remain deferred.
+
 ## 0.1.0-alpha.74 — 2026-10-21
 
 - Fix keyboard tab previews getting stuck on occupied positions: arrows now move

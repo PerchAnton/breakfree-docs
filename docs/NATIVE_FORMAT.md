@@ -1,12 +1,12 @@
 # Native BreakFree Docs document format
 
-Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v16.
+Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v17.
 This is not a DOCX container. Process protocol and file-content versions are independent.
 
 ```json
 {
   "format": "breakfree.docs.native",
-  "content_version": 16,
+  "content_version": 17,
   "character_styles": [],
   "style_catalog": {
     "custom": [],
@@ -272,3 +272,12 @@ Current dialogs and ruler edit left stops only; type selection and center/right
 markers are a later increment. Palette and icons remain unchanged.
 
 Open [AlignedTabs.bfdoc](../examples/AlignedTabs.bfdoc) to inspect the working layout.
+
+## Tab leaders (v17)
+
+Explicit Left/Center/Right positions may own a dot, dash or line leader. Absence
+means none; automatic grid stops never acquire leaders. Native v17 stores sorted
+`spacing.tab_leaders` objects with `position_half_points` and `leader` (`dots`,
+`dashes`, `line`). Every entry must reference an existing explicit stop; duplicates,
+unsorted/orphan positions, null and unknown keys/types are rejected. v1–v16 remain
+readable but reject this field even when empty/null. Alpha.74 and older reject v17.

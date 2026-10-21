@@ -2159,3 +2159,19 @@ Fresh alpha.74 native captures matched the alpha.73 PNG bytes exactly:
 [Right, 640 × 480](screenshots/rust-tab-create-right-alpha73-compact-macos.png), SHA-256
 `96582f35775a630053558a69e2493c0e62b0993cfbe67446c3ef650ad3df991f`.
 No duplicate image assets are added. This comparison covers those fixtures only.
+
+## Alpha.75: tab leader rendering
+
+Leader meshes use the existing text color and font-size scale. Dots, dashes and
+lines occupy only the tab gap with 0.15-em side clearance, leaving aligned fields
+unchanged. The shell, ribbon, rulers, palette and icons are retained. No leader
+selection controls are exposed yet. See ADR 0014 for the bounded-render policy.
+
+Native macOS captures of TabLeaders.bfdoc inspected on 2026-10-21: the three fills
+are visible, field edges align, and the compact ribbon remains unobstructed.
+No matched Word/Windows comparison or physical-input/VoiceOver acceptance claimed.
+
+| View / DIP | Capture | SHA-256 |
+| :--- | :--- | :--- |
+| Wide / 1366 × 900 | [View](screenshots/rust-tab-leaders-alpha75-macos.png) | `054b02d5990f8e18541672ac918ca33774c0a7ceb0706f5d8fb2f52b483c1e9f` |
+| Compact / 640 × 480 | [View](screenshots/rust-tab-leaders-alpha75-compact-macos.png) | `718d9c9eb13ef623ac638395b0c0bb5028a14fbd09835f5643654805fd49c99a` |

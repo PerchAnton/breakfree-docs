@@ -65,7 +65,7 @@ fn aligned_tabs_reject_conflicts_capacity_and_malformed_storage() {
     }
     let base: serde_json::Value =
         serde_json::from_slice(&storage::encode(&before).unwrap()).unwrap();
-    assert_eq!(base["content_version"], 16);
+    assert_eq!(base["content_version"], storage::CONTENT_VERSION);
     for value in [
         serde_json::json!(null),
         serde_json::json!([{"position_half_points":100,"alignment":"decimal"}]),

@@ -398,4 +398,5 @@ Use public specifications and original test cases, not copied application code. 
 - [x] Review extended typed-tab interaction cases before leaders (alpha.74 local model/widget tests); physical input acceptance remains open.
 
 - [x] Alpha.74: extended typed-tab recovery tests; adjacent collision traversal, mixed-owner atomicity, numeric/deletion recovery and cancellation/re-entry.
-- [ ] Next: define tab leader storage/layout and bounded rendering before adding leader controls; style inheritance remains separate.
+- [x] Alpha.75: per-stop leader storage/v17 and bounded dot/dash/line rendering; shared transactional command and ruler retention.
+- [ ] Next: expose leader choice in the transactional tab positions dialog. Style inheritance remains separate.
