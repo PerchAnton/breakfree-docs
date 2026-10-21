@@ -9,6 +9,7 @@ pub struct Draft {
     original: Document,
     selection: (usize, usize),
     source: Option<u16>,
+    creation_kind: TabKind,
     first: usize,
     last: usize,
     valid: bool,
@@ -22,7 +23,11 @@ impl Draft {
     }
     /// Uncommitted creation session; invalid until a position passes validation.
     pub fn creation_preview(editor: &Editor) -> Result<Self> {
+        Self::creation_preview_typed(editor, TabKind::Left)
+    }
+    pub fn creation_preview_typed(editor: &Editor, kind: TabKind) -> Result<Self> {
         let mut draft = Self::snapshot(editor, None)?;
+        draft.creation_kind = kind;
         draft.position = 72;
         draft.valid = false;
         Ok(draft)
@@ -30,17 +35,20 @@ impl Draft {
     pub fn kind(&self) -> Option<TabKind> {
         match self.source {
             Some(position) => common_kind(&self.original, self.selection, position),
-            None => Some(TabKind::Left),
+            None => Some(self.creation_kind),
         }
     }
     pub fn is_creation(&self) -> bool {
         self.source.is_none()
     }
     pub fn create(editor: &Editor, position: u16) -> Result<Self> {
+        Self::create_typed(editor, position, TabKind::Left)
+    }
+    pub fn create_typed(editor: &Editor, position: u16, kind: TabKind) -> Result<Self> {
         if !(1..=2880).contains(&position) {
             return Err("Tab position must be 0.5–1440 pt.".into());
         }
-        let mut draft = Self::snapshot(editor, None)?;
+        let mut draft = Self::creation_preview_typed(editor, kind)?;
         draft.move_to(f32::from(position))?;
         Ok(draft)
     }
@@ -67,6 +75,7 @@ impl Draft {
             preview: editor.document.clone(),
             selection: editor.selection,
             source,
+            creation_kind: TabKind::Left,
             first,
             last,
             valid: true,
@@ -118,12 +127,12 @@ impl Draft {
                 kind
             } else {
                 if let Some((_, kind)) = positions.iter().find(|s| s.0 == position) {
-                    if *kind == TabKind::Left {
+                    if *kind == self.creation_kind {
                         continue;
                     }
                     return Err("A different tab type already uses this position.".into());
                 }
-                TabKind::Left
+                self.creation_kind
             };
             positions.push((position, kind));
             positions.sort_by_key(|s| s.0);

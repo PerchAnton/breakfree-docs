@@ -392,4 +392,7 @@ Use public specifications and original test cases, not copied application code. 
 - [x] Alpha.72 step 1: unified Left/Center/Right dialog with staged changes, cancel and one Undo/Redo.
 - [x] Alpha.72 step 2: type-specific ruler shapes and explicit mixed-type/coverage labels.
 - [x] Alpha.72 step 3: pointer/keyboard/F2 movement and deletion of all types, preserving mixed owners and one transaction (local tests).
-- [ ] Next: choose the type when creating a tab from the ruler; leaders and style inheritance remain separate increments.
+- [x] Alpha.73 step 1: window-local creation-type selector, pointer/context-menu and keyboard access.
+- [x] Alpha.73 step 2: typed pointer creation with drag preview, cancellation and one transaction.
+- [x] Alpha.73 step 3: selected-type keyboard creation and exact F2 input, preserving conflicts, mixed lists and Undo/Redo.
+- [ ] Next: review extended typed-tab interaction cases before adding leaders; style inheritance remains separate.

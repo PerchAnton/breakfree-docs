@@ -106,3 +106,61 @@ fn typed_ruler_conflict_cancel_and_stale_draft_are_atomic() {
     e.undo();
     assert_eq!(e.document, before);
 }
+
+#[test]
+fn typed_creation_missing_only_conflict_and_one_history() {
+    for kind in [K::Left, K::Center, K::Right] {
+        let mut e = Editor::default();
+        e.replace(0, 0, "a\nb\nlast", "Fixture").unwrap();
+        e.set_tab_positions(0, 0, vec![(144, kind)]).unwrap();
+        e.selection = (0, 4);
+        let before = e.document.clone();
+        let count = e.undo_stack.len();
+        let mut d = Draft::creation_preview_typed(&e, kind).unwrap();
+        assert_eq!(d.kind(), Some(kind));
+        d.move_to_text("72").unwrap();
+        assert_eq!(e.document, before);
+        d.commit(&mut e).unwrap();
+        let after = e.document.clone();
+        assert_eq!(e.undo_stack.len(), count + 1);
+        assert_eq!(
+            after.paragraphs[1].spacing.tab_positions(),
+            vec![(144, kind)]
+        );
+        assert_eq!(after.paragraphs[2], before.paragraphs[2]);
+        assert_eq!(
+            storage::decode(&storage::encode(&after).unwrap()).unwrap(),
+            after
+        );
+        e.undo();
+        assert_eq!(e.document, before);
+        e.redo();
+        assert_eq!(e.document, after);
+        assert!(Draft::create_typed(&e, 144, kind).is_err());
+        let other = if kind == K::Left { K::Right } else { K::Left };
+        assert!(Draft::create_typed(&e, 144, other).is_err());
+        assert_eq!(e.document, after);
+    }
+}
+#[test]
+fn typed_creation_capacity_invalid_and_cancel_preserve_redo() {
+    let mut e = Editor::default();
+    e.set_tab_positions(0, 0, (1..=32).map(|p| (p, K::Right)).collect())
+        .unwrap();
+    let before = e.document.clone();
+    assert!(Draft::create_typed(&e, 100, K::Center).is_err());
+    assert!(Draft::create_typed(&e, 0, K::Right).is_err());
+    assert!(Draft::create_typed(&e, 2881, K::Center).is_err());
+    let mut d = Draft::creation_preview_typed(&e, K::Right).unwrap();
+    assert!(d.move_to_text("100").is_err());
+    assert!(d.commit(&mut e).is_err());
+    assert_eq!(e.document, before);
+    e.undo();
+    let empty = e.document.clone();
+    let mut d = Draft::creation_preview_typed(&e, K::Center).unwrap();
+    d.move_to_text("100").unwrap();
+    drop(d);
+    assert_eq!(e.document, empty);
+    e.redo();
+    assert_eq!(e.document, before);
+}

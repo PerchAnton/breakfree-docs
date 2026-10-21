@@ -18,6 +18,138 @@ pub(super) struct TabDrag {
     popup: Rect,
 }
 impl DocsApp {
+    fn cycle_tab_creation_kind(&mut self) {
+        use crate::model::TabKind;
+        self.tab_creation_kind = match self.tab_creation_kind {
+            TabKind::Left => TabKind::Center,
+            TabKind::Center => TabKind::Right,
+            TabKind::Right => TabKind::Left,
+        };
+    }
+    pub(super) fn tab_type_selector(&mut self, ui: &mut Ui, ruler: Rect) {
+        let rect = Rect::from_min_size(pos2(ruler.left() - 28., ruler.top()), vec2(24., 24.));
+        let enabled = self.enabled(Action::TabPositions)
+            && !self.composing
+            && !self.backstage
+            && self.ruler_key_focus.is_none();
+        let response = ui.interact(
+            rect,
+            Id::new("tab-type-selector"),
+            if enabled {
+                Sense::click()
+            } else {
+                Sense::hover()
+            },
+        );
+        let visuals = ui.style().interact(&response);
+        ui.painter().rect(
+            rect,
+            visuals.corner_radius,
+            visuals.bg_fill,
+            visuals.bg_stroke,
+            egui::StrokeKind::Inside,
+        );
+        self.record("tab-type-selector", response.rect);
+        if enabled && response.clicked() {
+            self.cycle_tab_creation_kind();
+        }
+        let kind = self.tab_creation_kind;
+        let label = format!(
+            "New tab type: {}. Click or Ctrl+Alt+F7 cycles Left, Center, Right. Right-click to choose. Applies to new tabs only.",
+            kind.label()
+        );
+        response
+            .widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, enabled, &label));
+        let x = rect.center().x;
+        let y = rect.center().y;
+        let (low, high) = match kind {
+            crate::model::TabKind::Left => (0., 5.),
+            crate::model::TabKind::Center => (-5., 5.),
+            crate::model::TabKind::Right => (-5., 0.),
+        };
+        let color = if enabled {
+            INK
+        } else {
+            Color32::from_gray(150)
+        };
+        ui.painter().line_segment(
+            [pos2(x, y - 4.), pos2(x, y + 4.)],
+            Stroke::new(2.0_f32, color),
+        );
+        ui.painter().line_segment(
+            [pos2(x + low, y + 4.), pos2(x + high, y + 4.)],
+            Stroke::new(2.0_f32, color),
+        );
+        if enabled {
+            response.context_menu(|ui| {
+                for kind in [
+                    crate::model::TabKind::Left,
+                    crate::model::TabKind::Center,
+                    crate::model::TabKind::Right,
+                ] {
+                    let r = ui.selectable_label(self.tab_creation_kind == kind, kind.label());
+                    self.record(
+                        &format!("tab-create-kind-{}", kind.label().to_lowercase()),
+                        r.rect,
+                    );
+                    if r.clicked() {
+                        self.tab_creation_kind = kind;
+                        ui.close();
+                    }
+                }
+            });
+        }
+        response.on_hover_text(label);
+    }
+    pub(super) fn start_tab_pointer_creation(
+        &mut self,
+        ctx: &egui::Context,
+        rect: Rect,
+        pointer: egui::Pos2,
+        zoom: f32,
+        value: u16,
+    ) {
+        match crate::tab_ruler::Draft::creation_preview_typed(
+            &self.session.editor,
+            self.tab_creation_kind,
+        ) {
+            Ok(mut draft) => {
+                let error = draft.move_to(f32::from(value)).err();
+                // A complete click may arrive within one frame; it still commits exactly once.
+                if ctx.input(|i| i.pointer.primary_released()) {
+                    if let Some(error) = error {
+                        self.error = Some(error);
+                    } else {
+                        let result = draft.commit(&mut self.session.editor);
+                        self.fail(result);
+                    }
+                    self.sync_view();
+                    return;
+                }
+                self.tab_ruler_drag = Some(TabDrag {
+                    draft,
+                    rect,
+                    screen: ctx.content_rect(),
+                    zoom,
+                    origin: pointer.x,
+                    start: value,
+                    unit: 14.6667 * zoom / 22.,
+                    error,
+                    keyboard: false,
+                    numeric: false,
+                    input: String::new(),
+                    focus_input: false,
+                    accept_input: false,
+                    popup: Rect::NOTHING,
+                });
+                self.focus_document = false;
+                self.leave_ribbon(ctx);
+                ctx.memory_mut(|m| m.surrender_focus(Id::new(EDIT_ID)));
+                ctx.request_repaint();
+            }
+            Err(error) => self.error = Some(error),
+        }
+    }
     pub(super) fn prepare_tab_ruler_input(&mut self, ctx: &egui::Context) -> bool {
         let eligible = self.tab_ruler_drag.is_none()
             && self.enabled(Action::TabPositions)
@@ -25,6 +157,11 @@ impl DocsApp {
             && !self.backstage
             && self.ruler_key_focus.is_none()
             && !egui::Popup::is_any_open(ctx);
+        if eligible && ctx.input_mut(|i| i.consume_key(Modifiers::CTRL | Modifiers::ALT, Key::F7)) {
+            self.rulers = true;
+            self.cycle_tab_creation_kind();
+            return true;
+        }
         let create = eligible
             && ctx.input_mut(|i| {
                 i.consume_key(Modifiers::CTRL | Modifiers::ALT | Modifiers::SHIFT, Key::F8)
@@ -234,7 +371,10 @@ impl DocsApp {
     }
     fn start_tab_keyboard_mode(&mut self, ctx: &egui::Context, value: u16, creating: bool) {
         let result = if creating {
-            crate::tab_ruler::Draft::creation_preview(&self.session.editor)
+            crate::tab_ruler::Draft::creation_preview_typed(
+                &self.session.editor,
+                self.tab_creation_kind,
+            )
         } else {
             crate::tab_ruler::Draft::new(&self.session.editor, value)
         };
@@ -463,8 +603,13 @@ impl DocsApp {
                 .unwrap_or_else(|| {
                     if drag.draft.is_creation() {
                         return format!(
-                            "New tab {:.1} pt — Enter applies; Esc cancels",
-                            f32::from(drag.draft.position) / 2.
+                            "New {kind_label} tab {:.1} pt — {}; Esc cancels",
+                            f32::from(drag.draft.position) / 2.,
+                            if drag.keyboard {
+                                "Enter applies"
+                            } else {
+                                "release applies"
+                            }
                         );
                     }
                     if drag.draft.deleting {
@@ -492,9 +637,9 @@ impl DocsApp {
                         ui.set_max_width((ui.ctx().content_rect().width() - 48.).max(120.));
                         if drag.numeric {
                             ui.label(if drag.draft.is_creation() {
-                                "New left tab"
+                                format!("New {kind_label} tab")
                             } else {
-                                kind_label
+                                kind_label.to_owned()
                             });
                             ui.horizontal(|ui| {
                                 ui.label("Position:");
@@ -558,9 +703,13 @@ impl DocsApp {
                         .interact_pos()
                         .is_some_and(|p| rect.expand(12.).contains(p))
                 });
-                if inside && drag.error.is_none() {
-                    let result = drag.draft.commit(&mut self.session.editor);
-                    self.fail(result);
+                if inside {
+                    if drag.error.is_none() {
+                        let result = drag.draft.commit(&mut self.session.editor);
+                        self.fail(result);
+                    } else if drag.draft.is_creation() {
+                        self.error = drag.error;
+                    }
                 }
                 self.sync_view();
             }

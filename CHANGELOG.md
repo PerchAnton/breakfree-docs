@@ -3,6 +3,18 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.73 — 2026-10-21
+
+- Add a ruler creation-type selector: click/Ctrl+Alt+F7 cycles Left/Center/Right;
+  its context menu selects directly. The window-local choice does not edit content.
+- Create the selected type by pressing the empty ruler, previewing movement and
+  releasing inside. Escape, focus loss or outside release cancels; quick clicks
+  delivered in one frame still create exactly one history entry.
+- Keyboard creation and F2 exact input use the selected type, frozen in the draft.
+  Preserve same-type missing-only insertion, cross-type conflict rejection,
+  cancellation/Redo and one Undo/Redo. Native v16, palette and icons retained.
+- Windows and VoiceOver remain deferred; alpha.71–72 have no explicit approval recorded.
+
 ## 0.1.0-alpha.72 — 2026-10-21
 
 - Edit Left/Center/Right positions in one dialog; Add/Update stages type changes,

@@ -1823,3 +1823,28 @@ no explicit approval recorded. Alpha.72 is one three-step candidate for review.
   and 640 × 480 DIP. Type captions/controls fit, center/right shapes are visible,
   and palette/icons remain unchanged. No matched Word comparison or spoken reader
   acceptance is claimed. Windows deferred; VoiceOver remains final review.
+
+## Alpha.73 typed tab creation validation
+
+2026-10-21, macOS arm64, Rust 1.99.1. Alpha.70 explicitly approved; alpha.71–72
+have no explicit approval recorded. Alpha.73 combines three related creation steps.
+
+- 377 full / 175 core-only tests pass. Typed creation checks missing-only updates,
+  same/different-kind destinations, capacity, invalid positions, cancellation,
+  Redo preservation, save/reopen and one-operation Undo/Redo.
+- Widget tests cover selector click/context menu/Ctrl+Alt+F7, unchanged selection,
+  frozen draft type, keyboard F2 exact positions, pointer preview/apply/Escape/
+  focus-loss/outside cancellation and a complete click within one event frame.
+  Compact selector geometry is checked at synthetic 100/125/150% scale.
+- The full suite caught selector allocation changing the canvas bounds and scroll
+  layout. The selector now uses a non-allocating interaction region; existing
+  horizontal/vertical ruler alignment, zoom and long-document scroll tests pass.
+- Windows and physical OS keyboard/IME acceptance remain deferred; synthetic
+  inputs do not replace them. VoiceOver remains final review. No matched Word
+  comparison or visual equivalence is claimed. Native format v16 is unchanged.
+- fmt, normal/capture all-target Clippy, release/capture builds, repository/artwork,
+  YAML and whitespace checks pass. The copied isolated executable reports alpha.73
+  and correct v1 capabilities without Office or sibling repositories.
+- Three native captures inspected: Center/Right creation at 1366 × 900 and Right
+  creation at 640 × 480 DIP. Selector, type-specific preview and markers fit;
+  palette/icons are retained. Screenshot hashes are recorded in UI_SPEC.md.

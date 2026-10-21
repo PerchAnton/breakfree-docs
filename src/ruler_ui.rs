@@ -81,6 +81,7 @@ impl DocsApp {
         // Keep the horizontal ruler at the viewport top while the canvas scrolls.
         let rect = rect.translate(vec2(0., (ui.clip_rect().top() - rect.top()).max(0.)));
         self.record("ruler", rect);
+        self.tab_type_selector(ui, rect);
         let mut menu_response = ui.interact(rect, Id::new("ruler-menu"), Sense::click());
         if let Some(drag) = &mut self.ruler_drag
             && drag.rect == Rect::NOTHING
@@ -302,7 +303,8 @@ impl DocsApp {
             response.on_hover_text(format!("{label} — drag to preview; release to apply; Esc cancels. Half-point steps. Uses the first selected paragraph; applies to selected paragraphs. Ctrl+Shift+F8 enters keyboard control; Tab changes marker, arrows nudge 0.5 pt, Shift+arrows 5 pt, Enter applies, Esc cancels, F1 shows sources, Delete previews all-indent reset; Shift+Delete resets the focused property to style indents. {}", summary.marker_details(handle)));
         }
         self.tab_markers(ui, rect, left, right, zoom, &indent_targets);
-        if menu_response.clicked()
+        if ui.input(|i| i.pointer.primary_pressed())
+            && (menu_response.is_pointer_button_down_on() || menu_response.clicked())
             && self.enabled(Action::TabPositions)
             && !self.composing
             && !self.backstage
@@ -319,10 +321,7 @@ impl DocsApp {
             let value = ((pointer.x - left) / (14.6667 * zoom / 22.))
                 .round()
                 .clamp(1., 2880.) as u16;
-            let result = crate::tab_ruler::Draft::create(&self.session.editor, value)
-                .and_then(|draft| draft.commit(&mut self.session.editor));
-            self.fail(result);
-            self.sync_view();
+            self.start_tab_pointer_creation(ui.ctx(), rect, pointer, zoom, value);
         }
         if let Some(drag) = &mut self.ruler_drag
             && !drag.keyboard

@@ -912,3 +912,30 @@ dialog. Type selection for new ruler stops is a separate next increment.
 The unified editing representation maps to the existing v16 arrays; no schema,
 palette, icon or layout-policy change. Physical keyboard/IME, matched Word,
 Windows and VoiceOver acceptance remain deferred.
+
+## Typed ruler creation (alpha.73)
+
+The 24 × 24 DIP selector immediately left of the horizontal ruler shows the type
+for new stops. Click it or press Ctrl+Alt+F7 to cycle Left → Center → Right → Left;
+right-click for explicit choices. This Docs-specific shortcut shows the ruler if
+hidden. The choice is local to the window, starts at Left and is not serialized or
+included in undo history. Existing stops and the document selection stay unchanged.
+The selector is unavailable during drafts, modal editing, composition or indent
+keyboard control. Type is frozen when a creation draft begins.
+
+Press an empty ruler location to preview a stop of that type; move horizontally
+while held and release inside the ruler to apply once. Escape, window focus loss,
+transform changes or release outside cancel. A press/release in the same event
+frame commits once. Existing indent/tab hit targets retain priority. Invalid
+creation previews cannot commit; releasing inside reports their error.
+
+Ctrl+Alt+Shift+F8 starts creation at 36 pt using the selector. Ctrl+Alt+F8 does the
+same when no explicit positions exist. Arrows adjust by 0.5 pt (Shift: 5 pt), F2
+opens exact point input, Enter/Tab commits once and exits, Escape/Delete cancels.
+The preview identifies the selected type. Numeric-input Delete retains text-editing
+behavior. Same-kind stops at the destination are preserved while missing entries
+are added; a different kind at that position rejects the entire operation.
+Capacity, stale-source and half-open paragraph-selection validation remain shared.
+
+Native v16, existing layout policy, palette and icons remain unchanged. Physical
+keyboard/IME, matched Word, Windows and VoiceOver acceptance remain separate.

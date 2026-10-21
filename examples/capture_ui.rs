@@ -20,7 +20,13 @@ impl eframe::App for Capture {
     fn raw_input_hook(&mut self, _ctx: &egui::Context, input: &mut egui::RawInput) {
         if matches!(
             self.mode.as_str(),
-            "tab-keyboard" | "tab-delete" | "tab-mixed" | "tab-create" | "tab-numeric"
+            "tab-keyboard"
+                | "tab-delete"
+                | "tab-mixed"
+                | "tab-create"
+                | "tab-numeric"
+                | "tab-create-center"
+                | "tab-create-right"
         ) {
             input.focused = true;
             if matches!(self.frames, 3 | 5) {
@@ -40,7 +46,13 @@ impl eframe::App for Capture {
                     modifiers: if self.frames == 3 {
                         egui::Modifiers::CTRL
                             | egui::Modifiers::ALT
-                            | if matches!(self.mode.as_str(), "tab-create" | "tab-numeric") {
+                            | if matches!(
+                                self.mode.as_str(),
+                                "tab-create"
+                                    | "tab-numeric"
+                                    | "tab-create-center"
+                                    | "tab-create-right"
+                            ) {
                                 egui::Modifiers::SHIFT
                             } else {
                                 egui::Modifiers::NONE
@@ -50,6 +62,17 @@ impl eframe::App for Capture {
                     },
                 });
             }
+        }
+        if matches!(self.mode.as_str(), "tab-create-center" | "tab-create-right")
+            && (self.frames == 1 || (self.mode == "tab-create-right" && self.frames == 2))
+        {
+            input.events.push(egui::Event::Key {
+                key: egui::Key::F7,
+                physical_key: None,
+                pressed: true,
+                repeat: false,
+                modifiers: egui::Modifiers::CTRL | egui::Modifiers::ALT,
+            });
         }
         if self.mode == "tab-numeric" {
             if self.frames == 7 {
@@ -474,6 +497,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "tab-delete",
             "tab-mixed",
             "tab-create",
+            "tab-create-center",
+            "tab-create-right",
             "tab-numeric",
             "tab-positions",
             "tab-dialog",
@@ -577,6 +602,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             | "tab-delete"
             | "tab-mixed"
             | "tab-create"
+            | "tab-create-center"
+            | "tab-create-right"
             | "tab-numeric"
             | "tab-positions"
     ) {
@@ -589,6 +616,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 | "tab-delete"
                 | "tab-mixed"
                 | "tab-create"
+                | "tab-create-center"
+                | "tab-create-right"
                 | "tab-numeric"
                 | "tab-positions"
         ) {

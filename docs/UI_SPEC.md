@@ -2106,3 +2106,40 @@ Native macOS captures (fixture rendering; physical input acceptance remains sepa
 | Markers / 1366 × 900 | [View](screenshots/rust-typed-tabs-alpha72-macos.png) | `c02c7bca11be30c5ddf4aa9303afc633c44fcb898f8531f1541c86f399f6351d` |
 | Dialog / 1366 × 900 | [View](screenshots/rust-typed-tabs-dialog-alpha72-macos.png) | `790baabc212f14f1441833e18c2e3795a090a35912e214a92d7c47878fe3a779` |
 | Dialog / 640 × 480 | [View](screenshots/rust-typed-tabs-dialog-alpha72-compact-macos.png) | `598b10f16004c5fb7def7bfdaefbb2ef645eddfff189e7ff9bdfc9b454c91c9f` |
+
+## Alpha.73: typed ruler creation
+
+The 24 × 24 DIP selector immediately left of the horizontal ruler shows the type
+for new stops. Click it or press Ctrl+Alt+F7 to cycle Left → Center → Right → Left;
+right-click for explicit choices. This Docs-specific shortcut shows the ruler if
+hidden. The choice is local to the window, starts at Left and is not serialized or
+included in undo history. Existing stops and the document selection stay unchanged.
+The selector is unavailable during drafts, modal editing, composition or indent
+keyboard control. Type is frozen when a creation draft begins.
+
+Press an empty ruler location to preview a stop of that type; move horizontally
+while held and release inside the ruler to apply once. Escape, window focus loss,
+transform changes or release outside cancel. A press/release in the same event
+frame commits once. Existing indent/tab hit targets retain priority. Invalid
+creation previews cannot commit; releasing inside reports their error.
+
+Ctrl+Alt+Shift+F8 starts creation at 36 pt using the selector. Ctrl+Alt+F8 does the
+same when no explicit positions exist. Arrows adjust by 0.5 pt (Shift: 5 pt), F2
+opens exact point input, Enter/Tab commits once and exits, Escape/Delete cancels.
+The preview identifies the selected type. Numeric-input Delete retains text-editing
+behavior. Same-kind stops at the destination are preserved while missing entries
+are added; a different kind at that position rejects the entire operation.
+Capacity, stale-source and half-open paragraph-selection validation remain shared.
+
+Native v16, existing layout policy, palette and icons remain unchanged. Physical
+keyboard/IME, matched Word, Windows and VoiceOver acceptance remain separate.
+
+Native captures inspected on macOS (2026-10-21). The selector and preview fit
+the wide/compact views; ruler and canvas alignment is preserved. These use
+synthetic input and do not establish physical OS keyboard acceptance.
+
+| View / DIP | Capture | SHA-256 |
+| :--- | :--- | :--- |
+| Center / 1366 × 900 | [View](screenshots/rust-tab-create-center-alpha73-macos.png) | `aab7ecf88631e4823775341e62daeff4b4b87e0499aedb5beabdaccaff4fdafa` |
+| Right / 1366 × 900 | [View](screenshots/rust-tab-create-right-alpha73-macos.png) | `8b9559d278da6be376549f4d808ef54f3948c881ce4014c12e05a94ec5ae9369` |
+| Right / 640 × 480 | [View](screenshots/rust-tab-create-right-alpha73-compact-macos.png) | `96582f35775a630053558a69e2493c0e62b0993cfbe67446c3ef650ad3df991f` |
