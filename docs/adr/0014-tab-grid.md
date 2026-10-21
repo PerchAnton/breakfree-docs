@@ -334,3 +334,29 @@ Leaders add no stored characters, glyph entries or cursor stops. No layout-polic
 palette/icon or dependency changes. This is a prototype rendering policy, not
 verified Word equivalence. UI selection of leader kind follows separately; open
 [TabLeaders.bfdoc](../../examples/TabLeaders.bfdoc) to inspect the current renderer.
+
+## Leader editing controls (alpha.76)
+
+Five connected controls complete the next leader-editing increment:
+
+1. The tab positions dialog offers None/Dots/Dashes/Line. Select a row to restore
+   its type, position and leader. Add/Update stages all three; OK commits once.
+   Moving a position via Update carries the selected leader. Remove/Clear all also
+   remove the corresponding leaders. Pending edits require Add/Update.
+2. An explicitly illustrative Sample/Text preview uses the real native layout
+   adapter at a fixed sample position, without changing the document or history.
+3. Mixed detection includes leaders. Even identical positions/types with different
+   leaders require an explicit replacement or Clear all; Cancel preserves each
+   paragraph. OK replaces positions, types and leaders together across the half-open
+   selection. Unchanged common lists preserve Redo.
+4. The ruler tab context menu offers leader set/reset. It changes only selected
+   paragraphs owning that stop, retaining nonowners, types and positions. One shared
+   command produces one Undo/Redo; None clears the leader without deleting the stop.
+5. Tab/Shift+Tab reaches the leader choices between Alignment and Add; Enter/Space
+   activates focused controls and Escape cancels. Full keyboard-only creation,
+   staging and OK are covered by synthetic widget tests. Physical OS input and
+   VoiceOver acceptance remain separate.
+
+Native v17, layout policy, palette and icons remain unchanged. Windows is deferred.
+The list height is bounded for compact windows; no pagination or Word equivalence
+is claimed. Next: leader provenance/coverage labels for mixed ruler selections.

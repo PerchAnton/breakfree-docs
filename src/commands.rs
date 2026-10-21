@@ -572,6 +572,26 @@ impl Editor {
         position: u16,
         leader: Option<crate::model::TabLeader>,
     ) -> Result<()> {
+        self.change_tab_leader(start, end, position, leader, false)
+    }
+    /// Change only selected paragraphs owning this stop, preserving nonowners.
+    pub fn set_owned_tab_leader(
+        &mut self,
+        start: usize,
+        end: usize,
+        position: u16,
+        leader: Option<crate::model::TabLeader>,
+    ) -> Result<()> {
+        self.change_tab_leader(start, end, position, leader, true)
+    }
+    fn change_tab_leader(
+        &mut self,
+        start: usize,
+        end: usize,
+        position: u16,
+        leader: Option<crate::model::TabLeader>,
+        owners_only: bool,
+    ) -> Result<()> {
         validate_range(&self.document.text(), start, end)?;
         let (first, _) = self.document.locate(start)?;
         let (mut last, offset) = self.document.locate(end)?;
@@ -581,6 +601,9 @@ impl Editor {
         let mut result = self.document.clone();
         for p in &mut result.paragraphs[first..=last] {
             if !p.spacing.tab_positions().iter().any(|s| s.0 == position) {
+                if owners_only {
+                    continue;
+                }
                 return Err("The selected paragraph has no explicit tab at this position.".into());
             }
             p.spacing
@@ -666,6 +689,29 @@ impl Editor {
             last -= 1;
         }
         self.set_paragraph_tab_lists(start, end, vec![stops; last - first + 1])
+    }
+
+    /// Explicit whole-list replacement including leaders, committed once.
+    pub fn set_tab_settings(
+        &mut self,
+        start: usize,
+        end: usize,
+        positions: Vec<(u16, crate::model::TabKind)>,
+        leaders: Vec<crate::model::TabLeaderStop>,
+    ) -> Result<()> {
+        validate_range(&self.document.text(), start, end)?;
+        let (first, _) = self.document.locate(start)?;
+        let (mut last, offset) = self.document.locate(end)?;
+        if end > start && offset == 0 && last > first {
+            last -= 1;
+        }
+        let count = last - first + 1;
+        self.set_paragraph_tab_settings(
+            start,
+            end,
+            vec![positions; count],
+            Some(vec![leaders; count]),
+        )
     }
 
     /// Commit distinct selected-paragraph lists together without flattening geometry.

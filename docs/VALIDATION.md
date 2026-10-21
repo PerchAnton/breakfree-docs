@@ -1895,3 +1895,24 @@ have no explicit approval recorded. Alpha.73 combines three related creation ste
 - Two native captures inspected at 1366 × 900 and 640 × 480 DIP using the openable
   TabLeaders fixture. All leader kinds are visible with intact field alignment;
   the palette/icons/ribbon remain unchanged. Hashes are recorded in UI_SPEC.md.
+
+## Alpha.76 leader editing validation
+
+2026-10-21, macOS arm64, Rust 1.99.1. Alpha.74 approved; alpha.75 has no explicit
+approval recorded. Alpha.76 is one five-step review candidate.
+
+- 396 full / 184 core-only tests cover shared whole-list positions/types/leaders
+  replacement, invalid-leader atomic rejection, half-open ranges, save/reopen,
+  owner-only changes/reset, one history entry and no-op Redo.
+- Dialog tests cover mixed leaders with identical positions/types, move/conflict
+  retention, pending changes requiring Update, clear/cancel, and actual keyboard-
+  only input → Dots → Add → OK. Mixed replacement and dialog bounds pass at
+  synthetic 100/125/150% scale in 640 × 480 DIP; the existing keyboard traversal
+  check now includes the four leader controls. Context-menu edits preserve nonowners.
+- The live sample uses the existing tested renderer. Physical OS keyboard/IME,
+  matched reference comparison, Windows and VoiceOver acceptance remain deferred.
+- fmt, normal/capture all-target Clippy, release/capture builds, repository/artwork,
+  YAML, whitespace and isolated executable version/capabilities checks pass.
+- Two native selected-leader dialog captures inspected at 1366 × 900 and 640 × 480
+  DIP: sample, selected controls and action buttons fit. Hashes are in UI_SPEC.md.
+  Capture interaction is synthetic and does not establish physical OS acceptance.

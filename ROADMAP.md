@@ -399,4 +399,9 @@ Use public specifications and original test cases, not copied application code. 
 
 - [x] Alpha.74: extended typed-tab recovery tests; adjacent collision traversal, mixed-owner atomicity, numeric/deletion recovery and cancellation/re-entry.
 - [x] Alpha.75: per-stop leader storage/v17 and bounded dot/dash/line rendering; shared transactional command and ruler retention.
-- [ ] Next: expose leader choice in the transactional tab positions dialog. Style inheritance remains separate.
+- [x] Alpha.76 step 1: staged leader choice and unified one-operation dialog commit.
+- [x] Alpha.76 step 2: illustrative live sample through the native tab renderer.
+- [x] Alpha.76 step 3: mixed-leader detection and explicit full-list replacement.
+- [x] Alpha.76 step 4: ruler context-menu leader set/reset, preserving nonowners.
+- [x] Alpha.76 step 5: keyboard dialog traversal and compact widget validation.
+- [ ] Next: leader coverage labels for mixed ruler selections. Style inheritance remains separate.

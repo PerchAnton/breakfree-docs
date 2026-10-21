@@ -618,6 +618,16 @@ pub enum TabLeader {
     Line,
 }
 
+impl TabLeader {
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Dots => "Dots",
+            Self::Dashes => "Dashes",
+            Self::Line => "Line",
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct TabLeaderStop {

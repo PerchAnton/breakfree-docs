@@ -18,6 +18,25 @@ struct Capture {
 
 impl eframe::App for Capture {
     fn raw_input_hook(&mut self, _ctx: &egui::Context, input: &mut egui::RawInput) {
+        if self.mode == "leader-dialog" {
+            input.focused = true;
+            if matches!(self.frames, 4 | 5)
+                && let Some(r) = self
+                    .app
+                    .regions
+                    .iter()
+                    .find(|r| r.name == "tab-position-360")
+            {
+                let pos = r.rect.center();
+                input.events.push(egui::Event::PointerMoved(pos));
+                input.events.push(egui::Event::PointerButton {
+                    pos,
+                    button: egui::PointerButton::Primary,
+                    pressed: self.frames == 4,
+                    modifiers: egui::Modifiers::NONE,
+                });
+            }
+        }
         if matches!(
             self.mode.as_str(),
             "tab-keyboard"
@@ -493,6 +512,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "explicit-tabs",
             "aligned-tabs",
             "tab-leaders",
+            "leader-dialog",
             "typed-tabs-dialog",
             "tab-keyboard",
             "tab-delete",
@@ -588,7 +608,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "examples/Styles.bfdoc"
         } else if ["formatting", "font"].contains(&args[2].as_str()) {
             "examples/Formatting.bfdoc"
-        } else if args[2] == "tab-leaders" {
+        } else if matches!(args[2].as_str(), "tab-leaders" | "leader-dialog") {
             "examples/TabLeaders.bfdoc"
         } else if matches!(args[2].as_str(), "aligned-tabs" | "typed-tabs-dialog") {
             "examples/AlignedTabs.bfdoc"
@@ -795,7 +815,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 DocsApp::new(session, &cc.egui_ctx)
             };
             match mode.as_str() {
-                "tab-positions" | "typed-tabs-dialog" => {
+                "tab-positions" | "typed-tabs-dialog" | "leader-dialog" => {
                     app.execute(Action::TabPositions, &cc.egui_ctx)
                 }
                 "tab-dialog" => app.execute(Action::TabInterval, &cc.egui_ctx),

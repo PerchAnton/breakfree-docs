@@ -2175,3 +2175,29 @@ No matched Word/Windows comparison or physical-input/VoiceOver acceptance claime
 | :--- | :--- | :--- |
 | Wide / 1366 × 900 | [View](screenshots/rust-tab-leaders-alpha75-macos.png) | `054b02d5990f8e18541672ac918ca33774c0a7ceb0706f5d8fb2f52b483c1e9f` |
 | Compact / 640 × 480 | [View](screenshots/rust-tab-leaders-alpha75-compact-macos.png) | `718d9c9eb13ef623ac638395b0c0bb5028a14fbd09835f5643654805fd49c99a` |
+
+## Alpha.76: leader editing controls
+
+The existing Tab positions modal adds a Leader row (None/Dots/Dashes/Line), row
+captions including the leader, and a 300 × 22 DIP illustrative sample rendered
+through the document layout adapter. The list viewport is capped at 75 DIP to
+retain compact-window access. Alignment and leader changes require Add/Update;
+OK commits the complete draft once, Cancel/Escape discard it.
+
+Mixed detection includes leader differences; the notice explicitly names
+positions/types/leaders and replacement semantics. The ruler tab context menu
+sets/resets leaders only on selected owning paragraphs. Nonowners remain unchanged.
+Tab/Shift+Tab visits input, alignment, leader choices and enabled actions; Enter/
+Space activates. Synthetic keyboard-only creation and compact DPI checks are
+separate from physical OS input, Windows and VoiceOver acceptance.
+
+Palette, icons, native v17 and the bounded renderer policy are unchanged. No
+matched Word comparison is claimed. Next: mixed leader coverage labels.
+
+Native macOS captures inspected on 2026-10-21: selected Center/Dots row and live
+sample visible; labels and action buttons fit both windows.
+
+| View / DIP | Capture | SHA-256 |
+| :--- | :--- | :--- |
+| Wide / 1366 × 900 | [View](screenshots/rust-leader-dialog-alpha76-macos.png) | `4b143fd5723b1c7cf857ecdd7f338ba50b863c2d0492d7c0d5b4f847bc84452b` |
+| Compact / 640 × 480 | [View](screenshots/rust-leader-dialog-alpha76-compact-macos.png) | `71a7656a1ab8e92f673672620e8035c8f7ee0f2835c4c0a48c9c1837149be7ca` |

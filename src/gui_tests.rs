@@ -9267,8 +9267,8 @@ fn tab_positions_keyboard_nested_cancel_and_compact_bounds() {
             ctx.memory(|m| m.focused()),
             Some(Id::new("tab-position-input"))
         );
-        // Input -> Left -> Center -> Right -> Add -> Clear all; Update/Remove disabled.
-        for _ in 0..5 {
+        // Input -> alignment (3) -> leaders (4) -> Add -> Clear all; Update/Remove disabled.
+        for _ in 0..9 {
             frame(&ctx, &mut app, vec![key(Key::Tab, false)], size, dpi);
         }
         frame(&ctx, &mut app, vec![key(Key::Enter, false)], size, dpi);
@@ -11086,4 +11086,236 @@ fn tab_leaders_preserve_layout_scalars_cursors_and_wrapping() {
             }
         }
     });
+}
+
+#[test]
+fn leader_dialog_keyboard_stages_preview_then_one_history() {
+    use crate::model::TabLeader as L;
+    let (ctx, mut app) = setup();
+    let size = [1366., 900.];
+    let before = app.session.editor.document.clone();
+    let n = app.session.editor.undo_stack.len();
+    app.execute(Action::TabPositions, &ctx);
+    frame(&ctx, &mut app, vec![], size, 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("72".into())],
+        size,
+        1.,
+    );
+    for _ in 0..5 {
+        frame(&ctx, &mut app, vec![key(Key::Tab, false)], size, 1.);
+    }
+    frame(&ctx, &mut app, vec![key(Key::Enter, false)], size, 1.); // Dots
+    assert_eq!(app.session.editor.document, before);
+    assert!(app.regions.iter().any(|r| r.name == "tab-leader-preview"));
+    for _ in 0..3 {
+        frame(&ctx, &mut app, vec![key(Key::Tab, false)], size, 1.);
+    }
+    frame(&ctx, &mut app, vec![key(Key::Enter, false)], size, 1.); // Add
+    frame(&ctx, &mut app, vec![], size, 1.);
+    assert!(app.regions.iter().any(|r| r.name == "tab-position-144"));
+    for _ in 0..5 {
+        frame(&ctx, &mut app, vec![key(Key::Tab, false)], size, 1.);
+    }
+    frame(&ctx, &mut app, vec![key(Key::Enter, false)], size, 1.); // OK
+    assert!(app.tab_positions_dialog.is_none());
+    assert_eq!(
+        app.session.editor.document.paragraphs[0]
+            .spacing
+            .tab_leader(144),
+        Some(L::Dots)
+    );
+    assert_eq!(app.session.editor.undo_stack.len(), n + 1);
+    let after = app.session.editor.document.clone();
+    app.session.editor.undo();
+    assert_eq!(app.session.editor.document, before);
+    app.session.editor.redo();
+    assert_eq!(app.session.editor.document, after);
+}
+#[test]
+fn leader_dialog_update_clear_and_cancel_are_transactional() {
+    use crate::model::{TabKind as K, TabLeader as L};
+    let (ctx, mut app) = setup();
+    let size = [1366., 900.];
+    app.session
+        .editor
+        .set_tab_positions(0, 0, vec![(144, K::Center)])
+        .unwrap();
+    app.session
+        .editor
+        .set_tab_leader(0, 0, 144, Some(L::Dots))
+        .unwrap();
+    app.sync_view();
+    let before = app.session.editor.document.clone();
+    let n = app.session.editor.undo_stack.len();
+    app.execute(Action::TabPositions, &ctx);
+    frame(&ctx, &mut app, vec![], size, 1.);
+    click_region(&ctx, &mut app, "tab-position-144");
+    click_region(&ctx, &mut app, "tab-leader-line");
+    click_region(&ctx, &mut app, "tab-positions-ok");
+    assert!(app.tab_positions_dialog.is_some());
+    assert_eq!(app.session.editor.document, before);
+    click_region(&ctx, &mut app, "tab-position-update");
+    click_region(&ctx, &mut app, "tab-positions-ok");
+    assert_eq!(
+        app.session.editor.document.paragraphs[0]
+            .spacing
+            .tab_leader(144),
+        Some(L::Line)
+    );
+    assert_eq!(app.session.editor.undo_stack.len(), n + 1);
+    let after = app.session.editor.document.clone();
+    app.execute(Action::TabPositions, &ctx);
+    frame(&ctx, &mut app, vec![], size, 1.);
+    click_region(&ctx, &mut app, "tab-position-clear");
+    click_region(&ctx, &mut app, "tab-positions-cancel");
+    assert_eq!(app.session.editor.document, after);
+    app.session.editor.undo();
+    assert_eq!(app.session.editor.document, before);
+    app.session.editor.redo();
+    assert_eq!(app.session.editor.document, after);
+}
+#[test]
+fn ruler_leader_context_menu_changes_only_owners() {
+    use crate::model::{TabKind as K, TabLeader as L};
+    let (ctx, mut app) = setup();
+    let size = [1366., 900.];
+    app.session.editor.replace(0, 0, "a\nb", "Fixture").unwrap();
+    app.session
+        .editor
+        .set_tab_positions(2, 2, vec![(144, K::Right)])
+        .unwrap();
+    app.session.editor.selection = (0, 3);
+    app.sync_view();
+    frame(&ctx, &mut app, vec![], size, 1.);
+    let before = app.session.editor.document.clone();
+    let n = app.session.editor.undo_stack.len();
+    let p = app
+        .regions
+        .iter()
+        .find(|r| r.name == "ruler-tab-144")
+        .unwrap()
+        .rect
+        .center();
+    for pressed in [true, false] {
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                egui::Event::PointerMoved(p),
+                egui::Event::PointerButton {
+                    pos: p,
+                    button: egui::PointerButton::Secondary,
+                    pressed,
+                    modifiers: Modifiers::NONE,
+                },
+            ],
+            size,
+            1.,
+        );
+    }
+    frame(&ctx, &mut app, vec![], size, 1.);
+    click_region(&ctx, &mut app, "ruler-leader-dashes");
+    assert_eq!(
+        app.session.editor.document.paragraphs[0],
+        before.paragraphs[0]
+    );
+    assert_eq!(
+        app.session.editor.document.paragraphs[1]
+            .spacing
+            .tab_leader(144),
+        Some(L::Dashes)
+    );
+    assert_eq!(app.session.editor.undo_stack.len(), n + 1);
+    let after = app.session.editor.document.clone();
+    app.session.editor.undo();
+    assert_eq!(app.session.editor.document, before);
+    app.session.editor.redo();
+    assert_eq!(app.session.editor.document, after);
+}
+
+#[test]
+fn leader_mixed_dialog_compact_replacement_and_bounds() {
+    use crate::model::{TabKind as K, TabLeader as L};
+    for dpi in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        let size = [640. * dpi, 480. * dpi];
+        app.session.editor.replace(0, 0, "a\nb", "Fixture").unwrap();
+        app.session
+            .editor
+            .set_tab_positions(0, 3, vec![(144, K::Left)])
+            .unwrap();
+        app.session
+            .editor
+            .set_tab_leader(0, 0, 144, Some(L::Dots))
+            .unwrap();
+        app.session.editor.selection = (0, 3);
+        app.sync_view();
+        let before = app.session.editor.document.clone();
+        let n = app.session.editor.undo_stack.len();
+        app.execute(Action::TabPositions, &ctx);
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![], size, dpi);
+        }
+        let click = |app: &mut DocsApp, name: &str| {
+            let p = app
+                .regions
+                .iter()
+                .find(|r| r.name == name)
+                .unwrap()
+                .rect
+                .center();
+            frame(
+                &ctx,
+                app,
+                vec![egui::Event::PointerMoved(p), ruler_pointer(p, true)],
+                size,
+                dpi,
+            );
+            frame(&ctx, app, vec![ruler_pointer(p, false)], size, dpi);
+        };
+        click(&mut app, "tab-positions-ok");
+        assert!(app.tab_positions_dialog.is_some());
+        assert_eq!(app.session.editor.document, before);
+        click(&mut app, "tab-position-input");
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::Text("90".into())],
+            size,
+            dpi,
+        );
+        click(&mut app, "tab-leader-line");
+        click(&mut app, "tab-position-add");
+        for _ in 0..2 {
+            frame(&ctx, &mut app, vec![], size, dpi);
+        }
+        let r = app
+            .regions
+            .iter()
+            .find(|r| r.name == "tab-positions-dialog")
+            .unwrap()
+            .rect;
+        assert!(
+            r.min.x >= 0. && r.min.y >= 0. && r.max.x <= 640. && r.max.y <= 480.,
+            "{r:?}"
+        );
+        click(&mut app, "tab-positions-ok");
+        assert!(app.tab_positions_dialog.is_none());
+        assert_eq!(
+            app.session.editor.document.paragraphs[0]
+                .spacing
+                .tab_leader(180),
+            Some(L::Line)
+        );
+        assert_eq!(
+            app.session.editor.document.paragraphs[0].spacing,
+            app.session.editor.document.paragraphs[1].spacing
+        );
+        assert_eq!(app.session.editor.undo_stack.len(), n + 1);
+        app.session.editor.undo();
+        assert_eq!(app.session.editor.document, before);
+    }
 }

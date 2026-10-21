@@ -955,3 +955,12 @@ They follow explicit stops during ruler movement and disappear with deletion.
 The shared engine supports one-operation set/clear; dialog controls follow later.
 Saves now use native v17; v1–v16 remain readable. Alpha.74 and older reject v17,
 so preserve an older copy when using those builds. Design/palette/icons are retained.
+
+### Leader editing (alpha.76)
+
+Use Home → Paragraph spacing → Tab positions (or command search). Choose a row,
+set Leader, then Update and OK. Add creates a stop with the chosen leader; None
+clears a leader. An illustrative sample updates immediately. Mixed lists require
+explicit replacement. Right-click a ruler tab to set/reset its leader only in
+selected paragraphs owning that tab. Completed changes use one Undo/Redo.
+Tab/Shift+Tab navigates the dialog; Enter/Space activates and Escape cancels.

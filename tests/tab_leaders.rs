@@ -156,3 +156,60 @@ fn leader_fixture_loads_and_failed_save_keeps_previous_bytes() {
     assert_eq!(std::fs::read(&path).unwrap(), bytes);
     assert_eq!(storage::load(&path).unwrap(), doc);
 }
+
+#[test]
+fn leader_whole_list_replacement_is_atomic_and_undoable() {
+    use breakfree_docs::model::TabLeaderStop;
+    let mut e = Editor::default();
+    e.replace(0, 0, "a\nb\nlast", "Fixture").unwrap();
+    e.set_tab_positions(0, 0, vec![(72, K::Left)]).unwrap();
+    e.set_tab_leader(0, 0, 72, Some(L::Dots)).unwrap();
+    let before = e.document.clone();
+    let n = e.undo_stack.len();
+    let leaders = vec![TabLeaderStop {
+        position_half_points: 144,
+        leader: L::Line,
+    }];
+    assert!(
+        e.set_tab_settings(0, 4, vec![(72, K::Right)], leaders.clone())
+            .is_err()
+    );
+    assert_eq!(e.document, before);
+    assert_eq!(e.undo_stack.len(), n);
+    e.set_tab_settings(0, 4, vec![(144, K::Center)], leaders)
+        .unwrap();
+    let after = e.document.clone();
+    assert_eq!(after.paragraphs[0].spacing, after.paragraphs[1].spacing);
+    assert_eq!(after.paragraphs[2], before.paragraphs[2]);
+    assert_eq!(e.undo_stack.len(), n + 1);
+    assert_eq!(
+        storage::decode(&storage::encode(&after).unwrap()).unwrap(),
+        after
+    );
+    e.undo();
+    assert_eq!(e.document, before);
+    e.redo();
+    assert_eq!(e.document, after);
+}
+#[test]
+fn leader_owner_change_preserves_nonowners_and_noop_redo() {
+    let mut e = Editor::default();
+    e.replace(0, 0, "a\nb\nc", "Fixture").unwrap();
+    e.set_tab_positions(2, 2, vec![(144, K::Right)]).unwrap();
+    let before = e.document.clone();
+    let n = e.undo_stack.len();
+    e.set_owned_tab_leader(0, 5, 144, Some(L::Dashes)).unwrap();
+    let after = e.document.clone();
+    assert_eq!(after.paragraphs[0], before.paragraphs[0]);
+    assert_eq!(after.paragraphs[2], before.paragraphs[2]);
+    assert_eq!(e.undo_stack.len(), n + 1);
+    assert_eq!(after.paragraphs[1].spacing.tab_leader(144), Some(L::Dashes));
+    e.undo();
+    e.set_owned_tab_leader(0, 5, 144, None).unwrap();
+    e.redo();
+    assert_eq!(e.document, after);
+    e.set_owned_tab_leader(0, 5, 144, None).unwrap();
+    assert_eq!(e.document, before);
+    e.undo();
+    assert_eq!(e.document, after);
+}

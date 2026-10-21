@@ -3,6 +3,19 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.76 — 2026-10-21
+
+- Add None/Dots/Dashes/Line selection to the tab positions dialog, staged through
+  Add/Update and committed with positions/alignment in one Undo/Redo.
+- Render an illustrative live sample using the actual tab layout adapter.
+- Detect mixed leaders as well as positions/types; require explicit replacement,
+  preserving Cancel, pending-input validation and exclusive paragraph boundaries.
+- Add ruler context-menu leader set/reset for owning selected paragraphs only.
+- Extend keyboard dialog traversal and verify compact controls, staging/history,
+  roundtrip and no-op Redo. Native v17 and palette/icons retained.
+- Alpha.74 is approved; alpha.75 has no explicit approval recorded. Alpha.76 is
+  one five-step candidate for review. Windows/VoiceOver acceptance stays deferred.
+
 ## 0.1.0-alpha.75 — 2026-10-21
 
 - Store per-stop dot, dash and line leaders for explicit Left/Center/Right tabs.

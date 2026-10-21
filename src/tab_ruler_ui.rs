@@ -575,6 +575,27 @@ impl DocsApp {
                     self.sync_view();
                     ui.close();
                 }
+                ui.separator();
+                ui.label("Leader — paragraphs owning this stop");
+                for leader in [
+                    None,
+                    Some(crate::model::TabLeader::Dots),
+                    Some(crate::model::TabLeader::Dashes),
+                    Some(crate::model::TabLeader::Line),
+                ] {
+                    let label = leader.map_or("None", |v| v.label());
+                    let r = ui.add_enabled(available, Button::new(label));
+                    self.record(&format!("ruler-leader-{}", label.to_lowercase()), r.rect);
+                    if r.clicked() {
+                        let result = self
+                            .session
+                            .editor
+                            .set_owned_tab_leader(start, end, value, leader);
+                        self.fail(result);
+                        self.sync_view();
+                        ui.close();
+                    }
+                }
             });
             response.on_hover_text(format!("{kind_label} tab: {:.1} pt. Present in {coverage}/{total} selected paragraphs. Movement/deletion affects only paragraphs containing this stop and preserves each type. {}",f32::from(value)/2.,if collision {"Overlaps an indent marker; use Ctrl+Alt+F8 or Tab positions to edit."} else {"Drag to preview; release to apply; Escape cancels. Release outside the ruler cancels. Ctrl+Alt+F8 selects tabs; Ctrl+Alt+Shift+F8 creates; arrows move, Shift accelerates, Enter applies, Tab applies and selects next, Delete previews removal, Escape cancels. Right-click to delete."}));
         }
