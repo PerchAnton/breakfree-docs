@@ -858,3 +858,15 @@ Enter or Tab applies once and exits. Escape or Delete cancels only the new draft
 Focus loss, pointer press, resize/zoom and hidden-ruler cancellation retain the same
 policy as marker editing. Input is isolated; a second creation shortcut during an
 active preview cannot silently commit or replace it.
+
+## Exact ruler tab input (alpha.70)
+
+Enter a keyboard tab preview with Ctrl+Alt+F8 (existing stops) or
+Ctrl+Alt+Shift+F8 (new stop), then press F2. The focused Position field selects
+its current value. Type or paste points using a decimal dot, in 0.5 pt steps
+from 0.5 to 1440. Enter or Tab applies once and exits; Escape cancels the entire
+preview. Text-editing keys operate the field; Delete edits text in this mode.
+Invalid input resets the visual preview and blocks acceptance, including after
+a previously valid value. No rounding/clamping of typed values is performed.
+Mixed-list and stale-source checks use the same validated draft transaction.
+This is a Docs-specific shortcut; native v15, palette and icons are unchanged.

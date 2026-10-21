@@ -191,3 +191,15 @@ validated command and one Undo/Redo; cancellation preserves Redo. Native v15,
 ruler geometry, palette, icons and pointer behavior remain unchanged. The numeric
 Tab positions dialog is still available. Physical keyboard/IME, matched Word,
 Windows and VoiceOver acceptance remain deferred.
+
+## Exact ruler tab input (alpha.70)
+
+Enter a keyboard tab preview with Ctrl+Alt+F8 (existing stops) or
+Ctrl+Alt+Shift+F8 (new stop), then press F2. The focused Position field selects
+its current value. Type or paste points using a decimal dot, in 0.5 pt steps
+from 0.5 to 1440. Enter or Tab applies once and exits; Escape cancels the entire
+preview. Text-editing keys operate the field; Delete edits text in this mode.
+Invalid input resets the visual preview and blocks acceptance, including after
+a previously valid value. No rounding/clamping of typed values is performed.
+Mixed-list and stale-source checks use the same validated draft transaction.
+This is a Docs-specific shortcut; native v15, palette and icons are unchanged.

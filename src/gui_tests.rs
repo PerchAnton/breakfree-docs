@@ -10110,3 +10110,141 @@ fn tab_keyboard_creation_cancels_without_discarding_redo() {
         assert_eq!(app.session.editor.document, after);
     }
 }
+
+#[test]
+fn tab_numeric_preview_input_validation_and_one_history() {
+    for dpi in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        let size = [640. * dpi, 480. * dpi];
+        frame(&ctx, &mut app, vec![], size, dpi);
+        let before = app.session.editor.document.clone();
+        let count = app.session.editor.undo_stack.len();
+        frame(
+            &ctx,
+            &mut app,
+            vec![ruler_key(
+                Key::F8,
+                Modifiers::CTRL | Modifiers::ALT | Modifiers::SHIFT,
+            )],
+            size,
+            dpi,
+        );
+        frame(&ctx, &mut app, vec![key(Key::F2, false)], size, dpi);
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::Text("48.5".into())],
+            size,
+            dpi,
+        );
+        assert_eq!(app.tab_ruler_drag.as_ref().unwrap().draft.position, 97);
+        assert_eq!(app.session.editor.document, before);
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                key(Key::A, true),
+                egui::Event::Paste("1440.5".into()),
+                key(Key::Enter, false),
+            ],
+            size,
+            dpi,
+        );
+        assert!(app.tab_ruler_drag.is_some());
+        assert_eq!(app.session.editor.document, before);
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                key(Key::A, true),
+                egui::Event::Text("53.5".into()),
+                key(Key::Enter, false),
+            ],
+            size,
+            dpi,
+        );
+        assert!(app.tab_ruler_drag.is_none());
+        assert_eq!(app.session.editor.undo_stack.len(), count + 1);
+        assert_eq!(
+            app.session.editor.document.paragraphs[0]
+                .spacing
+                .left_tab_stops_half_points,
+            [107]
+        );
+        let after = app.session.editor.document.clone();
+        app.session.editor.undo();
+        assert_eq!(app.session.editor.document, before);
+        app.session.editor.redo();
+        assert_eq!(app.session.editor.document, after);
+    }
+}
+
+#[test]
+fn tab_numeric_existing_movement_cancel_and_redo() {
+    let (ctx, mut app) = setup();
+    let size = [1366., 900.];
+    app.session
+        .editor
+        .set_left_tab_stops(0, 0, vec![72, 144])
+        .unwrap();
+    let before = app.session.editor.document.clone();
+    frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(Key::F8, Modifiers::CTRL | Modifiers::ALT)],
+        size,
+        1.,
+    );
+    frame(&ctx, &mut app, vec![key(Key::F2, false)], size, 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("72".into()), key(Key::Enter, false)],
+        size,
+        1.,
+    );
+    assert!(app.tab_ruler_drag.is_some());
+    assert_eq!(app.session.editor.document, before);
+    frame(
+        &ctx,
+        &mut app,
+        vec![
+            key(Key::A, true),
+            egui::Event::Text("48.5".into()),
+            key(Key::Tab, false),
+        ],
+        size,
+        1.,
+    );
+    assert!(
+        app.tab_ruler_drag.is_none(),
+        "position {:?}",
+        app.tab_ruler_drag.as_ref().map(|d| d.draft.position)
+    );
+    let after = app.session.editor.document.clone();
+    assert_eq!(
+        after.paragraphs[0].spacing.left_tab_stops_half_points,
+        [97, 144]
+    );
+    app.session.editor.undo();
+    frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(Key::F8, Modifiers::CTRL | Modifiers::ALT)],
+        size,
+        1.,
+    );
+    frame(&ctx, &mut app, vec![key(Key::F2, false)], size, 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("50".into())],
+        size,
+        1.,
+    );
+    frame(&ctx, &mut app, vec![key(Key::Escape, false)], size, 1.);
+    assert!(app.tab_ruler_drag.is_none());
+    assert_eq!(app.session.editor.document, before);
+    app.session.editor.redo();
+    assert_eq!(app.session.editor.document, after);
+}

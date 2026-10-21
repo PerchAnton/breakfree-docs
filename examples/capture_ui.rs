@@ -20,7 +20,7 @@ impl eframe::App for Capture {
     fn raw_input_hook(&mut self, _ctx: &egui::Context, input: &mut egui::RawInput) {
         if matches!(
             self.mode.as_str(),
-            "tab-keyboard" | "tab-delete" | "tab-mixed" | "tab-create"
+            "tab-keyboard" | "tab-delete" | "tab-mixed" | "tab-create" | "tab-numeric"
         ) {
             input.focused = true;
             if matches!(self.frames, 3 | 5) {
@@ -40,7 +40,7 @@ impl eframe::App for Capture {
                     modifiers: if self.frames == 3 {
                         egui::Modifiers::CTRL
                             | egui::Modifiers::ALT
-                            | if self.mode == "tab-create" {
+                            | if matches!(self.mode.as_str(), "tab-create" | "tab-numeric") {
                                 egui::Modifiers::SHIFT
                             } else {
                                 egui::Modifiers::NONE
@@ -49,6 +49,20 @@ impl eframe::App for Capture {
                         egui::Modifiers::SHIFT
                     },
                 });
+            }
+        }
+        if self.mode == "tab-numeric" {
+            if self.frames == 7 {
+                input.events.push(egui::Event::Key {
+                    key: egui::Key::F2,
+                    physical_key: None,
+                    pressed: true,
+                    repeat: false,
+                    modifiers: egui::Modifiers::NONE,
+                });
+            }
+            if self.frames == 9 {
+                input.events.push(egui::Event::Text("48.5".into()));
             }
         }
         if self.mode == "tab-mixed" && self.frames == 3 {
@@ -458,6 +472,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "tab-delete",
             "tab-mixed",
             "tab-create",
+            "tab-numeric",
             "tab-positions",
             "tab-dialog",
             "styles",
@@ -558,6 +573,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             | "tab-delete"
             | "tab-mixed"
             | "tab-create"
+            | "tab-numeric"
             | "tab-positions"
     ) {
         let mut session = Session::default();
@@ -569,6 +585,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 | "tab-delete"
                 | "tab-mixed"
                 | "tab-create"
+                | "tab-numeric"
                 | "tab-positions"
         ) {
             let end = session.editor.document.text().chars().count();

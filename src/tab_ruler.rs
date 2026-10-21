@@ -64,6 +64,27 @@ impl Draft {
             deleting: false,
         })
     }
+    /// Exact point input: never round or clamp a typed value, and invalidate stale previews.
+    pub fn move_to_text(&mut self, text: &str) -> Result<()> {
+        self.valid = false;
+        self.deleting = false;
+        self.preview = self.original.clone();
+        let text = text.trim();
+        let (whole, fraction) = text.split_once('.').unwrap_or((text, "0"));
+        let half = match fraction {
+            "" | "0" => 0,
+            "5" => 1,
+            _ => return Err("Use 0.5 pt steps, for example 48.5.".into()),
+        };
+        let value = whole
+            .parse::<u16>()
+            .ok()
+            .and_then(|v| v.checked_mul(2))
+            .and_then(|v| v.checked_add(half))
+            .filter(|v| (1..=2880).contains(v))
+            .ok_or("Enter 0.5–1440 pt.")?;
+        self.move_to(f32::from(value))
+    }
     pub fn move_to(&mut self, half_points: f32) -> Result<()> {
         self.deleting = false;
         self.valid = false;

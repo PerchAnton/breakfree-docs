@@ -3,6 +3,15 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.70 — 2026-10-21
+
+- F2 opens exact numeric position input in keyboard ruler tab previews, for
+  creation and movement. Enter/Tab applies once and exits; Escape cancels.
+- Validate 0.5–1440 pt in half-point steps without rounding or clamping typed
+  values. Invalid text and destination conflicts cannot apply an older preview.
+- Preserve mixed-list rules, one Undo/Redo, native v15, palette and icons.
+  Windows and VoiceOver acceptance remain deferred.
+
 ## 0.1.0-alpha.69 — 2026-10-20
 
 - Ctrl+Alt+Shift+F8 starts a ruler tab creation preview at 36 pt. Ctrl+Alt+F8

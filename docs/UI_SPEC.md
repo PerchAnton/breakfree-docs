@@ -2033,3 +2033,22 @@ Native macOS creation captures (injected keys; physical input not verified):
 | :--- | :--- | :--- |
 | 1366 × 900 | [Preview](screenshots/rust-tab-create-alpha69-macos.png) | `9540510c5d88391026d0e1ed9fd43f1abe99de62e74e931a635165cc5d464c2e` |
 | 640 × 480 | [Preview](screenshots/rust-tab-create-alpha69-compact-macos.png) | `6ada1e53497b656f25010906b215411761b7f1b7e677f5f2e8035c9c5e658148` |
+
+## Alpha.70: exact ruler tab input
+
+F2 in a keyboard creation/movement preview opens a focused 90-DIP text field
+with the current point value selected. The popup identifies New tab or Left tab,
+uses the existing popup frame/palette and wraps errors within the workspace.
+Use decimal-dot values, 0.5–1440 pt in 0.5 pt steps. Enter/Tab applies once and
+exits; Escape cancels. Text selection, paste and deletion operate the field.
+Invalid text resets the document preview and cannot commit a previous valid value.
+Clicks inside the popup keep the draft; outside clicks, focus loss and transform
+changes cancel. Pointer dragging keeps its prior behavior. F2 is Docs-specific.
+Native v15 and icons remain unchanged. Windows and VoiceOver remain deferred.
+
+Native macOS captures use injected input, not physical keyboard acceptance.
+
+| Size (DIP) | Capture | SHA-256 |
+| :--- | :--- | :--- |
+| 1366 × 900 | [Preview](screenshots/rust-tab-numeric-alpha70-macos.png) | `ef224d40efdc79c99e669b0d6d930cec112c4e7a625e87a875dfc5c91b550540` |
+| 640 × 480 | [Preview](screenshots/rust-tab-numeric-alpha70-compact-macos.png) | `26a1e1d3ead9c4d5f4eb06e93f5a44ad2865ff71bb79380d682bda06b03d6a9a` |

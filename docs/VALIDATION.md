@@ -1761,3 +1761,22 @@ Injected events verify rendered state, not physical input or Windows DPI behavio
   Mode `tab-create` injects the creation shortcut and one coarse arrow step.
 - No physical OS keyboard/IME, matched Word reference or spoken screen-reader test
   this iteration. VoiceOver remains final review; Windows remains deferred.
+
+## Alpha.70 exact ruler tab input validation
+
+2026-10-21, macOS arm64, Rust 1.99.1. Alpha.69 approved; alpha.70 awaits approval.
+
+- 357 full / 167 core-only tests pass. Exact numeric parser tests cover boundaries,
+  unsupported fractional steps, overflow, nonnumeric input and invalidation after
+  a valid preview; duplicate recovery and one-operation history are verified.
+- Widget tests cover F2, selected initial text, typing/paste, same-frame text and
+  Enter/Tab, creation/movement, conflict blocking, Escape and retained Redo.
+  Synthetic 100/125/150% scales include a compact window; these are not Windows tests.
+- fmt, normal/capture all-target Clippy, release/capture builds, repository/artwork,
+  YAML and whitespace checks pass. Copied isolated binary reports alpha.70 and
+  correct capabilities without Office or adjacent repositories.
+- Two native captures at 1366 × 900 and 640 × 480 DIP inspected: the focused
+  48.5 pt field, New tab label and help fit; ruler, ribbon, palette/icons retained.
+  Capture mode `tab-numeric` injects keyboard entry/F2/text. Physical OS keyboard,
+  IME and matched Word comparison were not checked. VoiceOver final review and
+  Windows acceptance remain deferred.

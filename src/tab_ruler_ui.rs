@@ -11,6 +11,11 @@ pub(super) struct TabDrag {
     unit: f32,
     error: Option<String>,
     keyboard: bool,
+    numeric: bool,
+    input: String,
+    focus_input: bool,
+    accept_input: bool,
+    popup: Rect,
 }
 impl DocsApp {
     pub(super) fn prepare_tab_ruler_input(&mut self, ctx: &egui::Context) -> bool {
@@ -64,9 +69,52 @@ impl DocsApp {
                 || ctx.input(|i| {
                     !i.focused
                         || i.viewport().close_requested()
-                        || i.pointer.any_pressed()
+                        || (i.pointer.any_pressed()
+                            && !i.pointer.interact_pos().is_some_and(|p| {
+                                self.tab_ruler_drag.as_ref().unwrap().popup.contains(p)
+                            }))
                         || i.key_pressed(Key::Escape)
                 });
+            if cancel {
+                self.tab_ruler_drag = None;
+                ctx.input_mut(|i| {
+                    i.events.retain(|e| {
+                        !matches!(
+                            e,
+                            egui::Event::Key { .. }
+                                | egui::Event::Text(_)
+                                | egui::Event::Paste(_)
+                                | egui::Event::Ime(_)
+                                | egui::Event::PointerButton { .. }
+                        )
+                    });
+                });
+                self.sync_view();
+                return true;
+            }
+            if ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::F2)) {
+                let drag = self.tab_ruler_drag.as_mut().unwrap();
+                drag.numeric = true;
+                drag.input = format!("{}", f32::from(drag.draft.position) / 2.);
+                drag.focus_input = true;
+            }
+            if self.tab_ruler_drag.as_ref().unwrap().numeric {
+                ctx.memory_mut(|m| {
+                    m.move_focus(egui::FocusDirection::None);
+                    m.request_focus(Id::new("ruler-tab-position-input"));
+                });
+                let accept = ctx.input_mut(|i| {
+                    i.raw_scroll_delta = Vec2::ZERO;
+                    i.smooth_scroll_delta = Vec2::ZERO;
+                    i.events
+                        .retain(|e| !matches!(e, egui::Event::MouseWheel { .. }));
+                    let enter = i.consume_key(Modifiers::NONE, Key::Enter);
+                    let tab = i.consume_key(Modifiers::NONE, Key::Tab);
+                    enter || tab
+                });
+                self.tab_ruler_drag.as_mut().unwrap().accept_input = accept;
+                return true;
+            }
             ctx.memory_mut(|m| m.move_focus(egui::FocusDirection::None));
             ctx.input_mut(|i| {
                 i.events.retain(|e| {
@@ -83,11 +131,6 @@ impl DocsApp {
                 i.raw_scroll_delta = Vec2::ZERO;
                 i.smooth_scroll_delta = Vec2::ZERO;
             });
-            if cancel {
-                self.tab_ruler_drag = None;
-                self.sync_view();
-                return true;
-            }
             for event in events {
                 let egui::Event::Key {
                     key,
@@ -212,6 +255,11 @@ impl DocsApp {
                     unit: 1.,
                     error,
                     keyboard: true,
+                    numeric: false,
+                    input: String::new(),
+                    focus_input: false,
+                    accept_input: false,
+                    popup: Rect::NOTHING,
                 });
                 self.focus_document = false;
                 self.leave_ribbon(ctx);
@@ -317,6 +365,11 @@ impl DocsApp {
                             unit,
                             error: None,
                             keyboard: false,
+                            numeric: false,
+                            input: String::new(),
+                            focus_input: false,
+                            accept_input: false,
+                            popup: Rect::NOTHING,
                         });
                         self.focus_document = false;
                         self.leave_ribbon(ui.ctx());
@@ -387,16 +440,74 @@ impl DocsApp {
                         }
                     )
                 });
-            egui::Area::new(Id::new("tab-ruler-preview"))
+            let popup = egui::Area::new(Id::new("tab-ruler-preview"))
                 .order(egui::Order::Tooltip)
                 .fixed_pos(pos2(rect.left() + 12., rect.bottom() + 4.))
-                .interactable(false)
+                .interactable(drag.keyboard)
                 .show(ui.ctx(), |ui| {
                     egui::Frame::popup(ui.style()).show(ui, |ui| {
                         ui.set_max_width((ui.ctx().content_rect().width() - 48.).max(120.));
-                        ui.add(egui::Label::new(text).wrap());
+                        if drag.numeric {
+                            ui.label(if drag.draft.is_creation() {
+                                "New tab"
+                            } else {
+                                "Left tab"
+                            });
+                            ui.horizontal(|ui| {
+                                ui.label("Position:");
+                                let mut out = egui::TextEdit::singleline(&mut drag.input)
+                                    .id(Id::new("ruler-tab-position-input"))
+                                    .desired_width(90.)
+                                    .char_limit(16)
+                                    .show(ui);
+                                if out.response.changed() {
+                                    ui.ctx().request_repaint();
+                                }
+                                out.response.widget_info(|| {
+                                    egui::WidgetInfo::labeled(
+                                        egui::WidgetType::TextEdit,
+                                        true,
+                                        "Tab position in points, 0.5 to 1440",
+                                    )
+                                });
+                                if drag.focus_input {
+                                    out.response.request_focus();
+                                    out.state.cursor.set_char_range(Some(
+                                        egui::text::CCursorRange::two(
+                                            egui::text::CCursor::new(0),
+                                            egui::text::CCursor::new(drag.input.chars().count()),
+                                        ),
+                                    ));
+                                    out.state.store(ui.ctx(), out.response.id);
+                                    drag.focus_input = false;
+                                }
+                                ui.label("pt");
+                            });
+                            drag.error = drag.draft.move_to_text(&drag.input).err();
+                            ui.small("0.5 pt steps · Enter applies · Esc cancels");
+                            if let Some(error) = &drag.error {
+                                ui.add(
+                                    egui::Label::new(RichText::new(error).color(Color32::DARK_RED))
+                                        .wrap(),
+                                );
+                            }
+                        } else {
+                            ui.add(egui::Label::new(text).wrap());
+                            if drag.keyboard {
+                                ui.small("F2: enter an exact position in points");
+                            }
+                        }
                     });
                 });
+            drag.popup = popup.response.rect;
+            if drag.numeric && drag.accept_input && drag.error.is_none() {
+                let drag = self.tab_ruler_drag.take().unwrap();
+                let result = drag.draft.commit(&mut self.session.editor);
+                self.fail(result);
+                ui.memory_mut(|m| m.surrender_focus(Id::new("ruler-tab-position-input")));
+                self.sync_view();
+                return;
+            }
             if !drag.keyboard && ui.input(|i| i.pointer.primary_released()) {
                 let drag = self.tab_ruler_drag.take().unwrap();
                 let inside = ui.input(|i| {

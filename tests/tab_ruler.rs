@@ -299,3 +299,38 @@ fn keyboard_creation_draft_validation_recovery_and_stale_source() {
     e.replace(0, 0, "changed", "Edit").unwrap();
     assert!(d.commit(&mut e).is_err());
 }
+
+#[test]
+fn exact_numeric_position_rejects_invalid_and_stale_preview() {
+    for bad in [
+        "", "0", "1440.5", "65535", "NaN", "1e2", "1.25", "-1", "48,5",
+    ] {
+        let mut e = editor();
+        let before = e.document.clone();
+        let mut d = Draft::new(&e, 72).unwrap();
+        d.move_to_text("48.5").unwrap();
+        assert!(d.move_to_text(bad).is_err(), "{bad}");
+        assert_eq!(d.preview, before);
+        assert!(d.commit(&mut e).is_err());
+        assert_eq!(e.document, before);
+    }
+    let mut e = editor();
+    let before = e.document.clone();
+    let count = e.undo_stack.len();
+    let mut d = Draft::new(&e, 72).unwrap();
+    assert!(d.move_to_text("72").is_err());
+    d.move_to_text(" 48.5 ").unwrap();
+    d.commit(&mut e).unwrap();
+    assert_eq!(e.undo_stack.len(), count + 1);
+    let after = e.document.clone();
+    e.undo();
+    assert_eq!(e.document, before);
+    e.redo();
+    assert_eq!(e.document, after);
+    for value in ["0.5", "1440"] {
+        Draft::creation_preview(&e)
+            .unwrap()
+            .move_to_text(value)
+            .unwrap();
+    }
+}
