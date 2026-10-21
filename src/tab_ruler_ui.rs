@@ -303,15 +303,26 @@ impl DocsApp {
         if end > start && offset == 0 && last > first {
             last -= 1;
         }
-        let positions = crate::tab_ruler::positions(model, (start, end)).unwrap_or_default();
+        let positions: Vec<_> = crate::tab_ruler::positions(model, (start, end))
+            .unwrap_or_default()
+            .into_iter()
+            .map(|(position, coverage)| {
+                (
+                    position,
+                    coverage,
+                    crate::tab_ruler::common_kind(model, (start, end), position),
+                )
+            })
+            .collect();
         let total = last - first + 1;
         let unit = 14.6667 * zoom / 22.;
         let enabled = self.enabled(Action::TabPositions)
             && !self.composing
             && !self.backstage
             && self.ruler_key_focus.is_none();
-        for (value, coverage) in positions {
-            let mixed = coverage != total;
+        for (value, coverage, kind) in positions {
+            let kind_label = kind.map_or("Mixed types", crate::model::TabKind::label);
+            let mixed = coverage != total || kind.is_none();
             let x = left + f32::from(value) * unit;
             if x < left || x > right {
                 continue;
@@ -340,14 +351,42 @@ impl DocsApp {
             } else {
                 INK
             };
+            let foot = match kind {
+                Some(crate::model::TabKind::Left) => (0., 5.),
+                Some(crate::model::TabKind::Right) => (-5., 0.),
+                Some(crate::model::TabKind::Center) => (-5., 5.),
+                None => (-4., 4.),
+            };
             ui.painter().line_segment(
                 [pos2(x, rect.top() + 17.), pos2(x, rect.top() + 23.)],
                 Stroke::new(2.0_f32, color),
             );
             ui.painter().line_segment(
-                [pos2(x, rect.top() + 23.), pos2(x + 5., rect.top() + 23.)],
+                [
+                    pos2(x + foot.0, rect.top() + 23.),
+                    pos2(x + foot.1, rect.top() + 23.),
+                ],
                 Stroke::new(2.0_f32, color),
             );
+            if kind.is_none() {
+                ui.painter().line_segment(
+                    [
+                        pos2(x - 3., rect.top() + 17.),
+                        pos2(x + 3., rect.top() + 17.),
+                    ],
+                    Stroke::new(1.0_f32, color),
+                );
+            }
+            response.widget_info(|| {
+                egui::WidgetInfo::labeled(
+                    egui::WidgetType::Button,
+                    available,
+                    format!(
+                        "{kind_label} tab, {:.1} points, {coverage}/{total} paragraphs",
+                        f32::from(value) / 2.
+                    ),
+                )
+            });
             if available
                 && ui.input(|i| i.pointer.primary_pressed())
                 && response.is_pointer_button_down_on()
@@ -395,7 +434,7 @@ impl DocsApp {
                     ui.close();
                 }
             });
-            response.on_hover_text(format!("Left tab: {:.1} pt. Present in {coverage}/{total} selected paragraphs. Movement/deletion affects only paragraphs containing this stop. {}",f32::from(value)/2.,if collision {"Overlaps an indent marker; use Ctrl+Alt+F8 or Tab positions to edit."} else {"Drag to preview; release to apply; Escape cancels. Release outside the ruler cancels. Ctrl+Alt+F8 selects tabs; Ctrl+Alt+Shift+F8 creates; arrows move, Shift accelerates, Enter applies, Tab applies and selects next, Delete previews removal, Escape cancels. Right-click to delete."}));
+            response.on_hover_text(format!("{kind_label} tab: {:.1} pt. Present in {coverage}/{total} selected paragraphs. Movement/deletion affects only paragraphs containing this stop and preserves each type. {}",f32::from(value)/2.,if collision {"Overlaps an indent marker; use Ctrl+Alt+F8 or Tab positions to edit."} else {"Drag to preview; release to apply; Escape cancels. Release outside the ruler cancels. Ctrl+Alt+F8 selects tabs; Ctrl+Alt+Shift+F8 creates; arrows move, Shift accelerates, Enter applies, Tab applies and selects next, Delete previews removal, Escape cancels. Right-click to delete."}));
         }
         if let Some(drag) = &mut self.tab_ruler_drag {
             if !drag.keyboard
@@ -407,6 +446,10 @@ impl DocsApp {
                     .err();
                 ui.ctx().request_repaint();
             }
+            let kind_label = drag
+                .draft
+                .kind()
+                .map_or("Mixed types", crate::model::TabKind::label);
             let text = drag
                 .error
                 .clone()
@@ -431,7 +474,7 @@ impl DocsApp {
                         );
                     }
                     format!(
-                        "Left tab {:.1} pt — preview; {}; Esc cancels",
+                        "{kind_label} tab {:.1} pt — preview; {}; Esc cancels",
                         f32::from(drag.draft.position) / 2.,
                         if drag.keyboard {
                             "Enter applies"
@@ -449,9 +492,9 @@ impl DocsApp {
                         ui.set_max_width((ui.ctx().content_rect().width() - 48.).max(120.));
                         if drag.numeric {
                             ui.label(if drag.draft.is_creation() {
-                                "New tab"
+                                "New left tab"
                             } else {
-                                "Left tab"
+                                kind_label
                             });
                             ui.horizontal(|ui| {
                                 ui.label("Position:");

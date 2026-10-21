@@ -612,12 +612,28 @@ impl Editor {
         Ok(())
     }
 
+    /// Replace all explicit types through a single validated history operation.
+    pub fn set_tab_positions(
+        &mut self,
+        start: usize,
+        end: usize,
+        stops: Vec<(u16, crate::model::TabKind)>,
+    ) -> Result<()> {
+        validate_range(&self.document.text(), start, end)?;
+        let (first, _) = self.document.locate(start)?;
+        let (mut last, offset) = self.document.locate(end)?;
+        if end > start && offset == 0 && last > first {
+            last -= 1;
+        }
+        self.set_paragraph_tab_lists(start, end, vec![stops; last - first + 1])
+    }
+
     /// Commit distinct selected-paragraph lists together without flattening geometry.
     pub(crate) fn set_paragraph_tab_lists(
         &mut self,
         start: usize,
         end: usize,
-        lists: Vec<Vec<u16>>,
+        lists: Vec<Vec<(u16, crate::model::TabKind)>>,
     ) -> Result<()> {
         validate_range(&self.document.text(), start, end)?;
         let (first, _) = self.document.locate(start)?;
@@ -630,10 +646,10 @@ impl Editor {
         }
         let mut result = self.document.clone();
         for (paragraph, positions) in result.paragraphs[first..=last].iter_mut().zip(lists) {
-            paragraph.spacing.left_tab_stops_half_points = positions;
+            paragraph.spacing.set_tab_positions(&positions)?;
         }
         result.validate()?;
-        self.commit(result, "Left tab stops", (start, end), self.typing_style);
+        self.commit(result, "Tab positions", (start, end), self.typing_style);
         Ok(())
     }
 

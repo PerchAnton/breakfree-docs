@@ -9267,8 +9267,8 @@ fn tab_positions_keyboard_nested_cancel_and_compact_bounds() {
             ctx.memory(|m| m.focused()),
             Some(Id::new("tab-position-input"))
         );
-        // Input -> Add -> Clear all (Update/Remove disabled); activate the draft change.
-        for _ in 0..2 {
+        // Input -> Left -> Center -> Right -> Add -> Clear all; Update/Remove disabled.
+        for _ in 0..5 {
             frame(&ctx, &mut app, vec![key(Key::Tab, false)], size, dpi);
         }
         frame(&ctx, &mut app, vec![key(Key::Enter, false)], size, dpi);
@@ -10405,4 +10405,179 @@ fn aligned_tabs_empty_fields_and_trailing_spaces_keep_anchors() {
         assert!((last.pos.x + last.advance_width - 200.).abs() < 1.1);
         assert_eq!(glyphs.len(), 5);
     });
+}
+
+#[test]
+fn typed_tab_dialog_changes_kind_with_one_history() {
+    use crate::model::TabKind as K;
+    for dpi in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        let size = [640. * dpi, 480. * dpi];
+        app.session
+            .editor
+            .set_tab_positions(0, 0, vec![(144, K::Center), (288, K::Right)])
+            .unwrap();
+        app.sync_view();
+        let before = app.session.editor.document.clone();
+        let count = app.session.editor.undo_stack.len();
+        app.execute(Action::TabPositions, &ctx);
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![], size, dpi);
+        }
+        // Existing center stop becomes a right stop only after explicit Update and OK.
+        let click = |app: &mut DocsApp, name: &str| {
+            let p = app
+                .regions
+                .iter()
+                .find(|r| r.name == name)
+                .unwrap()
+                .rect
+                .center();
+            frame(
+                &ctx,
+                app,
+                vec![egui::Event::PointerMoved(p), ruler_pointer(p, true)],
+                size,
+                dpi,
+            );
+            frame(&ctx, app, vec![ruler_pointer(p, false)], size, dpi);
+        };
+        click(&mut app, "tab-position-144");
+        click(&mut app, "tab-kind-right");
+        click(&mut app, "tab-positions-ok");
+        assert!(app.tab_positions_dialog.is_some());
+        assert_eq!(app.session.editor.document, before);
+        click(&mut app, "tab-position-update");
+        click(&mut app, "tab-positions-ok");
+        assert!(app.tab_positions_dialog.is_none());
+        assert_eq!(
+            app.session.editor.document.paragraphs[0]
+                .spacing
+                .tab_positions(),
+            vec![(144, K::Right), (288, K::Right)]
+        );
+        assert_eq!(app.session.editor.undo_stack.len(), count + 1);
+        let after = app.session.editor.document.clone();
+        app.session.editor.undo();
+        assert_eq!(app.session.editor.document, before);
+        app.session.editor.redo();
+        assert_eq!(app.session.editor.document, after);
+    }
+}
+#[test]
+fn typed_tab_keyboard_traversal_numeric_move_delete_and_cancel() {
+    use crate::model::TabKind as K;
+    let (ctx, mut app) = setup();
+    let size = [1366., 900.];
+    app.session
+        .editor
+        .set_tab_positions(0, 0, vec![(144, K::Center), (288, K::Right)])
+        .unwrap();
+    app.sync_view();
+    frame(&ctx, &mut app, vec![], size, 1.);
+    let before = app.session.editor.document.clone();
+    let count = app.session.editor.undo_stack.len();
+    frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(Key::F8, Modifiers::CTRL | Modifiers::ALT)],
+        size,
+        1.,
+    );
+    assert_eq!(
+        app.tab_ruler_drag.as_ref().unwrap().draft.kind(),
+        Some(K::Center)
+    );
+    frame(&ctx, &mut app, vec![key(Key::Tab, false)], size, 1.);
+    assert_eq!(app.session.editor.undo_stack.len(), count);
+    assert_eq!(
+        app.tab_ruler_drag.as_ref().unwrap().draft.kind(),
+        Some(K::Right)
+    );
+    frame(&ctx, &mut app, vec![key(Key::F2, false)], size, 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("150".into()), key(Key::Enter, false)],
+        size,
+        1.,
+    );
+    assert_eq!(
+        app.session.editor.document.paragraphs[0]
+            .spacing
+            .tab_positions(),
+        vec![(144, K::Center), (300, K::Right)]
+    );
+    assert_eq!(app.session.editor.undo_stack.len(), count + 1);
+    app.session.editor.undo();
+    assert_eq!(app.session.editor.document, before);
+    frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(Key::F8, Modifiers::CTRL | Modifiers::ALT)],
+        size,
+        1.,
+    );
+    frame(&ctx, &mut app, vec![key(Key::Delete, false)], size, 1.);
+    assert_eq!(app.session.editor.document, before);
+    frame(&ctx, &mut app, vec![key(Key::Escape, false)], size, 1.);
+    assert_eq!(app.session.editor.document, before);
+    app.session.editor.redo();
+    assert_eq!(
+        app.session.editor.document.paragraphs[0]
+            .spacing
+            .tab_positions(),
+        vec![(144, K::Center), (300, K::Right)]
+    );
+}
+#[test]
+fn typed_tab_pointer_move_and_single_history() {
+    use crate::model::TabKind as K;
+    for kind in [K::Center, K::Right] {
+        let (ctx, mut app) = setup();
+        let size = [1366., 900.];
+        app.session
+            .editor
+            .set_tab_positions(0, 0, vec![(144, kind)])
+            .unwrap();
+        app.sync_view();
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![], size, 1.);
+        }
+        let before = app.session.editor.document.clone();
+        let count = app.session.editor.undo_stack.len();
+        let pos = app
+            .regions
+            .iter()
+            .find(|r| r.name == "ruler-tab-144")
+            .unwrap()
+            .rect
+            .center();
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::PointerMoved(pos), ruler_pointer(pos, true)],
+            size,
+            1.,
+        );
+        let to = pos + vec2(24., 0.);
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::PointerMoved(to)],
+            size,
+            1.,
+        );
+        assert_eq!(app.session.editor.document, before);
+        frame(&ctx, &mut app, vec![ruler_pointer(to, false)], size, 1.);
+        assert_eq!(
+            app.session.editor.document.paragraphs[0]
+                .spacing
+                .tab_positions(),
+            vec![(180, kind)]
+        );
+        assert_eq!(app.session.editor.undo_stack.len(), count + 1);
+        app.session.editor.undo();
+        assert_eq!(app.session.editor.document, before);
+    }
 }

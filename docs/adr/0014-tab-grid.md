@@ -235,3 +235,32 @@ Current dialogs and ruler edit left stops only; type selection and center/right
 markers are a later increment. Palette and icons remain unchanged.
 
 Open [AlignedTabs.bfdoc](../../examples/AlignedTabs.bfdoc) to inspect the working layout.
+
+## Typed tab editing (alpha.72)
+
+The Tab positions dialog now lists all Left/Center/Right stops and shows their type.
+Selecting an entry restores its position and type. Choose Alignment, then Add or
+Update to stage the edit; OK applies the entire list to the selected paragraphs in
+one Undo/Redo. Pending nonempty input/type changes require Add/Update before OK.
+Cancel/Escape discards the draft. Remove and Clear all affect all types. Mixed
+selection compares both positions and types; its replacement policy is explicit.
+Tab reaches the position field, three type controls and the existing action buttons.
+
+The ruler shows L-shaped left stops, a bottom bar on both sides for center, and a
+mirrored L for right. Partial coverage remains gray. Different types at the same
+position show a gray double-bar marker and a Mixed types label. Tooltip/widget
+labels include type and selected-paragraph coverage; active previews use the
+existing accent. Indent hit targets retain priority.
+
+Pointer movement/release, Ctrl+Alt+F8 traversal, arrows/Shift+arrows, F2 exact input,
+Delete and context-menu deletion now support all types. Movement/deletion changes
+only paragraphs owning the source position and preserves each stored type, including
+mixed types. A destination conflict in any affected paragraph rejects the whole
+transaction. Enter applies once; Tab applies/traverses; Escape, focus loss and
+transform changes keep the previous cancellation policy. No-op acceptance preserves
+Redo. Existing ruler creation still inserts left stops; choose Center/Right in the
+dialog. Type selection for new ruler stops is a separate next increment.
+
+The unified editing representation maps to the existing v16 arrays; no schema,
+palette, icon or layout-policy change. Physical keyboard/IME, matched Word,
+Windows and VoiceOver acceptance remain deferred.

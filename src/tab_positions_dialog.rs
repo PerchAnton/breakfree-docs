@@ -4,12 +4,14 @@ use super::*;
 pub(super) enum PositionsOutcome {
     Open,
     Cancel,
-    Apply(Vec<u16>),
+    Apply(Vec<(u16, crate::model::TabKind)>),
 }
 
 pub(super) struct PositionsDialog {
     positions: Vec<u16>,
     selected: Option<u16>,
+    kinds: std::collections::BTreeMap<u16, crate::model::TabKind>,
+    kind: crate::model::TabKind,
     input: String,
     input_dirty: bool,
     focus: bool,
@@ -27,13 +29,20 @@ impl PositionsDialog {
             last -= 1;
         }
         let paragraphs = &editor.document.paragraphs[first..=last];
-        let positions = &paragraphs[0].spacing.left_tab_stops_half_points;
+        let stops = paragraphs[0].spacing.tab_positions();
+        let positions: Vec<_> = stops.iter().map(|s| s.0).collect();
         let mixed = paragraphs
             .iter()
-            .any(|p| &p.spacing.left_tab_stops_half_points != positions);
+            .any(|p| p.spacing.tab_positions() != stops);
         Self {
             positions: if mixed { vec![] } else { positions.clone() },
             selected: None,
+            kinds: if mixed {
+                Default::default()
+            } else {
+                stops.into_iter().collect()
+            },
+            kind: crate::model::TabKind::Left,
             input: String::new(),
             input_dirty: false,
             focus: true,
@@ -71,8 +80,10 @@ impl PositionsDialog {
         if update {
             let old = self.selected.ok_or("Select a position to update.")?;
             self.positions.retain(|p| *p != old);
+            self.kinds.remove(&old);
         }
         self.positions.push(value);
+        self.kinds.insert(value, self.kind);
         self.positions.sort_unstable();
         self.selected = Some(value);
         self.input_dirty = false;
@@ -96,11 +107,11 @@ impl PositionsDialog {
                 ui.set_width(320.);
                 ui.heading("Tab positions");
                 ui.separator();
-                ui.label("Left positions in points from the text-column edge.");
+                ui.label("Positions in points from the text-column edge.");
                 if self.mixed {
                     ui.small("Different lists selected. Build a replacement or Clear all.");
                 }
-                ui.small("OK replaces left positions only; center/right stops are preserved.");
+                ui.small("OK replaces all tab types in the selected paragraphs.");
                 egui::ScrollArea::vertical()
                     .id_salt("positions-list")
                     .max_height(115.)
@@ -111,17 +122,22 @@ impl PositionsDialog {
                             ui.label(if self.mixed && !self.changed {
                                 "Mixed positions"
                             } else {
-                                "No explicit left positions"
+                                "No explicit positions — interval grid only"
                             });
                         }
                         for &value in &self.positions {
                             let r = ui.selectable_label(
                                 self.selected == Some(value),
-                                format!("{} pt", f32::from(value) / 2.),
+                                format!(
+                                    "{} pt — {}",
+                                    f32::from(value) / 2.,
+                                    self.kinds[&value].label()
+                                ),
                             );
                             record(&format!("tab-position-{value}"), r.rect);
                             if r.clicked() {
                                 self.selected = Some(value);
+                                self.kind = self.kinds[&value];
                                 self.input = format!("{}", f32::from(value) / 2.);
                                 self.input_dirty = false;
                                 self.error = None;
@@ -140,7 +156,7 @@ impl PositionsDialog {
                         egui::WidgetInfo::labeled(
                             egui::WidgetType::TextEdit,
                             true,
-                            "Left tab position, 0.5 to 1440 points",
+                            "Tab position, 0.5 to 1440 points",
                         )
                     });
                     if out.response.changed() {
@@ -152,6 +168,21 @@ impl PositionsDialog {
                         self.focus = false;
                     }
                     ui.label("pt");
+                });
+                ui.horizontal(|ui| {
+                    ui.label("Alignment:");
+                    for kind in [
+                        crate::model::TabKind::Left,
+                        crate::model::TabKind::Center,
+                        crate::model::TabKind::Right,
+                    ] {
+                        let r = ui.selectable_value(&mut self.kind, kind, kind.label());
+                        record(&format!("tab-kind-{}", kind.label().to_lowercase()), r.rect);
+                        if r.changed() {
+                            self.input_dirty = true;
+                            self.error = None;
+                        }
+                    }
                 });
                 ui.horizontal(|ui| {
                     let r = ui.button("Add");
@@ -167,6 +198,9 @@ impl PositionsDialog {
                     let r = ui.add_enabled(self.selected.is_some(), Button::new("Remove"));
                     record("tab-position-remove", r.rect);
                     if r.clicked() {
+                        if let Some(value) = self.selected {
+                            self.kinds.remove(&value);
+                        }
                         self.positions.retain(|p| Some(*p) != self.selected);
                         self.selected = None;
                         self.input.clear();
@@ -178,6 +212,7 @@ impl PositionsDialog {
                     record("tab-position-clear", r.rect);
                     if r.clicked() {
                         self.positions.clear();
+                        self.kinds.clear();
                         self.selected = None;
                         self.input.clear();
                         self.input_dirty = false;
@@ -210,7 +245,9 @@ impl PositionsDialog {
             if self.input_dirty && !self.input.trim().is_empty() {
                 self.error = Some("Use Add or Update before applying the list.".into());
             } else {
-                return PositionsOutcome::Apply(self.positions.clone());
+                return PositionsOutcome::Apply(
+                    self.positions.iter().map(|p| (*p, self.kinds[p])).collect(),
+                );
             }
         }
         PositionsOutcome::Open
@@ -220,6 +257,38 @@ impl PositionsDialog {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn typed_lists_detect_mixed_kinds_and_retain_updates() {
+        use crate::model::TabKind as K;
+        let mut e = crate::commands::Editor::default();
+        e.replace(0, 0, "a\nb", "Fixture").unwrap();
+        e.set_tab_positions(0, 0, vec![(144, K::Center)]).unwrap();
+        e.set_tab_positions(2, 2, vec![(144, K::Right)]).unwrap();
+        e.selection = (0, 3);
+        let mut d = PositionsDialog::new(&e);
+        assert!(d.mixed);
+        assert!(d.positions.is_empty());
+        d.kind = K::Right;
+        d.input = "90".into();
+        d.set(false).unwrap();
+        d.kind = K::Center;
+        d.input = "120".into();
+        d.set(false).unwrap();
+        assert_eq!(d.kinds[&180], K::Right);
+        assert_eq!(d.kinds[&240], K::Center);
+        d.kind = K::Left;
+        d.input = "90".into();
+        assert!(d.set(true).is_err());
+        assert_eq!(d.kinds[&240], K::Center);
+        d.input = "130".into();
+        d.set(true).unwrap();
+        assert!(!d.kinds.contains_key(&240));
+        assert_eq!(d.kinds[&260], K::Left);
+        assert_eq!(
+            e.document.paragraphs[0].spacing.tab_positions(),
+            vec![(144, K::Center)]
+        );
+    }
     #[test]
     fn draft_validation_limits_and_updates() {
         let mut d = PositionsDialog::new(&crate::commands::Editor::default());

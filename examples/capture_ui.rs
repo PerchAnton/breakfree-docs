@@ -469,6 +469,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "tabs",
             "explicit-tabs",
             "aligned-tabs",
+            "typed-tabs-dialog",
             "tab-keyboard",
             "tab-delete",
             "tab-mixed",
@@ -561,7 +562,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "examples/Styles.bfdoc"
         } else if ["formatting", "font"].contains(&args[2].as_str()) {
             "examples/Formatting.bfdoc"
-        } else if args[2] == "aligned-tabs" {
+        } else if matches!(args[2].as_str(), "aligned-tabs" | "typed-tabs-dialog") {
             "examples/AlignedTabs.bfdoc"
         } else {
             "examples/Welcome.bfdoc"
@@ -762,7 +763,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 DocsApp::new(session, &cc.egui_ctx)
             };
             match mode.as_str() {
-                "tab-positions" => app.execute(Action::TabPositions, &cc.egui_ctx),
+                "tab-positions" | "typed-tabs-dialog" => {
+                    app.execute(Action::TabPositions, &cc.egui_ctx)
+                }
                 "tab-dialog" => app.execute(Action::TabInterval, &cc.egui_ctx),
                 "view" | "view-fit" | "keytips-qat-below" => {
                     app.tab = 8;

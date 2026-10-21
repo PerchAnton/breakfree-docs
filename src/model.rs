@@ -576,6 +576,24 @@ pub enum Alignment {
     Justify,
 }
 
+/// Editing representation; native v16 keeps left and aligned arrays separately.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum TabKind {
+    #[default]
+    Left,
+    Center,
+    Right,
+}
+impl TabKind {
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Left => "Left",
+            Self::Center => "Center",
+            Self::Right => "Right",
+        }
+    }
+}
+
 /// Alignment of a field following a tab, up to the next tab or paragraph end.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -617,6 +635,50 @@ pub struct ParagraphSpacing {
     pub first_line_half_points: Option<i16>,
 }
 impl ParagraphSpacing {
+    pub fn tab_positions(&self) -> Vec<(u16, TabKind)> {
+        let mut stops: Vec<_> = self
+            .left_tab_stops_half_points
+            .iter()
+            .map(|p| (*p, TabKind::Left))
+            .collect();
+        stops.extend(self.aligned_tab_stops.iter().map(|s| {
+            (
+                s.position_half_points,
+                match s.alignment {
+                    TabStopAlignment::Center => TabKind::Center,
+                    TabStopAlignment::Right => TabKind::Right,
+                },
+            )
+        }));
+        stops.sort_by_key(|s| s.0);
+        stops
+    }
+    /// Validate and replace all tab types atomically, retaining other geometry.
+    pub fn set_tab_positions(&mut self, stops: &[(u16, TabKind)]) -> Result<()> {
+        if stops.windows(2).any(|p| p[0].0 >= p[1].0) {
+            return Err("Tab positions must be increasing and unique.".into());
+        }
+        let mut next = self.clone();
+        next.left_tab_stops_half_points.clear();
+        next.aligned_tab_stops.clear();
+        for &(position, kind) in stops {
+            match kind {
+                TabKind::Left => next.left_tab_stops_half_points.push(position),
+                TabKind::Center | TabKind::Right => next.aligned_tab_stops.push(AlignedTabStop {
+                    position_half_points: position,
+                    alignment: if kind == TabKind::Center {
+                        TabStopAlignment::Center
+                    } else {
+                        TabStopAlignment::Right
+                    },
+                }),
+            }
+        }
+        next.validate()?;
+        *self = next;
+        Ok(())
+    }
+
     pub fn validate(&self) -> Result<()> {
         if self.aligned_tab_stops.len() + self.left_tab_stops_half_points.len() > 32
             || self.aligned_tab_stops.iter().any(|s| {

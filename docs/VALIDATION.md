@@ -1801,3 +1801,25 @@ Injected events verify rendered state, not physical input or Windows DPI behavio
   palette/icons/ribbon retained. This does not establish physical keyboard/IME,
   matched Word or Windows DPI acceptance. VoiceOver final review is deferred.
 - Type-selection controls and typed ruler markers are not implemented this increment.
+
+## Alpha.72 typed tab dialog and ruler validation
+
+2026-10-21, macOS arm64, Rust 1.99.1. Alpha.70 explicitly approved; alpha.71 has
+no explicit approval recorded. Alpha.72 is one three-step candidate for review.
+
+- 370 full / 173 core-only tests pass. New coverage checks unified typed-list
+  history/roundtrip, half-open ranges, duplicate/order/capacity rejection, mixed
+  types at one position, owner-only movement/deletion, conflicts, stale drafts and
+  no-op Redo preservation. Existing strict v16 and layout tests pass.
+- Widget tests cover staged kind changes requiring Update, one final Undo/Redo,
+  compact controls at synthetic 100/125/150% scale, keyboard traversal of typed
+  stops, F2 movement, deletion preview/cancel and pointer movement preserving type.
+  Updated the explicit Tab path to include Left/Center/Right controls. Native OS
+  keyboard/IME and Windows DPI acceptance are separate and were not performed.
+- fmt, normal/capture all-target Clippy, full/core tests, release/capture builds,
+  repository/artwork/YAML/whitespace checks pass. The isolated copied executable
+  reports alpha.72 and correct capabilities without Office or sibling repositories.
+- Three native captures inspected: marker view at 1366 × 900, dialog at 1366 × 900
+  and 640 × 480 DIP. Type captions/controls fit, center/right shapes are visible,
+  and palette/icons remain unchanged. No matched Word comparison or spoken reader
+  acceptance is claimed. Windows deferred; VoiceOver remains final review.

@@ -389,4 +389,7 @@ Use public specifications and original test cases, not copied application code. 
 - [x] Alpha.69: keyboard ruler tab creation, correction, cancel and one Undo/Redo (local checks).
 - [x] Alpha.70: exact numeric position input in keyboard tab previews, strict validation and one Undo/Redo; local core/widget validation.
 - [x] Alpha.71: typed center/right stop storage, v16 migration, transactional API and field layout; local core/render tests.
-- [ ] Next: center/right type selection in the tab positions dialog; typed ruler markers, leaders and style inheritance follow separately.
+- [x] Alpha.72 step 1: unified Left/Center/Right dialog with staged changes, cancel and one Undo/Redo.
+- [x] Alpha.72 step 2: type-specific ruler shapes and explicit mixed-type/coverage labels.
+- [x] Alpha.72 step 3: pointer/keyboard/F2 movement and deletion of all types, preserving mixed owners and one transaction (local tests).
+- [ ] Next: choose the type when creating a tab from the ruler; leaders and style inheritance remain separate increments.

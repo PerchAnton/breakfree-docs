@@ -3342,10 +3342,7 @@ impl DocsApp {
                 PositionsOutcome::Cancel => self.focus_document = self.paragraph_dialog.is_none(),
                 PositionsOutcome::Apply(positions) => {
                     let (start, end) = self.session.editor.selection;
-                    let result = self
-                        .session
-                        .editor
-                        .set_left_tab_stops(start, end, positions);
+                    let result = self.session.editor.set_tab_positions(start, end, positions);
                     self.fail(result);
                     self.sync_view();
                     self.focus_document = self.paragraph_dialog.is_none();

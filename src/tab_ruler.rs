@@ -1,5 +1,9 @@
-//! Toolkit-independent creation, movement and removal of explicit left tab stops.
-use crate::{Result, commands::Editor, model::Document};
+//! Toolkit-independent creation, movement and removal of explicit typed tab stops.
+use crate::{
+    Result,
+    commands::Editor,
+    model::{Document, TabKind},
+};
 
 pub struct Draft {
     original: Document,
@@ -22,6 +26,12 @@ impl Draft {
         draft.position = 72;
         draft.valid = false;
         Ok(draft)
+    }
+    pub fn kind(&self) -> Option<TabKind> {
+        match self.source {
+            Some(position) => common_kind(&self.original, self.selection, position),
+            None => Some(TabKind::Left),
+        }
     }
     pub fn is_creation(&self) -> bool {
         self.source.is_none()
@@ -48,7 +58,7 @@ impl Draft {
         if source.is_some_and(|value| {
             !editor.document.paragraphs[first..=last]
                 .iter()
-                .any(|p| p.spacing.left_tab_stops_half_points.contains(&value))
+                .any(|p| p.spacing.tab_positions().iter().any(|s| s.0 == value))
         }) {
             return Err("Tab position no longer exists.".into());
         }
@@ -96,20 +106,28 @@ impl Draft {
         let mut preview = self.original.clone();
         let mut added = false;
         for paragraph in &mut preview.paragraphs[self.first..=self.last] {
-            let positions = &mut paragraph.spacing.left_tab_stops_half_points;
-            if let Some(source) = self.source {
-                if !positions.contains(&source) {
+            let mut positions = paragraph.spacing.tab_positions();
+            let kind = if let Some(source) = self.source {
+                let Some((_, kind)) = positions.iter().find(|s| s.0 == source).copied() else {
                     continue;
-                }
-                if position != source && positions.contains(&position) {
+                };
+                if position != source && positions.iter().any(|s| s.0 == position) {
                     return Err("A selected paragraph already has a tab at this destination. Choose another position or cancel.".into());
                 }
-                positions.retain(|p| *p != source);
-            } else if positions.contains(&position) {
-                continue;
-            }
-            positions.push(position);
-            positions.sort_unstable();
+                positions.retain(|s| s.0 != source);
+                kind
+            } else {
+                if let Some((_, kind)) = positions.iter().find(|s| s.0 == position) {
+                    if *kind == TabKind::Left {
+                        continue;
+                    }
+                    return Err("A different tab type already uses this position.".into());
+                }
+                TabKind::Left
+            };
+            positions.push((position, kind));
+            positions.sort_by_key(|s| s.0);
+            paragraph.spacing.set_tab_positions(&positions)?;
             added = true;
         }
         if self.source.is_none() && !added {
@@ -126,10 +144,13 @@ impl Draft {
         let source = self.source.ok_or("Cannot remove an uncommitted new tab.")?;
         self.preview = self.original.clone();
         for paragraph in &mut self.preview.paragraphs[self.first..=self.last] {
-            paragraph
+            let positions: Vec<_> = paragraph
                 .spacing
-                .left_tab_stops_half_points
-                .retain(|p| *p != source);
+                .tab_positions()
+                .into_iter()
+                .filter(|s| s.0 != source)
+                .collect();
+            paragraph.spacing.set_tab_positions(&positions)?;
         }
         self.preview.validate()?;
         self.deleting = true;
@@ -148,7 +169,7 @@ impl Draft {
             self.selection.1,
             self.preview.paragraphs[self.first..=self.last]
                 .iter()
-                .map(|p| p.spacing.left_tab_stops_half_points.clone())
+                .map(|p| p.spacing.tab_positions())
                 .collect(),
         )
     }
@@ -166,9 +187,37 @@ pub fn positions(document: &Document, selection: (usize, usize)) -> Result<Vec<(
     }
     let mut counts = std::collections::BTreeMap::new();
     for paragraph in &document.paragraphs[first..=last] {
-        for position in &paragraph.spacing.left_tab_stops_half_points {
-            *counts.entry(*position).or_insert(0) += 1;
+        for (position, _) in paragraph.spacing.tab_positions() {
+            *counts.entry(position).or_insert(0) += 1;
         }
     }
     Ok(counts.into_iter().collect())
+}
+
+/// Common kind among paragraphs owning a position; None denotes mixed kinds.
+pub fn common_kind(
+    document: &Document,
+    selection: (usize, usize),
+    position: u16,
+) -> Option<TabKind> {
+    if selection.0 > selection.1 {
+        return None;
+    }
+    let (first, _) = document.locate(selection.0).ok()?;
+    let (mut last, offset) = document.locate(selection.1).ok()?;
+    if selection.1 > selection.0 && offset == 0 && last > first {
+        last -= 1;
+    }
+    if first > last {
+        return None;
+    }
+    let mut kinds = document.paragraphs[first..=last].iter().filter_map(|p| {
+        p.spacing
+            .tab_positions()
+            .into_iter()
+            .find(|s| s.0 == position)
+            .map(|s| s.1)
+    });
+    let first = kinds.next()?;
+    kinds.all(|k| k == first).then_some(first)
 }

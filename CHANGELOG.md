@@ -3,6 +3,17 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.72 — 2026-10-21
+
+- Edit Left/Center/Right positions in one dialog; Add/Update stages type changes,
+  OK replaces the selected lists as one Undo/Redo, and Cancel preserves the document.
+- Show left, centered and mirrored-right ruler markers with type/coverage labels;
+  mixed types at one position have a distinct marker and preserve each owner's type.
+- Move/delete all types by pointer, keyboard or exact F2 input using the existing
+  validated preview/cancel transaction. Traversal includes every type.
+- Retain native v16, palette/icons and left-tab creation defaults. Windows and
+  VoiceOver acceptance remain deferred. Alpha.71 approval was not explicitly received.
+
 ## 0.1.0-alpha.71 — 2026-10-21
 
 - Store typed center/right tab stops beside existing left stops; validate sorted,
