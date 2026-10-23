@@ -15,13 +15,12 @@ pub const PRESSED: Color32 = Color32::from_rgb(207, 207, 207);
 pub const SELECTION: Color32 = Color32::from_rgb(237, 232, 245);
 
 // Small semantic accents, independent of the brand's focus/selection color.
-const BLUE: Color32 = Color32::from_rgb(47, 121, 174);
-const PALE_BLUE: Color32 = Color32::from_rgb(227, 239, 249);
-const GOLD: Color32 = Color32::from_rgb(194, 144, 57);
+const BLUE: Color32 = Color32::from_rgb(48, 126, 166);
+const GOLD: Color32 = Color32::from_rgb(222, 158, 55);
 const PALE_GOLD: Color32 = Color32::from_rgb(255, 245, 214);
-const YELLOW: Color32 = Color32::from_rgb(245, 218, 38);
-const RED: Color32 = Color32::from_rgb(205, 44, 48);
-const ERASER: Color32 = Color32::from_rgb(156, 87, 166);
+const YELLOW: Color32 = Color32::from_rgb(255, 224, 0);
+const RED: Color32 = Color32::from_rgb(224, 25, 36);
+const ERASER: Color32 = Color32::from_rgb(157, 81, 171);
 
 fn tint(color: Color32, enabled: bool) -> Color32 {
     if enabled {
@@ -119,9 +118,9 @@ pub fn paint(ui: &Ui, icon: Icon, center: Pos2, size: f32, color: Color32, enabl
             line((-7., 0.), (-1., 6.));
         }
         Icon::Save => {
-            panel((-7., -8.), (7., 8.), PALE_BLUE, BLUE);
+            rect((-7., -8.), (7., 8.));
             rect((-4., -8.), (4., -1.));
-            panel((-4., 2.), (4., 8.), Color32::WHITE, BLUE);
+            rect((-4., 2.), (4., 8.));
             line((2., -6.), (2., -3.));
         }
         Icon::Undo | Icon::Redo => {
@@ -140,8 +139,15 @@ pub fn paint(ui: &Ui, icon: Icon, center: Pos2, size: f32, color: Color32, enabl
         }
         Icon::Paste => {
             panel((-7., -6.), (6., 8.), PALE_GOLD, GOLD);
-            panel((-3., -9.), (3., -4.), SURFACE, GOLD);
-            panel((-1., -1.), (9., 10.), Color32::WHITE, BLUE);
+            // Neutral clasp and paper; color belongs to the clipboard edge.
+            painter.rect_filled(Rect::from_min_max(p(-3., -9.), p(3., -4.)), 1., SURFACE);
+            rect((-3., -9.), (3., -4.));
+            painter.rect_filled(
+                Rect::from_min_max(p(-1., -1.), p(9., 10.)),
+                1.,
+                Color32::WHITE,
+            );
+            rect((-1., -1.), (9., 10.));
             line((2., 3.), (6., 3.));
             line((2., 6.), (6., 6.));
         }
@@ -153,8 +159,13 @@ pub fn paint(ui: &Ui, icon: Icon, center: Pos2, size: f32, color: Color32, enabl
             line((4., 3.), (-6., -8.));
         }
         Icon::Copy => {
-            panel((-7., -8.), (3., 5.), PALE_BLUE, BLUE);
-            panel((-2., -4.), (8., 9.), Color32::WHITE, BLUE);
+            rect((-7., -8.), (3., 5.));
+            painter.rect_filled(
+                Rect::from_min_max(p(-2., -4.), p(8., 9.)),
+                1.,
+                Color32::WHITE,
+            );
+            rect((-2., -4.), (8., 9.));
             for y in [0., 3., 6.] {
                 line((1., y), (5., y));
             }
@@ -244,7 +255,7 @@ pub fn paint(ui: &Ui, icon: Icon, center: Pos2, size: f32, color: Color32, enabl
                     Align2::CENTER_CENTER,
                     label,
                     FontId::proportional(7. * scale),
-                    color,
+                    accent(BLUE),
                 );
                 line((x + 4., y), (9., y));
             }
@@ -256,7 +267,7 @@ pub fn paint(ui: &Ui, icon: Icon, center: Pos2, size: f32, color: Color32, enabl
                     Align2::CENTER_CENTER,
                     label,
                     FontId::proportional(9. * scale),
-                    color,
+                    accent(BLUE),
                 );
             }
             line((6., -7.), (6., 7.));
@@ -338,16 +349,27 @@ pub fn paint(ui: &Ui, icon: Icon, center: Pos2, size: f32, color: Color32, enabl
             }
         }
         Icon::Border => {
-            rect((-7., -7.), (7., 7.));
+            // A dotted outer grid separates this from the window/table controls.
+            for offset in [-7., -3.5, 0., 3.5, 7.] {
+                for point in [p(offset, -7.), p(offset, 7.), p(-7., offset), p(7., offset)] {
+                    painter.circle_filled(point, 0.65 * scale, color);
+                }
+            }
             line((-7., 0.), (7., 0.));
             line((0., -7.), (0., 7.));
         }
         Icon::Shading => {
             painter.add(egui::Shape::closed_line(
-                vec![p(0., -8.), p(8., 0.), p(0., 8.), p(-8., 0.)],
+                vec![p(-1., -7.), p(5., -1.), p(-2., 6.), p(-8., 0.)],
                 stroke,
             ));
-            line((-6., 1.), (6., 1.));
+            line((-6., 1.), (2., 1.));
+            line((-2., -8.), (-2., -2.));
+            painter.add(egui::Shape::convex_polygon(
+                vec![p(7., -1.), p(9., 3.), p(7., 5.), p(5., 3.)],
+                accent(BLUE),
+                Stroke::NONE,
+            ));
         }
         Icon::Chevron(up) => {
             let d = if up { -1. } else { 1. };

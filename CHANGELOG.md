@@ -3,6 +3,26 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.84 — 2026-10-23
+
+- Quiet the editor chrome: remove redundant shortcut placeholders, search guidance
+  and the style-menu precedence footer. Keep hover help and disabled explanations.
+- Start tab previews with help collapsed. Show the position and concise real leader
+  coverage; F1 expands the distribution, and Help/F7 reveals mode or control help.
+  Choosing a leader no longer opens the detailed breakdown automatically.
+- Keep Help beside preview actions without taking keyboard focus or the numeric
+  caret. Retain error messages, cancellation and the single Undo/Redo boundary.
+- Refine original vector icons from the supplied video: neutral Save/Copy/paper
+  outlines, gold clipboard edge, blue list/sort details, stronger yellow/red color
+  indicators, dotted borders and a recognizable shading bucket.
+- Use a white indent readout and remove its repeated shortcut sentence. Preserve
+  the neutral shell, violet brand selection and approved logo. Native v17 unchanged.
+- Reserve field height from actual font metrics so the font-size input cannot
+  overlap Underline with taller system fonts, as reported by Windows CI for alpha.83.
+  Let the style list use available window height and omit empty category headings.
+- Alpha.78–83 have no explicit version approval recorded; alpha.84 awaits approval.
+  Windows remains deferred; VoiceOver stays at final review.
+
 ## 0.1.0-alpha.83 — 2026-10-23
 
 - Refine the native shell from the owner's Word macOS video: neutral flat chrome,

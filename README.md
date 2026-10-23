@@ -1032,7 +1032,7 @@ focus or applying edits. Holding F7 does not repeatedly toggle. The numeric inpu
 keeps its caret/selection, including invalid drafts; Escape and Cancel still discard
 the draft. Hover descriptions and full accessibility labels remain available.
 Visibility is remembered for this editor window only, across subsequent previews;
-a new window starts with help enabled. No document or settings-file change occurs.
+a new window starts with help hidden (since alpha.84). No document or settings-file change occurs.
 
 ### Reference-guided shell refinement (alpha.83)
 
@@ -1042,3 +1042,13 @@ icon accents and more compact rows. Style cards separate a formatted sample from
 the style name. View fits the same reduced ribbon height. macOS interface text uses
 installed Arial; document font handling is unchanged. The owner-provided Word
 macOS video informs these visual details; Windows comparison remains deferred.
+
+### Quieter editor chrome (alpha.84)
+
+Tab previews now open with concise position/leader information and the action row.
+**Help** or F7 shows mode-specific instructions or the focused-control description;
+F1 expands leader counts. Both remain optional while errors stay visible. Hover
+and accessibility descriptions, numeric caret preservation, cancellation and the
+single Undo/Redo operation are retained. Search/styles lose redundant permanent
+hints; their shortcuts remain in hover help. Icon color is concentrated on small
+semantic details, with neutral Save/Copy outlines matching the supplied reference.

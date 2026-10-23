@@ -407,7 +407,7 @@ impl DocsApp {
             ruler_drag: None,
             tab_ruler_drag: None,
             tab_creation_kind: crate::model::TabKind::Left,
-            tab_preview_help: true,
+            tab_preview_help: false,
             ruler_key_focus: None,
             ruler_menu: None,
             ruler_menu_activate: false,
@@ -1141,8 +1141,16 @@ impl DocsApp {
                     egui::TextEdit::singleline(&mut self.command_search)
                         .id(Id::new(SEARCH_ID))
                         .frame(false)
-                        .hint_text("Search (Alt+Q)"),
+                        .hint_text("Search"),
                 );
+                let response = response.on_hover_text("Search commands (Alt+Q).");
+                response.widget_info(|| {
+                    egui::WidgetInfo::labeled(
+                        egui::WidgetType::TextEdit,
+                        true,
+                        "Search commands (Alt+Q)",
+                    )
+                });
                 self.record("command-search", search_rect);
                 if self.focus_search {
                     response.request_focus();
@@ -1446,16 +1454,22 @@ impl DocsApp {
             egui::StrokeKind::Inside,
         );
         let edit_rect = Rect::from_min_max(rect.min, pos2(rect.right() - 18., rect.bottom()));
+        let mut font = FontId::proportional(13.);
+        let row_height = ui.fonts_mut(|f| f.row_height(&font));
+        // Installed interface fonts have different line metrics. Keep the real
+        // input hit target inside its row instead of clipping an oversized widget.
+        font.size *= ((edit_rect.height() - 2.) / row_height).min(1.);
         let response = ui
             .add_enabled_ui(!self.composing, |ui| {
                 ui.put(
                     edit_rect,
                     egui::TextEdit::singleline(&mut self.font_size_text)
                         .id(id)
-                        .font(FontId::proportional(13.))
+                        .font(font)
                         .desired_width(0.)
                         .frame(false)
-                        .margin(vec2(4., 4.))
+                        .vertical_align(Align::Center)
+                        .margin(vec2(4., 1.))
                         .hint_text("—")
                         .char_limit(8),
                 )
@@ -2017,7 +2031,7 @@ impl DocsApp {
                     .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
                     .show(|ui| {
                         self.collecting_menu = true;
-                        self.styles_menu(ui);
+                        self.styles_menu(ui, false);
                         self.collecting_menu = false;
                     });
             }
@@ -2298,7 +2312,7 @@ impl DocsApp {
             && (!self.style_used_only || in_use)
     }
 
-    fn styles_menu(&mut self, ui: &mut Ui) {
+    fn styles_menu(&mut self, ui: &mut Ui, overflow: bool) {
         // Resolve against the current document and filters, never leave an unreachable
         // jump pending: an undo, rename or usage change can invalidate the bookmark.
         let unavailable = self
@@ -2319,10 +2333,11 @@ impl DocsApp {
         let filter = ui.add(
             egui::TextEdit::singleline(&mut self.style_filter)
                 .id(Id::new("style-filter-input"))
-                .hint_text("Filter styles (F3)")
+                .hint_text("Filter styles")
                 .char_limit(64)
                 .desired_width(210.),
         );
+        let filter = filter.on_hover_text("Filter styles by name (F3).");
         self.record("style-filter-input", filter.rect);
         if filter.clicked() || filter.changed() {
             self.style_jump = None;
@@ -2375,10 +2390,15 @@ impl DocsApp {
         let mut matches = 0;
         egui::ScrollArea::vertical()
             .id_salt("style-list")
-            .max_height(if self.style_return.is_some() {
-                100.
+            .max_height(if overflow {
+                // The combined menu must also leave room for Editing commands.
+                if self.style_return.is_some() {
+                    100.
+                } else {
+                    125.
+                }
             } else {
-                125.
+                (ui.ctx().content_rect().bottom() - ui.cursor().top() - 118.).clamp(65., 300.)
             })
             .show(ui, |ui| {
                 if let Some(notice) = &self.style_navigation_notice {
@@ -2410,8 +2430,7 @@ impl DocsApp {
                         );
                     }
                 }
-                ui.separator();
-                ui.small("Character styles");
+                let mut character_heading = false;
                 for style in [
                     None,
                     Some(CharacterStyle::Strong),
@@ -2423,6 +2442,11 @@ impl DocsApp {
                         .matches(&self.style_filter, action.label(), true, false)
                         && (!self.style_used_only || used.character(style))
                     {
+                        if !character_heading {
+                            ui.separator();
+                            ui.small("Character styles");
+                            character_heading = true;
+                        }
                         matches += 1;
                         self.style_menu_command(
                             ui,
@@ -2442,6 +2466,11 @@ impl DocsApp {
                             && !used.character(Some(CharacterStyle::Custom(style.id))))
                     {
                         continue;
+                    }
+                    if !character_heading {
+                        ui.separator();
+                        ui.small("Character styles");
+                        character_heading = true;
                     }
                     matches += 1;
                     self.style_menu_command(
@@ -2475,7 +2504,6 @@ impl DocsApp {
                 );
             });
         ui.separator();
-        ui.small("Direct formatting takes precedence.");
         self.command(ui, "Modify style…", Action::ModifyStyle, vec2(210., 27.));
         self.command(ui, "Create style…", Action::CreateStyle, vec2(210., 27.));
         self.command(ui, "Delete style…", Action::DeleteStyle, vec2(210., 27.));
@@ -2511,7 +2539,7 @@ impl DocsApp {
                         .ui(ui, |ui| {
                             self.collecting_menu = true;
                             ui.label("Styles");
-                            self.styles_menu(ui);
+                            self.styles_menu(ui, true);
                             ui.separator();
                             for action in [
                                 Action::Find,

@@ -440,3 +440,7 @@ Use public specifications and original test cases, not copied application code. 
   neutral surfaces, semantic icon accents, sample/name style cards and View refit.
   Local geometry/functional checks and native captures are recorded in UI_SPEC
   and VALIDATION; Windows/reference equivalence is not claimed.
+
+- [x] Alpha.84: reduce permanent instructions in previews/search/styles, retain
+  optional keyboard/hover help and real mixed-state information, and refine icon
+  color/details from the supplied reference. Local evidence in UI_SPEC/VALIDATION.

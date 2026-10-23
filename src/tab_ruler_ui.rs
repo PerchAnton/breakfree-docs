@@ -560,7 +560,6 @@ impl DocsApp {
                                 }
                             };
                             drag.error = drag.draft.set_preview_leader(next).err();
-                            drag.show_leaders = true;
                         }
                     }
                     Key::Num0 | Key::Num1 | Key::Num2 | Key::Num3 if !modifiers.shift => {
@@ -574,14 +573,12 @@ impl DocsApp {
                                 _ => None,
                             };
                             drag.error = drag.draft.set_preview_leader(leader).err();
-                            drag.show_leaders = true;
                         }
                     }
                     Key::Backspace => {
                         let drag = self.tab_ruler_drag.as_mut().unwrap();
                         if drag.error.is_none() && !drag.draft.deleting {
                             drag.error = drag.draft.restore_preview_leaders().err();
-                            drag.show_leaders = true;
                         }
                     }
                     Key::Delete => {
@@ -871,9 +868,6 @@ impl DocsApp {
                 if edit.clicked() {
                     ui.close();
                     self.start_tab_keyboard(ui.ctx(), value);
-                    if let Some(drag) = &mut self.tab_ruler_drag {
-                        drag.show_leaders = true;
-                    }
                 }
                 let remove = ui.add_enabled(
                     available,
@@ -943,49 +937,17 @@ impl DocsApp {
                 .draft
                 .kind()
                 .map_or("Mixed types", crate::model::TabKind::label);
-            let text = drag
-                .error
-                .clone()
-                .map(|error| {
-                    if drag.keyboard {
-                        format!("{error} Arrows adjust; Esc cancels.")
-                    } else {
-                        error
-                    }
-                })
-                .unwrap_or_else(|| {
-                    if drag.draft.is_creation() {
-                        return format!(
-                            "New {kind_label} tab {:.1} pt — {}; Esc cancels",
-                            f32::from(drag.draft.position) / 2.,
-                            if drag.keyboard {
-                                "Enter applies"
-                            } else {
-                                "release applies"
-                            }
-                        );
-                    }
-                    if drag.draft.deleting {
-                        return format!(
-                            "Delete tab {:.1} pt — Enter applies; Esc cancels",
-                            f32::from(drag.start) / 2.
-                        );
-                    }
+            let text = drag.error.clone().unwrap_or_else(|| {
+                let prefix = if drag.draft.is_creation() { "New " } else { "" };
+                if drag.draft.deleting {
+                    format!("Delete tab at {:.1} pt", f32::from(drag.start) / 2.)
+                } else {
                     format!(
-                        "{kind_label} tab {:.1} pt — preview; {}; Esc cancels",
-                        f32::from(drag.draft.position) / 2.,
-                        if drag.keyboard {
-                            "Enter applies"
-                        } else {
-                            "release applies"
-                        }
+                        "{prefix}{kind_label} tab · {:.1} pt",
+                        f32::from(drag.draft.position) / 2.
                     )
-                });
-            let text = if drag.control_focus.is_some() {
-                text.replace("Enter applies", "Apply confirms")
-            } else {
-                text
-            };
+                }
+            });
             let mut apply = false;
             let mut cancel = false;
             let popup = egui::Area::new(Id::new("tab-ruler-preview"))
@@ -994,22 +956,7 @@ impl DocsApp {
                 .interactable(drag.keyboard)
                 .show(ui.ctx(), |ui| {
                     egui::Frame::popup(ui.style()).show(ui, |ui| {
-                        ui.set_max_width((ui.ctx().content_rect().width() - 48.).clamp(120., 520.));
-                        if drag.show_leaders {
-                            if drag.error.is_none() && !drag.draft.deleting {
-                                if let Ok(summary) = crate::tab_ruler::leader_summary(&drag.draft.preview, self.session.editor.selection, drag.draft.position) {
-                                    let r = ui.add(egui::Label::new(summary.description()).wrap());
-                                    self.regions.push(Region { name: "tab-leader-details".into(), rect: r.rect });
-                                }
-                            } else { ui.label("Leader details unavailable for an invalid or deletion preview."); }
-                        }
-                        if drag.show_leaders && drag.error.is_none() && !drag.draft.deleting {
-                            let choice = match drag.draft.preview_leader_choice() {
-                                Some(value) => format!("Chosen leader: {}", value.map_or("None", |v| v.label())),
-                                None => "Original per-paragraph leaders retained".into(),
-                            };
-                            ui.add(egui::Label::new(choice).wrap());
-                        }
+                        ui.set_max_width((ui.ctx().content_rect().width() - 48.).clamp(120., 420.));
                         if drag.numeric {
                             ui.label(if drag.draft.is_creation() {
                                 format!("New {kind_label} tab")
@@ -1048,7 +995,6 @@ impl DocsApp {
                                 ui.label("pt");
                             });
                             drag.error = drag.draft.move_to_text(&drag.input).err();
-                            ui.add(egui::Label::new(if drag.control_focus.is_some() { "F6 returns to input · Apply confirms · Esc cancels" } else { "0.5 pt steps · F4 returns to marker · Enter applies · Esc cancels" }).wrap());
                             if let Some(error) = &drag.error {
                                 ui.add(
                                     egui::Label::new(RichText::new(error).color(Color32::DARK_RED))
@@ -1056,14 +1002,21 @@ impl DocsApp {
                                 );
                             }
                         } else {
-                            ui.add(egui::Label::new(text).wrap());
-                            if drag.keyboard && drag.control_focus.is_none() {
-                                ui.add(egui::Label::new("0 None · 1 Dots · 2 Dashes · 3 Line · Backspace restores original leaders").wrap());
-                                ui.add(egui::Label::new("F1 details · F2 position · F3 next / Shift+F3 previous").wrap());
-                            }
+                            ui.add(egui::Label::new(RichText::new(text).color(if drag.error.is_some() { Color32::DARK_RED } else { INK })).wrap())
+                                .on_hover_text(if drag.keyboard { "Preview only. Enter applies; Escape cancels. F7 shows keyboard help." } else { "Drag to preview. Release on the ruler to apply; Escape cancels." });
                         }
                         if drag.keyboard {
-                            ui.add(egui::Label::new(if drag.control_focus.is_some() { "Controls: Tab / Shift+Tab · Enter / Space activates · F6 returns" } else { "F6: focus preview controls" }).wrap());
+                            if drag.error.is_none() && !drag.draft.deleting
+                                && let Ok(summary) = crate::tab_ruler::leader_summary(&drag.draft.preview, self.session.editor.selection, drag.draft.position) {
+                                let leader = summary.common().map_or("Mixed", |v| v.map_or("None", |v| v.label()));
+                                let r = ui.small(format!("Leader: {leader} · {} of {} paragraphs", summary.owners(), summary.selected))
+                                    .on_hover_text(format!("{}\nF1: show or hide details. Only selected paragraphs owning this stop change.", summary.description()));
+                                self.regions.push(Region { name: "tab-leader-summary".into(), rect: r.rect });
+                                if drag.show_leaders {
+                                    let r = ui.add(egui::Label::new(summary.description()).wrap());
+                                    self.regions.push(Region { name: "tab-leader-details".into(), rect: r.rect });
+                                }
+                            }
                             ui.separator();
                             let valid = drag.error.is_none() && !drag.draft.deleting;
                             ui.horizontal_wrapped(|ui| {
@@ -1072,13 +1025,13 @@ impl DocsApp {
                                     let common = crate::tab_ruler::leader_summary(&drag.draft.preview, self.session.editor.selection, drag.draft.position).ok().and_then(|s| s.common());
                                     let r = ui.add_enabled(valid, Button::new(label).selected(valid && drag.draft.preview_leader_choice().or(common) == Some(leader)));
                                     self.regions.push(Region { name: format!("tab-preview-leader-{}", label.to_lowercase()), rect: r.rect });
-                                    if drag.control(ui, index, &r) { drag.error = drag.draft.set_preview_leader(leader).err(); drag.show_leaders = true; }
+                                    if drag.control(ui, index, &r) { drag.error = drag.draft.set_preview_leader(leader).err(); }
                                 }
                             });
                             ui.horizontal_wrapped(|ui| {
                                 let r = ui.add_enabled(valid && drag.draft.preview_leader_choice().is_some(), Button::new("Restore leaders"));
                                 self.regions.push(Region { name: "tab-preview-restore".into(), rect: r.rect });
-                                if drag.control(ui, 4, &r) { drag.error = drag.draft.restore_preview_leaders().err(); drag.show_leaders = true; }
+                                if drag.control(ui, 4, &r) { drag.error = drag.draft.restore_preview_leaders().err(); }
                                 let r = ui.add_enabled(!drag.numeric || drag.error.is_none(), Button::new(if drag.numeric { "Back to marker" } else { "Exact position…" }));
                                 self.regions.push(Region { name: "tab-preview-position".into(), rect: r.rect });
                                 if drag.control(ui, 5, &r) {
@@ -1094,31 +1047,38 @@ impl DocsApp {
                                 let r = ui.button("Cancel");
                                 self.regions.push(Region { name: "tab-preview-cancel".into(), rect: r.rect });
                                 cancel = drag.control(ui, 7, &r);
+                                // This auxiliary action must not take the editing/control focus.
+                                // Restoring only the widget ID leaves the numeric caret/selection intact.
+                                let previous_focus = if drag.numeric && drag.control_focus.is_none() {
+                                    Some(Id::new("ruler-tab-position-input"))
+                                } else {
+                                    ui.memory(|m| m.focused())
+                                };
+                                let r = ui.add(Button::new("Help").selected(self.tab_preview_help));
+                                self.regions.push(Region { name: "tab-preview-help-toggle".into(), rect: r.rect });
+                                if r.clicked() {
+                                    self.tab_preview_help = !self.tab_preview_help;
+                                    ui.ctx().request_repaint();
+                                }
+                                if r.clicked() || r.is_pointer_button_down_on() {
+                                    ui.memory_mut(|m| {
+                                        m.surrender_focus(r.id);
+                                        if let Some(id) = previous_focus { m.request_focus(id); }
+                                    });
+                                }
+                                let help = format!("Preview help {}. F7 toggles descriptions without leaving the current control or position input. Hover descriptions remain available. Remembered for this editor window only.", if self.tab_preview_help { "shown" } else { "hidden" });
+                                r.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Button, true, self.tab_preview_help, &help));
+                                r.on_hover_text(help);
                             });
-                            // This auxiliary action must not take the editing/control focus.
-                            // Restoring only the widget ID leaves the numeric caret/selection intact.
-                            let previous_focus = if drag.numeric && drag.control_focus.is_none() {
-                                Some(Id::new("ruler-tab-position-input"))
-                            } else {
-                                ui.memory(|m| m.focused())
-                            };
-                            let r = ui.button(if self.tab_preview_help { "Hide help (F7)" } else { "Show help (F7)" });
-                            self.regions.push(Region { name: "tab-preview-help-toggle".into(), rect: r.rect });
-                            if r.clicked() {
-                                self.tab_preview_help = !self.tab_preview_help;
-                                ui.ctx().request_repaint();
-                            }
-                            if r.clicked() || r.is_pointer_button_down_on() {
-                                ui.memory_mut(|m| {
-                                    m.surrender_focus(r.id);
-                                    if let Some(id) = previous_focus { m.request_focus(id); }
-                                });
-                            }
-                            let help = format!("Preview help {}. F7 toggles descriptions without leaving the current control or position input. Hover descriptions remain available. Remembered for this editor window only.", if self.tab_preview_help { "shown" } else { "hidden" });
-                            r.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Button, true, self.tab_preview_help, &help));
-                            r.on_hover_text(help);
-                            if self.tab_preview_help && let Some(index) = drag.control_focus {
-                                let r = ui.add(egui::Label::new(drag.control_help(index)).wrap());
+                            if self.tab_preview_help {
+                                let help = if let Some(index) = drag.control_focus {
+                                    drag.control_help(index)
+                                } else if drag.numeric {
+                                    "Position in 0.5 pt steps. F4: return to marker; Enter: apply; Esc: cancel. F6: preview controls; F1: leader details; F7: hide help. Digits edit the position.".into()
+                                } else {
+                                    "Arrows: move; Shift+arrows: larger step. 0–3: None, Dots, Dashes, Line; F3 / Shift+F3: cycle; Backspace: restore leaders. F2: exact position; F6: controls; F1: details; F7: hide help. Enter: apply; Esc: cancel.".into()
+                                };
+                                let r = ui.add(egui::Label::new(help).wrap());
                                 self.regions.push(Region { name: "tab-preview-help".into(), rect: r.rect });
                             }
 

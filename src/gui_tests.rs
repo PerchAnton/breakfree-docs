@@ -11983,6 +11983,7 @@ fn tab_preview_disabled_focus_recovers_without_held_key_cancel() {
 fn preview_focus_help_is_readonly_and_fits_compact_scales() {
     for dpi in [1., 1.25, 1.5] {
         let (ctx, mut app) = setup();
+        app.tab_preview_help = true;
         let size = [640. * dpi, 480. * dpi];
         let before = app.session.editor.document.clone();
         let n = app.session.editor.undo_stack.len();
@@ -12013,6 +12014,8 @@ fn preview_focus_help_is_readonly_and_fits_compact_scales() {
             frame(&ctx, &mut app, vec![key(Key::Tab, false)], size, dpi);
         }
         frame(&ctx, &mut app, vec![key(Key::F6, false)], size, dpi);
+        assert!(app.regions.iter().any(|r| r.name == "tab-preview-help"));
+        frame(&ctx, &mut app, vec![key(Key::F7, false)], size, dpi);
         assert!(!app.regions.iter().any(|r| r.name == "tab-preview-help"));
     }
 }
@@ -12020,6 +12023,7 @@ fn preview_focus_help_is_readonly_and_fits_compact_scales() {
 #[test]
 fn preview_help_explains_scope_modes_and_disabled_reasons() {
     let (ctx, mut app) = setup();
+    app.tab_preview_help = true;
     let size = [640., 480.];
     frame(
         &ctx,
@@ -12136,6 +12140,7 @@ fn preview_accessibility_labels_include_help_and_keep_selection_state() {
 #[test]
 fn preview_help_toggle_keeps_control_focus_and_one_transaction() {
     let (ctx, mut app) = setup();
+    app.tab_preview_help = true;
     let size = [640., 480.];
     let before = app.session.editor.document.clone();
     let n = app.session.editor.undo_stack.len();
@@ -12306,8 +12311,8 @@ fn preview_help_visibility_is_window_local_and_survives_reentry() {
             for _ in 0..2 {
                 frame(&ctx, &mut app, vec![], size, dpi);
             }
-            assert!(!app.tab_preview_help);
-            assert!(!app.regions.iter().any(|r| r.name == "tab-preview-help"));
+            assert!(app.tab_preview_help);
+            assert!(app.regions.iter().any(|r| r.name == "tab-preview-help"));
             let toggle = region(&app, "tab-preview-help-toggle");
             assert!(
                 toggle.min.x >= 0.
@@ -12320,13 +12325,14 @@ fn preview_help_visibility_is_window_local_and_survives_reentry() {
             assert!(app.tab_ruler_drag.is_none());
         }
         let (_, fresh) = setup();
-        assert!(fresh.tab_preview_help);
+        assert!(!fresh.tab_preview_help);
     }
 }
 
 #[test]
 fn preview_hidden_help_retains_accessibility_descriptions_and_state() {
     let (ctx, mut app) = setup();
+    app.tab_preview_help = true;
     ruler_accessibility_frame(
         &ctx,
         &mut app,
@@ -12405,5 +12411,60 @@ fn compact_shell_style_previews_captions_and_view_groups_stay_separate() {
             let nav = region(&app, "command-Navigation");
             assert!(nav.bottom() <= show.bottom() - 12., "{nav:?} / {show:?}");
         }
+    }
+}
+
+#[test]
+fn compact_preview_defaults_hide_instructions_without_hiding_state() {
+    for dpi in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        let size = [640. * dpi, 480. * dpi];
+        let before = app.session.editor.document.clone();
+        let history = app.session.editor.undo_stack.len();
+        assert!(!app.tab_preview_help);
+        frame(
+            &ctx,
+            &mut app,
+            vec![ruler_key(
+                Key::F8,
+                Modifiers::CTRL | Modifiers::ALT | Modifiers::SHIFT,
+            )],
+            size,
+            dpi,
+        );
+        frame(&ctx, &mut app, vec![key(Key::Num1, false)], size, dpi);
+        frame(&ctx, &mut app, vec![key(Key::F6, false)], size, dpi);
+        for _ in 0..2 {
+            frame(&ctx, &mut app, vec![], size, dpi);
+        }
+        assert!(
+            !app.regions
+                .iter()
+                .any(|r| r.name == "tab-preview-help" || r.name == "tab-leader-details")
+        );
+        let summary = region(&app, "tab-leader-summary");
+        let cancel = region(&app, "tab-preview-cancel");
+        let help = region(&app, "tab-preview-help-toggle");
+        assert!(
+            help.bottom() - summary.top() <= 105.,
+            "{summary:?} / {help:?}"
+        );
+        assert!(cancel.bottom() <= 480. && help.right() <= 640.);
+        assert!(
+            app.tab_ruler_drag
+                .as_ref()
+                .unwrap()
+                .control_help(1)
+                .contains("Numeric mode")
+        );
+        let focus = ctx.memory(|m| m.focused());
+        frame(&ctx, &mut app, vec![key(Key::F7, false)], size, dpi);
+        assert_eq!(ctx.memory(|m| m.focused()), focus);
+        assert!(app.regions.iter().any(|r| r.name == "tab-preview-help"));
+        frame(&ctx, &mut app, vec![key(Key::F1, false)], size, dpi);
+        assert!(app.regions.iter().any(|r| r.name == "tab-leader-details"));
+        frame(&ctx, &mut app, vec![key(Key::Escape, false)], size, dpi);
+        assert_eq!(app.session.editor.document, before);
+        assert_eq!(app.session.editor.undo_stack.len(), history);
     }
 }

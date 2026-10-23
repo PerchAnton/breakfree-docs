@@ -390,10 +390,7 @@ impl DocsApp {
                 )
             } else {
                 painter.layout_no_wrap(
-                    format!(
-                        "{}\n{hint} · Enter applies · Esc cancels · F1 sources",
-                        summary.values()
-                    ),
+                    format!("{hint}\n{}", summary.values()),
                     FontId::proportional(11.),
                     INK,
                 )
@@ -432,7 +429,7 @@ impl DocsApp {
             painter.rect(
                 readout,
                 2.,
-                Color32::from_rgb(255, 255, 245),
+                Color32::WHITE,
                 Stroke::new(1.0_f32, Color32::from_gray(180)),
                 egui::StrokeKind::Inside,
             );

@@ -122,7 +122,7 @@ impl DocsApp {
                 }
                 ui.horizontal(|ui| {
                     ui.label(RichText::new("Results").strong());
-                    Self::disabled(ui, "Headings", vec2(68., 23.), "Heading styles are not implemented.");
+                    Self::disabled(ui, "Headings", vec2(68., 23.), "Navigation by headings is not implemented.");
                     Self::disabled(ui, "Pages", vec2(52., 23.), "Pages require pagination, which is not implemented.");
                 });
                 ui.separator();
@@ -153,7 +153,8 @@ impl DocsApp {
                 }
                 if self.replace_mode {
                     ui.add_sized([ui.available_width(), 26.], egui::TextEdit::singleline(&mut self.replacement).id(Id::new("replace-text")).hint_text("Replace with"));
-                    let replace = ui.add_enabled(ready && !results.matches.is_empty(), Button::new("Replace selection / next"));
+                    let replace = ui.add_enabled(ready && !results.matches.is_empty(), Button::new("Replace"));
+                    let replace = replace.on_hover_text("Replace the current match, or select the next match when none is selected.");
                     self.record("find-replace", replace.rect);
                     if replace.clicked() {
                         if let Some(index) = results.active(self.session.editor.selection) {
@@ -181,13 +182,10 @@ impl DocsApp {
                     if let Some(notice) = &self.replace_all_notice { ui.small(notice); }
                 }
                 ui.add_space(4.);
-                ui.small(if self.find_options.match_case { "Literal text · case sensitive" } else { "Literal text · ignore case" });
                 if let Some(error) = self.find_query.error() {
                     ui.colored_label(ui.visuals().error_fg_color, error);
-                } else if self.find.is_empty() {
-                    ui.label("Type to find text in this document.");
-                } else if results.matches.is_empty() {
-                    ui.label("No results. Check spelling and search options. Only complete characters match.");
+                } else if !self.find.is_empty() && results.matches.is_empty() {
+                    ui.label("No results").on_hover_text("Check spelling and search options. Only complete characters match.");
                 }
                 let row_step = ROW_HEIGHT + ui.spacing().item_spacing.y;
                 let mut scroll = egui::ScrollArea::vertical().id_salt("find-results").auto_shrink([false, false]);

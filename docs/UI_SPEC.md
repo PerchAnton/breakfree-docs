@@ -2380,3 +2380,59 @@ missing emoji fallback is visible in the unchanged Welcome fixture.
 Reproduce with the existing capture harness (`home`, `view`, `styles-menu`,
 `leader-focus`); window requests are still subject to host display constraints.
 The harness accepts up to 2560 × 1440 DIP; that is not a supported-display claim.
+
+
+## Alpha.84: quieter controls and icon details
+
+The same owner-supplied macOS footage informs this refinement. Save and Copy now
+use neutral outlines; Paste has a gold edge with a neutral clasp/paper. Small blue
+list numbers/arrows, yellow/red color bars and the purple eraser retain semantic
+meaning. The border grid is dotted and shading uses an original bucket/drop glyph.
+Design colors: blue #307ea6, gold #de9e37, yellow #ffe000, red #e01924, eraser #9d51ab.
+Disabled accents remain muted and their commands remain unavailable. The neutral
+shell, approved logo, violet selection and 158-DIP header geometry are unchanged.
+
+- Search and style-filter placeholders contain only their purpose. Hover/accessible
+  labels retain shortcuts. Search no longer repeats its mode/empty-state guidance;
+  the checkbox states, match count and errors remain explicit.
+- The standalone Styles list uses available height up to 300 DIP; the combined
+  narrow-window overflow retains a bounded 100/125-DIP list to keep Editing
+  commands and KeyTips reachable. Empty character-style headings are omitted.
+- The font-size field measures the installed font's line height and uses 1-DIP
+  vertical padding, shrinking its 13-DIP font only when needed to fit the row.
+  This addresses alpha.83's Windows CI overlap with Underline; native Windows
+  visual/DPI acceptance remains deferred.
+- Tab previews cap content width at 420 DIP (previously 520). Default content is
+  position, concise real leader/owner coverage, choices and one wrapped action row.
+  Help starts hidden; its button stays beside Cancel. F7 reveals focused-control
+  or marker/numeric help without changing focus/caret. F1 explicitly expands counts;
+  changing a leader does not automatically expand them. Errors remain visible.
+- Indent readouts use white and show only the active marker and actual values.
+  Marker hover/accessible labels and the requested source view retain keyboard help.
+
+The intentionally retained differences and reference limitations from alpha.83
+still apply. Colors are design values, not sampled claims of exact equivalence.
+No reference document, account data or source artwork is included in project assets.
+
+Final native macOS captures inspected on 2026-10-23: light theme, English UI,
+100% document zoom, 2× backing scale. The optional-help panel and action row fit
+at 640 × 480 DIP; the style menu uses the available height without clipped category
+labels in the captured state. These are synthetic event captures, not a physical
+keyboard, screen-reader or Windows DPI acceptance test. The supplied reference
+remains a different platform/language/size, with unconfirmed application build.
+
+| State | DIP | PNG pixels | Capture | SHA-256 |
+| :--- | :--- | :--- | :--- | :--- |
+| home | 1366 × 900 | 2732 × 1800 | [View](screenshots/rust-refined-home-alpha84-macos.png) | `7e785c995d67d05209ed67629ece8f30987d8ac0c7251251449dc1d21908d986` |
+| compact | 640 × 480 | 1280 × 960 | [View](screenshots/rust-refined-compact-alpha84-macos.png) | `a1426b731f961970fdf6ae84eb4cb64b617f92d7267ac30bc8cb0b3a88b08867` |
+| preview | 640 × 480 | 1280 × 960 | [View](screenshots/rust-refined-preview-alpha84-macos.png) | `926e9d4cdae865cab85fb78995f68f4f41e3c1aa5bac7ae7dc933a5332982bbe` |
+| help | 640 × 480 | 1280 × 960 | [View](screenshots/rust-refined-help-alpha84-macos.png) | `ed7621096c8707ee828442462213fbdf5793b25c52194c740d87db26a3c4373c` |
+| navigation | 916 × 700 | 1832 × 1400 | [View](screenshots/rust-refined-navigation-alpha84-macos.png) | `8a470c051db4c0b53c1df184eb9d4ab48ccb2c7773aac5ae1ef717fc5ac6e52e` |
+| styles | 1366 × 900 | 2732 × 1800 | [View](screenshots/rust-refined-styles-alpha84-macos.png) | `def2376587e6b9b36f810192bb456abe3dad8071101b2948dd31033cd06413dc` |
+| ruler | 916 × 700 | 1832 × 1400 | [View](screenshots/rust-refined-ruler-alpha84-macos.png) | `c1205262b93a3b0edcd6ef530fc09e2243ca785eda7d4a39b202b0aa05b371e4` |
+
+Reproduce using `cargo build --locked --release --features capture --example capture_ui`,
+then `BREAKFREE_CAPTURE_TO=/absolute/path/capture.png target/release/examples/capture_ui
+640 480 leader-help-hidden`. Other modes above: `home`, `leader-focus`, `navigation`,
+`styles-menu`, `ruler-keyboard`. `leader-focus` explicitly opens help with F7;
+`leader-help-hidden` records the new default. Capture input does not edit user files.

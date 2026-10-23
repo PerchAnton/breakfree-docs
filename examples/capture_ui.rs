@@ -101,7 +101,7 @@ impl eframe::App for Capture {
                 modifiers: egui::Modifiers::NONE,
             });
         }
-        if self.mode == "leader-help-hidden" && self.frames == 14 {
+        if self.mode == "leader-focus" && self.frames == 14 {
             input.events.push(egui::Event::Key {
                 key: egui::Key::F7,
                 physical_key: None,

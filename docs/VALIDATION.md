@@ -2052,3 +2052,34 @@ explicit approval recorded; alpha.83 awaits approval.
 - Capture input is synthetic. Physical OS input/IME, Windows and matched reference
   acceptance remain open; VoiceOver is deferred to the final review. The existing
   Welcome emoji fallback limitation remains visible and is not a data-loss claim.
+
+## Alpha.84 quieter chrome validation
+
+2026-10-23, macOS arm64, Rust 1.99.1. Alpha.77 approved; alpha.78–83 have no
+explicit approval recorded; alpha.84 awaits approval.
+
+- 420 full / 187 core-only tests pass. Updated preview tests explicitly opt into
+  expanded help where needed. A compact default-state regression covers preserved
+  leader state, optional counts/help, focus, bounds and unchanged document/history
+  at synthetic 100/125/150%. Existing numeric caret, invalid input, F7 repeats,
+  pointer toggle, one Undo/Redo and AccessKit metadata scenarios remain passing.
+- All existing Home group, style/dependency, menu, KeyTips, search, Unicode, layout,
+  persistence and failed-write checks pass. An intermediate style-list expansion
+  hid Select All's KeyTip in narrow overflow; retaining the compact overflow list
+  fixed the existing keyboard regression without relaxing its assertion.
+- Previous alpha.83 [Windows CI](https://github.com/PerchAnton/breakfree-docs/actions/runs/39987774722/job/120531325812)
+  failed `dense_controls_fit_each_group_and_window_at_breakpoints`: font-size
+  overlapped Underline at 640 DIP. macOS/Linux jobs passed. The field now accounts
+  for the installed font's line height and uses smaller vertical padding. Current
+  server results are tracked in the journal; this local pass is not Windows proof.
+- fmt, normal/capture all-target Clippy, release/capture builds, repository/artwork,
+  YAML and whitespace checks pass. Seven final native macOS captures are recorded
+  in UI_SPEC. Fields, menu categories, popup actions and optional help were inspected.
+- The release executable copied outside the checkout returns alpha.84 and protocol
+  v1 capabilities. Missing/relative/conflicting/unknown arguments fail explicitly.
+  No Office or sibling repository is required. Native v17 and engine/history remain.
+- The supplied Word recording informs icon roles and removal of permanent clutter;
+  it is not a same-platform/size/language/zoom comparison. Physical input/IME and
+  native Windows display-scale acceptance remain deferred; VoiceOver stays at
+  final review. Existing emoji fallback, pagination and unsupported-feature limits
+  remain. No dependency or project-license change was made.
