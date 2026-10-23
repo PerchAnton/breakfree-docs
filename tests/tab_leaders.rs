@@ -213,3 +213,76 @@ fn leader_owner_change_preserves_nonowners_and_noop_redo() {
     e.undo();
     assert_eq!(e.document, after);
 }
+
+#[test]
+fn leader_distribution_distinguishes_absent_stops_and_no_fill() {
+    use breakfree_docs::tab_ruler::leader_summary;
+    let mut e = Editor::default();
+    e.replace(0, 0, "a\nb\nc\nd\ne\nlast", "Fixture").unwrap();
+    for (at, leader) in [
+        (0, None),
+        (2, Some(L::Dots)),
+        (4, Some(L::Dashes)),
+        (6, Some(L::Line)),
+    ] {
+        e.set_tab_positions(at, at, vec![(144, K::Center)]).unwrap();
+        e.set_tab_leader(at, at, 144, leader).unwrap();
+    }
+    let before = e.document.clone();
+    let n = e.undo_stack.len();
+    let summary = leader_summary(&before, (0, 10), 144).unwrap();
+    assert_eq!(summary.selected, 5);
+    assert_eq!(summary.counts, [1, 1, 1, 1]);
+    assert_eq!(summary.owners(), 4);
+    assert_eq!(summary.common(), None);
+    assert!(summary.description().contains("No stop: 1"));
+    assert_eq!(
+        leader_summary(&before, (2, 4), 144).unwrap().common(),
+        Some(Some(L::Dots))
+    );
+    assert_eq!(
+        leader_summary(&before, (0, 0), 144).unwrap().common(),
+        Some(None)
+    );
+    assert_eq!(leader_summary(&before, (8, 8), 144).unwrap().common(), None);
+    assert!(leader_summary(&before, (5, 1), 144).is_err());
+    assert_eq!(e.document, before);
+    assert_eq!(e.undo_stack.len(), n);
+}
+#[test]
+fn leader_preview_choice_survives_movement_error_numeric_and_history() {
+    let mut e = Editor::default();
+    e.replace(0, 0, "a\nb\nc", "Fixture").unwrap();
+    e.set_tab_positions(0, 3, vec![(144, K::Left), (288, K::Right)])
+        .unwrap();
+    e.set_tab_leader(0, 0, 144, Some(L::Dots)).unwrap();
+    e.set_tab_leader(2, 2, 144, Some(L::Line)).unwrap();
+    e.selection = (0, 5);
+    let before = e.document.clone();
+    let n = e.undo_stack.len();
+    let mut d = Draft::new(&e, 144).unwrap();
+    d.set_preview_leader(Some(L::Dashes)).unwrap();
+    assert!(d.move_to(288.).is_err());
+    assert!(d.set_preview_leader(None).is_err());
+    assert_eq!(d.preview, before);
+    d.move_to_text("150.5").unwrap();
+    d.commit(&mut e).unwrap();
+    let after = e.document.clone();
+    for p in &after.paragraphs[..2] {
+        assert_eq!(p.spacing.tab_leader(301), Some(L::Dashes));
+    }
+    assert_eq!(after.paragraphs[2], before.paragraphs[2]);
+    assert_eq!(e.undo_stack.len(), n + 1);
+    assert_eq!(
+        storage::decode(&storage::encode(&after).unwrap()).unwrap(),
+        after
+    );
+    e.undo();
+    assert_eq!(e.document, before);
+    e.redo();
+    assert_eq!(e.document, after);
+    let mut d = Draft::new(&e, 301).unwrap();
+    d.set_preview_leader(None).unwrap();
+    drop(d);
+    assert_eq!(e.document, after);
+}

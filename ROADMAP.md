@@ -404,4 +404,9 @@ Use public specifications and original test cases, not copied application code. 
 - [x] Alpha.76 step 3: mixed-leader detection and explicit full-list replacement.
 - [x] Alpha.76 step 4: ruler context-menu leader set/reset, preserving nonowners.
 - [x] Alpha.76 step 5: keyboard dialog traversal and compact widget validation.
-- [ ] Next: leader coverage labels for mixed ruler selections. Style inheritance remains separate.
+- [x] Alpha.77 step 1: leader coverage in tooltips/widget labels; absent stops distinguished.
+- [x] Alpha.77 step 2: context-menu counts and common-value selection.
+- [x] Alpha.77 step 3: read-only F1 details in keyboard preview.
+- [x] Alpha.77 step 4: transactional F3 leader cycling.
+- [x] Alpha.77 step 5: combined position/leader preview through arrows/F2, cancel and one Undo/Redo.
+- [ ] Next: direct keyboard leader selection without cycling. Style inheritance remains separate.

@@ -2201,3 +2201,24 @@ sample visible; labels and action buttons fit both windows.
 | :--- | :--- | :--- |
 | Wide / 1366 × 900 | [View](screenshots/rust-leader-dialog-alpha76-macos.png) | `4b143fd5723b1c7cf857ecdd7f338ba50b863c2d0492d7c0d5b4f847bc84452b` |
 | Compact / 640 × 480 | [View](screenshots/rust-leader-dialog-alpha76-compact-macos.png) | `71a7656a1ab8e92f673672620e8035c8f7ee0f2835c4c0a48c9c1837149be7ca` |
+
+## Alpha.77: mixed leader information
+
+The ruler tooltip and widget label report selected paragraphs, stop owners and
+None/Dots/Dashes/Line counts. Missing stops are counted separately from None.
+The context menu repeats the distribution and marks only a common owner value.
+In the keyboard preview, F1 toggles read-only details; F3 cycles the draft leader
+before entering F2 numeric mode. Mixed starts at None. Arrows and exact position
+retain the chosen leader; Enter applies once and Escape discards the draft.
+Creation preserves existing same-type stops and changes only newly added entries.
+
+Palette, icons and geometry remain unchanged. Native macOS captures inspected on
+2026-10-23 show 3/4 owners, three different leaders and one missing stop; labels
+fit wide and compact windows. No physical input, Windows, matched reference or
+VoiceOver acceptance is claimed.
+
+| View / DIP | Capture | SHA-256 |
+| :--- | :--- | :--- |
+| Details / 1366 × 900 | [View](screenshots/rust-leader-details-alpha77-macos.png) | `c08da962151c94aff28146c498c7ba2c2e1f71474767a3a842accf1a2d34391f` |
+| Details / 640 × 480 | [View](screenshots/rust-leader-compact-alpha77-macos.png) | `57df9316f8ce728ac1261c1e93ea65d2262c626b801c6b6ed626e74ad6a1b5a6` |
+| Menu / 1366 × 900 | [View](screenshots/rust-leader-menu-alpha77-macos.png) | `eadcff51d01a4d3ef9187618d6a7752c73d8b1bdfeab88a89d84a16d3a320eb2` |

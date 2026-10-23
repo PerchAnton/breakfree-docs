@@ -3,6 +3,18 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.77 — 2026-10-23
+
+- Show per-leader paragraph counts in ruler tooltips and widget labels, separating
+  no fill from no explicit stop; preserve half-open selection semantics.
+- Show counts and the common-value selection in the ruler leader context menu.
+- Add read-only F1 leader details to keyboard tab previews, including mixed owners.
+- Add F3 leader cycling in nonnumeric keyboard previews (mixed starts at None).
+- Preserve a chosen leader through movement and F2 exact input, committing position
+  and leader once; invalid/deletion previews cannot change leaders, cancel is inert.
+- Native v17, palette/icons and design retained. Alpha.76 approved; alpha.77 is a
+  five-step candidate. Windows/VoiceOver acceptance remains deferred.
+
 ## 0.1.0-alpha.76 — 2026-10-21
 
 - Add None/Dots/Dashes/Line selection to the tab positions dialog, staged through

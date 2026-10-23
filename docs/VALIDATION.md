@@ -1916,3 +1916,20 @@ approval recorded. Alpha.76 is one five-step review candidate.
 - Two native selected-leader dialog captures inspected at 1366 × 900 and 640 × 480
   DIP: sample, selected controls and action buttons fit. Hashes are in UI_SPEC.md.
   Capture interaction is synthetic and does not establish physical OS acceptance.
+
+## Alpha.77 leader coverage validation
+
+2026-10-23, macOS arm64, Rust 1.99.1. Alpha.76 approved; alpha.77 awaits review.
+
+- 401 full / 186 core-only tests pass. Distribution checks distinguish missing
+  stops from no fill, honor half-open selection and preserve the document.
+- Preview checks cover mixed owners, conflict recovery, numeric position, retained
+  leader choice, cancellation, save/reopen and one-operation Undo/Redo. Creation
+  preserves preexisting owners and continues cycling when their leaders differ.
+- Synthetic widget checks cover F1 read-only toggling, F3 cycling, arrows/F2,
+  apply/cancel and detail bounds at 100/125/150% in a 640 × 480 DIP window.
+- fmt, normal/capture all-target Clippy, release/capture builds, repository/artwork,
+  YAML, whitespace and isolated CLI checks pass. Native v17 remains unchanged.
+- Three native captures inspected: wide/compact details and wide mixed context
+  menu. Physical OS keyboard/IME, matched reference comparison, Windows and
+  VoiceOver acceptance remain deferred. CI is recorded separately in the journal.

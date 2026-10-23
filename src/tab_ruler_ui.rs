@@ -11,6 +11,7 @@ pub(super) struct TabDrag {
     unit: f32,
     error: Option<String>,
     keyboard: bool,
+    show_leaders: bool,
     numeric: bool,
     input: String,
     focus_input: bool,
@@ -136,6 +137,7 @@ impl DocsApp {
                     unit: 14.6667 * zoom / 22.,
                     error,
                     keyboard: false,
+                    show_leaders: false,
                     numeric: false,
                     input: String::new(),
                     focus_input: false,
@@ -229,6 +231,10 @@ impl DocsApp {
                 self.sync_view();
                 return true;
             }
+            if ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::F1)) {
+                let drag = self.tab_ruler_drag.as_mut().unwrap();
+                drag.show_leaders = !drag.show_leaders;
+            }
             if ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::F2)) {
                 let drag = self.tab_ruler_drag.as_mut().unwrap();
                 drag.numeric = true;
@@ -290,6 +296,27 @@ impl DocsApp {
                             .draft
                             .move_to(f32::from(drag.draft.position) + delta)
                             .err();
+                    }
+                    Key::F3 => {
+                        let drag = self.tab_ruler_drag.as_mut().unwrap();
+                        if drag.error.is_none() && !drag.draft.deleting {
+                            use crate::model::TabLeader as L;
+                            let common = crate::tab_ruler::leader_summary(
+                                &drag.draft.preview,
+                                self.session.editor.selection,
+                                drag.draft.position,
+                            )
+                            .ok()
+                            .and_then(|s| s.common());
+                            let next = match drag.draft.preview_leader_choice().or(common) {
+                                Some(None) => Some(L::Dots),
+                                Some(Some(L::Dots)) => Some(L::Dashes),
+                                Some(Some(L::Dashes)) => Some(L::Line),
+                                _ => None,
+                            };
+                            drag.error = drag.draft.set_preview_leader(next).err();
+                            drag.show_leaders = true;
+                        }
                     }
                     Key::Delete => {
                         if self.tab_ruler_drag.as_ref().unwrap().draft.is_creation() {
@@ -397,6 +424,7 @@ impl DocsApp {
                     unit: 1.,
                     error,
                     keyboard: true,
+                    show_leaders: false,
                     numeric: false,
                     input: String::new(),
                     focus_input: false,
@@ -463,6 +491,13 @@ impl DocsApp {
             && !self.backstage
             && self.ruler_key_focus.is_none();
         for (value, coverage, kind) in positions {
+            let leaders = crate::tab_ruler::leader_summary(
+                &self.session.editor.document,
+                (start, end),
+                value,
+            )
+            .unwrap();
+            let leader_details = leaders.description();
             let kind_label = kind.map_or("Mixed types", crate::model::TabKind::label);
             let mixed = coverage != total || kind.is_none();
             let x = left + f32::from(value) * unit;
@@ -524,7 +559,7 @@ impl DocsApp {
                     egui::WidgetType::Button,
                     available,
                     format!(
-                        "{kind_label} tab, {:.1} points, {coverage}/{total} paragraphs",
+                        "{kind_label} tab, {:.1} points, {coverage}/{total} paragraphs. {leader_details}",
                         f32::from(value) / 2.
                     ),
                 )
@@ -546,6 +581,7 @@ impl DocsApp {
                             unit,
                             error: None,
                             keyboard: false,
+                            show_leaders: false,
                             numeric: false,
                             input: String::new(),
                             focus_input: false,
@@ -577,6 +613,7 @@ impl DocsApp {
                 }
                 ui.separator();
                 ui.label("Leader — paragraphs owning this stop");
+                ui.add(egui::Label::new(&leader_details).wrap());
                 for leader in [
                     None,
                     Some(crate::model::TabLeader::Dots),
@@ -584,7 +621,21 @@ impl DocsApp {
                     Some(crate::model::TabLeader::Line),
                 ] {
                     let label = leader.map_or("None", |v| v.label());
-                    let r = ui.add_enabled(available, Button::new(label));
+                    let index = match leader {
+                        None => 0,
+                        Some(crate::model::TabLeader::Dots) => 1,
+                        Some(crate::model::TabLeader::Dashes) => 2,
+                        Some(crate::model::TabLeader::Line) => 3,
+                    };
+                    let r = ui.add_enabled(
+                        available,
+                        Button::new(format!(
+                            "{label} ({}/{})",
+                            leaders.counts[index],
+                            leaders.owners()
+                        ))
+                        .selected(leaders.common() == Some(leader)),
+                    );
                     self.record(&format!("ruler-leader-{}", label.to_lowercase()), r.rect);
                     if r.clicked() {
                         let result = self
@@ -597,7 +648,7 @@ impl DocsApp {
                     }
                 }
             });
-            response.on_hover_text(format!("{kind_label} tab: {:.1} pt. Present in {coverage}/{total} selected paragraphs. Movement/deletion affects only paragraphs containing this stop and preserves each type. {}",f32::from(value)/2.,if collision {"Overlaps an indent marker; use Ctrl+Alt+F8 or Tab positions to edit."} else {"Drag to preview; release to apply; Escape cancels. Release outside the ruler cancels. Ctrl+Alt+F8 selects tabs; Ctrl+Alt+Shift+F8 creates; arrows move, Shift accelerates, Enter applies, Tab applies and selects next, Delete previews removal, Escape cancels. Right-click to delete."}));
+            response.on_hover_text(format!("{kind_label} tab: {:.1} pt. Present in {coverage}/{total} selected paragraphs. {leader_details} Movement/deletion affects only paragraphs containing this stop and preserves each type. {}",f32::from(value)/2.,if collision {"Overlaps an indent marker; use Ctrl+Alt+F8 or Tab positions to edit."} else {"Drag to preview; release to apply; Escape cancels. Release outside the ruler cancels. Ctrl+Alt+F8 selects tabs; Ctrl+Alt+Shift+F8 creates; arrows move, Shift accelerates, Enter applies, Tab applies and selects next, Delete previews removal, Escape cancels. Right-click to delete."}));
         }
         if let Some(drag) = &mut self.tab_ruler_drag {
             if !drag.keyboard
@@ -658,6 +709,14 @@ impl DocsApp {
                 .show(ui.ctx(), |ui| {
                     egui::Frame::popup(ui.style()).show(ui, |ui| {
                         ui.set_max_width((ui.ctx().content_rect().width() - 48.).max(120.));
+                        if drag.show_leaders {
+                            if drag.error.is_none() && !drag.draft.deleting {
+                                if let Ok(summary) = crate::tab_ruler::leader_summary(&drag.draft.preview, self.session.editor.selection, drag.draft.position) {
+                                    let r = ui.add(egui::Label::new(summary.description()).wrap());
+                                    self.regions.push(Region { name: "tab-leader-details".into(), rect: r.rect });
+                                }
+                            } else { ui.label("Leader details unavailable for an invalid or deletion preview."); }
+                        }
                         if drag.numeric {
                             ui.label(if drag.draft.is_creation() {
                                 format!("New {kind_label} tab")
@@ -705,7 +764,7 @@ impl DocsApp {
                         } else {
                             ui.add(egui::Label::new(text).wrap());
                             if drag.keyboard {
-                                ui.small("F2: enter an exact position in points");
+                                ui.small("F1: leader details · F2: exact position · F3: cycle leader");
                             }
                         }
                     });

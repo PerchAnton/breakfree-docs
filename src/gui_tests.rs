@@ -11319,3 +11319,159 @@ fn leader_mixed_dialog_compact_replacement_and_bounds() {
         assert_eq!(app.session.editor.document, before);
     }
 }
+
+#[test]
+fn leader_keyboard_details_cycle_numeric_apply_and_cancel() {
+    use crate::model::{TabKind as K, TabLeader as L};
+    for cancel in [false, true] {
+        let (ctx, mut app) = setup();
+        let size = [1366., 900.];
+        app.session.editor.replace(0, 0, "a\nb", "Fixture").unwrap();
+        app.session
+            .editor
+            .set_tab_positions(0, 3, vec![(144, K::Center)])
+            .unwrap();
+        app.session
+            .editor
+            .set_tab_leader(0, 0, 144, Some(L::Dots))
+            .unwrap();
+        app.session.editor.selection = (0, 3);
+        app.sync_view();
+        let before = app.session.editor.document.clone();
+        let n = app.session.editor.undo_stack.len();
+        frame(
+            &ctx,
+            &mut app,
+            vec![ruler_key(Key::F8, Modifiers::CTRL | Modifiers::ALT)],
+            size,
+            1.,
+        );
+        frame(&ctx, &mut app, vec![key(Key::F1, false)], size, 1.);
+        assert!(app.regions.iter().any(|r| r.name == "tab-leader-details"));
+        assert_eq!(app.session.editor.document, before);
+        frame(&ctx, &mut app, vec![key(Key::F3, false)], size, 1.); // Mixed -> None.
+        frame(&ctx, &mut app, vec![key(Key::F3, false)], size, 1.); // None -> Dots.
+        frame(&ctx, &mut app, vec![key(Key::F3, false)], size, 1.); // Dots -> Dashes.
+        frame(&ctx, &mut app, vec![key(Key::ArrowRight, false)], size, 1.);
+        frame(&ctx, &mut app, vec![key(Key::F2, false)], size, 1.);
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::Text("100".into())],
+            size,
+            1.,
+        );
+        frame(
+            &ctx,
+            &mut app,
+            vec![key(if cancel { Key::Escape } else { Key::Enter }, false)],
+            size,
+            1.,
+        );
+        assert!(app.tab_ruler_drag.is_none());
+        if cancel {
+            assert_eq!(app.session.editor.document, before);
+            assert_eq!(app.session.editor.undo_stack.len(), n);
+        } else {
+            for p in &app.session.editor.document.paragraphs {
+                assert_eq!(p.spacing.tab_leader(200), Some(L::Dashes));
+            }
+            assert_eq!(app.session.editor.undo_stack.len(), n + 1);
+            let after = app.session.editor.document.clone();
+            app.session.editor.undo();
+            assert_eq!(app.session.editor.document, before);
+            app.session.editor.redo();
+            assert_eq!(app.session.editor.document, after);
+        }
+    }
+}
+#[test]
+fn leader_keyboard_creation_details_compact_and_toggle_readonly() {
+    use crate::model::TabLeader as L;
+    for dpi in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        let size = [640. * dpi, 480. * dpi];
+        frame(&ctx, &mut app, vec![], size, dpi);
+        let before = app.session.editor.document.clone();
+        let n = app.session.editor.undo_stack.len();
+        frame(
+            &ctx,
+            &mut app,
+            vec![ruler_key(
+                Key::F8,
+                Modifiers::CTRL | Modifiers::ALT | Modifiers::SHIFT,
+            )],
+            size,
+            dpi,
+        );
+        frame(&ctx, &mut app, vec![key(Key::F1, false)], size, dpi);
+        frame(&ctx, &mut app, vec![], size, dpi);
+        let r = app
+            .regions
+            .iter()
+            .find(|r| r.name == "tab-leader-details")
+            .unwrap()
+            .rect;
+        assert!(r.min.x >= 0. && r.max.x <= 640. && r.max.y <= 480.);
+        frame(&ctx, &mut app, vec![key(Key::F1, false)], size, dpi);
+        assert!(!app.regions.iter().any(|r| r.name == "tab-leader-details"));
+        assert_eq!(app.session.editor.document, before);
+        assert_eq!(app.session.editor.undo_stack.len(), n);
+        frame(&ctx, &mut app, vec![key(Key::F3, false)], size, dpi);
+        frame(&ctx, &mut app, vec![key(Key::Enter, false)], size, dpi);
+        assert_eq!(
+            app.session.editor.document.paragraphs[0]
+                .spacing
+                .tab_leader(72),
+            Some(L::Dots)
+        );
+        assert_eq!(app.session.editor.undo_stack.len(), n + 1);
+    }
+}
+
+#[test]
+fn leader_creation_cycle_preserves_existing_owners_without_getting_stuck() {
+    use crate::model::{TabKind as K, TabLeader as L};
+    let (ctx, mut app) = setup();
+    let size = [1366., 900.];
+    app.session.editor.replace(0, 0, "a\nb", "Fixture").unwrap();
+    app.session
+        .editor
+        .set_tab_positions(0, 0, vec![(72, K::Left)])
+        .unwrap();
+    app.session
+        .editor
+        .set_tab_leader(0, 0, 72, Some(L::Line))
+        .unwrap();
+    app.session.editor.selection = (0, 3);
+    app.sync_view();
+    let before = app.session.editor.document.clone();
+    let n = app.session.editor.undo_stack.len();
+    frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(
+            Key::F8,
+            Modifiers::CTRL | Modifiers::ALT | Modifiers::SHIFT,
+        )],
+        size,
+        1.,
+    );
+    for _ in 0..2 {
+        frame(&ctx, &mut app, vec![key(Key::F3, false)], size, 1.);
+    }
+    frame(&ctx, &mut app, vec![key(Key::Enter, false)], size, 1.);
+    assert_eq!(
+        app.session.editor.document.paragraphs[0],
+        before.paragraphs[0]
+    );
+    assert_eq!(
+        app.session.editor.document.paragraphs[1]
+            .spacing
+            .tab_leader(72),
+        Some(L::Dots)
+    );
+    assert_eq!(app.session.editor.undo_stack.len(), n + 1);
+    app.session.editor.undo();
+    assert_eq!(app.session.editor.document, before);
+}

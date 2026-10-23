@@ -360,3 +360,26 @@ Five connected controls complete the next leader-editing increment:
 Native v17, layout policy, palette and icons remain unchanged. Windows is deferred.
 The list height is bounded for compact windows; no pagination or Word equivalence
 is claimed. Next: leader provenance/coverage labels for mixed ruler selections.
+
+## Leader inspection and keyboard previews (alpha.77)
+
+Ruler tooltip/widget labels report None/Dots/Dashes/Line counts among paragraphs
+owning the stop and a separate no-stop count. A half-open selection excludes the
+next paragraph when its start is the exclusive end. The context menu repeats the
+counts, selects a choice only when all owners agree, and retains owner-only edits.
+Mixed values do not falsely select None; an absent stop is not a None leader.
+
+In Ctrl+Alt+F8 (existing) or Ctrl+Alt+Shift+F8 (creation) keyboard preview, F1 toggles
+read-only leader details. F3 cycles None → Dots → Dashes → Line → None; a mixed
+selection starts at None. F3 is available outside numeric input and only for valid
+nondeletion previews. Choose a leader before F2 to combine it with exact position
+input. Invalid previews show details as unavailable, rather than another stop's
+values. Delete and Escape keep their established semantics.
+
+The chosen override survives arrows, temporary collision errors and later valid
+numeric input. Existing-marker movement changes only owners; creation changes the
+newly added stops while preserving preexisting same-kind occurrences. Enter commits
+position and leader together once; cancellation leaves history/Redo untouched.
+No file schema, layout geometry, palette/icon or dependency change. Windows,
+physical OS input and VoiceOver remain deferred. Next: direct keyboard leader
+selection without cycling, preserving this preview/history boundary.

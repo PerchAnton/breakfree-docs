@@ -964,3 +964,11 @@ clears a leader. An illustrative sample updates immediately. Mixed lists require
 explicit replacement. Right-click a ruler tab to set/reset its leader only in
 selected paragraphs owning that tab. Completed changes use one Undo/Redo.
 Tab/Shift+Tab navigates the dialog; Enter/Space activates and Escape cancels.
+
+### Mixed leaders and keyboard preview (alpha.77)
+
+Hover a tab marker or open its context menu to inspect leader counts; paragraphs
+without that stop are counted separately. Enter tab keyboard control with
+Ctrl+Alt+F8, press F1 for details, and F3 to cycle the preview's leader. Arrows or
+F2 then adjust position. Enter applies both once; Escape cancels. F3 operates
+outside numeric input; mixed leaders first become None. Native v17 is unchanged.

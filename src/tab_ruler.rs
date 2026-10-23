@@ -10,6 +10,7 @@ pub struct Draft {
     selection: (usize, usize),
     source: Option<u16>,
     creation_kind: TabKind,
+    leader_override: Option<Option<crate::model::TabLeader>>,
     first: usize,
     last: usize,
     valid: bool,
@@ -76,6 +77,7 @@ impl Draft {
             selection: editor.selection,
             source,
             creation_kind: TabKind::Left,
+            leader_override: None,
             first,
             last,
             valid: true,
@@ -151,6 +153,25 @@ impl Draft {
             positions.push((position, kind));
             positions.sort_by_key(|s| s.0);
             paragraph.spacing.set_tab_positions(&positions)?;
+            if let Some(leader) = self.leader_override {
+                paragraph
+                    .spacing
+                    .tab_leaders
+                    .retain(|s| s.position_half_points != position);
+                if let Some(leader) = leader {
+                    paragraph
+                        .spacing
+                        .tab_leaders
+                        .push(crate::model::TabLeaderStop {
+                            position_half_points: position,
+                            leader,
+                        });
+                    paragraph
+                        .spacing
+                        .tab_leaders
+                        .sort_by_key(|s| s.position_half_points);
+                }
+            }
             added = true;
         }
         if self.source.is_none() && !added {
@@ -162,6 +183,19 @@ impl Draft {
         self.valid = true;
         Ok(())
     }
+    pub fn preview_leader_choice(&self) -> Option<Option<crate::model::TabLeader>> {
+        self.leader_override
+    }
+
+    /// Update the active preview only; movement keeps the choice until commit/cancel.
+    pub fn set_preview_leader(&mut self, leader: Option<crate::model::TabLeader>) -> Result<()> {
+        if !self.valid || self.deleting {
+            return Err("Choose a valid movement preview before changing the leader.".into());
+        }
+        self.leader_override = Some(leader);
+        self.move_to(f32::from(self.position))
+    }
+
     pub fn remove(&mut self) -> Result<()> {
         self.valid = false;
         let source = self.source.ok_or("Cannot remove an uncommitted new tab.")?;
@@ -249,4 +283,72 @@ pub fn common_kind(
     });
     let first = kinds.next()?;
     kinds.all(|k| k == first).then_some(first)
+}
+
+/// Read-only distribution; no-stop paragraphs are not counted as leader None.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LeaderSummary {
+    pub selected: usize,
+    /// None, Dots, Dashes, Line, among owners of the explicit stop.
+    pub counts: [usize; 4],
+}
+impl LeaderSummary {
+    pub fn owners(&self) -> usize {
+        self.counts.iter().sum()
+    }
+    pub fn common(&self) -> Option<Option<crate::model::TabLeader>> {
+        use crate::model::TabLeader as L;
+        let owners = self.owners();
+        if owners == 0 {
+            return None;
+        }
+        [None, Some(L::Dots), Some(L::Dashes), Some(L::Line)]
+            .into_iter()
+            .zip(self.counts)
+            .find(|(_, n)| *n == owners)
+            .map(|(leader, _)| leader)
+    }
+    pub fn description(&self) -> String {
+        format!(
+            "Leaders in {}/{} paragraphs: None {}, Dots {}, Dashes {}, Line {}. No stop: {}.",
+            self.owners(),
+            self.selected,
+            self.counts[0],
+            self.counts[1],
+            self.counts[2],
+            self.counts[3],
+            self.selected - self.owners()
+        )
+    }
+}
+pub fn leader_summary(
+    document: &Document,
+    selection: (usize, usize),
+    position: u16,
+) -> Result<LeaderSummary> {
+    if selection.0 > selection.1 {
+        return Err("Invalid tab ruler selection.".into());
+    }
+    let (first, _) = document.locate(selection.0)?;
+    let (mut last, offset) = document.locate(selection.1)?;
+    if selection.1 > selection.0 && offset == 0 && last > first {
+        last -= 1;
+    }
+    let mut summary = LeaderSummary {
+        selected: last - first + 1,
+        counts: [0; 4],
+    };
+    for p in &document.paragraphs[first..=last] {
+        if p.spacing.tab_positions().iter().any(|s| s.0 == position) {
+            use crate::model::TabLeader as L;
+            let i = match p.spacing.tab_leader(position) {
+                None => 0,
+                Some(L::Dots) => 1,
+                Some(L::Dashes) => 2,
+                Some(L::Line) => 3,
+            };
+            summary.counts[i] += 1;
+        }
+    }
+    Ok(summary)
 }
