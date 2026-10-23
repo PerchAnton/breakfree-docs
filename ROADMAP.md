@@ -424,4 +424,9 @@ Use public specifications and original test cases, not copied application code. 
 - [x] Alpha.80 step 3: visible accent outline and widget focus.
 - [x] Alpha.80 step 4: pointer/keyboard handoff without an intermediate commit.
 - [x] Alpha.80 step 5: disabled-control skipping and invalid-input cancellation.
-- [ ] Next: focused-control descriptions and shortcut hints in the preview. Style inheritance remains separate.
+- [x] Alpha.81 step 1: read-only focused-control descriptions.
+- [x] Alpha.81 step 2: mode-specific shortcut hints.
+- [x] Alpha.81 step 3: shared pointer hover descriptions.
+- [x] Alpha.81 step 4: state-specific disabled-control explanations.
+- [x] Alpha.81 step 5: detailed accessibility labels preserving selection/disabled state.
+- [ ] Next: compact help visibility controls without losing preview focus. Style inheritance remains separate.

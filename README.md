@@ -1012,3 +1012,15 @@ If the focused control becomes disabled, focus moves to Cancel. Invalid numeric
 input exposes only Cancel to control traversal; F6 returns to input for correction.
 Escape still cancels the entire draft. Native v17 and palette/icons are retained.
 These are local synthetic/native-render checks, not Windows or VoiceOver acceptance.
+
+### Preview descriptions (alpha.81)
+
+The focused preview button shows a read-only explanation and contextual shortcuts.
+The same help is available on pointer hover and in button accessibility labels.
+Leader help distinguishes existing owners from newly created stops; position help
+switches between F2 entry and F4 return. Numeric-mode digits remain position input.
+Disabled controls explain invalid positions, deletion or already-retained original
+leaders. Selection and disabled metadata remain separate from descriptive labels.
+No help inspection changes document/history. Native v17, palette/icons and existing
+preview commands are retained. AccessKit tree checks do not establish VoiceOver
+speech; physical input, Windows and spoken-output acceptance remain deferred.

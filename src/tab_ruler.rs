@@ -183,6 +183,10 @@ impl Draft {
         self.valid = true;
         Ok(())
     }
+    pub fn selection(&self) -> (usize, usize) {
+        self.selection
+    }
+
     pub fn preview_leader_choice(&self) -> Option<Option<crate::model::TabLeader>> {
         self.leader_override
     }

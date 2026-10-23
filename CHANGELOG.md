@@ -3,6 +3,17 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.81 — 2026-10-23
+
+- Show focused-button descriptions in the ruler preview without applying edits.
+- Explain mode-specific shortcuts, including numeric input versus leader digits.
+- Share the same action descriptions with pointer hover help.
+- Explain disabled Restore, invalid-position and deletion states.
+- Expand button accessibility labels while retaining selected/disabled metadata.
+- Keep palette/icons, native v17, cancellation and one-operation history unchanged.
+  Alpha.78–80 have no explicit version approval recorded; alpha.81 awaits approval.
+  Windows deferred; VoiceOver acceptance remains at final review.
+
 ## 0.1.0-alpha.80 — 2026-10-23
 
 - Add F6 entry/return for preview controls and wrapping Tab/Shift+Tab traversal.

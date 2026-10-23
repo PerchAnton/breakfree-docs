@@ -11978,3 +11978,157 @@ fn tab_preview_disabled_focus_recovers_without_held_key_cancel() {
     assert!(app.tab_ruler_drag.is_none());
     assert_eq!(app.session.editor.document, before);
 }
+
+#[test]
+fn preview_focus_help_is_readonly_and_fits_compact_scales() {
+    for dpi in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        let size = [640. * dpi, 480. * dpi];
+        let before = app.session.editor.document.clone();
+        let n = app.session.editor.undo_stack.len();
+        frame(
+            &ctx,
+            &mut app,
+            vec![ruler_key(
+                Key::F8,
+                Modifiers::CTRL | Modifiers::ALT | Modifiers::SHIFT,
+            )],
+            size,
+            dpi,
+        );
+        frame(&ctx, &mut app, vec![key(Key::F6, false)], size, dpi);
+        for _ in 0..7 {
+            for _ in 0..2 {
+                frame(&ctx, &mut app, vec![], size, dpi);
+            }
+            let help = region(&app, "tab-preview-help");
+            assert!(
+                help.min.x >= 0. && help.max.x <= 640. && help.min.y >= 0. && help.max.y <= 480.,
+                "{help:?}"
+            );
+            let apply = region(&app, "tab-preview-apply");
+            assert!(apply.max.y <= 480.);
+            assert_eq!(app.session.editor.document, before);
+            assert_eq!(app.session.editor.undo_stack.len(), n);
+            frame(&ctx, &mut app, vec![key(Key::Tab, false)], size, dpi);
+        }
+        frame(&ctx, &mut app, vec![key(Key::F6, false)], size, dpi);
+        assert!(!app.regions.iter().any(|r| r.name == "tab-preview-help"));
+    }
+}
+
+#[test]
+fn preview_help_explains_scope_modes_and_disabled_reasons() {
+    let (ctx, mut app) = setup();
+    let size = [640., 480.];
+    frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(
+            Key::F8,
+            Modifiers::CTRL | Modifiers::ALT | Modifiers::SHIFT,
+        )],
+        size,
+        1.,
+    );
+    let d = app.tab_ruler_drag.as_ref().unwrap();
+    assert!(d.control_help(1).contains("Existing stops keep"));
+    assert!(d.control_help(1).contains("Numeric mode: digits edit"));
+    assert!(
+        d.control_disabled_reason(4)
+            .unwrap()
+            .contains("already retained")
+    );
+    assert!(d.control_disabled_reason(7).is_none());
+    frame(&ctx, &mut app, vec![key(Key::F2, false)], size, 1.);
+    assert!(
+        app.tab_ruler_drag
+            .as_ref()
+            .unwrap()
+            .control_help(5)
+            .contains("F4")
+    );
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("invalid".into())],
+        size,
+        1.,
+    );
+    let d = app.tab_ruler_drag.as_ref().unwrap();
+    assert!(
+        d.control_disabled_reason(6)
+            .unwrap()
+            .contains("correct the position")
+    );
+    assert!(d.control_disabled_reason(7).is_none());
+    frame(&ctx, &mut app, vec![key(Key::F6, false)], size, 1.);
+    for _ in 0..2 {
+        frame(&ctx, &mut app, vec![], size, 1.);
+    }
+    let help = region(&app, "tab-preview-help");
+    assert!(help.max.y <= 480.);
+    frame(&ctx, &mut app, vec![key(Key::Escape, false)], size, 1.);
+}
+
+#[test]
+fn preview_accessibility_labels_include_help_and_keep_selection_state() {
+    use egui::accesskit::Role;
+    let (ctx, mut app) = setup();
+    let before = app.session.editor.document.clone();
+    ruler_accessibility_frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(
+            Key::F8,
+            Modifiers::CTRL | Modifiers::ALT | Modifiers::SHIFT,
+        )],
+    );
+    ruler_accessibility_frame(&ctx, &mut app, vec![key(Key::F6, false)]);
+    let tree = ruler_accessibility_frame(&ctx, &mut app, vec![]);
+    for prefix in [
+        "None:",
+        "Dots:",
+        "Dashes:",
+        "Line:",
+        "Restore leaders:",
+        "Exact position:",
+        "Apply:",
+        "Cancel:",
+    ] {
+        let node = &tree
+            .nodes
+            .iter()
+            .find(|(_, n)| n.label().is_some_and(|l| l.starts_with(prefix)))
+            .unwrap()
+            .1;
+        assert_eq!(node.role(), Role::Button);
+        assert!(node.label().unwrap().contains("Enter/Space"));
+    }
+    let restore = &tree
+        .nodes
+        .iter()
+        .find(|(_, n)| n.label().is_some_and(|l| l.starts_with("Restore leaders:")))
+        .unwrap()
+        .1;
+    assert!(restore.label().unwrap().contains("already retained"));
+    let none = &tree
+        .nodes
+        .iter()
+        .find(|(_, n)| n.label().is_some_and(|l| l.starts_with("None:")))
+        .unwrap()
+        .1;
+    assert_eq!(none.toggled(), Some(egui::accesskit::Toggled::True));
+    assert!(restore.is_disabled());
+    ruler_accessibility_frame(&ctx, &mut app, vec![key(Key::Tab, false)]);
+    ruler_accessibility_frame(&ctx, &mut app, vec![key(Key::Space, false)]);
+    let tree = ruler_accessibility_frame(&ctx, &mut app, vec![]);
+    let dots = &tree
+        .nodes
+        .iter()
+        .find(|(_, n)| n.label().is_some_and(|l| l.starts_with("Dots:")))
+        .unwrap()
+        .1;
+    assert_eq!(dots.toggled(), Some(egui::accesskit::Toggled::True));
+    assert_eq!(app.session.editor.document, before);
+}

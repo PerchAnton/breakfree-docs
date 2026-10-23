@@ -41,7 +41,96 @@ impl TabDrag {
         controls
     }
 
+    pub(super) fn control_help(&self, index: usize) -> String {
+        let action = match index {
+            0 => "None: preview this stop without a fill.",
+            1 => "Dots: preview a dotted fill for this stop.",
+            2 => "Dashes: preview a dashed fill for this stop.",
+            3 => "Line: preview a continuous fill for this stop.",
+            4 => "Restore leaders: recover each original leader, keeping the draft position.",
+            5 if self.numeric => {
+                "Back to marker: keep the valid position and return without applying."
+            }
+            5 => "Exact position: edit the position in points without applying.",
+            6 if self.draft.deleting => {
+                "Apply: delete this stop from its selected owners in one Undo/Redo."
+            }
+            6 => "Apply: confirm the draft position and leaders in one Undo/Redo.",
+            _ => "Cancel: discard the entire preview; document and history stay unchanged.",
+        };
+        let scope = if index < 4 {
+            if self.draft.is_creation() {
+                " Existing stops keep their leaders during creation."
+            } else {
+                " Only selected paragraphs owning this stop change."
+            }
+        } else {
+            ""
+        };
+        let shortcut = match index {
+            0..=3 => format!("Marker mode: {index}. Numeric mode: digits edit the position."),
+            4 => "Marker mode: Backspace.".into(),
+            5 if self.numeric => "F4: return after valid input.".into(),
+            5 => "F2: exact position.".into(),
+            6 => "Marker/input mode: Enter applies.".into(),
+            _ => "Escape: cancel from any preview mode.".into(),
+        };
+        format!(
+            "{action}{scope}\n{shortcut} Controls: Enter/Space activates; F6 returns to editing."
+        )
+    }
+
+    pub(super) fn control_disabled_reason(&self, index: usize) -> Option<String> {
+        if self.enabled_controls().contains(&index) {
+            return None;
+        }
+        Some(if let Some(error) = &self.error {
+            format!(
+                "Unavailable: {error} Return to editing with F6 to correct the position, or cancel."
+            )
+        } else if self.draft.deleting {
+            "Leader edits are unavailable during deletion. Return to marker mode to adjust, or cancel.".into()
+        } else {
+            "Original per-paragraph leaders are already retained; there is no leader override to restore.".into()
+        })
+    }
+
     fn control(&mut self, ui: &Ui, index: usize, response: &egui::Response) -> bool {
+        let help = self.control_help(index);
+        let reason = self.control_disabled_reason(index);
+        response
+            .clone()
+            .on_hover_text(&help)
+            .on_disabled_hover_text(reason.as_deref().unwrap_or(&help));
+        let label = reason
+            .as_ref()
+            .map_or_else(|| help.clone(), |reason| format!("{help}\n{reason}"));
+        response.widget_info(|| {
+            if index < 4 {
+                let leader = [
+                    None,
+                    Some(crate::model::TabLeader::Dots),
+                    Some(crate::model::TabLeader::Dashes),
+                    Some(crate::model::TabLeader::Line),
+                ][index];
+                let common = crate::tab_ruler::leader_summary(
+                    &self.draft.preview,
+                    self.draft.selection(),
+                    self.draft.position,
+                )
+                .ok()
+                .and_then(|s| s.common());
+                egui::WidgetInfo::selected(
+                    egui::WidgetType::Button,
+                    response.enabled(),
+                    response.enabled()
+                        && self.draft.preview_leader_choice().or(common) == Some(leader),
+                    &label,
+                )
+            } else {
+                egui::WidgetInfo::labeled(egui::WidgetType::Button, response.enabled(), &label)
+            }
+        });
         if !response.enabled() {
             return false;
         }
@@ -970,13 +1059,13 @@ impl DocsApp {
                                 for (index, leader) in [None, Some(crate::model::TabLeader::Dots), Some(crate::model::TabLeader::Dashes), Some(crate::model::TabLeader::Line)].into_iter().enumerate() {
                                     let label = leader.map_or("None", |v| v.label());
                                     let common = crate::tab_ruler::leader_summary(&drag.draft.preview, self.session.editor.selection, drag.draft.position).ok().and_then(|s| s.common());
-                                    let r = ui.add_enabled(valid, Button::new(label).selected(valid && drag.draft.preview_leader_choice().or(common) == Some(leader))).on_disabled_hover_text("Choose a valid position; leaders cannot be changed during deletion.");
+                                    let r = ui.add_enabled(valid, Button::new(label).selected(valid && drag.draft.preview_leader_choice().or(common) == Some(leader)));
                                     self.regions.push(Region { name: format!("tab-preview-leader-{}", label.to_lowercase()), rect: r.rect });
                                     if drag.control(ui, index, &r) { drag.error = drag.draft.set_preview_leader(leader).err(); drag.show_leaders = true; }
                                 }
                             });
                             ui.horizontal_wrapped(|ui| {
-                                let r = ui.add_enabled(valid && drag.draft.preview_leader_choice().is_some(), Button::new("Restore leaders")).on_hover_text("Restore each original leader, keeping the current position.");
+                                let r = ui.add_enabled(valid && drag.draft.preview_leader_choice().is_some(), Button::new("Restore leaders"));
                                 self.regions.push(Region { name: "tab-preview-restore".into(), rect: r.rect });
                                 if drag.control(ui, 4, &r) { drag.error = drag.draft.restore_preview_leaders().err(); drag.show_leaders = true; }
                                 let r = ui.add_enabled(!drag.numeric || drag.error.is_none(), Button::new(if drag.numeric { "Back to marker" } else { "Exact position…" }));
@@ -995,6 +1084,11 @@ impl DocsApp {
                                 self.regions.push(Region { name: "tab-preview-cancel".into(), rect: r.rect });
                                 cancel = drag.control(ui, 7, &r);
                             });
+                            if let Some(index) = drag.control_focus {
+                                let r = ui.add(egui::Label::new(drag.control_help(index)).wrap());
+                                self.regions.push(Region { name: "tab-preview-help".into(), rect: r.rect });
+                            }
+
                         }
                     });
                 });

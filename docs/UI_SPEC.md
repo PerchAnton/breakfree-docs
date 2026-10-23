@@ -2281,3 +2281,21 @@ reference comparison and VoiceOver acceptance remain deferred.
 | :--- | :--- | :--- |
 | 1366 × 900 | [View](screenshots/rust-leader-focus-alpha80-macos.png) | `0da60ec5b357f4c9cd6c27ff6c02040414dba1e2fedb15488186d338576be3b6` |
 | 640 × 480 | [View](screenshots/rust-leader-compact-alpha80-macos.png) | `4cdaff9798e7de8abf6b03dde7214e25550cb46dfdcaad2dff1a8e241b63aa4c` |
+
+## Alpha.81: preview help
+
+Focused controls show wrapped action and shortcut descriptions beneath the existing
+buttons. Help uses the existing text palette and 520-DIP panel cap, with no new
+icons or shell geometry. Pointer hover and accessibility labels share the same
+source. Disabled controls explain the actual blocking state. Button selection and
+focus remain independent; help inspection never applies the draft.
+
+Descriptions distinguish existing owners from new creation stops, numeric digits
+from marker shortcuts and F2 entry from F4 return. Native macOS captures inspected
+on 2026-10-23 show the complete Dots explanation and available controls at both
+sizes. Windows, physical input, matched reference and VoiceOver are deferred.
+
+| DIP | Capture | SHA-256 |
+| :--- | :--- | :--- |
+| 1366 × 900 | [View](screenshots/rust-leader-help-alpha81-macos.png) | `c86628d90993e21908a67b23f37e13b79279e9d8a46e5a98a66819abe38ea843` |
+| 640 × 480 | [View](screenshots/rust-leader-compact-alpha81-macos.png) | `b8408c3a065fbc487cc2202080f09cd103af0e0e99d42fd4d61af216be61b4e8` |

@@ -1984,3 +1984,20 @@ explicit approval recorded; alpha.80 awaits approval.
 - Physical OS input, Windows, matched reference and VoiceOver acceptance remain
   deferred. Widget focus metadata and rendering do not establish spoken output.
   Native v17, palette/icons and the existing marker Tab behavior are retained.
+
+## Alpha.81 preview help validation
+
+2026-10-23, macOS arm64, Rust 1.99.1. Alpha.77 approved; alpha.78–80 have no
+explicit approval recorded; alpha.81 awaits approval.
+
+- 414 full / 187 core-only tests pass. Focus traversal inspects help for all
+  enabled controls without editing document/history; help and Apply remain within
+  compact 640 × 480 bounds at synthetic 100/125/150% scales.
+- Mode/scope checks distinguish creation, numeric entry/return and disabled reasons.
+  Invalid input still exposes cancellation; existing preview/history tests pass.
+- AccessKit tree assertions verify descriptive button labels, disabled Restore and
+  retained None/Dots toggled state. These are metadata checks, not speech tests.
+- fmt, normal/capture Clippy, release/capture builds, repository/artwork/YAML,
+  whitespace and isolated CLI checks pass. Two native focused-help captures
+  inspected. Physical input, Windows, matched reference and VoiceOver are deferred.
+- Native v17, palette/icons and editing commands remain unchanged.
