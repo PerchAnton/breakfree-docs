@@ -429,4 +429,9 @@ Use public specifications and original test cases, not copied application code. 
 - [x] Alpha.81 step 3: shared pointer hover descriptions.
 - [x] Alpha.81 step 4: state-specific disabled-control explanations.
 - [x] Alpha.81 step 5: detailed accessibility labels preserving selection/disabled state.
-- [ ] Next: compact help visibility controls without losing preview focus. Style inheritance remains separate.
+- [x] Alpha.82 step 1: F7 help visibility without moving focus or repeated toggles.
+- [x] Alpha.82 step 2: pointer Show/Hide help retaining control focus.
+- [x] Alpha.82 step 3: window-local visibility across preview re-entry.
+- [x] Alpha.82 step 4: numeric caret/selection preservation, including invalid drafts.
+- [x] Alpha.82 step 5: accessible toggle state and retained descriptions when hidden.
+- [ ] Next: extended preview focus recovery across mode switches and cancellation. Style inheritance remains separate.

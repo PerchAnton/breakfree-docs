@@ -12132,3 +12132,241 @@ fn preview_accessibility_labels_include_help_and_keep_selection_state() {
     assert_eq!(dots.toggled(), Some(egui::accesskit::Toggled::True));
     assert_eq!(app.session.editor.document, before);
 }
+
+#[test]
+fn preview_help_toggle_keeps_control_focus_and_one_transaction() {
+    let (ctx, mut app) = setup();
+    let size = [640., 480.];
+    let before = app.session.editor.document.clone();
+    let n = app.session.editor.undo_stack.len();
+    frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(
+            Key::F8,
+            Modifiers::CTRL | Modifiers::ALT | Modifiers::SHIFT,
+        )],
+        size,
+        1.,
+    );
+    tap_preview_key(&ctx, &mut app, Key::F6, size);
+    tap_preview_key(&ctx, &mut app, Key::Tab, size); // Dots.
+    let focus = ctx.memory(|m| m.focused()).unwrap();
+    frame(&ctx, &mut app, vec![key(Key::F7, false)], size, 1.);
+    assert!(!app.tab_preview_help);
+    assert_eq!(ctx.memory(|m| m.focused()), Some(focus));
+    assert!(!app.regions.iter().any(|r| r.name == "tab-preview-help"));
+    frame(&ctx, &mut app, vec![key(Key::F7, false)], size, 1.); // Held repeat.
+    assert!(!app.tab_preview_help);
+    click_region_at(&ctx, &mut app, "tab-preview-help-toggle", size);
+    frame(&ctx, &mut app, vec![], size, 1.);
+    assert!(app.tab_preview_help);
+    assert_eq!(ctx.memory(|m| m.focused()), Some(focus));
+    assert!(app.regions.iter().any(|r| r.name == "tab-preview-help"));
+    assert_eq!(app.session.editor.document, before);
+    assert_eq!(app.session.editor.undo_stack.len(), n);
+    tap_preview_key(&ctx, &mut app, Key::Space, size);
+    assert_eq!(
+        app.tab_ruler_drag
+            .as_ref()
+            .unwrap()
+            .draft
+            .preview_leader_choice(),
+        Some(Some(crate::model::TabLeader::Dots))
+    );
+    click_region_at(&ctx, &mut app, "tab-preview-apply", size);
+    assert!(app.tab_ruler_drag.is_none());
+    assert_eq!(app.session.editor.undo_stack.len(), n + 1);
+    let after = app.session.editor.document.clone();
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.document, before);
+    app.execute(Action::Redo, &ctx);
+    assert_eq!(app.session.editor.document, after);
+}
+
+#[test]
+fn preview_help_toggle_preserves_numeric_caret_and_invalid_input() {
+    let (ctx, mut app) = setup();
+    let size = [640., 480.];
+    let before = app.session.editor.document.clone();
+    let n = app.session.editor.undo_stack.len();
+    frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(
+            Key::F8,
+            Modifiers::CTRL | Modifiers::ALT | Modifiers::SHIFT,
+        )],
+        size,
+        1.,
+    );
+    tap_preview_key(&ctx, &mut app, Key::F2, size);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("120".into())],
+        size,
+        1.,
+    );
+    tap_preview_key(&ctx, &mut app, Key::ArrowLeft, size);
+    let id = Id::new("ruler-tab-position-input");
+    let caret = egui::TextEdit::load_state(&ctx, id)
+        .unwrap()
+        .cursor
+        .char_range();
+    tap_preview_key(&ctx, &mut app, Key::F7, size);
+    assert_eq!(ctx.memory(|m| m.focused()), Some(id));
+    assert_eq!(
+        egui::TextEdit::load_state(&ctx, id)
+            .unwrap()
+            .cursor
+            .char_range(),
+        caret
+    );
+    let pos = region(&app, "tab-preview-help-toggle").center();
+    for pressed in [true, false] {
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                egui::Event::PointerMoved(pos),
+                egui::Event::PointerButton {
+                    pos,
+                    button: egui::PointerButton::Primary,
+                    pressed,
+                    modifiers: Modifiers::NONE,
+                },
+            ],
+            size,
+            1.,
+        );
+        assert_eq!(ctx.memory(|m| m.focused()), Some(id));
+        assert_eq!(
+            egui::TextEdit::load_state(&ctx, id)
+                .unwrap()
+                .cursor
+                .char_range(),
+            caret
+        );
+    }
+    assert_eq!(ctx.memory(|m| m.focused()), Some(id));
+    assert_eq!(
+        egui::TextEdit::load_state(&ctx, id)
+            .unwrap()
+            .cursor
+            .char_range(),
+        caret
+    );
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("x".into())],
+        size,
+        1.,
+    );
+    assert!(
+        app.tab_ruler_drag
+            .as_ref()
+            .unwrap()
+            .control_disabled_reason(6)
+            .unwrap()
+            .contains("correct the position")
+    );
+    tap_preview_key(&ctx, &mut app, Key::F7, size);
+    tap_preview_key(&ctx, &mut app, Key::F6, size); // Only Cancel is available.
+    let cancel_focus = ctx.memory(|m| m.focused());
+    click_region_at(&ctx, &mut app, "tab-preview-help-toggle", size);
+    assert_eq!(ctx.memory(|m| m.focused()), cancel_focus);
+    tap_preview_key(&ctx, &mut app, Key::Enter, size);
+    assert!(app.tab_ruler_drag.is_none());
+    assert_eq!(app.session.editor.document, before);
+    assert_eq!(app.session.editor.undo_stack.len(), n);
+}
+
+#[test]
+fn preview_help_visibility_is_window_local_and_survives_reentry() {
+    for dpi in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        let size = [640. * dpi, 480. * dpi];
+        for attempt in 0..2 {
+            frame(
+                &ctx,
+                &mut app,
+                vec![ruler_key(
+                    Key::F8,
+                    Modifiers::CTRL | Modifiers::ALT | Modifiers::SHIFT,
+                )],
+                size,
+                dpi,
+            );
+            frame(&ctx, &mut app, vec![key(Key::F6, false)], size, dpi);
+            if attempt == 0 {
+                frame(&ctx, &mut app, vec![key(Key::F7, false)], size, dpi);
+            }
+            for _ in 0..2 {
+                frame(&ctx, &mut app, vec![], size, dpi);
+            }
+            assert!(!app.tab_preview_help);
+            assert!(!app.regions.iter().any(|r| r.name == "tab-preview-help"));
+            let toggle = region(&app, "tab-preview-help-toggle");
+            assert!(
+                toggle.min.x >= 0.
+                    && toggle.max.x <= 640.
+                    && toggle.min.y >= 0.
+                    && toggle.max.y <= 480.,
+                "{toggle:?}"
+            );
+            frame(&ctx, &mut app, vec![key(Key::Escape, false)], size, dpi);
+            assert!(app.tab_ruler_drag.is_none());
+        }
+        let (_, fresh) = setup();
+        assert!(fresh.tab_preview_help);
+    }
+}
+
+#[test]
+fn preview_hidden_help_retains_accessibility_descriptions_and_state() {
+    let (ctx, mut app) = setup();
+    ruler_accessibility_frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(
+            Key::F8,
+            Modifiers::CTRL | Modifiers::ALT | Modifiers::SHIFT,
+        )],
+    );
+    ruler_accessibility_frame(&ctx, &mut app, vec![key(Key::F6, false)]);
+    let shown = ruler_accessibility_frame(&ctx, &mut app, vec![]);
+    let toggle = |tree: &egui::accesskit::TreeUpdate| {
+        tree.nodes
+            .iter()
+            .find(|(_, n)| n.label().is_some_and(|l| l.starts_with("Preview help ")))
+            .map(|(_, n)| n.clone())
+            .unwrap()
+    };
+    assert_eq!(
+        toggle(&shown).toggled(),
+        Some(egui::accesskit::Toggled::True)
+    );
+    ruler_accessibility_frame(&ctx, &mut app, vec![key(Key::F7, false)]);
+    let hidden = ruler_accessibility_frame(&ctx, &mut app, vec![]);
+    assert_eq!(shown.focus, hidden.focus);
+    let node = toggle(&hidden);
+    assert_eq!(node.toggled(), Some(egui::accesskit::Toggled::False));
+    assert!(node.label().unwrap().contains("hidden. F7"));
+    assert_eq!(node.role(), egui::accesskit::Role::Button);
+    for prefix in ["Dots:", "Restore leaders:", "Cancel:"] {
+        let label = |tree: &egui::accesskit::TreeUpdate| {
+            tree.nodes
+                .iter()
+                .find(|(_, n)| n.label().is_some_and(|l| l.starts_with(prefix)))
+                .unwrap()
+                .1
+                .label()
+                .unwrap()
+                .to_owned()
+        };
+        assert_eq!(label(&shown), label(&hidden));
+    }
+    assert!(!app.regions.iter().any(|r| r.name == "tab-preview-help"));
+}

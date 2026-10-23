@@ -1024,3 +1024,12 @@ leaders. Selection and disabled metadata remain separate from descriptive labels
 No help inspection changes document/history. Native v17, palette/icons and existing
 preview commands are retained. AccessKit tree checks do not establish VoiceOver
 speech; physical input, Windows and spoken-output acceptance remain deferred.
+
+### Compact preview help (alpha.82)
+
+F7 or **Hide help / Show help** toggles focused-button descriptions without moving
+focus or applying edits. Holding F7 does not repeatedly toggle. The numeric input
+keeps its caret/selection, including invalid drafts; Escape and Cancel still discard
+the draft. Hover descriptions and full accessibility labels remain available.
+Visibility is remembered for this editor window only, across subsequent previews;
+a new window starts with help enabled. No document or settings-file change occurs.

@@ -2001,3 +2001,26 @@ explicit approval recorded; alpha.81 awaits approval.
   whitespace and isolated CLI checks pass. Two native focused-help captures
   inspected. Physical input, Windows, matched reference and VoiceOver are deferred.
 - Native v17, palette/icons and editing commands remain unchanged.
+
+## Alpha.82 preview help visibility validation
+
+2026-10-23, macOS arm64, Rust 1.99.1. Alpha.77 approved; alpha.78–81 have no
+explicit approval recorded; alpha.82 awaits approval.
+
+- 418 full / 187 core-only tests pass. Four new widget scenarios cover F7 and
+  held repeats, pointer toggles, unchanged widget focus, numeric cursor state,
+  invalid input/Cancel, window-local re-entry/defaults and AccessKit toggle state.
+- A regression found that the numeric TextEdit surrendered focus on an outside
+  click before the help button ran. Explicit restoration now preserves focus on
+  both mouse-down and release without selecting the numeric contents again.
+- Help changes leave the document/history untouched; the same focused leader
+  remains activatable and the draft commits one Undo/Redo. Hidden help preserves
+  descriptive action and disabled labels. Metadata checks are not speech tests.
+- Synthetic compact bounds pass at 100/125/150%; three native macOS captures
+  inspected with shown/hidden help. Capture events are synthetic, not physical
+  keyboard/mouse acceptance. Windows, matched reference and VoiceOver deferred.
+- fmt, normal/capture all-target Clippy, release/capture builds, repository/artwork/
+  YAML/whitespace and isolated executable CLI checks pass. The copied binary in a
+  temporary directory reports alpha.82 and valid capabilities without sibling
+  repositories; malformed/relative-path/conflicting arguments fail explicitly.
+- Native v17, process/settings versions, palette/icons and engine commands remain.

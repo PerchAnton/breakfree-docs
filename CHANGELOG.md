@@ -3,6 +3,19 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.82 — 2026-10-23
+
+- Toggle focused preview help with F7 without moving focus; ignore held-key repeats.
+- Add a Show/Hide help button that preserves the current control focus.
+- Remember visibility across previews in the same editor window, without changing
+  document data or writing preferences; new windows start with help enabled.
+- Preserve the numeric caret/selection when toggling help, including invalid input.
+- Expose help visibility as a labeled toggle while keeping hover descriptions and
+  full action/disabled-state accessibility labels available when help is hidden.
+- Keep palette/icons, native v17, cancellation and one-operation history unchanged.
+  Alpha.78–81 have no explicit version approval recorded; alpha.82 awaits approval.
+  Windows deferred; VoiceOver acceptance remains at final review.
+
 ## 0.1.0-alpha.81 — 2026-10-23
 
 - Show focused-button descriptions in the ruler preview without applying edits.

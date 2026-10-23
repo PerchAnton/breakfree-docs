@@ -2299,3 +2299,29 @@ sizes. Windows, physical input, matched reference and VoiceOver are deferred.
 | :--- | :--- | :--- |
 | 1366 × 900 | [View](screenshots/rust-leader-help-alpha81-macos.png) | `c86628d90993e21908a67b23f37e13b79279e9d8a46e5a98a66819abe38ea843` |
 | 640 × 480 | [View](screenshots/rust-leader-compact-alpha81-macos.png) | `b8408c3a065fbc487cc2202080f09cd103af0e0e99d42fd4d61af216be61b4e8` |
+
+## Alpha.82: compact preview help
+
+F7 and the Show/Hide help button change only the visibility of focused-control
+explanations. The toggle stays above the text so its position does not jump when
+help collapses. Its label includes F7; AccessKit exposes shown/hidden and toggled
+state. Existing hover and accessibility descriptions remain available. Numeric
+caret/selection and the active control retain focus, including mouse-down/release.
+Visibility lasts for the editor window, including later previews; new windows
+start enabled. Held F7 repeats are ignored. No new color/icon or document setting.
+
+The existing 520-DIP panel cap and wrapped labels remain. Three native macOS
+captures inspected on 2026-10-23 show Dots focus retained and all controls visible;
+the compact panel with help fits above the status bar, and hiding it frees canvas
+space. Capture input is synthetic. Windows, physical keyboard/mouse, matched
+reference comparison and VoiceOver acceptance remain deferred.
+
+Reproduce with `cargo build --locked --release --features capture --example capture_ui`,
+then `BREAKFREE_CAPTURE_TO=/absolute/path/capture.png target/release/examples/capture_ui
+640 480 leader-help-hidden` (use `leader-focus` for shown help).
+
+| DIP / state | Capture | SHA-256 |
+| :--- | :--- | :--- |
+| 1366 × 900, shown | [View](screenshots/rust-leader-help-alpha82-macos.png) | `509aced58d8a95d10679a6bd06ee56497b371bc875b178db724d852dc35e0a04` |
+| 640 × 480, hidden | [View](screenshots/rust-leader-hidden-alpha82-macos.png) | `288ed73e02e85594a121889bf8a1abb4714689e33f029e02292b7b2b63cda82c` |
+| 640 × 480, shown | [View](screenshots/rust-leader-compact-alpha82-macos.png) | `02477bc416a1480f9d034e45aaa570598f2c4030628f06f2d89a9b8253827ee9` |

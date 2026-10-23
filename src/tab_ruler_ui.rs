@@ -369,6 +369,17 @@ impl DocsApp {
                 self.sync_view();
                 return true;
             }
+            // Consume repeats too, but change visibility only on a fresh press.
+            if events.iter().any(|e| {
+                matches!(e, egui::Event::Key {
+                key: Key::F7, pressed: true, repeat: false, modifiers, ..
+            } if modifiers.is_none())
+            }) {
+                self.tab_preview_help = !self.tab_preview_help;
+            }
+            ctx.input_mut(|i| {
+                i.consume_key(Modifiers::NONE, Key::F7);
+            });
             if ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::F6)) {
                 let drag = self.tab_ruler_drag.as_mut().unwrap();
                 drag.control_focus = if drag.control_focus.is_some() {
@@ -1084,7 +1095,29 @@ impl DocsApp {
                                 self.regions.push(Region { name: "tab-preview-cancel".into(), rect: r.rect });
                                 cancel = drag.control(ui, 7, &r);
                             });
-                            if let Some(index) = drag.control_focus {
+                            // This auxiliary action must not take the editing/control focus.
+                            // Restoring only the widget ID leaves the numeric caret/selection intact.
+                            let previous_focus = if drag.numeric && drag.control_focus.is_none() {
+                                Some(Id::new("ruler-tab-position-input"))
+                            } else {
+                                ui.memory(|m| m.focused())
+                            };
+                            let r = ui.button(if self.tab_preview_help { "Hide help (F7)" } else { "Show help (F7)" });
+                            self.regions.push(Region { name: "tab-preview-help-toggle".into(), rect: r.rect });
+                            if r.clicked() {
+                                self.tab_preview_help = !self.tab_preview_help;
+                                ui.ctx().request_repaint();
+                            }
+                            if r.clicked() || r.is_pointer_button_down_on() {
+                                ui.memory_mut(|m| {
+                                    m.surrender_focus(r.id);
+                                    if let Some(id) = previous_focus { m.request_focus(id); }
+                                });
+                            }
+                            let help = format!("Preview help {}. F7 toggles descriptions without leaving the current control or position input. Hover descriptions remain available. Remembered for this editor window only.", if self.tab_preview_help { "shown" } else { "hidden" });
+                            r.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Button, true, self.tab_preview_help, &help));
+                            r.on_hover_text(help);
+                            if self.tab_preview_help && let Some(index) = drag.control_focus {
                                 let r = ui.add(egui::Label::new(drag.control_help(index)).wrap());
                                 self.regions.push(Region { name: "tab-preview-help".into(), rect: r.rect });
                             }

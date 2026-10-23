@@ -435,3 +435,13 @@ leaders. Selection and disabled metadata remain separate from descriptive labels
 No help inspection changes document/history. Native v17, palette/icons and existing
 preview commands are retained. AccessKit tree checks do not establish VoiceOver
 speech; physical input, Windows and spoken-output acceptance remain deferred.
+
+## Alpha.82: window-local preview help visibility
+
+Keep the visibility flag in the GUI window, outside the document, draft and saved
+preferences. F7 changes it once per fresh press; the pointer toggle restores the
+editing/control focus. Restoring numeric focus must retain TextEdit cursor state
+rather than selecting the input again. The button exposes toggled metadata and
+explicit shown/hidden labels. Hiding the visual description leaves hover and
+accessibility descriptions intact. Neither path mutates a document or history.
+This is a prototype UI policy; native v17 and model commands are unchanged.
