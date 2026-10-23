@@ -18,14 +18,23 @@ struct Capture {
 
 impl eframe::App for Capture {
     fn raw_input_hook(&mut self, _ctx: &egui::Context, input: &mut egui::RawInput) {
-        if matches!(self.mode.as_str(), "leader-details" | "leader-menu") {
+        if matches!(
+            self.mode.as_str(),
+            "leader-details" | "leader-choice" | "leader-menu"
+        ) {
             input.focused = true;
-            if self.mode == "leader-details" && matches!(self.frames, 3 | 5) {
+            if matches!(self.mode.as_str(), "leader-details" | "leader-choice")
+                && matches!(self.frames, 3 | 5)
+            {
                 input.events.push(egui::Event::Key {
                     key: if self.frames == 3 {
                         egui::Key::F8
                     } else {
-                        egui::Key::F1
+                        if self.mode == "leader-choice" {
+                            egui::Key::Num2
+                        } else {
+                            egui::Key::F1
+                        }
                     },
                     physical_key: None,
                     pressed: true,
@@ -547,6 +556,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "tab-leaders",
             "leader-dialog",
             "leader-details",
+            "leader-choice",
             "leader-menu",
             "typed-tabs-dialog",
             "tab-keyboard",
@@ -645,7 +655,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "examples/Formatting.bfdoc"
         } else if matches!(
             args[2].as_str(),
-            "tab-leaders" | "leader-dialog" | "leader-details" | "leader-menu"
+            "tab-leaders" | "leader-dialog" | "leader-details" | "leader-choice" | "leader-menu"
         ) {
             "examples/TabLeaders.bfdoc"
         } else if matches!(args[2].as_str(), "aligned-tabs" | "typed-tabs-dialog") {
@@ -852,7 +862,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             } else {
                 DocsApp::new(session, &cc.egui_ctx)
             };
-            if matches!(mode.as_str(), "leader-details" | "leader-menu") {
+            if matches!(
+                mode.as_str(),
+                "leader-details" | "leader-choice" | "leader-menu"
+            ) {
                 app.execute(Action::SelectAll, &cc.egui_ctx);
             }
             match mode.as_str() {

@@ -241,6 +241,16 @@ impl DocsApp {
                 drag.input = format!("{}", f32::from(drag.draft.position) / 2.);
                 drag.focus_input = true;
             }
+            if ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::F4)) {
+                let drag = self.tab_ruler_drag.as_mut().unwrap();
+                if drag.numeric {
+                    drag.error = drag.draft.move_to_text(&drag.input).err();
+                    if drag.error.is_none() {
+                        drag.numeric = false;
+                        ctx.memory_mut(|m| m.surrender_focus(Id::new("ruler-tab-position-input")));
+                    }
+                }
+            }
             if self.tab_ruler_drag.as_ref().unwrap().numeric {
                 ctx.memory_mut(|m| {
                     m.move_focus(egui::FocusDirection::None);
@@ -308,13 +318,44 @@ impl DocsApp {
                             )
                             .ok()
                             .and_then(|s| s.common());
-                            let next = match drag.draft.preview_leader_choice().or(common) {
-                                Some(None) => Some(L::Dots),
-                                Some(Some(L::Dots)) => Some(L::Dashes),
-                                Some(Some(L::Dashes)) => Some(L::Line),
-                                _ => None,
+                            let current = drag.draft.preview_leader_choice().or(common);
+                            let next = if modifiers.shift {
+                                match current {
+                                    Some(Some(L::Dots)) => None,
+                                    Some(Some(L::Dashes)) => Some(L::Dots),
+                                    Some(Some(L::Line)) => Some(L::Dashes),
+                                    _ => Some(L::Line),
+                                }
+                            } else {
+                                match current {
+                                    Some(None) => Some(L::Dots),
+                                    Some(Some(L::Dots)) => Some(L::Dashes),
+                                    Some(Some(L::Dashes)) => Some(L::Line),
+                                    _ => None,
+                                }
                             };
                             drag.error = drag.draft.set_preview_leader(next).err();
+                            drag.show_leaders = true;
+                        }
+                    }
+                    Key::Num0 | Key::Num1 | Key::Num2 | Key::Num3 if !modifiers.shift => {
+                        let drag = self.tab_ruler_drag.as_mut().unwrap();
+                        if drag.error.is_none() && !drag.draft.deleting {
+                            use crate::model::TabLeader as L;
+                            let leader = match key {
+                                Key::Num1 => Some(L::Dots),
+                                Key::Num2 => Some(L::Dashes),
+                                Key::Num3 => Some(L::Line),
+                                _ => None,
+                            };
+                            drag.error = drag.draft.set_preview_leader(leader).err();
+                            drag.show_leaders = true;
+                        }
+                    }
+                    Key::Backspace => {
+                        let drag = self.tab_ruler_drag.as_mut().unwrap();
+                        if drag.error.is_none() && !drag.draft.deleting {
+                            drag.error = drag.draft.restore_preview_leaders().err();
                             drag.show_leaders = true;
                         }
                     }
@@ -717,6 +758,13 @@ impl DocsApp {
                                 }
                             } else { ui.label("Leader details unavailable for an invalid or deletion preview."); }
                         }
+                        if drag.show_leaders && drag.error.is_none() && !drag.draft.deleting {
+                            let choice = match drag.draft.preview_leader_choice() {
+                                Some(value) => format!("Chosen leader: {}", value.map_or("None", |v| v.label())),
+                                None => "Original per-paragraph leaders retained".into(),
+                            };
+                            ui.add(egui::Label::new(choice).wrap());
+                        }
                         if drag.numeric {
                             ui.label(if drag.draft.is_creation() {
                                 format!("New {kind_label} tab")
@@ -754,7 +802,7 @@ impl DocsApp {
                                 ui.label("pt");
                             });
                             drag.error = drag.draft.move_to_text(&drag.input).err();
-                            ui.small("0.5 pt steps · Enter applies · Esc cancels");
+                            ui.small("0.5 pt steps · F4 returns to marker · Enter applies · Esc cancels");
                             if let Some(error) = &drag.error {
                                 ui.add(
                                     egui::Label::new(RichText::new(error).color(Color32::DARK_RED))
@@ -764,7 +812,8 @@ impl DocsApp {
                         } else {
                             ui.add(egui::Label::new(text).wrap());
                             if drag.keyboard {
-                                ui.small("F1: leader details · F2: exact position · F3: cycle leader");
+                                ui.add(egui::Label::new("0 None · 1 Dots · 2 Dashes · 3 Line · Backspace restores original leaders").wrap());
+                                ui.add(egui::Label::new("F1 details · F2 position · F3 next / Shift+F3 previous").wrap());
                             }
                         }
                     });

@@ -383,3 +383,16 @@ position and leader together once; cancellation leaves history/Redo untouched.
 No file schema, layout geometry, palette/icon or dependency change. Windows,
 physical OS input and VoiceOver remain deferred. Next: direct keyboard leader
 selection without cycling, preserving this preview/history boundary.
+
+### Direct ruler leader selection (alpha.78)
+
+In a keyboard tab preview, press 0/1/2/3 for None/Dots/Dashes/Line. Shift+F3
+cycles backward (mixed starts at Line); F3 still cycles forward. Backspace
+restores each original owner's leader, keeping the current position. Creation
+restores no fill on newly added stops and preserves preexisting owners.
+F2 enters numeric input; digits then edit the position. F4 returns to marker
+controls only when the position is valid, without committing. Enter applies once;
+Escape cancels all draft changes. The chosen leader is displayed separately from
+coverage, because preserved creation owners may retain different leaders.
+These are BreakFree preview shortcuts; no reference-app shortcut equivalence is
+claimed. Native v17, palette and icons remain unchanged.

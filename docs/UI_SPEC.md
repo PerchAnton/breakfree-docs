@@ -2222,3 +2222,21 @@ VoiceOver acceptance is claimed.
 | Details / 1366 × 900 | [View](screenshots/rust-leader-details-alpha77-macos.png) | `c08da962151c94aff28146c498c7ba2c2e1f71474767a3a842accf1a2d34391f` |
 | Details / 640 × 480 | [View](screenshots/rust-leader-compact-alpha77-macos.png) | `57df9316f8ce728ac1261c1e93ea65d2262c626b801c6b6ed626e74ad6a1b5a6` |
 | Menu / 1366 × 900 | [View](screenshots/rust-leader-menu-alpha77-macos.png) | `eadcff51d01a4d3ef9187618d6a7752c73d8b1bdfeab88a89d84a16d3a320eb2` |
+
+## Alpha.78: direct leader selection
+
+The existing preview adds wrapped shortcut hints and explicit choice feedback.
+0–3 choose None/Dots/Dashes/Line; Shift+F3 cycles backward; Backspace restores
+original per-paragraph leaders. F4 leaves valid numeric input without applying.
+The original mixed distribution remains distinct from the explicit draft choice.
+No shell geometry, palette or icon changes. These are application preview keys,
+not a claim of Word shortcut equivalence.
+
+Two native macOS captures inspected on 2026-10-23: direct Dashes selection and
+all hints fit wide/compact windows. Windows, matched reference, physical input
+and VoiceOver acceptance remain deferred.
+
+| DIP | Capture | SHA-256 |
+| :--- | :--- | :--- |
+| 1366 × 900 | [View](screenshots/rust-leader-choice-alpha78-macos.png) | `ef3bbc7fc1c7097368c5088fa94361c70ec1fb8f2b997f2fd337ac6be90ccdb9` |
+| 640 × 480 | [View](screenshots/rust-leader-compact-alpha78-macos.png) | `503c5910a5b6a3a1d5d94b710627ed42d068bd63ee50d46324d0e189bb790203` |

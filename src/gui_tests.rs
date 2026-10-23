@@ -11475,3 +11475,121 @@ fn leader_creation_cycle_preserves_existing_owners_without_getting_stuck() {
     app.session.editor.undo();
     assert_eq!(app.session.editor.document, before);
 }
+
+#[test]
+fn leader_direct_choice_restore_reverse_numeric_return_transaction() {
+    use crate::model::TabLeader as L;
+    for (choice, leader) in [
+        (Key::Num0, None),
+        (Key::Num1, Some(L::Dots)),
+        (Key::Num2, Some(L::Dashes)),
+        (Key::Num3, Some(L::Line)),
+    ] {
+        let (ctx, mut app) = setup();
+        let size = [640., 480.];
+        let before = app.session.editor.document.clone();
+        let n = app.session.editor.undo_stack.len();
+        frame(
+            &ctx,
+            &mut app,
+            vec![ruler_key(
+                Key::F8,
+                Modifiers::CTRL | Modifiers::ALT | Modifiers::SHIFT,
+            )],
+            size,
+            1.,
+        );
+        frame(&ctx, &mut app, vec![key(choice, false)], size, 1.);
+        assert_eq!(
+            app.tab_ruler_drag
+                .as_ref()
+                .unwrap()
+                .draft
+                .preview_leader_choice(),
+            Some(leader)
+        );
+        frame(&ctx, &mut app, vec![key(Key::Backspace, false)], size, 1.);
+        assert_eq!(
+            app.tab_ruler_drag
+                .as_ref()
+                .unwrap()
+                .draft
+                .preview_leader_choice(),
+            None
+        );
+        frame(
+            &ctx,
+            &mut app,
+            vec![ruler_key(Key::F3, Modifiers::SHIFT)],
+            size,
+            1.,
+        );
+        assert_eq!(
+            app.tab_ruler_drag
+                .as_ref()
+                .unwrap()
+                .draft
+                .preview_leader_choice(),
+            Some(Some(L::Line))
+        );
+        frame(&ctx, &mut app, vec![key(Key::F2, false)], size, 1.);
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::Text("100".into())],
+            size,
+            1.,
+        );
+        frame(&ctx, &mut app, vec![key(Key::F4, false)], size, 1.);
+        assert!(!ctx.memory(|m| m.has_focus(Id::new("ruler-tab-position-input"))));
+        frame(&ctx, &mut app, vec![key(choice, false)], size, 1.);
+        assert_eq!(app.session.editor.document, before);
+        assert_eq!(app.session.editor.undo_stack.len(), n);
+        frame(&ctx, &mut app, vec![key(Key::Enter, false)], size, 1.);
+        assert_eq!(
+            app.session.editor.document.paragraphs[0]
+                .spacing
+                .tab_leader(200),
+            leader
+        );
+        assert_eq!(app.session.editor.undo_stack.len(), n + 1);
+        let after = app.session.editor.document.clone();
+        app.session.editor.undo();
+        assert_eq!(app.session.editor.document, before);
+        app.session.editor.redo();
+        assert_eq!(app.session.editor.document, after);
+    }
+}
+
+#[test]
+fn leader_numeric_return_rejects_invalid_input_and_escape_cancels() {
+    let (ctx, mut app) = setup();
+    let size = [640., 480.];
+    let before = app.session.editor.document.clone();
+    frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(
+            Key::F8,
+            Modifiers::CTRL | Modifiers::ALT | Modifiers::SHIFT,
+        )],
+        size,
+        1.,
+    );
+    frame(&ctx, &mut app, vec![key(Key::Num2, false)], size, 1.);
+    frame(&ctx, &mut app, vec![key(Key::F2, false)], size, 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("invalid".into())],
+        size,
+        1.,
+    );
+    frame(&ctx, &mut app, vec![key(Key::F4, false)], size, 1.);
+    assert!(ctx.memory(|m| m.has_focus(Id::new("ruler-tab-position-input"))));
+    frame(&ctx, &mut app, vec![key(Key::Enter, false)], size, 1.);
+    assert!(app.tab_ruler_drag.is_some());
+    frame(&ctx, &mut app, vec![key(Key::Escape, false)], size, 1.);
+    assert_eq!(app.session.editor.document, before);
+    assert!(app.tab_ruler_drag.is_none());
+}

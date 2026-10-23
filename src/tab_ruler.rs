@@ -196,6 +196,15 @@ impl Draft {
         self.move_to(f32::from(self.position))
     }
 
+    /// Restore each original owner's leader while retaining the preview position.
+    pub fn restore_preview_leaders(&mut self) -> Result<()> {
+        if !self.valid || self.deleting {
+            return Err("Choose a valid movement preview before restoring leaders.".into());
+        }
+        self.leader_override = None;
+        self.move_to(f32::from(self.position))
+    }
+
     pub fn remove(&mut self) -> Result<()> {
         self.valid = false;
         let source = self.source.ok_or("Cannot remove an uncommitted new tab.")?;

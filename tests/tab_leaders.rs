@@ -286,3 +286,32 @@ fn leader_preview_choice_survives_movement_error_numeric_and_history() {
     drop(d);
     assert_eq!(e.document, after);
 }
+
+#[test]
+fn restoring_preview_leaders_preserves_mixed_originals_and_position() {
+    let mut e = Editor::default();
+    e.replace(0, 0, "a\nb", "Fixture").unwrap();
+    e.set_tab_positions(0, 3, vec![(144, K::Left)]).unwrap();
+    e.set_tab_leader(0, 0, 144, Some(L::Dots)).unwrap();
+    e.selection = (0, 3);
+    let before = e.document.clone();
+    let n = e.undo_stack.len();
+    let mut d = Draft::new(&e, 144).unwrap();
+    d.set_preview_leader(Some(L::Line)).unwrap();
+    d.move_to(200.).unwrap();
+    d.restore_preview_leaders().unwrap();
+    assert_eq!(
+        d.preview.paragraphs[0].spacing.tab_leader(200),
+        Some(L::Dots)
+    );
+    assert_eq!(d.preview.paragraphs[1].spacing.tab_leader(200), None);
+    d.commit(&mut e).unwrap();
+    assert_eq!(e.undo_stack.len(), n + 1);
+    e.undo();
+    assert_eq!(e.document, before);
+    e.redo();
+    assert_eq!(
+        e.document.paragraphs[0].spacing.tab_leader(200),
+        Some(L::Dots)
+    );
+}

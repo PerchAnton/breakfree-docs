@@ -1933,3 +1933,19 @@ approval recorded. Alpha.76 is one five-step review candidate.
 - Three native captures inspected: wide/compact details and wide mixed context
   menu. Physical OS keyboard/IME, matched reference comparison, Windows and
   VoiceOver acceptance remain deferred. CI is recorded separately in the journal.
+
+## Alpha.78 direct leader validation
+
+2026-10-23, macOS arm64, Rust 1.99.1. Alpha.77 approved; alpha.78 awaits review.
+
+- 404 full / 187 core-only tests pass. New scenarios cover all four direct keys,
+  reverse cycling, mixed-original restoration at a changed position, numeric-mode
+  return, invalid numeric input, cancel and one-operation Undo/Redo.
+- Existing synthetic compact 100/125/150% checks and all storage/layout checks run.
+  Numeric digits remain text input; shortcut selection is limited to marker mode.
+- fmt, normal/capture Clippy, release/capture builds, repository/artwork/YAML,
+  whitespace and isolated CLI checks pass. An initial build hit disk exhaustion;
+  only generated incremental cache was removed before repeating validation.
+- Two native wide/compact direct-choice captures inspected. Physical OS keyboard,
+  Windows, matched reference comparison and VoiceOver remain unverified/deferred.
+  Native v17 and the palette/icons are retained; CI is recorded separately.

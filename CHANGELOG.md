@@ -3,6 +3,18 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.78 — 2026-10-23
+
+- Add direct ruler-preview leader keys: 0 None, 1 Dots, 2 Dashes, 3 Line.
+- Add Shift+F3 reverse cycling and Backspace to restore each original leader
+  while retaining the draft position.
+- Add F4 return from valid numeric input without applying; invalid input stays
+  editable. Numeric digits retain their normal input meaning.
+- Show the explicit leader choice separately from mixed-owner distribution.
+- Preserve one-operation apply/Undo/Redo and Escape cancellation. Palette/icons,
+  native v17 and layout policy remain unchanged. Alpha.77 approved; alpha.78
+  awaits owner approval. Windows deferred; VoiceOver reserved for final review.
+
 ## 0.1.0-alpha.77 — 2026-10-23
 
 - Show per-leader paragraph counts in ruler tooltips and widget labels, separating

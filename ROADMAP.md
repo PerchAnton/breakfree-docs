@@ -409,4 +409,9 @@ Use public specifications and original test cases, not copied application code. 
 - [x] Alpha.77 step 3: read-only F1 details in keyboard preview.
 - [x] Alpha.77 step 4: transactional F3 leader cycling.
 - [x] Alpha.77 step 5: combined position/leader preview through arrows/F2, cancel and one Undo/Redo.
-- [ ] Next: direct keyboard leader selection without cycling. Style inheritance remains separate.
+- [x] Alpha.78 step 1: direct 0–3 leader selection in marker preview.
+- [x] Alpha.78 step 2: reverse Shift+F3 cycling.
+- [x] Alpha.78 step 3: restore original per-paragraph leaders without losing position.
+- [x] Alpha.78 step 4: F4 returns from valid numeric input without committing.
+- [x] Alpha.78 step 5: explicit choice feedback separate from mixed coverage.
+- [ ] Next: pointer-accessible leader choices in the shared ruler preview. Style inheritance remains separate.

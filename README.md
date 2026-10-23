@@ -972,3 +972,16 @@ without that stop are counted separately. Enter tab keyboard control with
 Ctrl+Alt+F8, press F1 for details, and F3 to cycle the preview's leader. Arrows or
 F2 then adjust position. Enter applies both once; Escape cancels. F3 operates
 outside numeric input; mixed leaders first become None. Native v17 is unchanged.
+
+### Direct ruler leader selection (alpha.78)
+
+In a keyboard tab preview, press 0/1/2/3 for None/Dots/Dashes/Line. Shift+F3
+cycles backward (mixed starts at Line); F3 still cycles forward. Backspace
+restores each original owner's leader, keeping the current position. Creation
+restores no fill on newly added stops and preserves preexisting owners.
+F2 enters numeric input; digits then edit the position. F4 returns to marker
+controls only when the position is valid, without committing. Enter applies once;
+Escape cancels all draft changes. The chosen leader is displayed separately from
+coverage, because preserved creation owners may retain different leaders.
+These are BreakFree preview shortcuts; no reference-app shortcut equivalence is
+claimed. Native v17, palette and icons remain unchanged.
