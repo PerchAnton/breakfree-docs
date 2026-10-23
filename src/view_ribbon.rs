@@ -10,6 +10,7 @@ impl DocsApp {
                     .max_rect(rect)
                     .layout(Layout::left_to_right(Align::Center)),
                 |ui| {
+                    ui.spacing_mut().interact_size.y = 20.;
                     ui.add_enabled(
                         self.enabled(action),
                         egui::Checkbox::new(&mut checked, label),
@@ -34,7 +35,10 @@ impl DocsApp {
 
     pub(super) fn view_ribbon(&mut self, ui: &mut Ui) {
         let origin = ui.max_rect().min + vec2(8., 4.);
-        let rect = |x, y, w, h| Rect::from_min_size(origin + vec2(x, y), vec2(w, h));
+        let row_scale = (RIBBON_HEIGHT - 16.) / 88.;
+        let rect = |x, y, w, h| {
+            Rect::from_min_size(origin + vec2(x, y * row_scale), vec2(w, h * row_scale))
+        };
         for (x, w, label) in [
             (0., 120., "Views"),
             (128., 156., "Show"),
@@ -43,7 +47,7 @@ impl DocsApp {
             let group = rect(x, 0., w, 88.);
             self.record(&format!("view-group-{label}"), group);
             ui.painter().text(
-                group.center_bottom() - vec2(0., 7.),
+                group.center_bottom() - vec2(0., 5.),
                 Align2::CENTER_CENTER,
                 label,
                 FontId::proportional(11.),
@@ -51,7 +55,10 @@ impl DocsApp {
             );
             if x > 0. {
                 ui.painter().line_segment(
-                    [origin + vec2(x - 4., 4.), origin + vec2(x - 4., 84.)],
+                    [
+                        origin + vec2(x - 4., 4. * row_scale),
+                        origin + vec2(x - 4., 84. * row_scale),
+                    ],
                     Stroke::new(1.0_f32, chrome::LINE),
                 );
             }

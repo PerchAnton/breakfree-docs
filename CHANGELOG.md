@@ -3,6 +3,24 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.83 — 2026-10-23
+
+- Refine the native shell from the owner's Word macOS video: neutral flat chrome,
+  clearer semantic icon accents, white fields/popups and quieter hover/pressed fills.
+  Command-menu labels align to the leading edge.
+- Reduce title/tabs/ribbon height from 180 to 158 DIP; preserve Home group gutters,
+  responsive overflow, real commands, disabled explanations and keyboard targets.
+- Give style cards a formatted sample, separate name strip and restrained selected
+  outline. Long names stay clipped to the card with the full tooltip available.
+- Use installed Arial for macOS interface text; document font resolution is unchanged.
+  Windows keeps installed Segoe UI and other hosts retain the embedded fallback.
+- Refit View rows/captions and large icons to the shorter ribbon. Extend the capture
+  harness to 2560 × 1440 DIP for larger-window visual checks.
+- Preserve the approved logo, violet brand accent, data/history and native v17.
+  Alpha.78–82 have no explicit version approval recorded; alpha.83 awaits approval.
+  The supplied video is a macOS reference, not matched Windows validation.
+  Windows remains deferred; VoiceOver stays at final review.
+
 ## 0.1.0-alpha.82 — 2026-10-23
 
 - Toggle focused preview help with F7 without moving focus; ignore held-key repeats.

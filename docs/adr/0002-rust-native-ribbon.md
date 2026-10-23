@@ -144,3 +144,12 @@ normalization and cross-launch search settings remain separate work.
 transaction to `commands`. `gui::replace_all_dialog` only displays context and
 collects confirmation. Document state, validation and the single history boundary
 remain in the same engine used by tests. Palette/icons and schemas are unchanged.
+
+## Alpha.83 visual adaptation
+
+Use the owner's macOS reference video to refine shell density, neutral surfaces,
+semantic icon colors and the style-card sample/name layout. Keep the approved
+Windows office composition and BreakFree identity; document the platform/language
+comparison limits in UI_SPEC. System Arial may supply macOS interface text while
+Windows keeps Segoe UI; fonts are read locally and are not redistributed. The
+Rust GUI adapter remains replaceable and independent of document commands/storage.

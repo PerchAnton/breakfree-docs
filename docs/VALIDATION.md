@@ -2024,3 +2024,31 @@ explicit approval recorded; alpha.82 awaits approval.
   temporary directory reports alpha.82 and valid capabilities without sibling
   repositories; malformed/relative-path/conflicting arguments fail explicitly.
 - Native v17, process/settings versions, palette/icons and engine commands remain.
+
+## Alpha.83 video-guided shell validation
+
+2026-10-23, macOS arm64, Rust 1.99.1. Alpha.77 approved; alpha.78–82 have no
+explicit approval recorded; alpha.83 awaits approval.
+
+- 419 full / 187 core-only tests pass; fmt, normal/capture all-target Clippy,
+  release/capture builds, repository/artwork/YAML and whitespace checks pass.
+- A new geometry matrix covers separate style samples/captions and shortened View
+  groups at 640/916/1366/2048 DIP and synthetic 100/125/150%. Existing Home gutter,
+  overflow, temporary ribbon, keyboard, style/dependency, ruler help, Unicode,
+  history, save/reopen and failed-write regressions remain passing.
+- Native inspection exposed View caption clipping after the ribbon height change;
+  refitted rows/icons/captions and checked their bounds. Menu labels now align to
+  the leading edge. No interactive target is replaced by decorative text.
+- Six final native captures inspected: Home at normal/minimum/largest available
+  size, compact View, styles menu and compact ruler help. Requests larger than the
+  display are constrained by macOS; actual PNG dimensions are in UI_SPEC.
+- The owner reference is a 45.96 s Word macOS recording in Russian. Compared Home,
+  menu surfaces, glyph accents and style-card composition visually. Its build,
+  scale and zoom are unconfirmed; no matched screenshot or Windows pass is claimed.
+  The reference's document content is not included in repository assets.
+- Copied release executable reports alpha.83 and valid capabilities from a temporary
+  directory with no sibling checkout; missing/relative/conflicting/unknown CLI
+  arguments fail explicitly. Native v17 and engine/history semantics are unchanged.
+- Capture input is synthetic. Physical OS input/IME, Windows and matched reference
+  acceptance remain open; VoiceOver is deferred to the final review. The existing
+  Welcome emoji fallback limitation remains visible and is not a data-loss claim.

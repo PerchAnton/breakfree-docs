@@ -32,14 +32,14 @@ measurements taken from Word**. Source constants are in `src/presentation.rs`; o
 | Area | Docs value / observable behavior |
 | :--- | :--- |
 | Default window / minimum | 1366 × 900 / 640 × 480 DIP; native custom title controls |
-| Title | 44 DIP high; 24 × 24 approved transparent icon, 28 × 28 Save/Undo/Redo icons; actual filename and dirty marker; 28-DIP search field; 46-DIP-wide vector window controls |
-| Tabs | 32 DIP; File, Home, Insert, Draw, Design, Layout, References, Mailings, Review, View, Help; narrow windows use More tabs |
-| Ribbon | 104 DIP expanded; near-white rounded inset (8 DIP horizontally / 4 vertically), 88-DIP groups with bottom captions; collapsible via button, double-click tab or Ctrl+F1 |
-| Home groups, full | Clipboard 86, Font 304, Paragraph 246, Styles 350, Editing 116 DIP; 8-DIP group gaps and separators |
+| Title | 36 DIP high; 24 × 24 approved transparent icon, 28 × 28 Save/Undo/Redo icons; actual filename and dirty marker; 28-DIP search field; 46-DIP-wide vector window controls |
+| Tabs | 30 DIP; File, Home, Insert, Draw, Design, Layout, References, Mailings, Review, View, Help; narrow windows use More tabs |
+| Ribbon | 92 DIP expanded; flat neutral inset (8 DIP horizontally / 4 vertically), 76-DIP groups with bottom captions; collapsible via button, double-click tab or Ctrl+F1 |
+| Home groups, full | Clipboard 86, Font 284, Paragraph 226, Styles 390, Editing 116 DIP; 8-DIP group gaps and separators |
 | Home groups, compact | Below 1180 DIP available ribbon width: 82/246/218/140/104 DIP; compact Clipboard and one style preview |
 | Home overflow | Below 900 DIP available ribbon width: 82/232/206 DIP; Styles/Editing move into More menu; the pinned ribbon reserves workspace; temporary mode overlays it |
-| Controls | Small buttons 24–32 × 24–26 DIP; Paste 46 × 69 split into a 37-DIP icon action and 32-DIP options menu; two rows in Font/Paragraph, three in Clipboard/Editing; 13-DIP UI text, 11-DIP captions; 15 × 16 group launchers |
-| Font size | 64 × 25 DIP unified outline: 46-DIP editable field and 18-DIP preset arrow; font-family field is 112/64/50 DIP in full/compact/overflow density |
+| Controls | Home buttons 24–32 × 20–22 DIP; Paste 46 × 59.6 split into a 32.2-DIP icon action and 27.4-DIP options menu; two rows in Font/Paragraph, three in Clipboard/Editing; 13-DIP UI text, 11-DIP captions; 15 × 13.8 group launchers |
+| Font size | 64 × 21.6 DIP unified outline: 46-DIP editable field and 18-DIP preset arrow; font-family field is 92/64/50 DIP in full/compact/overflow density |
 | Workspace | Neutral #ebebeb; white continuous canvas, border #c5c5c5; soft canvas shadow; 10-DIP workspace top gap; centered when space allows; horizontal/vertical scrolling when required |
 | Canvas | 816 DIP wide at 100% document zoom, 96-DIP side/top margins, content-driven height; **no page segmentation** |
 | Text | Host Arial/DejaVu or embedded fallback; default 11 pt (14.667 DIP), per-run 1–400 pt in half-points and underline; 1.25 line height, default-size 0.5-em paragraph gap; model styles/alignment projected into hit-testable text |
@@ -70,7 +70,7 @@ disables these commands. The Paste icon performs plain-text paste; its lower men
 contains the same action and an explained disabled Paste Special. Find opens
 navigation directly; its separate 18-DIP arrow opens options. Select opens a real
 command menu; overflow retains Find/Replace/Select All/Formatting.
-The 63-DIP Styles gallery applies Normal/No Spacing/Heading 1 through shared
+The 54.4-DIP Styles gallery applies Normal/No Spacing/Heading 1 through shared
 commands. Its selected frame follows the uniform paragraph style; mixed selection
 has no selected frame. A 15-DIP trailing menu exposes all styles at compact width.
 See the alpha.18 behavior and inheritance rules below.
@@ -2325,3 +2325,58 @@ then `BREAKFREE_CAPTURE_TO=/absolute/path/capture.png target/release/examples/ca
 | 1366 × 900, shown | [View](screenshots/rust-leader-help-alpha82-macos.png) | `509aced58d8a95d10679a6bd06ee56497b371bc875b178db724d852dc35e0a04` |
 | 640 × 480, hidden | [View](screenshots/rust-leader-hidden-alpha82-macos.png) | `288ed73e02e85594a121889bf8a1abb4714689e33f029e02292b7b2b63cda82c` |
 | 640 × 480, shown | [View](screenshots/rust-leader-compact-alpha82-macos.png) | `02477bc416a1480f9d034e45aaa570598f2c4030628f06f2d89a9b8253827ee9` |
+
+## Alpha.83: owner video reference and shell refinement
+
+The owner supplied a 45.96-second, 4096 × 2304 screen recording. Inspected frames
+include 23.22 s (Home), 26.78 s (case menu) and 30.63 s (list menu). The visible
+application is Word on macOS with Russian UI; its exact edition/build and display
+scale are not established. The recording informs visual details alongside the
+approved Windows composition. It does not establish a matched Windows comparison.
+Reference footage/document contents are not included in project assets.
+
+Observed details: flat neutral chrome, compact two-row character/paragraph tools,
+white input fields, black/gray icon structure with blue/gold/yellow/red accents,
+small menu shadows and style cards with a sample above a separate name strip.
+Docs now uses the following deliberate design values, not claimed pixel matches:
+
+| Detail | Alpha.83 value / behavior |
+| :--- | :--- |
+| Title + tabs + ribbon | 36 + 30 + 92 = 158 DIP; 22 DIP less than alpha.82 |
+| Chrome/ribbon | #f5f5f5; flat surface, 2-DIP corner treatment without raised outline |
+| Workspace/document | Existing #ebebeb / white; continuous layout retained |
+| Text / dividers | #2d2d2d / #d2d2d2 |
+| Hover / pressed | Neutral #e2e2e2 / #cfcfcf; disabled commands remain disabled |
+| Command menus | White popup surface and leading-aligned action labels; original keyboard/context actions retained |
+| Brand focus / selection | #7047ae / #ede8f5; approved transparent Docs logo retained |
+| Semantic icon accents | Blue #2f79ae, gold #c29039, yellow #f5da26, red #cd2c30, eraser #9c57a6 |
+| Home rows | 76/88 of previous vertical pitch; same horizontal target/gutter checks |
+| Styles | Real resolved emphasis in AaBbCcDd sample, clipped 10-DIP name strip, selected outline; applying/modifying still uses existing commands |
+| View | Captions and controls refitted to 76-DIP groups; large icons shrink only in shorter cells |
+| Interface font | Installed Segoe UI on Windows, installed Arial on macOS, embedded fallback otherwise; no system font is bundled |
+
+Intentional differences: BreakFree name/logo/violet accent, English UI, retained
+Windows-style File/Help/group captions/window controls, only supported style cards,
+no account/cloud imitation, continuous canvas without fictional pages/counts.
+Remaining differences: incomplete commands/tabs, macOS versus Windows metrics,
+reference-specific menu content, no matched reference zoom/language/platform test.
+Synthetic 100/125/150% checks are layout tests, not native Windows acceptance.
+
+Native captures inspected on 2026-10-23, light theme and 100% document zoom. The
+host constrained the 2048 × 1152 request to a 2940 × 1912-pixel image, so this does
+not match the recording's 4096 × 2304 pixel canvas. Home fields/cards/gutters and
+View captions fit; the styles list retains its bounded scroll viewport. Existing
+missing emoji fallback is visible in the unchanged Welcome fixture.
+
+| State | Requested DIP | Actual PNG pixels | Capture | SHA-256 |
+| :--- | :--- | :--- | :--- | :--- |
+| home | 1366 × 900 | 2732 × 1800 | [View](screenshots/rust-reference-home-alpha83-macos.png) | `32b849e79f689138c6d26bf90d9e8cc5368e3fb377e30c4d74cce5f56e1a7c6f` |
+| compact | 640 × 480 | 1280 × 960 | [View](screenshots/rust-reference-compact-alpha83-macos.png) | `779ec7f5345dcf9cc15192f978af138b70335d01a9a69a70aab89861338c047a` |
+| large | 2048 × 1152 (OS constrained) | 2940 × 1912 | [View](screenshots/rust-reference-large-alpha83-macos.png) | `175d3ba423b5e8a6670be16fc17c59518dff689330371921865390f08a771d86` |
+| view | 640 × 480 | 1280 × 960 | [View](screenshots/rust-reference-view-alpha83-macos.png) | `9cdcef706e2311b3c98194caf00b91e29c9cb116fe405db77823e7f36b7e2531` |
+| styles | 1366 × 900 | 2732 × 1800 | [View](screenshots/rust-reference-styles-alpha83-macos.png) | `ac03b93d55929c18b1f24998267c1ce569d11485bb9a06807edffe2a12d8c70e` |
+| help | 640 × 480 | 1280 × 960 | [View](screenshots/rust-reference-help-alpha83-macos.png) | `04cee2e32559a1c1a8087575cde746ed4745c6edbaa54efea5b051d023fa2227` |
+
+Reproduce with the existing capture harness (`home`, `view`, `styles-menu`,
+`leader-focus`); window requests are still subject to host display constraints.
+The harness accepts up to 2560 × 1440 DIP; that is not a supported-display claim.

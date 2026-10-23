@@ -47,7 +47,12 @@ pub fn configure_fonts(ctx: &egui::Context) -> String {
         }
         fonts.families.insert(FontFamily::Name(key.into()), family);
     }
-    if let Ok(data) = std::fs::read("C:/Windows/Fonts/segoeui.ttf") {
+    // Use installed interface fonts only; never bundle system font files.
+    let interface = [
+        "C:/Windows/Fonts/segoeui.ttf",
+        "/System/Library/Fonts/Supplemental/Arial.ttf",
+    ];
+    if let Some(data) = interface.iter().find_map(|path| std::fs::read(path).ok()) {
         fonts
             .font_data
             .insert("interface".into(), FontData::from_owned(data).into());

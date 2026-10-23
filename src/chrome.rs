@@ -3,32 +3,32 @@ use eframe::egui::{
     self, Align2, Color32, FontId, Pos2, Rect, Response, Sense, Stroke, Ui, pos2, vec2,
 };
 
-pub const INK: Color32 = Color32::from_rgb(50, 49, 48);
+pub const INK: Color32 = Color32::from_rgb(45, 45, 45);
 pub const ACCENT: Color32 = Color32::from_rgb(112, 71, 174);
-pub const LINE: Color32 = Color32::from_rgb(213, 213, 213);
-pub const CHROME: Color32 = Color32::from_rgb(243, 244, 245);
-pub const SURFACE: Color32 = Color32::from_rgb(250, 250, 250);
+pub const LINE: Color32 = Color32::from_rgb(210, 210, 210);
+pub const CHROME: Color32 = Color32::from_rgb(245, 245, 245);
+pub const SURFACE: Color32 = Color32::from_rgb(245, 245, 245);
 pub const WORKSPACE: Color32 = Color32::from_rgb(235, 235, 235);
 pub const FILE_RAIL: Color32 = Color32::from_rgb(235, 237, 239);
-pub const HOVER: Color32 = Color32::from_rgb(231, 234, 238);
-pub const PRESSED: Color32 = Color32::from_rgb(220, 224, 229);
-pub const SELECTION: Color32 = Color32::from_rgb(232, 224, 242);
+pub const HOVER: Color32 = Color32::from_rgb(226, 226, 226);
+pub const PRESSED: Color32 = Color32::from_rgb(207, 207, 207);
+pub const SELECTION: Color32 = Color32::from_rgb(237, 232, 245);
 
 // Small semantic accents, independent of the brand's focus/selection color.
-const BLUE: Color32 = Color32::from_rgb(58, 125, 181);
+const BLUE: Color32 = Color32::from_rgb(47, 121, 174);
 const PALE_BLUE: Color32 = Color32::from_rgb(227, 239, 249);
-const GOLD: Color32 = Color32::from_rgb(176, 137, 62);
+const GOLD: Color32 = Color32::from_rgb(194, 144, 57);
 const PALE_GOLD: Color32 = Color32::from_rgb(255, 245, 214);
-const YELLOW: Color32 = Color32::from_rgb(244, 210, 62);
-const RED: Color32 = Color32::from_rgb(202, 65, 76);
-const ERASER: Color32 = Color32::from_rgb(183, 113, 167);
+const YELLOW: Color32 = Color32::from_rgb(245, 218, 38);
+const RED: Color32 = Color32::from_rgb(205, 44, 48);
+const ERASER: Color32 = Color32::from_rgb(156, 87, 166);
 
 fn tint(color: Color32, enabled: bool) -> Color32 {
     if enabled {
         color
     } else {
         // Muted color remains recognizable without suggesting availability.
-        let channel = |c: u8| ((u16::from(c) + 2 * 232) / 3) as u8;
+        let channel = |c: u8| ((2 * u16::from(c) + 3 * 245) / 5) as u8;
         Color32::from_rgb(channel(color.r()), channel(color.g()), channel(color.b()))
     }
 }
@@ -458,8 +458,11 @@ pub fn control(
         paint(
             ui,
             icon,
-            pos2(rect.center().x, rect.top() + 22.),
-            28.,
+            pos2(
+                rect.center().x,
+                rect.top() + if rect.height() < 62. { 15. } else { 22. },
+            ),
+            if rect.height() < 62. { 22. } else { 28. },
             color,
             enabled,
         );

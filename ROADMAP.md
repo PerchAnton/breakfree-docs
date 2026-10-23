@@ -435,3 +435,8 @@ Use public specifications and original test cases, not copied application code. 
 - [x] Alpha.82 step 4: numeric caret/selection preservation, including invalid drafts.
 - [x] Alpha.82 step 5: accessible toggle state and retained descriptions when hidden.
 - [ ] Next: extended preview focus recovery across mode switches and cancellation. Style inheritance remains separate.
+
+- [x] Alpha.83: owner-requested video-guided shell refinement; denser title/Home,
+  neutral surfaces, semantic icon accents, sample/name style cards and View refit.
+  Local geometry/functional checks and native captures are recorded in UI_SPEC
+  and VALIDATION; Windows/reference equivalence is not claimed.

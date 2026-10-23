@@ -12370,3 +12370,40 @@ fn preview_hidden_help_retains_accessibility_descriptions_and_state() {
     }
     assert!(!app.regions.iter().any(|r| r.name == "tab-preview-help"));
 }
+
+#[test]
+fn compact_shell_style_previews_captions_and_view_groups_stay_separate() {
+    for dpi in [1., 1.25, 1.5] {
+        for width in [640., 916., 1366., 2048.] {
+            let (ctx, mut app) = setup();
+            let size = [width * dpi, 900. * dpi];
+            for _ in 0..3 {
+                frame(&ctx, &mut app, vec![], size, dpi);
+            }
+            assert!(region(&app, "ribbon").bottom() <= 158.1);
+            for sample in app
+                .regions
+                .iter()
+                .filter(|r| r.name.starts_with("gallery-sample-"))
+            {
+                let suffix = sample.name.strip_prefix("gallery-sample-").unwrap();
+                let caption = region(&app, &format!("gallery-caption-{suffix}"));
+                let target = region(&app, &format!("command-Style({suffix})"));
+                assert!(target.contains_rect(sample.rect) && target.contains_rect(caption));
+                assert!(sample.rect.bottom() < caption.top());
+                assert!(sample.rect.height() >= 25. && caption.height() >= 14.);
+            }
+            app.tab = 8;
+            for _ in 0..3 {
+                frame(&ctx, &mut app, vec![], size, dpi);
+            }
+            let ribbon = region(&app, "ribbon");
+            for name in ["view-group-Views", "view-group-Show", "view-group-Zoom"] {
+                assert!(ribbon.contains_rect(region(&app, name)));
+            }
+            let show = region(&app, "view-group-Show");
+            let nav = region(&app, "command-Navigation");
+            assert!(nav.bottom() <= show.bottom() - 12., "{nav:?} / {show:?}");
+        }
+    }
+}

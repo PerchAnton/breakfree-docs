@@ -1033,3 +1033,12 @@ keeps its caret/selection, including invalid drafts; Escape and Cancel still dis
 the draft. Hover descriptions and full accessibility labels remain available.
 Visibility is remembered for this editor window only, across subsequent previews;
 a new window starts with help enabled. No document or settings-file change occurs.
+
+### Reference-guided shell refinement (alpha.83)
+
+The title, tabs and ribbon occupy 158 DIP together (previously 180). Home keeps its
+real controls and overflow while using flatter neutral surfaces, stronger semantic
+icon accents and more compact rows. Style cards separate a formatted sample from
+the style name. View fits the same reduced ribbon height. macOS interface text uses
+installed Arial; document font handling is unchanged. The owner-provided Word
+macOS video informs these visual details; Windows comparison remains deferred.

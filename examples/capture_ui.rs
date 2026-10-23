@@ -682,8 +682,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let width: f32 = args[0].parse()?;
     let height: f32 = args[1].parse()?;
-    if !(640.0..=1920.0).contains(&width) || !(480.0..=1080.0).contains(&height) {
-        return Err("Capture dimensions outside 640–1920 × 480–1080 DIP".into());
+    if !(640.0..=2560.0).contains(&width) || !(480.0..=1440.0).contains(&height) {
+        return Err("Capture dimensions outside 640–2560 × 480–1440 DIP".into());
     }
     let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(
         if [

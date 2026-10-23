@@ -335,7 +335,9 @@ impl DocsApp {
             s.spacing.button_padding = vec2(6., 3.);
             s.spacing.interact_size.y = 24.;
             s.visuals.panel_fill = CHROME;
-            s.visuals.widgets.inactive.bg_fill = Color32::from_gray(248);
+            s.visuals.widgets.inactive.bg_fill = Color32::WHITE;
+            s.visuals.widgets.inactive.weak_bg_fill = Color32::TRANSPARENT;
+            s.visuals.window_fill = Color32::WHITE;
             s.visuals.widgets.inactive.bg_stroke = Stroke::new(1.0_f32, Color32::from_gray(218));
             s.visuals.widgets.hovered.bg_stroke = Stroke::new(1.0_f32, Color32::from_gray(185));
             s.visuals.widgets.active.bg_stroke = Stroke::new(1.0_f32, ACCENT);
@@ -346,7 +348,9 @@ impl DocsApp {
             s.visuals.selection.bg_fill = chrome::SELECTION;
             s.visuals.selection.stroke = Stroke::new(1.0_f32, ACCENT);
             s.visuals.widgets.hovered.bg_fill = chrome::HOVER;
+            s.visuals.widgets.hovered.weak_bg_fill = chrome::HOVER;
             s.visuals.widgets.active.bg_fill = chrome::PRESSED;
+            s.visuals.widgets.active.weak_bg_fill = chrome::PRESSED;
             s.text_styles
                 .insert(egui::TextStyle::Body, FontId::proportional(13.));
             s.text_styles
@@ -928,7 +932,11 @@ impl DocsApp {
         } else {
             RichText::new(label)
         };
-        let button = Button::new(text).truncate().selected(self.checked(action));
+        let mut button = Button::new(text).truncate().selected(self.checked(action));
+        if self.collecting_menu {
+            // A trailing flexible lane aligns menu labels with the leading edge.
+            button = button.right_text("");
+        }
         let response = ui
             .add_enabled_ui(enabled, |ui| ui.add_sized(size, button))
             .inner;
@@ -1074,14 +1082,14 @@ impl DocsApp {
                 }
                 if let Some(icon) = &self.icon {
                     ui.put(
-                        Rect::from_min_size(rect.min + vec2(10., 10.), vec2(24., 24.)),
+                        Rect::from_min_size(rect.min + vec2(10., 6.), vec2(24., 24.)),
                         egui::Image::new(icon).fit_to_exact_size(vec2(24., 24.)),
                     );
                 }
                 let title_left = if self.quick_access_below || self.backstage {
                     43.
                 } else {
-                    self.quick_access_bar(ui, rect.min + vec2(43., 8.));
+                    self.quick_access_bar(ui, rect.min + vec2(43., 4.));
                     43. + (self.quick_access.len() + 1) as f32 * 30. + 8.
                 };
                 let search_w = (w * 0.25).clamp(155., 350.);
@@ -1099,14 +1107,14 @@ impl DocsApp {
                     if self.session.dirty() { " *" } else { "" }
                 );
                 let title_rect = Rect::from_min_max(
-                    rect.min + vec2(title_left, 8.),
-                    pos2(search_x - 16., rect.top() + 36.),
+                    rect.min + vec2(title_left, 4.),
+                    pos2(search_x - 16., rect.top() + 32.),
                 );
                 ui.put(title_rect, egui::Label::new(&title).truncate())
                     .on_hover_text(&title);
                 self.record("document-title", title_rect);
                 let search_rect = Rect::from_min_size(
-                    rect.min + vec2(search_x, 8.),
+                    rect.min + vec2(search_x, 4.),
                     vec2(search_w.min(w - search_x - 150.), 28.),
                 );
                 ui.painter()
@@ -1540,7 +1548,7 @@ impl DocsApp {
         } else {
             Color32::from_gray(150)
         };
-        let top = Rect::from_min_size(rect.min, vec2(rect.width(), 37.));
+        let top = Rect::from_min_size(rect.min, vec2(rect.width(), rect.height() * 0.54));
         let response = chrome::button(ui, top, Action::Paste.label(), enabled, false);
         self.record("command-Paste", response.rect);
         self.track_ribbon(
@@ -1643,8 +1651,11 @@ impl DocsApp {
 
     fn home_contents(&mut self, ui: &mut Ui, index: usize, width: f32, bounds: Rect) {
         let origin = bounds.min;
-        let r =
-            |x: f32, y: f32, w: f32, h: f32| Rect::from_min_size(origin + vec2(x, y), vec2(w, h));
+        // Keep the established horizontal hit targets while tightening row pitch.
+        let row_scale = (RIBBON_HEIGHT - 16.) / 88.;
+        let r = |x: f32, y: f32, w: f32, h: f32| {
+            Rect::from_min_size(origin + vec2(x, y * row_scale), vec2(w, h * row_scale))
+        };
         ui.set_clip_rect(bounds.intersect(ui.clip_rect()));
         match index {
             0 => {
@@ -1661,8 +1672,8 @@ impl DocsApp {
                 );
             }
             1 => {
-                let full = width >= 300.;
-                let family = if full { 112. } else { width - 182. };
+                let full = width >= 280.;
+                let family = if full { 92. } else { width - 182. };
                 let response = chrome::field(
                     ui,
                     r(2., 5., family, 25.),
@@ -1743,7 +1754,10 @@ impl DocsApp {
                     );
                 }
                 ui.painter().line_segment(
-                    [origin + vec2(170., 36.), origin + vec2(170., 57.)],
+                    [
+                        origin + vec2(170., 36. * row_scale),
+                        origin + vec2(170., 57. * row_scale),
+                    ],
                     Stroke::new(1.0_f32, chrome::LINE),
                 );
                 self.unavailable_menu(
@@ -1790,7 +1804,10 @@ impl DocsApp {
                     );
                 }
                 ui.painter().line_segment(
-                    [origin + vec2(95., 7.), origin + vec2(95., 28.)],
+                    [
+                        origin + vec2(95., 7. * row_scale),
+                        origin + vec2(95., 28. * row_scale),
+                    ],
                     Stroke::new(1.0_f32, chrome::LINE),
                 );
                 for (i, action) in [Action::DecreaseIndent, Action::IncreaseIndent]
@@ -1838,7 +1855,10 @@ impl DocsApp {
                     Action::ParagraphSpacing,
                 );
                 ui.painter().line_segment(
-                    [origin + vec2(135., 36.), origin + vec2(135., 57.)],
+                    [
+                        origin + vec2(135., 36. * row_scale),
+                        origin + vec2(135., 57. * row_scale),
+                    ],
                     Stroke::new(1.0_f32, chrome::LINE),
                 );
                 self.unavailable_menu(
@@ -1886,6 +1906,7 @@ impl DocsApp {
                         .to_owned();
                     let action = Action::Style(style);
                     let rect = r(2. + i as f32 * card, 5., card - 3., 59.);
+                    ui.painter().rect_filled(rect, 2., Color32::WHITE);
                     let response = chrome::button(
                         ui,
                         rect,
@@ -1906,8 +1927,8 @@ impl DocsApp {
                         .style_catalog
                         .resolve(style)
                         .character;
-                    let mut preview = RichText::new(&name).font(FontId::new(
-                        resolved.font_size.points().clamp(12., 20.),
+                    let mut preview = RichText::new("AaBbCcDd").font(FontId::new(
+                        resolved.font_size.points().clamp(14., 18.),
                         egui::FontFamily::Name(
                             if resolved.bold { "body-bold" } else { "body" }.into(),
                         ),
@@ -1924,15 +1945,57 @@ impl DocsApp {
                         (rect.width() - 8.).max(1.),
                         egui::TextStyle::Body,
                     );
-                    ui.painter().with_clip_rect(rect).galley(
-                        rect.center() - galley.size() / 2.,
-                        galley,
-                        if self.enabled(action) {
-                            INK
-                        } else {
-                            Color32::from_gray(135)
-                        },
+                    if selected == Some(style) {
+                        ui.painter().rect_stroke(
+                            rect,
+                            2.,
+                            Stroke::new(1.2_f32, ACCENT),
+                            egui::StrokeKind::Inside,
+                        );
+                    }
+                    let caption = Rect::from_min_max(
+                        pos2(rect.left() + 2., rect.bottom() - 17.),
+                        rect.max - vec2(2., 2.),
                     );
+                    let sample = Rect::from_min_max(
+                        rect.min + vec2(3., 3.),
+                        pos2(rect.right() - 3., caption.top() - 2.),
+                    );
+                    ui.painter()
+                        .rect_filled(caption, 1., Color32::from_gray(234));
+                    let color = if self.enabled(action) {
+                        INK
+                    } else {
+                        Color32::from_gray(135)
+                    };
+                    ui.painter().with_clip_rect(sample).galley(
+                        sample.center() - galley.size() / 2.,
+                        galley,
+                        color,
+                    );
+                    let label = ui.painter().layout(
+                        name.clone(),
+                        FontId::proportional(10.),
+                        color,
+                        f32::INFINITY,
+                    );
+                    let label = if label.size().x > caption.width() - 4. {
+                        egui::WidgetText::from(RichText::new(&name).size(10.)).into_galley(
+                            ui,
+                            Some(egui::TextWrapMode::Truncate),
+                            (caption.width() - 4.).max(1.),
+                            egui::TextStyle::Small,
+                        )
+                    } else {
+                        label
+                    };
+                    ui.painter().with_clip_rect(caption).galley(
+                        caption.center() - label.size() / 2.,
+                        label,
+                        color,
+                    );
+                    self.record(&format!("gallery-sample-{style:?}"), sample);
+                    self.record(&format!("gallery-caption-{style:?}"), caption);
                     self.style_context_menu(&response, style);
                     if response.on_hover_text(format!("Apply {} to the selected paragraphs. Direct font formatting and alignment stay unchanged.", name))
                         .on_disabled_hover_text("Finish the current dialog or text composition first.").clicked() {
@@ -1972,7 +2035,7 @@ impl DocsApp {
             _ => {}
         }
         ui.painter().text(
-            pos2(origin.x + width / 2., origin.y + 78.),
+            pos2(origin.x + width / 2., origin.y + 78. * row_scale),
             Align2::CENTER_CENTER,
             HOME_GROUPS[index],
             FontId::proportional(11.),
@@ -2425,13 +2488,7 @@ impl DocsApp {
 
     fn ribbon_contents(&mut self, ui: &mut Ui) {
         let shell = ui.max_rect();
-        ui.painter().rect_filled(shell, 6., chrome::SURFACE);
-        ui.painter().rect_stroke(
-            shell,
-            6.,
-            Stroke::new(1.0_f32, Color32::from_gray(225)),
-            egui::StrokeKind::Inside,
-        );
+        ui.painter().rect_filled(shell, 2., chrome::SURFACE);
         ui.shrink_clip_rect(shell);
         ui.add_space(4.);
         if self.tab == 0 {
