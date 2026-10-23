@@ -396,3 +396,16 @@ Escape cancels all draft changes. The chosen leader is displayed separately from
 coverage, because preserved creation owners may retain different leaders.
 These are BreakFree preview shortcuts; no reference-app shortcut equivalence is
 claimed. Native v17, palette and icons remain unchanged.
+
+### Shared ruler preview controls (alpha.79)
+
+Right-click a tab marker and choose Edit tab preview to enter the same draft used
+by Ctrl+Alt+F8. None/Dots/Dashes/Line and Restore leaders change the preview only.
+Exact position opens numeric input; Back to marker requires valid input and does
+not commit. Apply commits the entire draft once; Cancel/Escape discards it.
+Invalid positions disable leader changes and Apply, but leave Cancel available.
+Outside clicks still cancel; pointer dragging still uses its original release
+policy. Mixed owners and preexisting creation stops retain the established rules.
+Keyboard commands remain available; Tab retains its apply-and-next behavior.
+Focus traversal for these new buttons is a separate next step. Windows and
+VoiceOver acceptance remain deferred. Native v17, palette and icons are unchanged.

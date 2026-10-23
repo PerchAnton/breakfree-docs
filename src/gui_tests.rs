@@ -11593,3 +11593,186 @@ fn leader_numeric_return_rejects_invalid_input_and_escape_cancels() {
     assert_eq!(app.session.editor.document, before);
     assert!(app.tab_ruler_drag.is_none());
 }
+
+#[test]
+fn pointer_tab_preview_entry_choices_restore_position_apply_cancel() {
+    use crate::model::{TabKind as K, TabLeader as L};
+    for cancel in [false, true] {
+        let (ctx, mut app) = setup();
+        let size = [1366., 900.];
+        app.session
+            .editor
+            .replace(0, 0, "a\nb\nc", "Fixture")
+            .unwrap();
+        app.session
+            .editor
+            .set_tab_positions(0, 3, vec![(144, K::Left)])
+            .unwrap();
+        app.session
+            .editor
+            .set_tab_leader(0, 0, 144, Some(L::Dots))
+            .unwrap();
+        app.session.editor.selection = (0, 5);
+        app.sync_view();
+        let before = app.session.editor.document.clone();
+        let n = app.session.editor.undo_stack.len();
+        frame(&ctx, &mut app, vec![], size, 1.);
+        let pos = region(&app, "ruler-tab-144").center();
+        for pressed in [true, false] {
+            frame(
+                &ctx,
+                &mut app,
+                vec![
+                    egui::Event::PointerMoved(pos),
+                    egui::Event::PointerButton {
+                        pos,
+                        button: egui::PointerButton::Secondary,
+                        pressed,
+                        modifiers: Modifiers::NONE,
+                    },
+                ],
+                size,
+                1.,
+            );
+        }
+        click_region(&ctx, &mut app, "ruler-tab-preview");
+        assert!(app.tab_ruler_drag.is_some());
+        click_region(&ctx, &mut app, "tab-preview-leader-line");
+        assert_eq!(
+            app.tab_ruler_drag
+                .as_ref()
+                .unwrap()
+                .draft
+                .preview_leader_choice(),
+            Some(Some(L::Line))
+        );
+        click_region(&ctx, &mut app, "tab-preview-restore");
+        assert_eq!(
+            app.tab_ruler_drag
+                .as_ref()
+                .unwrap()
+                .draft
+                .preview_leader_choice(),
+            None
+        );
+        click_region(&ctx, &mut app, "tab-preview-position");
+        frame(&ctx, &mut app, vec![], size, 1.);
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::Text("100".into())],
+            size,
+            1.,
+        );
+        click_region(&ctx, &mut app, "tab-preview-position");
+        assert_eq!(app.tab_ruler_drag.as_ref().unwrap().draft.position, 200);
+        click_region(&ctx, &mut app, "tab-preview-leader-dashes");
+        assert_eq!(app.session.editor.document, before);
+        click_region(
+            &ctx,
+            &mut app,
+            if cancel {
+                "tab-preview-cancel"
+            } else {
+                "tab-preview-apply"
+            },
+        );
+        assert!(app.tab_ruler_drag.is_none());
+        if cancel {
+            assert_eq!(app.session.editor.document, before);
+            assert_eq!(app.session.editor.undo_stack.len(), n);
+        } else {
+            assert_eq!(app.session.editor.undo_stack.len(), n + 1);
+            assert_eq!(
+                app.session.editor.document.paragraphs[2],
+                before.paragraphs[2]
+            );
+            assert_eq!(
+                app.session.editor.document.paragraphs[0]
+                    .spacing
+                    .tab_leader(200),
+                Some(L::Dashes)
+            );
+            let after = app.session.editor.document.clone();
+            app.session.editor.undo();
+            assert_eq!(app.session.editor.document, before);
+            app.session.editor.redo();
+            assert_eq!(app.session.editor.document, after);
+        }
+    }
+}
+
+#[test]
+fn pointer_preview_invalid_position_blocks_apply_and_choice() {
+    let (ctx, mut app) = setup();
+    let size = [640., 480.];
+    let before = app.session.editor.document.clone();
+    frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(
+            Key::F8,
+            Modifiers::CTRL | Modifiers::ALT | Modifiers::SHIFT,
+        )],
+        size,
+        1.,
+    );
+    click_region_at(&ctx, &mut app, "tab-preview-position", size);
+    frame(&ctx, &mut app, vec![], size, 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("invalid".into())],
+        size,
+        1.,
+    );
+    for name in [
+        "tab-preview-leader-dots",
+        "tab-preview-apply",
+        "tab-preview-position",
+    ] {
+        click_region_at(&ctx, &mut app, name, size);
+        assert!(app.tab_ruler_drag.is_some());
+        assert_eq!(app.session.editor.document, before);
+    }
+    click_region_at(&ctx, &mut app, "tab-preview-cancel", size);
+    assert!(app.tab_ruler_drag.is_none());
+    assert_eq!(app.session.editor.document, before);
+}
+
+#[test]
+fn pointer_preview_controls_fit_compact_scales() {
+    for dpi in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        let size = [640. * dpi, 480. * dpi];
+        frame(
+            &ctx,
+            &mut app,
+            vec![ruler_key(
+                Key::F8,
+                Modifiers::CTRL | Modifiers::ALT | Modifiers::SHIFT,
+            )],
+            size,
+            dpi,
+        );
+        frame(&ctx, &mut app, vec![key(Key::Num2, false)], size, dpi);
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![], size, dpi);
+        }
+        for name in [
+            "tab-preview-leader-dots",
+            "tab-preview-restore",
+            "tab-preview-position",
+            "tab-preview-apply",
+            "tab-preview-cancel",
+        ] {
+            let r = region(&app, name);
+            assert!(
+                r.min.x >= 0. && r.max.x <= 640. && r.min.y >= 0. && r.max.y <= 480.,
+                "{name}: {r:?}"
+            );
+        }
+        frame(&ctx, &mut app, vec![key(Key::Escape, false)], size, dpi);
+        assert!(app.tab_ruler_drag.is_none());
+    }
+}

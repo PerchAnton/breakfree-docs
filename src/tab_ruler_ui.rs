@@ -278,7 +278,6 @@ impl DocsApp {
                             | egui::Event::Paste(_)
                             | egui::Event::Ime(_)
                             | egui::Event::MouseWheel { .. }
-                            | egui::Event::PointerButton { .. }
                     )
                 });
                 i.raw_scroll_delta = Vec2::ZERO;
@@ -637,6 +636,15 @@ impl DocsApp {
                 }
             }
             response.context_menu(|ui| {
+                let edit = ui.add_enabled(available, Button::new("Edit tab preview…"));
+                self.record("ruler-tab-preview", edit.rect);
+                if edit.clicked() {
+                    ui.close();
+                    self.start_tab_keyboard(ui.ctx(), value);
+                    if let Some(drag) = &mut self.tab_ruler_drag {
+                        drag.show_leaders = true;
+                    }
+                }
                 let remove = ui.add_enabled(
                     available,
                     Button::new(format!("Delete tab at {:.1} pt", f32::from(value) / 2.)),
@@ -743,13 +751,15 @@ impl DocsApp {
                         }
                     )
                 });
+            let mut apply = false;
+            let mut cancel = false;
             let popup = egui::Area::new(Id::new("tab-ruler-preview"))
                 .order(egui::Order::Tooltip)
                 .fixed_pos(pos2(rect.left() + 12., rect.bottom() + 4.))
                 .interactable(drag.keyboard)
                 .show(ui.ctx(), |ui| {
                     egui::Frame::popup(ui.style()).show(ui, |ui| {
-                        ui.set_max_width((ui.ctx().content_rect().width() - 48.).max(120.));
+                        ui.set_max_width((ui.ctx().content_rect().width() - 48.).clamp(120., 520.));
                         if drag.show_leaders {
                             if drag.error.is_none() && !drag.draft.deleting {
                                 if let Ok(summary) = crate::tab_ruler::leader_summary(&drag.draft.preview, self.session.editor.selection, drag.draft.position) {
@@ -816,10 +826,48 @@ impl DocsApp {
                                 ui.add(egui::Label::new("F1 details · F2 position · F3 next / Shift+F3 previous").wrap());
                             }
                         }
+                        if drag.keyboard {
+                            ui.separator();
+                            let valid = drag.error.is_none() && !drag.draft.deleting;
+                            ui.horizontal_wrapped(|ui| {
+                                for leader in [None, Some(crate::model::TabLeader::Dots), Some(crate::model::TabLeader::Dashes), Some(crate::model::TabLeader::Line)] {
+                                    let label = leader.map_or("None", |v| v.label());
+                                    let common = crate::tab_ruler::leader_summary(&drag.draft.preview, self.session.editor.selection, drag.draft.position).ok().and_then(|s| s.common());
+                                    let r = ui.add_enabled(valid, Button::new(label).selected(valid && drag.draft.preview_leader_choice().or(common) == Some(leader))).on_disabled_hover_text("Choose a valid position; leaders cannot be changed during deletion.");
+                                    self.regions.push(Region { name: format!("tab-preview-leader-{}", label.to_lowercase()), rect: r.rect });
+                                    if r.clicked() { drag.error = drag.draft.set_preview_leader(leader).err(); drag.show_leaders = true; }
+                                }
+                            });
+                            ui.horizontal_wrapped(|ui| {
+                                let r = ui.add_enabled(valid && drag.draft.preview_leader_choice().is_some(), Button::new("Restore leaders")).on_hover_text("Restore each original leader, keeping the current position.");
+                                self.regions.push(Region { name: "tab-preview-restore".into(), rect: r.rect });
+                                if r.clicked() { drag.error = drag.draft.restore_preview_leaders().err(); drag.show_leaders = true; }
+                                let r = ui.add_enabled(!drag.numeric || drag.error.is_none(), Button::new(if drag.numeric { "Back to marker" } else { "Exact position…" }));
+                                self.regions.push(Region { name: "tab-preview-position".into(), rect: r.rect });
+                                if r.clicked() {
+                                    drag.numeric = !drag.numeric;
+                                    ui.ctx().request_repaint();
+                                    if drag.numeric { drag.input = format!("{}", f32::from(drag.draft.position) / 2.); drag.focus_input = true; }
+                                    else { ui.memory_mut(|m| m.surrender_focus(Id::new("ruler-tab-position-input"))); }
+                                }
+                                let r = ui.add_enabled(drag.error.is_none(), Button::new("Apply"));
+                                self.regions.push(Region { name: "tab-preview-apply".into(), rect: r.rect });
+                                apply = r.clicked();
+                                let r = ui.button("Cancel");
+                                self.regions.push(Region { name: "tab-preview-cancel".into(), rect: r.rect });
+                                cancel = r.clicked();
+                            });
+                        }
                     });
                 });
             drag.popup = popup.response.rect;
-            if drag.numeric && drag.accept_input && drag.error.is_none() {
+            if cancel {
+                self.tab_ruler_drag = None;
+                ui.memory_mut(|m| m.surrender_focus(Id::new("ruler-tab-position-input")));
+                self.sync_view();
+                return;
+            }
+            if (apply || (drag.numeric && drag.accept_input)) && drag.error.is_none() {
                 let drag = self.tab_ruler_drag.take().unwrap();
                 let result = drag.draft.commit(&mut self.session.editor);
                 self.fail(result);

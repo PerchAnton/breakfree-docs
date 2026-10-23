@@ -3,6 +3,17 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.79 — 2026-10-23
+
+- Open the shared tab preview from the ruler marker context menu.
+- Add pointer-accessible None/Dots/Dashes/Line choices and Restore leaders.
+- Add Exact position / Back to marker controls without an intermediate commit.
+- Add Apply/Cancel for the entire position/leader draft; invalid positions disable
+  changes and apply, while Cancel remains available.
+- Retain keyboard commands, mixed-owner rules, one Undo/Redo, native v17,
+  palette and icons. Alpha.78 has no explicit version approval recorded;
+  alpha.79 awaits approval. Windows deferred; VoiceOver at final review.
+
 ## 0.1.0-alpha.78 — 2026-10-23
 
 - Add direct ruler-preview leader keys: 0 None, 1 Dots, 2 Dashes, 3 Line.

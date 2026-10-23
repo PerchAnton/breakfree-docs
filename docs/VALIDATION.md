@@ -1949,3 +1949,20 @@ approval recorded. Alpha.76 is one five-step review candidate.
 - Two native wide/compact direct-choice captures inspected. Physical OS keyboard,
   Windows, matched reference comparison and VoiceOver remain unverified/deferred.
   Native v17 and the palette/icons are retained; CI is recorded separately.
+
+## Alpha.79 pointer preview validation
+
+2026-10-23, macOS arm64, Rust 1.99.1. Alpha.77 approved; alpha.78 has no explicit
+approval recorded; alpha.79 awaits approval.
+
+- 407 full / 187 core-only tests pass. New pointer scenarios cover context-menu
+  entry, leader choice, mixed restoration, numeric editing/return, apply/cancel,
+  nonowner preservation and one Undo/Redo. Invalid numeric input blocks choices,
+  mode return and Apply while leaving Cancel usable.
+- New control bounds pass at synthetic 100/125/150% in 640 × 480 DIP. Existing
+  keyboard, storage, renderer and failed-write checks remain passing.
+- fmt, normal/capture Clippy, release/capture builds, repository/artwork/YAML,
+  whitespace and isolated CLI checks pass. Two native pointer-entry captures
+  inspected at wide/compact sizes; synthetic capture input is not physical input.
+- Windows, physical OS keyboard/IME, matched reference comparison and VoiceOver
+  acceptance remain deferred. Native v17, palette and icons are retained.

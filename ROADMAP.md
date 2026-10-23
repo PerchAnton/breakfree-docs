@@ -414,4 +414,9 @@ Use public specifications and original test cases, not copied application code. 
 - [x] Alpha.78 step 3: restore original per-paragraph leaders without losing position.
 - [x] Alpha.78 step 4: F4 returns from valid numeric input without committing.
 - [x] Alpha.78 step 5: explicit choice feedback separate from mixed coverage.
-- [ ] Next: pointer-accessible leader choices in the shared ruler preview. Style inheritance remains separate.
+- [x] Alpha.79 step 1: context-menu entry to the shared marker preview.
+- [x] Alpha.79 step 2: pointer leader choices with selected-state feedback.
+- [x] Alpha.79 step 3: restore original leaders using the same draft.
+- [x] Alpha.79 step 4: exact-position entry and return without committing.
+- [x] Alpha.79 step 5: Apply/Cancel with invalid-input protection and one Undo/Redo.
+- [ ] Next: focus traversal of pointer preview controls and keyboard/pointer handoff. Style inheritance remains separate.

@@ -20,7 +20,7 @@ impl eframe::App for Capture {
     fn raw_input_hook(&mut self, _ctx: &egui::Context, input: &mut egui::RawInput) {
         if matches!(
             self.mode.as_str(),
-            "leader-details" | "leader-choice" | "leader-menu"
+            "leader-details" | "leader-choice" | "leader-pointer" | "leader-menu"
         ) {
             input.focused = true;
             if matches!(self.mode.as_str(), "leader-details" | "leader-choice")
@@ -46,7 +46,7 @@ impl eframe::App for Capture {
                     },
                 });
             }
-            if self.mode == "leader-menu"
+            if matches!(self.mode.as_str(), "leader-menu" | "leader-pointer")
                 && matches!(self.frames, 4 | 5)
                 && let Some(r) = self.app.regions.iter().find(|r| r.name == "ruler-tab-360")
             {
@@ -59,6 +59,23 @@ impl eframe::App for Capture {
                     modifiers: egui::Modifiers::NONE,
                 });
             }
+        }
+        if self.mode == "leader-pointer"
+            && matches!(self.frames, 7 | 8)
+            && let Some(r) = self
+                .app
+                .regions
+                .iter()
+                .find(|r| r.name == "ruler-tab-preview")
+        {
+            let pos = r.rect.center();
+            input.events.push(egui::Event::PointerMoved(pos));
+            input.events.push(egui::Event::PointerButton {
+                pos,
+                button: egui::PointerButton::Primary,
+                pressed: self.frames == 7,
+                modifiers: egui::Modifiers::NONE,
+            });
         }
         if self.mode == "leader-dialog" {
             input.focused = true;
@@ -557,6 +574,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "leader-dialog",
             "leader-details",
             "leader-choice",
+            "leader-pointer",
             "leader-menu",
             "typed-tabs-dialog",
             "tab-keyboard",
@@ -655,7 +673,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "examples/Formatting.bfdoc"
         } else if matches!(
             args[2].as_str(),
-            "tab-leaders" | "leader-dialog" | "leader-details" | "leader-choice" | "leader-menu"
+            "tab-leaders"
+                | "leader-dialog"
+                | "leader-details"
+                | "leader-choice"
+                | "leader-pointer"
+                | "leader-menu"
         ) {
             "examples/TabLeaders.bfdoc"
         } else if matches!(args[2].as_str(), "aligned-tabs" | "typed-tabs-dialog") {
@@ -864,7 +887,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             };
             if matches!(
                 mode.as_str(),
-                "leader-details" | "leader-choice" | "leader-menu"
+                "leader-details" | "leader-choice" | "leader-pointer" | "leader-menu"
             ) {
                 app.execute(Action::SelectAll, &cc.egui_ctx);
             }

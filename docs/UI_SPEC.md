@@ -2240,3 +2240,24 @@ and VoiceOver acceptance remain deferred.
 | :--- | :--- | :--- |
 | 1366 × 900 | [View](screenshots/rust-leader-choice-alpha78-macos.png) | `ef3bbc7fc1c7097368c5088fa94361c70ec1fb8f2b997f2fd337ac6be90ccdb9` |
 | 640 × 480 | [View](screenshots/rust-leader-compact-alpha78-macos.png) | `503c5910a5b6a3a1d5d94b710627ed42d068bd63ee50d46324d0e189bb790203` |
+
+## Alpha.79: shared preview controls
+
+The marker context menu adds Edit tab preview. The same floating preview contains
+wrapped leader buttons plus Restore leaders, Exact position/Back to marker,
+Apply and Cancel. Content width is capped at 520 DIP (and available window width),
+keeping the panel anchored below the ruler instead of stretching across the window.
+Buttons use existing selected, hover and disabled styling; palette/icons stay intact.
+
+Invalid positions block edits and Apply. Cancel and outside-click cancellation
+remain available. Numeric mode requests a repaint before the new input is focused.
+Keyboard shortcuts retain their existing semantics; focus traversal is next.
+
+Native macOS pointer-entry captures inspected on 2026-10-23: mixed values remain
+unselected, Restore is initially disabled, and all controls fit both windows.
+Physical input, Windows, matched reference and VoiceOver acceptance are deferred.
+
+| DIP | Capture | SHA-256 |
+| :--- | :--- | :--- |
+| 1366 × 900 | [View](screenshots/rust-leader-pointer-alpha79-macos.png) | `485514b5764a476566212c3fd85d0eaef9464de2e5c42494b0ffb4232b78528c` |
+| 640 × 480 | [View](screenshots/rust-leader-compact-alpha79-macos.png) | `e8c071f209057f9a9339c42f0256ff1e8635b70dfd0db6653d2d954b965ed7e6` |
