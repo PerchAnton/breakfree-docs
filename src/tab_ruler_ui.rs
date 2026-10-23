@@ -14,13 +14,36 @@ pub(super) struct TabDrag {
     show_leaders: bool,
     numeric: bool,
     input: String,
-    focus_input: bool,
+    select_input: bool,
     accept_input: bool,
     popup: Rect,
     control_focus: Option<usize>,
     activate_control: bool,
 }
 impl TabDrag {
+    fn focus_numeric(&mut self, ctx: &egui::Context) {
+        // Re-entering the existing field must retain an incomplete draft and caret.
+        if !self.numeric {
+            self.input = format!("{}", f32::from(self.draft.position) / 2.);
+            self.select_input = true;
+        }
+        self.numeric = true;
+        self.control_focus = None;
+        ctx.memory_mut(|m| m.request_focus(Id::new("ruler-tab-position-input")));
+    }
+
+    fn focus_marker(&mut self, ctx: &egui::Context) {
+        self.numeric = false;
+        self.select_input = false;
+        self.control_focus = None;
+        // A button can own native focus even when the position field is visible.
+        ctx.memory_mut(|m| {
+            if let Some(id) = m.focused() {
+                m.surrender_focus(id);
+            }
+        });
+    }
+
     // Leader choices 0..4, restore 4, position 5, apply 6, cancel 7.
     fn enabled_controls(&self) -> Vec<usize> {
         let valid = self.error.is_none() && !self.draft.deleting;
@@ -276,14 +299,14 @@ impl DocsApp {
                     show_leaders: false,
                     numeric: false,
                     input: String::new(),
-                    focus_input: false,
+                    select_input: false,
                     accept_input: false,
                     popup: Rect::NOTHING,
                     control_focus: None,
                     activate_control: false,
                 });
-                self.focus_document = false;
                 self.leave_ribbon(ctx);
+                self.focus_document = false;
                 ctx.memory_mut(|m| m.surrender_focus(Id::new(EDIT_ID)));
                 ctx.request_repaint();
             }
@@ -355,6 +378,12 @@ impl DocsApp {
             if cancel {
                 self.tab_ruler_drag = None;
                 ctx.input_mut(|i| {
+                    // egui already derived pointer state from the raw events. Consume
+                    // the dismissing press too, so ribbon routing cannot steal focus
+                    // and its later release cannot activate a background command.
+                    if i.pointer.any_pressed() {
+                        i.pointer = Default::default();
+                    }
                     i.events.retain(|e| {
                         !matches!(
                             e,
@@ -380,16 +409,21 @@ impl DocsApp {
             ctx.input_mut(|i| {
                 i.consume_key(Modifiers::NONE, Key::F7);
             });
-            if ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::F6)) {
+            let fresh_mode_key = |key| {
+                events.iter().any(|e| {
+                    matches!(e,
+                egui::Event::Key { key: k, pressed: true, repeat: false, modifiers, .. }
+                if *k == key && modifiers.is_none())
+                })
+            };
+            if ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::F6)) && fresh_mode_key(Key::F6)
+            {
                 let drag = self.tab_ruler_drag.as_mut().unwrap();
                 drag.control_focus = if drag.control_focus.is_some() {
                     None
                 } else {
                     drag.enabled_controls().first().copied()
                 };
-                if drag.control_focus.is_none() && drag.numeric {
-                    drag.focus_input = true;
-                }
                 ctx.memory_mut(|m| {
                     if let Some(id) = m.focused() {
                         m.surrender_focus(id);
@@ -402,19 +436,14 @@ impl DocsApp {
             }
             if ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::F2)) {
                 let drag = self.tab_ruler_drag.as_mut().unwrap();
-                drag.numeric = true;
-                drag.control_focus = None;
-                drag.input = format!("{}", f32::from(drag.draft.position) / 2.);
-                drag.focus_input = true;
+                drag.focus_numeric(ctx);
             }
             if ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::F4)) {
                 let drag = self.tab_ruler_drag.as_mut().unwrap();
                 if drag.numeric {
                     drag.error = drag.draft.move_to_text(&drag.input).err();
                     if drag.error.is_none() {
-                        drag.numeric = false;
-                        drag.control_focus = None;
-                        ctx.memory_mut(|m| m.surrender_focus(Id::new("ruler-tab-position-input")));
+                        drag.focus_marker(ctx);
                     }
                 }
             }
@@ -690,14 +719,14 @@ impl DocsApp {
                     show_leaders: false,
                     numeric: false,
                     input: String::new(),
-                    focus_input: false,
+                    select_input: false,
                     accept_input: false,
                     popup: Rect::NOTHING,
                     control_focus: None,
                     activate_control: false,
                 });
-                self.focus_document = false;
                 self.leave_ribbon(ctx);
+                self.focus_document = false;
                 ctx.memory_mut(|m| m.surrender_focus(Id::new(EDIT_ID)));
             }
             Err(error) => self.error = Some(error),
@@ -849,14 +878,14 @@ impl DocsApp {
                             show_leaders: false,
                             numeric: false,
                             input: String::new(),
-                            focus_input: false,
+                            select_input: false,
                             accept_input: false,
                             popup: Rect::NOTHING,
                             control_focus: None,
                             activate_control: false,
                         });
-                        self.focus_document = false;
                         self.leave_ribbon(ui.ctx());
+                        self.focus_document = false;
                         ui.memory_mut(|m| m.surrender_focus(Id::new(EDIT_ID)));
                     }
                     Err(error) => self.error = Some(error),
@@ -970,7 +999,8 @@ impl DocsApp {
                                     .desired_width(90.)
                                     .char_limit(16)
                                     .show(ui);
-                                if out.response.clicked() { drag.control_focus = None; }
+                                self.regions.push(Region { name: "tab-preview-position-input".into(), rect: out.response.rect });
+                                if out.response.clicked() || out.response.is_pointer_button_down_on() { drag.control_focus = None; }
                                 if out.response.changed() {
                                     ui.ctx().request_repaint();
                                 }
@@ -981,7 +1011,7 @@ impl DocsApp {
                                         "Tab position in points, 0.5 to 1440",
                                     )
                                 });
-                                if drag.focus_input {
+                                if drag.select_input {
                                     out.response.request_focus();
                                     out.state.cursor.set_char_range(Some(
                                         egui::text::CCursorRange::two(
@@ -990,7 +1020,7 @@ impl DocsApp {
                                         ),
                                     ));
                                     out.state.store(ui.ctx(), out.response.id);
-                                    drag.focus_input = false;
+                                    drag.select_input = false;
                                 }
                                 ui.label("pt");
                             });
@@ -1035,11 +1065,9 @@ impl DocsApp {
                                 let r = ui.add_enabled(!drag.numeric || drag.error.is_none(), Button::new(if drag.numeric { "Back to marker" } else { "Exact position…" }));
                                 self.regions.push(Region { name: "tab-preview-position".into(), rect: r.rect });
                                 if drag.control(ui, 5, &r) {
-                                    drag.control_focus = None;
-                                    drag.numeric = !drag.numeric;
+                                    if drag.numeric { drag.focus_marker(ui.ctx()); }
+                                    else { drag.focus_numeric(ui.ctx()); }
                                     ui.ctx().request_repaint();
-                                    if drag.numeric { drag.input = format!("{}", f32::from(drag.draft.position) / 2.); drag.focus_input = true; }
-                                    else { ui.memory_mut(|m| m.surrender_focus(Id::new("ruler-tab-position-input"))); }
                                 }
                                 let r = ui.add_enabled(drag.error.is_none(), Button::new("Apply"));
                                 self.regions.push(Region { name: "tab-preview-apply".into(), rect: r.rect });

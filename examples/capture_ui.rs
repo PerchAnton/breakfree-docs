@@ -25,6 +25,8 @@ impl eframe::App for Capture {
                 | "leader-pointer"
                 | "leader-focus"
                 | "leader-help-hidden"
+                | "leader-focus-return"
+                | "leader-focus-cancel"
                 | "leader-menu"
         ) {
             input.focused = true;
@@ -53,7 +55,12 @@ impl eframe::App for Capture {
             }
             if matches!(
                 self.mode.as_str(),
-                "leader-menu" | "leader-pointer" | "leader-focus" | "leader-help-hidden"
+                "leader-menu"
+                    | "leader-pointer"
+                    | "leader-focus"
+                    | "leader-help-hidden"
+                    | "leader-focus-return"
+                    | "leader-focus-cancel"
             ) && matches!(self.frames, 4 | 5)
                 && let Some(r) = self.app.regions.iter().find(|r| r.name == "ruler-tab-360")
             {
@@ -69,7 +76,11 @@ impl eframe::App for Capture {
         }
         if matches!(
             self.mode.as_str(),
-            "leader-pointer" | "leader-focus" | "leader-help-hidden"
+            "leader-pointer"
+                | "leader-focus"
+                | "leader-help-hidden"
+                | "leader-focus-return"
+                | "leader-focus-cancel"
         ) && matches!(self.frames, 7 | 8)
             && let Some(r) = self
                 .app
@@ -100,6 +111,32 @@ impl eframe::App for Capture {
                 repeat: false,
                 modifiers: egui::Modifiers::NONE,
             });
+        }
+        if matches!(
+            self.mode.as_str(),
+            "leader-focus-return" | "leader-focus-cancel"
+        ) {
+            let action = match self.frames {
+                10 | 11 => Some((egui::Key::F2, self.frames == 10)),
+                14 | 15 => Some((egui::Key::ArrowLeft, self.frames == 14)),
+                16..=19 => Some((egui::Key::F6, self.frames.is_multiple_of(2))),
+                20 | 21 if self.mode == "leader-focus-cancel" => {
+                    Some((egui::Key::Escape, self.frames == 20))
+                }
+                _ => None,
+            };
+            if self.frames == 12 {
+                input.events.push(egui::Event::Text("120".into()));
+            }
+            if let Some((key, pressed)) = action {
+                input.events.push(egui::Event::Key {
+                    key,
+                    physical_key: None,
+                    pressed,
+                    repeat: false,
+                    modifiers: egui::Modifiers::NONE,
+                });
+            }
         }
         if self.mode == "leader-focus" && self.frames == 14 {
             input.events.push(egui::Event::Key {
@@ -585,7 +622,15 @@ impl eframe::App for Capture {
         self.frames += 1;
         let now = ctx.input(|i| i.time);
         let started = *self.started.get_or_insert(now);
-        if self.frames >= 16 && now - started >= 0.4 && !self.requested {
+        let capture_frame = if matches!(
+            self.mode.as_str(),
+            "leader-focus-return" | "leader-focus-cancel"
+        ) {
+            24
+        } else {
+            16
+        };
+        if self.frames >= capture_frame && now - started >= 0.4 && !self.requested {
             ctx.send_viewport_cmd(egui::ViewportCommand::Screenshot(Default::default()));
             self.requested = true;
         }
@@ -610,6 +655,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "leader-pointer",
             "leader-focus",
             "leader-help-hidden",
+            "leader-focus-return",
+            "leader-focus-cancel",
             "leader-menu",
             "typed-tabs-dialog",
             "tab-keyboard",
@@ -715,6 +762,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 | "leader-pointer"
                 | "leader-focus"
                 | "leader-help-hidden"
+                | "leader-focus-return"
+                | "leader-focus-cancel"
                 | "leader-menu"
         ) {
             "examples/TabLeaders.bfdoc"
@@ -929,6 +978,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     | "leader-pointer"
                     | "leader-focus"
                     | "leader-help-hidden"
+                    | "leader-focus-return"
+                    | "leader-focus-cancel"
                     | "leader-menu"
             ) {
                 app.execute(Action::SelectAll, &cc.egui_ctx);

@@ -2436,3 +2436,46 @@ then `BREAKFREE_CAPTURE_TO=/absolute/path/capture.png target/release/examples/ca
 640 480 leader-help-hidden`. Other modes above: `home`, `leader-focus`, `navigation`,
 `styles-menu`, `ruler-keyboard`. `leader-focus` explicitly opens help with F7;
 `leader-help-hidden` records the new default. Capture input does not edit user files.
+
+
+## Alpha.85: preview focus recovery
+
+This iteration preserves alpha.84 geometry, compact content, colors, icon paths
+and default-hidden help. It changes interaction routing only:
+
+| Transition | Required focus and state |
+| :--- | :--- |
+| Marker → F2 / Exact position | Numeric field; select the current value once |
+| Numeric → F6 → controls → F6 | Same numeric draft and caret/selection, including invalid input |
+| Numeric or its controls → F2 | Refocus the existing field; do not replace the draft |
+| Controls → pointer press in numeric field | Field takes focus on press, before release |
+| Numeric or its controls → F4 / Back to marker | Valid draft retained; field/button focus released; no commit |
+| Held F6 | Consume repeats; switch only on a fresh press |
+| Escape / Cancel / outside press | Discard preview; restore document selection and focus; no history entry |
+| Resize / hidden rulers / window focus loss | Cancel; an inactive window restores document focus after reactivation |
+| Cancel → reopen | Fresh preview state, no stale control activation or numeric text |
+
+The outside dismissing press consumes both raw events and derived pointer state,
+so ribbon routing cannot clear the restored focus or activate a background command
+on release. No new help text is added to the default interface. Native captures
+below use the existing synthetic TabLeaders fixture and injected event sequences;
+they are not physical-keyboard or Windows display-scale acceptance.
+
+Text replacement now prefers the actual selection when old/new content shares
+leading or trailing characters. The minimal-diff fallback remains for a batch
+that changes the edit range. This fixes a native paste → Undo → preview → Cancel
+case where the equal suffix had been excluded from the restored selection.
+
+Native macOS captures (light theme, English UI, 100% document zoom, 2× backing
+scale). The numeric image shows the caret between `2` and `0` after F6 twice;
+the cancel image shows the original whole-document selection. Home is unchanged.
+
+| Capture mode | Logical window (DIP) | Pixels | Image | SHA-256 |
+| :--- | :--- | :--- | :--- | :--- |
+| `leader-focus-return` | 640 × 480 | 1280 × 960 | [View](screenshots/rust-focus-numeric-alpha85-macos.png) | `766e29e5434029e73f90a372501b7b5e0e841e3c5e6298b8822b443c484093a8` |
+| `leader-focus-cancel` | 640 × 480 | 1280 × 960 | [View](screenshots/rust-focus-cancel-alpha85-macos.png) | `98eb7d3a3fcc05c414b504c6a2d4bc220a5fa47ebd8b4ff95dee9c059c56aaf7` |
+| `home` | 1366 × 900 | 2732 × 1800 | [View](screenshots/rust-focus-home-alpha85-macos.png) | `7e785c995d67d05209ed67629ece8f30987d8ac0c7251251449dc1d21908d986` |
+
+Reproduce with `cargo build --locked --release --features capture --example capture_ui`,
+then set `BREAKFREE_CAPTURE_TO` and run `target/release/examples/capture_ui WIDTH
+HEIGHT MODE` using the table values. The normal editor CLI remains unchanged.

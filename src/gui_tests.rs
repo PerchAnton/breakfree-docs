@@ -11804,7 +11804,7 @@ fn tab_preview_focus_traversal_activation_and_single_history() {
         size,
         1.,
     );
-    frame(&ctx, &mut app, vec![key(Key::F6, false)], size, 1.);
+    tap_preview_key(&ctx, &mut app, Key::F6, size);
     let first = ctx.memory(|m| m.focused()).unwrap();
     frame(&ctx, &mut app, vec![key(Key::Tab, false)], size, 1.);
     assert_ne!(ctx.memory(|m| m.focused()), Some(first));
@@ -11830,7 +11830,7 @@ fn tab_preview_focus_traversal_activation_and_single_history() {
         size,
         1.,
     );
-    frame(&ctx, &mut app, vec![key(Key::F6, false)], size, 1.); // None button.
+    tap_preview_key(&ctx, &mut app, Key::F6, size); // None button.
     for _ in 0..2 {
         frame(
             &ctx,
@@ -11871,7 +11871,7 @@ fn tab_preview_focus_skips_disabled_and_invalid_input_can_cancel() {
         size,
         1.,
     );
-    frame(&ctx, &mut app, vec![key(Key::F6, false)], size, 1.);
+    tap_preview_key(&ctx, &mut app, Key::F6, size);
     for _ in 0..4 {
         frame(&ctx, &mut app, vec![key(Key::Tab, false)], size, 1.);
     } // Restore disabled: skip to position.
@@ -11885,7 +11885,7 @@ fn tab_preview_focus_skips_disabled_and_invalid_input_can_cancel() {
         size,
         1.,
     );
-    frame(&ctx, &mut app, vec![key(Key::F6, false)], size, 1.);
+    tap_preview_key(&ctx, &mut app, Key::F6, size);
     let cancel = ctx.memory(|m| m.focused());
     frame(&ctx, &mut app, vec![key(Key::Tab, false)], size, 1.);
     assert_eq!(ctx.memory(|m| m.focused()), cancel);
@@ -11927,10 +11927,10 @@ fn tab_preview_pointer_keyboard_handoff_and_return_keep_draft() {
             .preview_leader_choice(),
         Some(Some(L::Dashes))
     );
-    frame(&ctx, &mut app, vec![key(Key::F6, false)], size, 1.);
+    tap_preview_key(&ctx, &mut app, Key::F6, size);
     frame(&ctx, &mut app, vec![key(Key::ArrowRight, false)], size, 1.);
     assert_eq!(app.tab_ruler_drag.as_ref().unwrap().draft.position, 73);
-    frame(&ctx, &mut app, vec![key(Key::F6, false)], size, 1.);
+    tap_preview_key(&ctx, &mut app, Key::F6, size);
     frame(
         &ctx,
         &mut app,
@@ -12466,5 +12466,397 @@ fn compact_preview_defaults_hide_instructions_without_hiding_state() {
         frame(&ctx, &mut app, vec![key(Key::Escape, false)], size, dpi);
         assert_eq!(app.session.editor.document, before);
         assert_eq!(app.session.editor.undo_stack.len(), history);
+    }
+}
+
+fn start_focus_preview(ctx: &egui::Context, app: &mut DocsApp, size: [f32; 2]) {
+    frame(
+        ctx,
+        app,
+        vec![ruler_key(
+            Key::F8,
+            Modifiers::CTRL | Modifiers::ALT | Modifiers::SHIFT,
+        )],
+        size,
+        1.,
+    );
+    frame(ctx, app, vec![], size, 1.);
+    assert!(app.tab_ruler_drag.is_some());
+}
+
+fn preview_caret(ctx: &egui::Context) -> Option<CCursorRange> {
+    egui::TextEdit::load_state(ctx, Id::new("ruler-tab-position-input"))
+        .unwrap()
+        .cursor
+        .char_range()
+}
+
+#[test]
+fn preview_focus_numeric_roundtrip_preserves_selection() {
+    for selected in [false, true] {
+        let (ctx, mut app) = setup();
+        let size = [640., 480.];
+        start_focus_preview(&ctx, &mut app, size);
+        tap_preview_key(&ctx, &mut app, Key::F2, size);
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::Text("120".into())],
+            size,
+            1.,
+        );
+        frame(
+            &ctx,
+            &mut app,
+            vec![ruler_key(
+                Key::ArrowLeft,
+                if selected {
+                    Modifiers::SHIFT
+                } else {
+                    Modifiers::NONE
+                },
+            )],
+            size,
+            1.,
+        );
+        let caret = preview_caret(&ctx);
+        tap_preview_key(&ctx, &mut app, Key::F6, size);
+        tap_preview_key(&ctx, &mut app, Key::F6, size);
+        assert_eq!(
+            preview_caret(&ctx),
+            caret,
+            "F6 must preserve the numeric selection"
+        );
+        assert!(ctx.memory(|m| m.has_focus(Id::new("ruler-tab-position-input"))));
+        tap_preview_key(&ctx, &mut app, Key::Escape, size);
+    }
+}
+
+#[test]
+fn preview_focus_f2_preserves_invalid_draft_and_caret() {
+    let (ctx, mut app) = setup();
+    let size = [640., 480.];
+    start_focus_preview(&ctx, &mut app, size);
+    tap_preview_key(&ctx, &mut app, Key::F2, size);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("12x".into())],
+        size,
+        1.,
+    );
+    tap_preview_key(&ctx, &mut app, Key::ArrowLeft, size);
+    let caret = preview_caret(&ctx);
+    tap_preview_key(&ctx, &mut app, Key::F6, size);
+    tap_preview_key(&ctx, &mut app, Key::F2, size);
+    assert_eq!(
+        preview_caret(&ctx),
+        caret,
+        "F2 must refocus an existing draft"
+    );
+    // Delete only the invalid character; the remaining 12 must survive.
+    tap_preview_key(&ctx, &mut app, Key::Delete, size);
+    tap_preview_key(&ctx, &mut app, Key::Enter, size);
+    assert!(app.tab_ruler_drag.is_none());
+    assert_eq!(
+        app.session.editor.document.paragraphs[0]
+            .spacing
+            .left_tab_stops_half_points,
+        vec![24]
+    );
+}
+
+#[test]
+fn preview_focus_marker_mode_releases_controls_and_document() {
+    let (ctx, mut app) = setup();
+    let size = [640., 480.];
+    start_focus_preview(&ctx, &mut app, size);
+    assert_eq!(
+        ctx.memory(|m| m.focused()),
+        None,
+        "Marker input must not focus the document"
+    );
+    for pointer in [false, true] {
+        tap_preview_key(&ctx, &mut app, Key::F2, size);
+        tap_preview_key(&ctx, &mut app, Key::F6, size);
+        if pointer {
+            click_region_at(&ctx, &mut app, "tab-preview-position", size);
+        } else {
+            tap_preview_key(&ctx, &mut app, Key::F4, size);
+        }
+        assert_eq!(
+            ctx.memory(|m| m.focused()),
+            None,
+            "Marker input must release the previous button"
+        );
+        let at = app.tab_ruler_drag.as_ref().unwrap().draft.position;
+        tap_preview_key(&ctx, &mut app, Key::ArrowRight, size);
+        assert_eq!(app.tab_ruler_drag.as_ref().unwrap().draft.position, at + 1);
+    }
+}
+
+#[test]
+fn preview_focus_cancel_restores_document_selection_without_history_or_input_leaks() {
+    for mode in ["marker", "numeric", "controls"] {
+        for cancel in ["escape", "button", "outside", "resize", "hide", "delete"] {
+            let (ctx, mut app) = setup();
+            let mut size = [640., 480.];
+            app.session
+                .editor
+                .replace(0, 0, "Hello world\nSecond line", "Fixture")
+                .unwrap();
+            app.session.editor.replace(0, 0, "redo", "Fixture").unwrap();
+            app.session.editor.undo();
+            app.session.editor.selection = (1, 4);
+            app.sync_view();
+            frame(&ctx, &mut app, vec![], size, 1.);
+            let before = app.session.editor.document.clone();
+            let undo = app.session.editor.undo_stack.len();
+            let redo = app.session.editor.redo_stack.len();
+            start_focus_preview(&ctx, &mut app, size);
+            if mode != "marker" {
+                tap_preview_key(&ctx, &mut app, Key::F2, size);
+            }
+            if mode == "controls" {
+                tap_preview_key(&ctx, &mut app, Key::F6, size);
+            }
+            let mut events = vec![egui::Event::Text("must not leak".into())];
+            match cancel {
+                "escape" => events.insert(0, key(Key::Escape, false)),
+                "button" => {
+                    click_region_at(&ctx, &mut app, "tab-preview-cancel", size);
+                    events.clear();
+                }
+                "outside" => {
+                    let pos = egui::pos2(630., 470.);
+                    events.push(egui::Event::PointerMoved(pos));
+                    events.push(egui::Event::PointerButton {
+                        pos,
+                        button: egui::PointerButton::Primary,
+                        pressed: true,
+                        modifiers: Modifiers::NONE,
+                    });
+                }
+                "resize" => size[0] += 10.,
+                "hide" => app.rulers = false,
+                _ => {
+                    // Delete in marker mode cancels a newly created stop.
+                    if mode != "marker" {
+                        tap_preview_key(&ctx, &mut app, Key::F4, size);
+                    }
+                    events.insert(0, key(Key::Delete, false));
+                }
+            }
+            frame(&ctx, &mut app, events, size, 1.);
+            if cancel == "outside" {
+                frame(
+                    &ctx,
+                    &mut app,
+                    vec![egui::Event::PointerButton {
+                        pos: egui::pos2(630., 470.),
+                        button: egui::PointerButton::Primary,
+                        pressed: false,
+                        modifiers: Modifiers::NONE,
+                    }],
+                    size,
+                    1.,
+                );
+            }
+            assert!(app.tab_ruler_drag.is_none(), "{mode}/{cancel}");
+            assert_eq!(app.session.editor.document, before, "{mode}/{cancel}");
+            assert_eq!(app.session.editor.selection, (1, 4), "{mode}/{cancel}");
+            assert_eq!(app.session.editor.undo_stack.len(), undo);
+            assert_eq!(app.session.editor.redo_stack.len(), redo);
+            assert!(
+                ctx.memory(|m| m.has_focus(Id::new(EDIT_ID))),
+                "{mode}/{cancel}"
+            );
+            frame(
+                &ctx,
+                &mut app,
+                vec![egui::Event::Text("x".into())],
+                size,
+                1.,
+            );
+            assert_eq!(
+                app.session.editor.document.text(),
+                "Hxo world\nSecond line",
+                "{mode}/{cancel}"
+            );
+            assert_eq!(app.session.editor.undo_stack.len(), undo + 1);
+            app.session.editor.undo();
+            assert_eq!(app.session.editor.document, before);
+        }
+    }
+}
+
+#[test]
+fn preview_focus_held_f6_and_reentry_preserve_transactions() {
+    let (ctx, mut app) = setup();
+    let size = [640., 480.];
+    let before = app.session.editor.document.clone();
+    for _ in 0..3 {
+        start_focus_preview(&ctx, &mut app, size);
+        tap_preview_key(&ctx, &mut app, Key::F2, size);
+        frame(&ctx, &mut app, vec![key(Key::F6, false)], size, 1.);
+        let control = ctx.memory(|m| m.focused());
+        assert_ne!(control, Some(Id::new("ruler-tab-position-input")));
+        frame(&ctx, &mut app, vec![key(Key::F6, false)], size, 1.);
+        assert_eq!(
+            ctx.memory(|m| m.focused()),
+            control,
+            "Held F6 must not oscillate modes"
+        );
+        tap_preview_key(&ctx, &mut app, Key::Escape, size);
+        assert_eq!(ctx.memory(|m| m.focused()), Some(Id::new(EDIT_ID)));
+        assert_eq!(app.session.editor.document, before);
+        assert!(app.session.editor.undo_stack.is_empty());
+        let mut up = key(Key::F6, false);
+        if let egui::Event::Key { pressed, .. } = &mut up {
+            *pressed = false;
+        }
+        frame(&ctx, &mut app, vec![up], size, 1.);
+    }
+}
+
+#[test]
+fn preview_focus_window_loss_defers_document_focus_until_regain() {
+    let (ctx, mut app) = setup();
+    let size = [640., 480.];
+    app.session
+        .editor
+        .replace(0, 0, "Hello", "Fixture")
+        .unwrap();
+    app.session.editor.selection = (1, 4);
+    app.sync_view();
+    frame(&ctx, &mut app, vec![], size, 1.);
+    let before = app.session.editor.document.clone();
+    let history = app.session.editor.undo_stack.len();
+    start_focus_preview(&ctx, &mut app, size);
+    tap_preview_key(&ctx, &mut app, Key::F2, size);
+    let input = egui::RawInput {
+        screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(size[0], size[1]))),
+        focused: false,
+        events: vec![
+            egui::Event::WindowFocused(false),
+            egui::Event::Text("ignored".into()),
+        ],
+        ..Default::default()
+    };
+    let _ = ctx.run(input, |ctx| app.update_ui(ctx));
+    assert!(app.tab_ruler_drag.is_none());
+    assert_eq!(app.session.editor.document, before);
+    assert_eq!(app.session.editor.undo_stack.len(), history);
+    assert!(
+        app.focus_document,
+        "Retain the request until the window regains focus"
+    );
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::WindowFocused(true)],
+        size,
+        1.,
+    );
+    assert!(ctx.memory(|m| m.has_focus(Id::new(EDIT_ID))));
+    assert_eq!(app.session.editor.selection, (1, 4));
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("x".into())],
+        size,
+        1.,
+    );
+    assert_eq!(app.session.editor.document.text(), "Hxo");
+}
+
+#[test]
+fn preview_focus_numeric_pointer_press_takes_focus_from_controls() {
+    let (ctx, mut app) = setup();
+    let size = [640., 480.];
+    start_focus_preview(&ctx, &mut app, size);
+    tap_preview_key(&ctx, &mut app, Key::F2, size);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("120".into())],
+        size,
+        1.,
+    );
+    tap_preview_key(&ctx, &mut app, Key::F6, size);
+    let pos = region(&app, "tab-preview-position-input").center();
+    for pressed in [true, false] {
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                egui::Event::PointerMoved(pos),
+                egui::Event::PointerButton {
+                    pos,
+                    button: egui::PointerButton::Primary,
+                    pressed,
+                    modifiers: Modifiers::NONE,
+                },
+            ],
+            size,
+            1.,
+        );
+        assert!(ctx.memory(|m| m.has_focus(Id::new("ruler-tab-position-input"))));
+    }
+    let caret = preview_caret(&ctx);
+    tap_preview_key(&ctx, &mut app, Key::F6, size);
+    tap_preview_key(&ctx, &mut app, Key::F6, size);
+    assert_eq!(preview_caret(&ctx), caret);
+    assert!(app.session.editor.undo_stack.is_empty());
+}
+
+#[test]
+fn preview_focus_after_unicode_replacement_undo_restores_the_whole_selection() {
+    for paste in [false, true] {
+        let (ctx, mut app) = setup();
+        let size = [1366., 900.];
+        let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples/TabLeaders.bfdoc");
+        app.session = Session::new(storage::load(&fixture).unwrap(), None);
+        app.sync_view();
+        frame(&ctx, &mut app, vec![], size, 1.);
+        app.execute(Action::SelectAll, &ctx);
+        frame(&ctx, &mut app, vec![], size, 1.);
+        let before = app.session.editor.document.clone();
+        let selection = app.session.editor.selection;
+        // Equal leading/trailing characters must not narrow the undo selection.
+        let value = "Dots\tnew · Україна · Русский e\u{301}";
+        let event = if paste {
+            egui::Event::Paste(value.into())
+        } else {
+            egui::Event::Text(value.into())
+        };
+        frame(&ctx, &mut app, vec![event], size, 1.);
+        assert_eq!(app.session.editor.document.text(), value);
+        assert_eq!(app.session.editor.undo_stack.len(), 1);
+        app.execute(Action::Undo, &ctx);
+        frame(&ctx, &mut app, vec![], size, 1.);
+        assert_eq!(app.session.editor.document, before);
+        assert_eq!(app.session.editor.selection, selection);
+        frame(
+            &ctx,
+            &mut app,
+            vec![ruler_key(Key::F8, Modifiers::CTRL | Modifiers::ALT)],
+            size,
+            1.,
+        );
+        tap_preview_key(&ctx, &mut app, Key::F2, size);
+        click_region_at(&ctx, &mut app, "tab-preview-cancel", size);
+        assert_eq!(app.session.editor.selection, selection);
+        assert_eq!(app.session.editor.redo_stack.len(), 1);
+        frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::Paste("CHECK".into())],
+            size,
+            1.,
+        );
+        assert_eq!(app.session.editor.document.text(), "CHECK");
+        app.execute(Action::Undo, &ctx);
+        assert_eq!(app.session.editor.document, before);
     }
 }

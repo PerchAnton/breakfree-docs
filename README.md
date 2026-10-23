@@ -1052,3 +1052,19 @@ and accessibility descriptions, numeric caret preservation, cancellation and the
 single Undo/Redo operation are retained. Search/styles lose redundant permanent
 hints; their shortcuts remain in hover help. Icon color is concentrated on small
 semantic details, with neutral Save/Copy outlines matching the supplied reference.
+
+
+### Preview focus recovery (alpha.85)
+
+F6 moves between the current marker/position mode and preview controls. Returning
+from controls preserves the numeric caret and selection; holding F6 does not cycle
+repeatedly. F2 refocuses an existing position draft without replacing incomplete
+or invalid text. Entering the field from marker mode selects the current position.
+F4 or Back to marker returns a valid draft without committing or leaving focus on
+a hidden control. Clicking the position field takes focus on pointer press.
+
+Escape, Cancel and an outside press discard the preview and restore document
+selection without adding history. Resize, hidden rulers and window deactivation
+also cancel; an inactive window waits until focus returns. Delete cancels a new
+stop in marker mode. Apply still commits one Undo/Redo operation. The compact
+preview, optional Help/F7, colors and original icons remain as in alpha.84.

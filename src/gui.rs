@@ -3040,7 +3040,7 @@ impl DocsApp {
                                     galley
                                 };
                                 let mut output=egui::TextEdit::multiline(&mut self.buffer).lock_focus(true).id(id).frame(false).margin(0).desired_width(text_width).desired_rows(1).font(FontId::new(font_size,egui::FontFamily::Name("body".into()))).layouter(&mut layouter).show(ui);
-                                if self.focus_document {
+                                if self.focus_document && ui.input(|i| i.focused) {
                                     if !output.response.has_focus() {output.response.request_focus();}
                                     ui.memory_mut(|m|m.set_focus_lock_filter(id,egui::EventFilter{horizontal_arrows:true,vertical_arrows:true,..Default::default()}));
                                     self.focus_document=false;
@@ -3052,7 +3052,9 @@ impl DocsApp {
                                 };
                                 if cancel&&!commit||output.response.lost_focus()&&self.composing {self.composing=false;self.sync_view();}
                                 else if output.response.changed()&&!self.composing&&(self.buffer!=self.session.editor.document.text() || selected_break){
-                                    let(a,b,text)=if keyboard_enter {text_change_from_selection(&self.session.editor.document.text(),&self.buffer,self.session.editor.selection)} else {text_change(&self.session.editor.document.text(),&self.buffer)};
+                                    // Preserve the user's replacement range when equal prefixes/suffixes
+                                    // would narrow a minimal diff and therefore the undo selection.
+                                    let(a,b,text)=text_change_from_selection(&self.session.editor.document.text(),&self.buffer,self.session.editor.selection);
                                     let paragraph_enter = keyboard_enter && text.contains('\n');
                                     let result=if paragraph_enter {self.session.editor.replace_keyboard_text(a,b,&text)} else {self.session.editor.replace(a,b,&text,if commit{"Input method commit"}else{"Text input"})};self.fail(result);self.sync_view();
                                 }else if !self.composing&&output.response.has_focus() && let Some(range)=output.cursor_range {

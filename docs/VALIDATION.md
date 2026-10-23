@@ -2083,3 +2083,50 @@ explicit approval recorded; alpha.84 awaits approval.
   native Windows display-scale acceptance remain deferred; VoiceOver stays at
   final review. Existing emoji fallback, pagination and unsupported-feature limits
   remain. No dependency or project-license change was made.
+
+
+## Alpha.85 preview focus validation
+
+2026-10-23, macOS arm64 / Rust 1.99.1. The owner explicitly approved alpha.84;
+alpha.85 awaits approval. Alpha.78–83 still have no explicit approval recorded.
+
+- **428 full / 187 core-only tests pass**, including eight new GUI regressions.
+  F6 preserves numeric caret/selection; F2 retains invalid input; F4 and the position
+  button release old widget focus; a field pointer press takes focus immediately;
+  held F6 does not oscillate; cancellation/re-entry preserves model and history.
+- The cancellation matrix covers marker, numeric and control modes with Escape,
+  Cancel, outside press/release, resize, hidden rulers and Delete of a new stop.
+  It checks unchanged document, selection and undo/redo, then types into the restored
+  selection. A separate window-deactivation case defers focus until reactivation.
+- Three initial regressions failed before the mode fixes. Extended tests exposed
+  outside-press routing and inactive-window focus requests. Native verification
+  additionally exposed selection narrowing after replacing text with a shared
+  prefix/suffix and then undoing. Its new regression failed with `(5, 55)` instead
+  of `(0, 65)`; both text and paste variants now restore the complete Unicode range.
+- Existing history/formatting, native save/reopen and invalid/failed-save, Unicode,
+  tab layout, keyboard/IME-routing and synthetic scale tests remain passing.
+  fmt, normal/capture all-target Clippy with warnings denied, release/capture builds,
+  repository/artwork/link, YAML and whitespace checks pass. No dependency changes.
+- Three native captures show compact numeric focus, cancelled selection and Home;
+  [UI_SPEC](UI_SPEC.md#alpha85-preview-focus-recovery) records dimensions/hashes.
+  Palette, icon paths and ribbon geometry are unchanged.
+- Native macOS OS-input automation used an isolated temporary application bundle,
+  preferences directory and a copy of `examples/TabLeaders.bfdoc`. Confirmed F2,
+  F6 roundtrip (`120`, Left, F6 twice, `5` → `1250`), invalid input correction via
+  F2, F4 and marker stepping, Escape/Cancel, Unicode paste, Undo and re-entry.
+  After the selection fix, paste → Undo → F2 preview → Cancel → paste `CHECK`
+  replaces the entire original range; one Undo restores all four paragraphs and
+  their full selection. The on-disk fixture remains byte-identical.
+- OS automation is not a physical-keyboard acceptance test. The active non-Latin
+  input source was left unchanged; a bulk Latin `typeText` probe did not reproduce
+  its requested string and is not counted as English typing evidence. Numeric
+  keys, single-key routing and exact Unicode clipboard insertion were verified.
+  VoiceOver was not enabled; speech review remains at the end.
+- A release executable copied outside the checkout reports alpha.85, valid v1
+  capabilities and explicit errors for missing/relative/conflicting/unknown
+  arguments. No Office checkout or neighboring project is needed. Native v17 stays.
+- Alpha.84 server CI completed successfully on macOS, Linux and Windows in
+  [run 40018821922](https://github.com/PerchAnton/breakfree-docs/actions/runs/40018821922).
+  This iteration's CI is recorded separately in the journal. Native Windows
+  keyboard/DPI acceptance remains deferred; no matched Word comparison or full
+  IME/accessibility acceptance is claimed. No merge, tag or release was performed.

@@ -3,6 +3,25 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.85 — 2026-10-23
+
+- Preserve the numeric draft, caret and selection when returning from preview
+  controls with F6 or refocusing the same position field with F2, including errors.
+- Release stale button focus when returning to marker mode via F4 or the position
+  button. A pointer press in the numeric field takes focus immediately.
+- Ignore held F6 repeats. Opening a tab preview no longer requests background
+  document focus; cancellation restores the original document selection and history.
+- Consume the outside dismissing press as well as raw events, retaining focus and
+  preventing its release from activating background commands. Defer document focus
+  restoration while the window is inactive, then restore it when focus returns.
+- Preserve the actual replacement range for text input and paste when old/new
+  text share a prefix or suffix. Undo then restores the whole selection before
+  another preview, including Unicode and combining characters.
+- Add mode-switch/cancellation/re-entry regressions and native capture sequences.
+  Preserve the alpha.84 design, palette and icons; native v17 remains unchanged.
+- Alpha.84 explicitly approved by the owner; alpha.85 awaits approval. Windows is
+  deferred and VoiceOver stays at final review. No merge, tag or release authorized.
+
 ## 0.1.0-alpha.84 — 2026-10-23
 
 - Quiet the editor chrome: remove redundant shortcut placeholders, search guidance
