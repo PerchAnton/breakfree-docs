@@ -20,7 +20,7 @@ impl eframe::App for Capture {
     fn raw_input_hook(&mut self, _ctx: &egui::Context, input: &mut egui::RawInput) {
         if matches!(
             self.mode.as_str(),
-            "leader-details" | "leader-choice" | "leader-pointer" | "leader-menu"
+            "leader-details" | "leader-choice" | "leader-pointer" | "leader-focus" | "leader-menu"
         ) {
             input.focused = true;
             if matches!(self.mode.as_str(), "leader-details" | "leader-choice")
@@ -46,8 +46,10 @@ impl eframe::App for Capture {
                     },
                 });
             }
-            if matches!(self.mode.as_str(), "leader-menu" | "leader-pointer")
-                && matches!(self.frames, 4 | 5)
+            if matches!(
+                self.mode.as_str(),
+                "leader-menu" | "leader-pointer" | "leader-focus"
+            ) && matches!(self.frames, 4 | 5)
                 && let Some(r) = self.app.regions.iter().find(|r| r.name == "ruler-tab-360")
             {
                 let pos = r.rect.center();
@@ -60,7 +62,7 @@ impl eframe::App for Capture {
                 });
             }
         }
-        if self.mode == "leader-pointer"
+        if matches!(self.mode.as_str(), "leader-pointer" | "leader-focus")
             && matches!(self.frames, 7 | 8)
             && let Some(r) = self
                 .app
@@ -74,6 +76,19 @@ impl eframe::App for Capture {
                 pos,
                 button: egui::PointerButton::Primary,
                 pressed: self.frames == 7,
+                modifiers: egui::Modifiers::NONE,
+            });
+        }
+        if self.mode == "leader-focus" && matches!(self.frames, 10 | 12) {
+            input.events.push(egui::Event::Key {
+                key: if self.frames == 10 {
+                    egui::Key::F6
+                } else {
+                    egui::Key::Tab
+                },
+                physical_key: None,
+                pressed: true,
+                repeat: false,
                 modifiers: egui::Modifiers::NONE,
             });
         }
@@ -575,6 +590,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "leader-details",
             "leader-choice",
             "leader-pointer",
+            "leader-focus",
             "leader-menu",
             "typed-tabs-dialog",
             "tab-keyboard",
@@ -678,6 +694,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 | "leader-details"
                 | "leader-choice"
                 | "leader-pointer"
+                | "leader-focus"
                 | "leader-menu"
         ) {
             "examples/TabLeaders.bfdoc"
@@ -887,7 +904,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             };
             if matches!(
                 mode.as_str(),
-                "leader-details" | "leader-choice" | "leader-pointer" | "leader-menu"
+                "leader-details"
+                    | "leader-choice"
+                    | "leader-pointer"
+                    | "leader-focus"
+                    | "leader-menu"
             ) {
                 app.execute(Action::SelectAll, &cc.egui_ctx);
             }

@@ -3,6 +3,18 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.80 — 2026-10-23
+
+- Add F6 entry/return for preview controls and wrapping Tab/Shift+Tab traversal.
+- Activate the focused control with Enter/Space, without repeated key activation.
+- Draw a focus outline using the existing accent and request native widget focus.
+- Continue keyboard traversal from a pointer-clicked control; return to marker or
+  numeric input without applying. Keep the existing marker Tab behavior.
+- Skip disabled controls, recover focus to Cancel when a control becomes disabled,
+  and preserve Escape cancellation and one-operation history.
+- Palette/icons and native v17 are retained. Alpha.78/79 have no explicit version
+  approval recorded; alpha.80 awaits approval. Windows deferred; VoiceOver at end.
+
 ## 0.1.0-alpha.79 — 2026-10-23
 
 - Open the shared tab preview from the ruler marker context menu.

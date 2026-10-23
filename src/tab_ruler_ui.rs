@@ -17,6 +17,53 @@ pub(super) struct TabDrag {
     focus_input: bool,
     accept_input: bool,
     popup: Rect,
+    control_focus: Option<usize>,
+    activate_control: bool,
+}
+impl TabDrag {
+    // Leader choices 0..4, restore 4, position 5, apply 6, cancel 7.
+    fn enabled_controls(&self) -> Vec<usize> {
+        let valid = self.error.is_none() && !self.draft.deleting;
+        let mut controls = Vec::new();
+        if valid {
+            controls.extend(0..4);
+        }
+        if valid && self.draft.preview_leader_choice().is_some() {
+            controls.push(4);
+        }
+        if !self.numeric || self.error.is_none() {
+            controls.push(5);
+        }
+        if self.error.is_none() {
+            controls.push(6);
+        }
+        controls.push(7);
+        controls
+    }
+
+    fn control(&mut self, ui: &Ui, index: usize, response: &egui::Response) -> bool {
+        if !response.enabled() {
+            return false;
+        }
+        if response.clicked() {
+            self.control_focus = Some(index);
+        }
+        let focused = self.control_focus == Some(index);
+        if focused {
+            response.request_focus();
+            ui.painter().rect_stroke(
+                response.rect.expand(1.),
+                3.,
+                Stroke::new(1.5_f32, ACCENT),
+                egui::StrokeKind::Inside,
+            );
+        }
+        let activate = focused && self.activate_control;
+        if activate {
+            self.activate_control = false;
+        }
+        response.clicked() || activate
+    }
 }
 impl DocsApp {
     fn cycle_tab_creation_kind(&mut self) {
@@ -143,6 +190,8 @@ impl DocsApp {
                     focus_input: false,
                     accept_input: false,
                     popup: Rect::NOTHING,
+                    control_focus: None,
+                    activate_control: false,
                 });
                 self.focus_document = false;
                 self.leave_ribbon(ctx);
@@ -231,6 +280,22 @@ impl DocsApp {
                 self.sync_view();
                 return true;
             }
+            if ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::F6)) {
+                let drag = self.tab_ruler_drag.as_mut().unwrap();
+                drag.control_focus = if drag.control_focus.is_some() {
+                    None
+                } else {
+                    drag.enabled_controls().first().copied()
+                };
+                if drag.control_focus.is_none() && drag.numeric {
+                    drag.focus_input = true;
+                }
+                ctx.memory_mut(|m| {
+                    if let Some(id) = m.focused() {
+                        m.surrender_focus(id);
+                    }
+                });
+            }
             if ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::F1)) {
                 let drag = self.tab_ruler_drag.as_mut().unwrap();
                 drag.show_leaders = !drag.show_leaders;
@@ -238,6 +303,7 @@ impl DocsApp {
             if ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::F2)) {
                 let drag = self.tab_ruler_drag.as_mut().unwrap();
                 drag.numeric = true;
+                drag.control_focus = None;
                 drag.input = format!("{}", f32::from(drag.draft.position) / 2.);
                 drag.focus_input = true;
             }
@@ -247,9 +313,69 @@ impl DocsApp {
                     drag.error = drag.draft.move_to_text(&drag.input).err();
                     if drag.error.is_none() {
                         drag.numeric = false;
+                        drag.control_focus = None;
                         ctx.memory_mut(|m| m.surrender_focus(Id::new("ruler-tab-position-input")));
                     }
                 }
+            }
+            if self
+                .tab_ruler_drag
+                .as_ref()
+                .unwrap()
+                .control_focus
+                .is_some()
+            {
+                let drag = self.tab_ruler_drag.as_mut().unwrap();
+                let enabled = drag.enabled_controls();
+                if !enabled.contains(&drag.control_focus.unwrap()) {
+                    drag.control_focus = Some(7);
+                }
+                for event in &events {
+                    if let egui::Event::Key {
+                        key,
+                        pressed: true,
+                        repeat,
+                        modifiers,
+                        ..
+                    } = event
+                    {
+                        if modifiers.ctrl || modifiers.alt || modifiers.command {
+                            continue;
+                        }
+                        match key {
+                            Key::Tab => {
+                                let at = enabled
+                                    .iter()
+                                    .position(|c| Some(*c) == drag.control_focus)
+                                    .unwrap();
+                                let next = if modifiers.shift {
+                                    (at + enabled.len() - 1) % enabled.len()
+                                } else {
+                                    (at + 1) % enabled.len()
+                                };
+                                drag.control_focus = Some(enabled[next]);
+                            }
+                            Key::Enter | Key::Space if !repeat => drag.activate_control = true,
+                            _ => {}
+                        }
+                    }
+                }
+                ctx.input_mut(|i| {
+                    i.events.retain(|e| {
+                        !matches!(
+                            e,
+                            egui::Event::Key { .. }
+                                | egui::Event::Text(_)
+                                | egui::Event::Paste(_)
+                                | egui::Event::Ime(_)
+                                | egui::Event::MouseWheel { .. }
+                        )
+                    });
+                    i.raw_scroll_delta = Vec2::ZERO;
+                    i.smooth_scroll_delta = Vec2::ZERO;
+                });
+                ctx.memory_mut(|m| m.move_focus(egui::FocusDirection::None));
+                return true;
             }
             if self.tab_ruler_drag.as_ref().unwrap().numeric {
                 ctx.memory_mut(|m| {
@@ -470,6 +596,8 @@ impl DocsApp {
                     focus_input: false,
                     accept_input: false,
                     popup: Rect::NOTHING,
+                    control_focus: None,
+                    activate_control: false,
                 });
                 self.focus_document = false;
                 self.leave_ribbon(ctx);
@@ -627,6 +755,8 @@ impl DocsApp {
                             focus_input: false,
                             accept_input: false,
                             popup: Rect::NOTHING,
+                            control_focus: None,
+                            activate_control: false,
                         });
                         self.focus_document = false;
                         self.leave_ribbon(ui.ctx());
@@ -751,6 +881,11 @@ impl DocsApp {
                         }
                     )
                 });
+            let text = if drag.control_focus.is_some() {
+                text.replace("Enter applies", "Apply confirms")
+            } else {
+                text
+            };
             let mut apply = false;
             let mut cancel = false;
             let popup = egui::Area::new(Id::new("tab-ruler-preview"))
@@ -788,6 +923,7 @@ impl DocsApp {
                                     .desired_width(90.)
                                     .char_limit(16)
                                     .show(ui);
+                                if out.response.clicked() { drag.control_focus = None; }
                                 if out.response.changed() {
                                     ui.ctx().request_repaint();
                                 }
@@ -812,7 +948,7 @@ impl DocsApp {
                                 ui.label("pt");
                             });
                             drag.error = drag.draft.move_to_text(&drag.input).err();
-                            ui.small("0.5 pt steps · F4 returns to marker · Enter applies · Esc cancels");
+                            ui.add(egui::Label::new(if drag.control_focus.is_some() { "F6 returns to input · Apply confirms · Esc cancels" } else { "0.5 pt steps · F4 returns to marker · Enter applies · Esc cancels" }).wrap());
                             if let Some(error) = &drag.error {
                                 ui.add(
                                     egui::Label::new(RichText::new(error).color(Color32::DARK_RED))
@@ -821,30 +957,32 @@ impl DocsApp {
                             }
                         } else {
                             ui.add(egui::Label::new(text).wrap());
-                            if drag.keyboard {
+                            if drag.keyboard && drag.control_focus.is_none() {
                                 ui.add(egui::Label::new("0 None · 1 Dots · 2 Dashes · 3 Line · Backspace restores original leaders").wrap());
                                 ui.add(egui::Label::new("F1 details · F2 position · F3 next / Shift+F3 previous").wrap());
                             }
                         }
                         if drag.keyboard {
+                            ui.add(egui::Label::new(if drag.control_focus.is_some() { "Controls: Tab / Shift+Tab · Enter / Space activates · F6 returns" } else { "F6: focus preview controls" }).wrap());
                             ui.separator();
                             let valid = drag.error.is_none() && !drag.draft.deleting;
                             ui.horizontal_wrapped(|ui| {
-                                for leader in [None, Some(crate::model::TabLeader::Dots), Some(crate::model::TabLeader::Dashes), Some(crate::model::TabLeader::Line)] {
+                                for (index, leader) in [None, Some(crate::model::TabLeader::Dots), Some(crate::model::TabLeader::Dashes), Some(crate::model::TabLeader::Line)].into_iter().enumerate() {
                                     let label = leader.map_or("None", |v| v.label());
                                     let common = crate::tab_ruler::leader_summary(&drag.draft.preview, self.session.editor.selection, drag.draft.position).ok().and_then(|s| s.common());
                                     let r = ui.add_enabled(valid, Button::new(label).selected(valid && drag.draft.preview_leader_choice().or(common) == Some(leader))).on_disabled_hover_text("Choose a valid position; leaders cannot be changed during deletion.");
                                     self.regions.push(Region { name: format!("tab-preview-leader-{}", label.to_lowercase()), rect: r.rect });
-                                    if r.clicked() { drag.error = drag.draft.set_preview_leader(leader).err(); drag.show_leaders = true; }
+                                    if drag.control(ui, index, &r) { drag.error = drag.draft.set_preview_leader(leader).err(); drag.show_leaders = true; }
                                 }
                             });
                             ui.horizontal_wrapped(|ui| {
                                 let r = ui.add_enabled(valid && drag.draft.preview_leader_choice().is_some(), Button::new("Restore leaders")).on_hover_text("Restore each original leader, keeping the current position.");
                                 self.regions.push(Region { name: "tab-preview-restore".into(), rect: r.rect });
-                                if r.clicked() { drag.error = drag.draft.restore_preview_leaders().err(); drag.show_leaders = true; }
+                                if drag.control(ui, 4, &r) { drag.error = drag.draft.restore_preview_leaders().err(); drag.show_leaders = true; }
                                 let r = ui.add_enabled(!drag.numeric || drag.error.is_none(), Button::new(if drag.numeric { "Back to marker" } else { "Exact position…" }));
                                 self.regions.push(Region { name: "tab-preview-position".into(), rect: r.rect });
-                                if r.clicked() {
+                                if drag.control(ui, 5, &r) {
+                                    drag.control_focus = None;
                                     drag.numeric = !drag.numeric;
                                     ui.ctx().request_repaint();
                                     if drag.numeric { drag.input = format!("{}", f32::from(drag.draft.position) / 2.); drag.focus_input = true; }
@@ -852,10 +990,10 @@ impl DocsApp {
                                 }
                                 let r = ui.add_enabled(drag.error.is_none(), Button::new("Apply"));
                                 self.regions.push(Region { name: "tab-preview-apply".into(), rect: r.rect });
-                                apply = r.clicked();
+                                apply = drag.control(ui, 6, &r);
                                 let r = ui.button("Cancel");
                                 self.regions.push(Region { name: "tab-preview-cancel".into(), rect: r.rect });
-                                cancel = r.clicked();
+                                cancel = drag.control(ui, 7, &r);
                             });
                         }
                     });

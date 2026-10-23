@@ -11776,3 +11776,205 @@ fn pointer_preview_controls_fit_compact_scales() {
         assert!(app.tab_ruler_drag.is_none());
     }
 }
+
+fn tap_preview_key(ctx: &egui::Context, app: &mut DocsApp, k: Key, size: [f32; 2]) {
+    let mut up = key(k, false);
+    if let egui::Event::Key { pressed, .. } = &mut up {
+        *pressed = false;
+    }
+    frame(ctx, app, vec![up.clone()], size, 1.);
+    frame(ctx, app, vec![key(k, false)], size, 1.);
+    frame(ctx, app, vec![up], size, 1.);
+}
+
+#[test]
+fn tab_preview_focus_traversal_activation_and_single_history() {
+    use crate::model::TabLeader as L;
+    let (ctx, mut app) = setup();
+    let size = [1366., 900.];
+    let before = app.session.editor.document.clone();
+    let n = app.session.editor.undo_stack.len();
+    frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(
+            Key::F8,
+            Modifiers::CTRL | Modifiers::ALT | Modifiers::SHIFT,
+        )],
+        size,
+        1.,
+    );
+    frame(&ctx, &mut app, vec![key(Key::F6, false)], size, 1.);
+    let first = ctx.memory(|m| m.focused()).unwrap();
+    frame(&ctx, &mut app, vec![key(Key::Tab, false)], size, 1.);
+    assert_ne!(ctx.memory(|m| m.focused()), Some(first));
+    tap_preview_key(&ctx, &mut app, Key::Space, size);
+    assert_eq!(
+        app.tab_ruler_drag
+            .as_ref()
+            .unwrap()
+            .draft
+            .preview_leader_choice(),
+        Some(Some(L::Dots))
+    );
+    assert_eq!(app.session.editor.document, before);
+    for _ in 0..4 {
+        frame(&ctx, &mut app, vec![key(Key::Tab, false)], size, 1.);
+    }
+    tap_preview_key(&ctx, &mut app, Key::Enter, size); // Exact position.
+    frame(&ctx, &mut app, vec![], size, 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("100".into())],
+        size,
+        1.,
+    );
+    frame(&ctx, &mut app, vec![key(Key::F6, false)], size, 1.); // None button.
+    for _ in 0..2 {
+        frame(
+            &ctx,
+            &mut app,
+            vec![ruler_key(Key::Tab, Modifiers::SHIFT)],
+            size,
+            1.,
+        );
+    } // Apply.
+    tap_preview_key(&ctx, &mut app, Key::Space, size);
+    assert!(app.tab_ruler_drag.is_none());
+    assert_eq!(
+        app.session.editor.document.paragraphs[0]
+            .spacing
+            .tab_leader(200),
+        Some(L::Dots)
+    );
+    assert_eq!(app.session.editor.undo_stack.len(), n + 1);
+    let after = app.session.editor.document.clone();
+    app.session.editor.undo();
+    assert_eq!(app.session.editor.document, before);
+    app.session.editor.redo();
+    assert_eq!(app.session.editor.document, after);
+}
+
+#[test]
+fn tab_preview_focus_skips_disabled_and_invalid_input_can_cancel() {
+    let (ctx, mut app) = setup();
+    let size = [640., 480.];
+    let before = app.session.editor.document.clone();
+    frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(
+            Key::F8,
+            Modifiers::CTRL | Modifiers::ALT | Modifiers::SHIFT,
+        )],
+        size,
+        1.,
+    );
+    frame(&ctx, &mut app, vec![key(Key::F6, false)], size, 1.);
+    for _ in 0..4 {
+        frame(&ctx, &mut app, vec![key(Key::Tab, false)], size, 1.);
+    } // Restore disabled: skip to position.
+    tap_preview_key(&ctx, &mut app, Key::Enter, size);
+    frame(&ctx, &mut app, vec![], size, 1.);
+    assert!(ctx.memory(|m| m.has_focus(Id::new("ruler-tab-position-input"))));
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("invalid".into())],
+        size,
+        1.,
+    );
+    frame(&ctx, &mut app, vec![key(Key::F6, false)], size, 1.);
+    let cancel = ctx.memory(|m| m.focused());
+    frame(&ctx, &mut app, vec![key(Key::Tab, false)], size, 1.);
+    assert_eq!(ctx.memory(|m| m.focused()), cancel);
+    tap_preview_key(&ctx, &mut app, Key::Space, size);
+    assert!(app.tab_ruler_drag.is_none());
+    assert_eq!(app.session.editor.document, before);
+}
+
+#[test]
+fn tab_preview_pointer_keyboard_handoff_and_return_keep_draft() {
+    use crate::model::TabLeader as L;
+    let (ctx, mut app) = setup();
+    let size = [1366., 900.];
+    let before = app.session.editor.document.clone();
+    frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(
+            Key::F8,
+            Modifiers::CTRL | Modifiers::ALT | Modifiers::SHIFT,
+        )],
+        size,
+        1.,
+    );
+    click_region(&ctx, &mut app, "tab-preview-leader-line");
+    frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(Key::Tab, Modifiers::SHIFT)],
+        size,
+        1.,
+    ); // Dashes.
+    tap_preview_key(&ctx, &mut app, Key::Enter, size);
+    assert_eq!(
+        app.tab_ruler_drag
+            .as_ref()
+            .unwrap()
+            .draft
+            .preview_leader_choice(),
+        Some(Some(L::Dashes))
+    );
+    frame(&ctx, &mut app, vec![key(Key::F6, false)], size, 1.);
+    frame(&ctx, &mut app, vec![key(Key::ArrowRight, false)], size, 1.);
+    assert_eq!(app.tab_ruler_drag.as_ref().unwrap().draft.position, 73);
+    frame(&ctx, &mut app, vec![key(Key::F6, false)], size, 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(Key::Tab, Modifiers::SHIFT)],
+        size,
+        1.,
+    ); // Cancel.
+    tap_preview_key(&ctx, &mut app, Key::Enter, size);
+    assert!(app.tab_ruler_drag.is_none());
+    assert_eq!(app.session.editor.document, before);
+}
+
+#[test]
+fn tab_preview_disabled_focus_recovers_without_held_key_cancel() {
+    let (ctx, mut app) = setup();
+    let size = [640., 480.];
+    let before = app.session.editor.document.clone();
+    frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(
+            Key::F8,
+            Modifiers::CTRL | Modifiers::ALT | Modifiers::SHIFT,
+        )],
+        size,
+        1.,
+    );
+    frame(&ctx, &mut app, vec![key(Key::Num1, false)], size, 1.);
+    frame(&ctx, &mut app, vec![key(Key::F6, false)], size, 1.);
+    for _ in 0..4 {
+        frame(&ctx, &mut app, vec![key(Key::Tab, false)], size, 1.);
+    }
+    frame(&ctx, &mut app, vec![key(Key::Space, false)], size, 1.); // Restore becomes disabled.
+    assert_eq!(
+        app.tab_ruler_drag
+            .as_ref()
+            .unwrap()
+            .draft
+            .preview_leader_choice(),
+        None
+    );
+    frame(&ctx, &mut app, vec![key(Key::Space, false)], size, 1.); // Held key repeat must not cancel.
+    assert!(app.tab_ruler_drag.is_some());
+    tap_preview_key(&ctx, &mut app, Key::Enter, size); // Focus recovered to Cancel.
+    assert!(app.tab_ruler_drag.is_none());
+    assert_eq!(app.session.editor.document, before);
+}

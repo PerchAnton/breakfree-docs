@@ -1966,3 +1966,21 @@ approval recorded; alpha.79 awaits approval.
   inspected at wide/compact sizes; synthetic capture input is not physical input.
 - Windows, physical OS keyboard/IME, matched reference comparison and VoiceOver
   acceptance remain deferred. Native v17, palette and icons are retained.
+
+## Alpha.80 preview navigation validation
+
+2026-10-23, macOS arm64, Rust 1.99.1. Alpha.77 approved; alpha.78/79 have no
+explicit approval recorded; alpha.80 awaits approval.
+
+- 411 full / 187 core-only tests pass. New scenarios cover F6 entry/return,
+  forward/reverse wrapping, skipped disabled Restore, Enter/Space activation,
+  pointer-to-keyboard handoff, invalid numeric cancellation and one Undo/Redo.
+- A held Space after Restore becomes disabled cannot activate Cancel; focus
+  recovery and a subsequent fresh press are verified separately. Synthetic tests
+  explicitly distinguish key-down repetition from key release/fresh press.
+- Existing compact 100/125/150% bounds and storage/layout/keyboard checks pass.
+  fmt, normal/capture Clippy, release/capture builds, repository/artwork/YAML,
+  whitespace and isolated CLI checks pass. Two native focus captures inspected.
+- Physical OS input, Windows, matched reference and VoiceOver acceptance remain
+  deferred. Widget focus metadata and rendering do not establish spoken output.
+  Native v17, palette/icons and the existing marker Tab behavior are retained.

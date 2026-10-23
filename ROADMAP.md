@@ -419,4 +419,9 @@ Use public specifications and original test cases, not copied application code. 
 - [x] Alpha.79 step 3: restore original leaders using the same draft.
 - [x] Alpha.79 step 4: exact-position entry and return without committing.
 - [x] Alpha.79 step 5: Apply/Cancel with invalid-input protection and one Undo/Redo.
-- [ ] Next: focus traversal of pointer preview controls and keyboard/pointer handoff. Style inheritance remains separate.
+- [x] Alpha.80 step 1: F6 entry/return and wrapping Tab/Shift+Tab control traversal.
+- [x] Alpha.80 step 2: Enter/Space activation with repeat suppression.
+- [x] Alpha.80 step 3: visible accent outline and widget focus.
+- [x] Alpha.80 step 4: pointer/keyboard handoff without an intermediate commit.
+- [x] Alpha.80 step 5: disabled-control skipping and invalid-input cancellation.
+- [ ] Next: focused-control descriptions and shortcut hints in the preview. Style inheritance remains separate.

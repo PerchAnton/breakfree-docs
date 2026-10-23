@@ -409,3 +409,17 @@ policy. Mixed owners and preexisting creation stops retain the established rules
 Keyboard commands remain available; Tab retains its apply-and-next behavior.
 Focus traversal for these new buttons is a separate next step. Windows and
 VoiceOver acceptance remain deferred. Native v17, palette and icons are unchanged.
+
+### Preview control navigation (alpha.80)
+
+F6 enters the preview buttons at the first enabled control. Tab/Shift+Tab wraps
+through enabled leader choices, Restore, Position, Apply and Cancel. Enter/Space
+activates the focused button; repeated key events do not reactivate it. A border
+using the existing accent marks focus independently of the selected leader.
+Clicking a button makes it the starting point for subsequent keyboard traversal.
+F6 returns to the marker or numeric input without committing; clicking numeric
+input returns to text editing. Outside controls, Tab keeps apply-and-next behavior.
+If the focused control becomes disabled, focus moves to Cancel. Invalid numeric
+input exposes only Cancel to control traversal; F6 returns to input for correction.
+Escape still cancels the entire draft. Native v17 and palette/icons are retained.
+These are local synthetic/native-render checks, not Windows or VoiceOver acceptance.

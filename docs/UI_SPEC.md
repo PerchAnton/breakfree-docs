@@ -2261,3 +2261,23 @@ Physical input, Windows, matched reference and VoiceOver acceptance are deferred
 | :--- | :--- | :--- |
 | 1366 × 900 | [View](screenshots/rust-leader-pointer-alpha79-macos.png) | `485514b5764a476566212c3fd85d0eaef9464de2e5c42494b0ffb4232b78528c` |
 | 640 × 480 | [View](screenshots/rust-leader-compact-alpha79-macos.png) | `e8c071f209057f9a9339c42f0256ff1e8635b70dfd0db6653d2d954b965ed7e6` |
+
+## Alpha.80: preview focus navigation
+
+F6 enters or leaves preview-control traversal. Tab/Shift+Tab wraps through enabled
+buttons; Enter/Space activates. The focused control requests widget focus and has
+an additional 1.5-DIP outline in the existing accent, separate from leader selection.
+Pointer clicks update traversal focus. Disabled focus recovers to Cancel; held-key
+activation is suppressed. F6 returns to numeric editing or marker control.
+
+Hints change with the active mode: button focus shows activation/traversal keys,
+while marker mode shows position/leader shortcuts. The 520-DIP panel cap remains.
+Palette, icons and shell geometry are retained. Native macOS captures inspected
+on 2026-10-23 show a focused Dots button without changing mixed leader values;
+all controls and mode hints fit both sizes. Physical OS input, Windows, matched
+reference comparison and VoiceOver acceptance remain deferred.
+
+| DIP | Capture | SHA-256 |
+| :--- | :--- | :--- |
+| 1366 × 900 | [View](screenshots/rust-leader-focus-alpha80-macos.png) | `0da60ec5b357f4c9cd6c27ff6c02040414dba1e2fedb15488186d338576be3b6` |
+| 640 × 480 | [View](screenshots/rust-leader-compact-alpha80-macos.png) | `4cdaff9798e7de8abf6b03dde7214e25550cb46dfdcaad2dff1a8e241b63aa4c` |
