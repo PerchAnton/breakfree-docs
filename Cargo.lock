@@ -490,7 +490,7 @@ dependencies = [
 
 [[package]]
 name = "breakfree-docs"
-version = "0.1.0-alpha.95"
+version = "0.1.0-alpha.96"
 dependencies = [
  "arboard",
  "crc32fast",

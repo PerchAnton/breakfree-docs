@@ -3,6 +3,19 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.96 — 2026-10-24
+
+- Add a seven-file original DOCX corpus, retaining raw Cocoa-produced packages,
+  producer/source hashes and explicit accepted/rejected expectations.
+- Exercise edit/undo/redo and same-path save/reopen through the shared Session;
+  verify rejected imports and committed fixture bytes remain unchanged.
+- Add a reproducible external save-back probe: text, emphasis and alignment survive
+  Cocoa re-save, but full reimport remains blocked by unsupported package parts.
+- Include relationship part, ID and type in unsupported-relationship diagnostics.
+- Preserve checksum-pinned notice/corpus bytes across checkout line-ending policies.
+- Preserve design, dependency versions, native v21 and the integration protocol.
+  Windows/printing deferred; VoiceOver last.
+
 ## 0.1.0-alpha.95 — 2026-10-24
 
 - Preserve passive custom DOCX property parts byte-for-byte through editing,

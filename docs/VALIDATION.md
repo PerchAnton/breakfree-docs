@@ -2516,3 +2516,25 @@ outside this checkout without Office or sibling repositories and reported
 0.1.0-alpha.95 / protocol 1. Package evidence was built from the dirty candidate
 checkout; it is not a signed release or redistribution approval. External
 Word save-back was not tested. Server CI is recorded separately in the journal.
+
+
+## Alpha.96 external save-back corpus
+
+2026-10-24, macOS 27.0.1 (26A434), Rust 1.99.1. See the
+[corpus matrix and reproduction commands](DOCX_CORPUS.md).
+Seven fixtures: two accepted independent/session-produced inputs and five raw
+Cocoa-produced negative cases. Shared Session edit/undo/redo/save-to-source/reopen
+compares complete models, with source-byte preservation on rejection.
+The external textutil probe preserved text, Unicode, bold/italic and alignment;
+its returned DOCX was rejected without output due to unsupported customXml.
+Full external roundtrip is **not passed**. Raw ZIPs, source/tool hashes and a scoped
+semantic report are checked in. No GUI, Word visual or Word save-back check was
+performed. Existing design remains unchanged. Windows/paper deferred; VoiceOver last.
+
+Results: 513 full / 253 core-only Rust tests passed; fmt, Clippy (all targets,
+capture feature, warnings denied), release build, repository/hash checks and the
+license supplement regression passed. An extracted release executable ran
+`--version` and `--capabilities` outside the checkout and rejected a relative
+`--open` path. The strengthened external probe passed again. Git attributes keep
+checksum evidence byte-exact across line-ending policies. Server CI is separate
+and reported in the journal. No dependency, native schema or protocol change.

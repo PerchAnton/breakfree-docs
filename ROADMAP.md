@@ -274,7 +274,7 @@ Rust selection is complete; this gate evaluates GUI behavior and visual fidelity
 - [ ] Test native round trips, DOCX round trips and exported files reopened in a named external application/build.
 - [ ] Publish per-feature import/write limitations and an alpha package only for tested targets.
 
-**Alpha.95 progress:** Combined bounded read/write now covers text/styles, scoped
+**Alpha.96 progress:** Combined bounded read/write now covers text/styles, scoped
 lists, hyperlinks, fixed plain-cell tables, inline PNG, next-page sections with
 plain headers/footers and PAGE restarts, explicit tab stops/leaders, three named
 font families and original core/app/custom metadata. Optional native v21 retains these
@@ -284,7 +284,11 @@ themes/rendering settings and save-back remain open; no public alpha is publishe
 
 - [x] Implement the declared PNG/section/tab/font/metadata subset with exact model
   roundtrips and rejection tests (alpha.94).
-- [ ] Complete external save-back and cross-application corpus review.
+- [x] Check in seven original independent/external DOCX fixtures with hashes,
+  same-path shared-session saves and a named Cocoa semantic probe (alpha.96;
+  [results and rejection boundaries](docs/DOCX_CORPUS.md)).
+- [ ] Complete external save-back and cross-application corpus review; Cocoa output
+  still rejects unsupported customXml/theme parts. Word save-back remains open.
 - [x] Recover and pin 22 missing upstream license texts; distinguish eight
   statement-only and two no-text entries and verify hashes offline (alpha.95).
 - [ ] Resolve ten incomplete notice entries and SDK provenance, finish distribution

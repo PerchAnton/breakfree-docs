@@ -35,6 +35,15 @@
 > the longer-term plan; the [validation report](docs/VALIDATION.md) separates actual
 > checks from pending work.
 
+## Alpha.96 — external DOCX corpus
+
+The [seven-file corpus](docs/DOCX_CORPUS.md) records independent inputs and raw
+macOS Cocoa save-back output. Shared-session save/reopen is exact for accepted
+cases; external text/emphasis/alignment checks pass, but Cocoa reimport still
+fails safely on unsupported package parts. Failures now identify the relationship
+part and type. This is measured acceptance evidence, not broad compatibility.
+Design and runtime dependencies are unchanged.
+
 ## Alpha.95 — DOCX properties and dependency evidence
 
 Custom DOCX properties now survive editing and optional native v21 conversion

@@ -54,6 +54,17 @@ for package in notice_index["packages"]:
         path = (ROOT / notice["path"]).resolve()
         assert path.is_relative_to((ROOT / "docs/licenses").resolve())
         assert hashlib.sha256(path.read_bytes()).hexdigest() == notice["sha256"]
+corpus = ROOT / "tests/fixtures/docx-corpus"
+manifest = json.loads((corpus / "manifest.json").read_text())
+for case in manifest["cases"]:
+    path = (corpus / case["file"]).resolve()
+    assert path.is_relative_to(corpus.resolve())
+    assert hashlib.sha256(path.read_bytes()).hexdigest() == case["sha256"]
+    if "source" in case:
+        assert hashlib.sha256((ROOT / case["source"]).read_bytes()).hexdigest() == case["source_sha256"]
+report = json.loads((corpus / "saveback-report.json").read_text())
+for name, digest in report["files"].items():
+    assert hashlib.sha256((corpus / name).read_bytes()).hexdigest() == digest
 if errors:
     raise SystemExit("\n".join(errors))
-print("Local documentation references, contract snapshot, approved artwork and notice hashes: OK")
+print("Local documentation references, contract snapshot, approved artwork, notice and corpus hashes: OK")

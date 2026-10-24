@@ -69,7 +69,7 @@ fn relationships(
             .attr("", "Type")
             .and_then(|s| s.strip_prefix(OFFICE_REL).or_else(||(s=="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties").then_some("core-properties")))
             .filter(|s| allowed.contains(s))
-            .ok_or("Unsupported DOCX relationship type")?;
+            .ok_or_else(|| format!("Unsupported DOCX relationship type in {path} ({id}): {}", r.attr("", "Type").unwrap_or("<missing>")))?;
         if kind == "hyperlink" {
             if r.attr("", "TargetMode") != Some("External") {
                 return Err("Hyperlinks require an explicit external relationship".into());

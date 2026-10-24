@@ -223,3 +223,12 @@ instructions and nondecimal/unsupported caches remain rejected.
 Reproduce the property pair with:
 cargo run --locked --no-default-features --example docx_properties.
 No external save-back acceptance is implied by the adapter regression.
+
+
+## Alpha.96 external corpus
+
+The [corpus report](DOCX_CORPUS.md) records actual raw external inputs and save-back
+outcomes. Cocoa preserves the tested text/emphasis/alignment projection but its
+DOCX output still fails import on unsupported package relationships. No profile
+restriction was relaxed to accommodate those samples. Diagnostics include the
+relationship part, ID and full type; no relationship target is fetched.

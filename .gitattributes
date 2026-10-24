@@ -1,0 +1,3 @@
+# Preserve exact bytes for checksum-pinned evidence on every checkout platform.
+docs/licenses/** -text
+tests/fixtures/docx-corpus/** -text

@@ -1,0 +1,17 @@
+{
+  "platform": "ProductName:\t\tmacOS\nProductVersion:\t\t27.0.1\nBuildVersion:\t\t26A434",
+  "external_tool": "textutil / CocoaOOXMLWriter",
+  "compared": [
+    "paragraph text, including Unicode",
+    "per-character bold and italic",
+    "paragraph alignment"
+  ],
+  "preserved": true,
+  "reimport": "Rejected: unsupported customXml relationship; no output written",
+  "full_fidelity": false,
+  "files": {
+    "independent.docx": "f48fdf3f3d81c6876466156f2df47be942b8d7fdb4f8a15f0902dec284190a33",
+    "docs-saved.docx": "e7a5b79f4e02a87a8ff7647a432c45be7c230d526573139fa32a776930f4cae6",
+    "cocoa-returned.docx": "12c6b60359e8ba8cec2d5a481a189a3e441a71e3a6c2565c878eb8835c153fa1"
+  }
+}
