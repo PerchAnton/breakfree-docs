@@ -1,4 +1,4 @@
-# DOCX profile — alpha.94
+# DOCX profile — alpha.95
 
 **DOCX is the primary/default document format.** `.bfdoc` is optional and can retain
 all current model features. Primary status does not imply general Word compatibility:
@@ -21,7 +21,7 @@ are not supported.
 | Page | Next-page sections, exact whole-point dimensions/margins, plain headers/footers and PAGE restarts |
 | PNG | Inline atomic images, exact pixels/whole-point size/alternative text; no transforms |
 | Tabulation | Explicit left/center/right positions, dot/dash/line leaders and style/direct replacement lists |
-| Metadata | Original bounded core/app properties retained verbatim; counters may be stale after edits |
+| Metadata | Original bounded core/app/custom properties retained verbatim; counters may be stale after edits |
 | Relationships | Internal main document, styles, numbering, images, headers/footers and core/app properties; parts can use other locations; referenced external HTTP/HTTPS/mailto hyperlinks |
 | Hyperlinks | Grapheme-aligned ranges, mixed runs, shared relationship targets and links in lists; no automatic activation |
 
@@ -111,7 +111,7 @@ Native Windows checks remain deferred.
 ## Explicit rejection rather than loss
 
 Revision marks, comments, non-PAGE fields, colors, unsupported fonts/themes,
-rendering settings and custom property parts remain errors. Non-default periodic
+rendering settings remain errors. Non-default periodic
 tab intervals, additive/partial tab inheritance, first/even headers, continuous
 sections, rich headers/footers, floating images, crop/effects and merged/rich cells
 are not silently flattened. No lossy bypass or hidden native sidecar is included.
@@ -188,7 +188,7 @@ can be selected in the Font dialog. Installed fonts are used where found; local
 fallback can change metrics. No host fonts are bundled, no exact Word pagination
 is promised, and font provenance inspection remains limited to existing properties.
 
-Core/app XML is retained unchanged, bounded to 128 KiB each and namespace-validated.
+Core/app/custom XML is retained unchanged, bounded to 128 KiB each and namespace-validated.
 Its imported page/word counters may be stale; the editor's displayed counts come
 from the current model. Metadata is never interpreted as instructions or fetched.
 
@@ -204,3 +204,22 @@ external tables/themes/settings/fonts need additional model design and fixtures,
 not a silent compatibility switch. A local unsigned review archive is not a
 published alpha: license review, tested-target acceptance and owner publication
 approval remain gates. D4 remains in progress.
+
+
+## Alpha.95 property and field extension
+
+Custom properties are an internally referenced root-package part with the standard
+custom-properties relationship/content type. Preserve its original XML verbatim,
+with a validated namespace/root and existing bounded parser; do not interpret
+values, fetch linked content, expose a property editor or execute instructions.
+Duplicate roles, unsafe paths, external metadata relationships, malformed XML and
+oversized parts remain errors. Native v21 retains this passive data.
+
+A canonical PAGE field may contain an updated decimal cache from 1 through 65535.
+The cache is derived display data; section numbering remains the authored model
+value. Export writes a placeholder for the viewer to recompute. Arbitrary field
+instructions and nondecimal/unsupported caches remain rejected.
+
+Reproduce the property pair with:
+cargo run --locked --no-default-features --example docx_properties.
+No external save-back acceptance is implied by the adapter regression.

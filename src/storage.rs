@@ -1,4 +1,4 @@
-//! Strict .bfdoc v1–v20 reading, v20 writing and checked temporary-file replacement.
+//! Strict .bfdoc v1–v21 reading, v21 writing and checked temporary-file replacement.
 use crate::{Result, model::*};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -8,7 +8,7 @@ use std::{
 };
 
 pub const FORMAT_ID: &str = "breakfree.docs.native";
-pub const CONTENT_VERSION: u32 = 20;
+pub const CONTENT_VERSION: u32 = 21;
 pub const MAX_FILE_BYTES: usize = 16 * 1024 * 1024;
 
 #[derive(Serialize, Deserialize)]
@@ -363,6 +363,16 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
     if file.format != FORMAT_ID {
         return Err("Not a BreakFree Docs native document.".into());
     }
+    if file.content_version < 21 {
+        let value: serde_json::Value = serde_json::from_slice(bytes).map_err(|e| e.to_string())?;
+        if value
+            .get("package_properties")
+            .and_then(|v| v.as_object())
+            .is_some_and(|m| m.contains_key("custom"))
+        {
+            return Err("Custom package properties require native v21".into());
+        }
+    }
     if file.content_version < 20 {
         let value: serde_json::Value = serde_json::from_slice(bytes).map_err(|e| e.to_string())?;
         fn new_fields(v: &serde_json::Value) -> bool {
@@ -584,7 +594,7 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
                 .map_err(|e| format!("Invalid native v6 document: {e}"))?;
             return decode_styled(file.paragraphs, file.style_catalog);
         }
-        10..=19 | CONTENT_VERSION => {
+        10..=20 | CONTENT_VERSION => {
             let file: NativeSpacing = serde_json::from_slice(bytes)
                 .map_err(|e| format!("Invalid native spacing document: {e}"))?;
             if file.content_version >= 19

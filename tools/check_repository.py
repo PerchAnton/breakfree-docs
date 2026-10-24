@@ -42,6 +42,18 @@ snapshot = json.loads((ROOT / "contracts/v1/snapshot.json").read_text(encoding="
 assert snapshot["protocol_version"] == 1
 assert snapshot["app_id"] == "breakfree.docs"
 assert snapshot["office_source_commit"] == "cfaaf419e84d9981acd421d130113ca2265061fd"
+# Supplemental third-party evidence must match its checked-in bytes.
+notice_index = json.loads((ROOT / "docs/licenses/upstream/index.json").read_text())
+seen_packages = set()
+for package in notice_index["packages"]:
+    identity = (package["name"], package["version"])
+    assert identity not in seen_packages, "Duplicate supplemental notice entry"
+    seen_packages.add(identity)
+    assert re.fullmatch(r"[0-9a-f]{40}", package["vcs"]["git"]["sha1"])
+    for notice in package["files"]:
+        path = (ROOT / notice["path"]).resolve()
+        assert path.is_relative_to((ROOT / "docs/licenses").resolve())
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == notice["sha256"]
 if errors:
     raise SystemExit("\n".join(errors))
-print("Local documentation references, contract snapshot and approved artwork: OK")
+print("Local documentation references, contract snapshot, approved artwork and notice hashes: OK")

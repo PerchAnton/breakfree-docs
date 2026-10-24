@@ -1,6 +1,6 @@
 # Native BreakFree Docs document format
 
-Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v20.
+Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v21.
 This is not a DOCX container. Process protocol and file-content versions are independent.
 
 ```json
@@ -341,3 +341,12 @@ Metadata survives native/DOCX conversion and history; imported counters are not
 updated after edits. Host font files are never embedded. Earlier v1–v19 inputs
 reject these new fields even when null. Page/structure requirements from v19 stay.
 See [ADR 0019](adr/0019-docx-sections-pictures-tabs-fonts.md).
+
+
+## V21: passive custom package properties
+
+V21 additionally permits the custom key in package_properties. Its XML must have
+the OOXML custom-properties Properties root and obey the same 128 KiB/XML parser
+bounds. Original bytes, names, values and type markup are retained without
+interpretation or GUI editing. V1–v20 reject this new key, even when null.
+No other structure, font or spacing semantics change.

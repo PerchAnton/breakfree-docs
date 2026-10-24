@@ -160,7 +160,29 @@ pub(super) fn read(
             if actual != kind {
                 return Err("Header/footer relationship kind mismatch".into());
             }
-            let root = part(parts, path)?;
+            let mut root = part(parts, path)?;
+            if let Some(p) = root
+                .children
+                .iter_mut()
+                .find(|c| c.ns == W && c.name == "p")
+                && let Some(field) = p
+                    .children
+                    .iter_mut()
+                    .find(|c| c.ns == W && c.name == "fldSimple")
+                && let Some(run) = field
+                    .children
+                    .iter_mut()
+                    .find(|c| c.ns == W && c.name == "r")
+                && let Some(text) = run.children.iter_mut().find(|c| c.ns == W && c.name == "t")
+            {
+                if text.text.is_empty()
+                    || !text.text.bytes().all(|b| b.is_ascii_digit())
+                    || text.text.parse::<u16>().ok().filter(|v| *v > 0).is_none()
+                {
+                    return Err("Unsupported PAGE field cache".into());
+                }
+                text.text = "1".into();
+            }
             let p = root.child("p").ok_or("Missing header/footer paragraph")?;
             let text = p
                 .child("r")

@@ -3,6 +3,19 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.95 — 2026-10-24
+
+- Preserve passive custom DOCX property parts byte-for-byte through editing,
+  undo/redo, save/reopen and optional native v21; freeze older native readers.
+- Accept updated positive decimal PAGE field caches without changing authored
+  section numbering; reject unsupported cache values.
+- Recover pinned upstream license texts for 22 previously incomplete entries.
+  Record eight statement-only and two no-text entries as unresolved, including
+  the upstream SDK-provenance caveat; do not infer redistribution clearance.
+- Validate supplemental notice hashes, package versions/declarations and source
+  revisions during offline packaging; add regressions and a synthetic fixture.
+- Preserve design and dependency versions. Windows/printing deferred; VoiceOver last.
+
 ## 0.1.0-alpha.94 — 2026-10-24
 
 - Extend primary DOCX with inline PNG, next-page sections, plain headers/footers,

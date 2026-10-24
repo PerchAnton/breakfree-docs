@@ -1,5 +1,5 @@
 {
-  "scope": "Cargo metadata --locked --filter-platform aarch64-apple-darwin; other target dependencies remain in Cargo.lock",
+  "scope": "Locked Cargo target-resolution inventory for aarch64-apple-darwin, including potential build/dev dependencies; not exact binary linkage or a redistribution clearance.",
   "packages": [
     {
       "name": "ab_glyph",

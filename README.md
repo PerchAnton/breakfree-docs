@@ -35,6 +35,15 @@
 > the longer-term plan; the [validation report](docs/VALIDATION.md) separates actual
 > checks from pending work.
 
+## Alpha.95 — DOCX properties and dependency evidence
+
+Custom DOCX properties now survive editing and optional native v21 conversion
+without rewriting their XML. Updated decimal PAGE caches are accepted as derived
+display values. [License review](docs/LICENSE_REVIEW.md) recovers full upstream
+texts for 22 of the previous 32 missing-notice entries; ten remain incomplete.
+Packaging checks pinned source revisions and notice hashes offline. Design is
+unchanged; external save-back and distribution clearance remain open.
+
 ## Alpha.94 — combined DOCX exchange
 
 The bounded profile now includes inline PNG, next-page sections, plain headers/
@@ -289,8 +298,8 @@ to the replacement and rejects a descendant replacement that would create a cycl
 [Character-style rules](docs/adr/0011-character-style-precedence.md).
 [Style rules](docs/adr/0008-custom-named-styles.md) · [Deletion rules](docs/adr/0009-delete-custom-styles.md).
 
-This build reads native content v1–v20 and saves **v20**. Earlier builds reject new
-v20 saves; use Save As to retain older files. See [format details](docs/NATIVE_FORMAT.md).
+This build reads native content v1–v21 and saves **v21**. Earlier builds reject new
+v21 saves; use Save As to retain older files. See [format details](docs/NATIVE_FORMAT.md).
 File provides New/Open/Save/Save As, unsaved Save/Discard/Cancel, PDF export and
 print preview. View → Print Layout enables editable pages with actual page counts;
 continuous editing remains available. Physical printing is a separate unverified gate.

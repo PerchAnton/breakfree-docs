@@ -37,7 +37,9 @@ jobs:
       - name: Model, storage, CLI and real widget event tests
         run: cargo test --locked
       - name: Check local links and artwork
-        run: python tools/check_repository.py
+        run: |
+          python tools/check_repository.py
+          python tools/test_license_inventory.py
       - name: Build independent native executable
         run: cargo build --locked --release
       - name: Native executable capabilities without opening a window

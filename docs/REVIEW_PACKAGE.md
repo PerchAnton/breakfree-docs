@@ -28,3 +28,9 @@ A release still requires license review, clean-source provenance, owner approval
 platform acceptance, signing/distribution decisions and external DOCX save-back.
 Repeated commands reproduce the build procedure; byte-identical ZIPs/builds are
 not promised. CI artifacts and local archives are distinct from public releases.
+
+
+Alpha.95 uses a pinned local notice supplement and validates source revisions,
+SPDX declarations and SHA-256 before packaging. See [license review](LICENSE_REVIEW.md).
+The result reports both missing notice files and unresolved notice review;
+statement-only LICENSE.md files do not resolve a full-text gap.

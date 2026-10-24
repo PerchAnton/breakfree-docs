@@ -274,10 +274,10 @@ Rust selection is complete; this gate evaluates GUI behavior and visual fidelity
 - [ ] Test native round trips, DOCX round trips and exported files reopened in a named external application/build.
 - [ ] Publish per-feature import/write limitations and an alpha package only for tested targets.
 
-**Alpha.94 progress:** Combined bounded read/write now covers text/styles, scoped
+**Alpha.95 progress:** Combined bounded read/write now covers text/styles, scoped
 lists, hyperlinks, fixed plain-cell tables, inline PNG, next-page sections with
 plain headers/footers and PAGE restarts, explicit tab stops/leaders, three named
-font families and original core/app metadata. Optional native v20 retains these
+font families and original core/app/custom metadata. Optional native v21 retains these
 values through shared editing/history. A reproducible local review-package tool
 collects provenance and dependency notices. General external table presentation,
 themes/rendering settings and save-back remain open; no public alpha is published.
@@ -285,7 +285,10 @@ themes/rendering settings and save-back remain open; no public alpha is publishe
 - [x] Implement the declared PNG/section/tab/font/metadata subset with exact model
   roundtrips and rejection tests (alpha.94).
 - [ ] Complete external save-back and cross-application corpus review.
-- [ ] Finish redistribution/license review and approve a tested-target alpha.
+- [x] Recover and pin 22 missing upstream license texts; distinguish eight
+  statement-only and two no-text entries and verify hashes offline (alpha.95).
+- [ ] Resolve ten incomplete notice entries and SDK provenance, finish distribution
+  review and approve a tested-target alpha; see [license review](docs/LICENSE_REVIEW.md).
 - [ ] Windows and physical printing remain deferred; VoiceOver remains the final
   accessibility gate, per owner instruction.
 

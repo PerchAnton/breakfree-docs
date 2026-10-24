@@ -1,0 +1,774 @@
+{
+  "schema_version": 1,
+  "scope": "Supplement for the 32 missing notice-file entries in the alpha.94 macOS target-resolution inventory; not legal clearance.",
+  "packages": [
+    {
+      "name": "accesskit",
+      "version": "0.21.1",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/AccessKit/accesskit",
+      "vcs": {
+        "git": {
+          "sha1": "0b6901a8c8e6fb1cb5a2dc7c19dc7bee1cc5ad09"
+        },
+        "path_in_vcs": "common"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/AccessKit-accesskit-0b6901a8c8e6/LICENSE-MIT",
+          "url": "https://raw.githubusercontent.com/AccessKit/accesskit/0b6901a8c8e6fb1cb5a2dc7c19dc7bee1cc5ad09/LICENSE-MIT",
+          "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+        },
+        {
+          "path": "docs/licenses/upstream/AccessKit-accesskit-0b6901a8c8e6/LICENSE-APACHE",
+          "url": "https://raw.githubusercontent.com/AccessKit/accesskit/0b6901a8c8e6fb1cb5a2dc7c19dc7bee1cc5ad09/LICENSE-APACHE",
+          "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+        }
+      ],
+      "status": "license_text_recovered",
+      "review_required": false
+    },
+    {
+      "name": "accesskit_consumer",
+      "version": "0.31.0",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/AccessKit/accesskit",
+      "vcs": {
+        "git": {
+          "sha1": "5801c4a49ff9b2c9ec3f77b3c31272d0da4c5cd3"
+        },
+        "path_in_vcs": "consumer"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/AccessKit-accesskit-5801c4a49ff9/LICENSE-MIT",
+          "url": "https://raw.githubusercontent.com/AccessKit/accesskit/5801c4a49ff9b2c9ec3f77b3c31272d0da4c5cd3/LICENSE-MIT",
+          "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+        },
+        {
+          "path": "docs/licenses/upstream/AccessKit-accesskit-5801c4a49ff9/LICENSE-APACHE",
+          "url": "https://raw.githubusercontent.com/AccessKit/accesskit/5801c4a49ff9b2c9ec3f77b3c31272d0da4c5cd3/LICENSE-APACHE",
+          "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+        }
+      ],
+      "status": "license_text_recovered",
+      "review_required": false
+    },
+    {
+      "name": "accesskit_macos",
+      "version": "0.22.2",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/AccessKit/accesskit",
+      "vcs": {
+        "git": {
+          "sha1": "5801c4a49ff9b2c9ec3f77b3c31272d0da4c5cd3"
+        },
+        "path_in_vcs": "platforms/macos"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/AccessKit-accesskit-5801c4a49ff9/LICENSE-MIT",
+          "url": "https://raw.githubusercontent.com/AccessKit/accesskit/5801c4a49ff9b2c9ec3f77b3c31272d0da4c5cd3/LICENSE-MIT",
+          "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+        },
+        {
+          "path": "docs/licenses/upstream/AccessKit-accesskit-5801c4a49ff9/LICENSE-APACHE",
+          "url": "https://raw.githubusercontent.com/AccessKit/accesskit/5801c4a49ff9b2c9ec3f77b3c31272d0da4c5cd3/LICENSE-APACHE",
+          "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+        }
+      ],
+      "status": "license_text_recovered",
+      "review_required": false
+    },
+    {
+      "name": "accesskit_winit",
+      "version": "0.29.2",
+      "license": "Apache-2.0",
+      "repository": "https://github.com/AccessKit/accesskit",
+      "vcs": {
+        "git": {
+          "sha1": "5801c4a49ff9b2c9ec3f77b3c31272d0da4c5cd3"
+        },
+        "path_in_vcs": "platforms/winit"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/AccessKit-accesskit-5801c4a49ff9/LICENSE-MIT",
+          "url": "https://raw.githubusercontent.com/AccessKit/accesskit/5801c4a49ff9b2c9ec3f77b3c31272d0da4c5cd3/LICENSE-MIT",
+          "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+        },
+        {
+          "path": "docs/licenses/upstream/AccessKit-accesskit-5801c4a49ff9/LICENSE-APACHE",
+          "url": "https://raw.githubusercontent.com/AccessKit/accesskit/5801c4a49ff9b2c9ec3f77b3c31272d0da4c5cd3/LICENSE-APACHE",
+          "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+        }
+      ],
+      "status": "license_text_recovered",
+      "review_required": false
+    },
+    {
+      "name": "block2",
+      "version": "0.5.1",
+      "license": "MIT",
+      "repository": "https://github.com/madsmtm/objc2",
+      "vcs": {
+        "git": {
+          "sha1": "4fc083f1c6d6784577e38b0ee8dbd344481e2fd2"
+        },
+        "path_in_vcs": "crates/block2"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/madsmtm-objc2-4fc083f1c6d6/LICENSE.txt",
+          "url": "https://raw.githubusercontent.com/madsmtm/objc2/4fc083f1c6d6784577e38b0ee8dbd344481e2fd2/LICENSE.txt",
+          "sha256": "e353f37b12aefbb9f9b29490e837cfee05d9bda70804b3562839a3285c1df1e5"
+        }
+      ],
+      "status": "license_text_recovered",
+      "review_required": false,
+      "caveat": "Upstream binding/Apple SDK provenance needs a separate distribution review; no project-wide clearance is inferred."
+    },
+    {
+      "name": "block2",
+      "version": "0.6.2",
+      "license": "MIT",
+      "repository": "https://github.com/madsmtm/objc2",
+      "vcs": {
+        "git": {
+          "sha1": "b4167b582b2f75f9a1be75495c41b765344fd03c"
+        },
+        "path_in_vcs": "crates/block2"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/madsmtm-objc2-b4167b582b2f/LICENSE.md",
+          "url": "https://raw.githubusercontent.com/madsmtm/objc2/b4167b582b2f75f9a1be75495c41b765344fd03c/LICENSE.md",
+          "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+        }
+      ],
+      "status": "statement_only",
+      "review_required": true,
+      "caveat": "Upstream binding/Apple SDK provenance needs a separate distribution review; no project-wide clearance is inferred."
+    },
+    {
+      "name": "dispatch",
+      "version": "0.2.0",
+      "license": "MIT",
+      "repository": "http://github.com/SSheldon/rust-dispatch",
+      "vcs": {
+        "git": {
+          "sha1": "82d6c7a5b75dc0c71c3f46f87bb6c16a476f7748"
+        }
+      },
+      "files": [],
+      "status": "license_text_missing",
+      "review_required": true
+    },
+    {
+      "name": "dispatch2",
+      "version": "0.3.1",
+      "license": "Zlib OR Apache-2.0 OR MIT",
+      "repository": "https://github.com/madsmtm/objc2",
+      "vcs": {
+        "git": {
+          "sha1": "8852b424193ca41602281b3d7540d7c8ed51e49a"
+        },
+        "path_in_vcs": "crates/dispatch2"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/madsmtm-objc2-8852b424193c/LICENSE.md",
+          "url": "https://raw.githubusercontent.com/madsmtm/objc2/8852b424193ca41602281b3d7540d7c8ed51e49a/LICENSE.md",
+          "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+        }
+      ],
+      "status": "statement_only",
+      "review_required": true,
+      "caveat": "Upstream binding/Apple SDK provenance needs a separate distribution review; no project-wide clearance is inferred."
+    },
+    {
+      "name": "ecolor",
+      "version": "0.33.3",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/emilk/egui",
+      "vcs": {
+        "git": {
+          "sha1": "44cdd653e2317d300fb8a6c9c36b03f23991e803"
+        },
+        "path_in_vcs": "crates/ecolor"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/emilk-egui-44cdd653e231/LICENSE-MIT",
+          "url": "https://raw.githubusercontent.com/emilk/egui/44cdd653e2317d300fb8a6c9c36b03f23991e803/LICENSE-MIT",
+          "sha256": "95ca92f5f8ea5231f1580b3a2a799e8260af3114b900e1def5355a7f44bcf60c"
+        },
+        {
+          "path": "docs/licenses/upstream/emilk-egui-44cdd653e231/LICENSE-APACHE",
+          "url": "https://raw.githubusercontent.com/emilk/egui/44cdd653e2317d300fb8a6c9c36b03f23991e803/LICENSE-APACHE",
+          "sha256": "8173d5c29b4f956d532781d2b86e4e30f83e6b7878dce18c919451d6ba707c90"
+        }
+      ],
+      "status": "license_text_recovered",
+      "review_required": false
+    },
+    {
+      "name": "eframe",
+      "version": "0.33.0",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/emilk/egui/tree/main/crates/eframe",
+      "vcs": {
+        "git": {
+          "sha1": "430a3fbc7872a64ad607e95fa87a566c8e4f1e87"
+        },
+        "path_in_vcs": "crates/eframe"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/emilk-egui-430a3fbc7872/LICENSE-MIT",
+          "url": "https://raw.githubusercontent.com/emilk/egui/430a3fbc7872a64ad607e95fa87a566c8e4f1e87/LICENSE-MIT",
+          "sha256": "95ca92f5f8ea5231f1580b3a2a799e8260af3114b900e1def5355a7f44bcf60c"
+        },
+        {
+          "path": "docs/licenses/upstream/emilk-egui-430a3fbc7872/LICENSE-APACHE",
+          "url": "https://raw.githubusercontent.com/emilk/egui/430a3fbc7872a64ad607e95fa87a566c8e4f1e87/LICENSE-APACHE",
+          "sha256": "8173d5c29b4f956d532781d2b86e4e30f83e6b7878dce18c919451d6ba707c90"
+        }
+      ],
+      "status": "license_text_recovered",
+      "review_required": false
+    },
+    {
+      "name": "egui",
+      "version": "0.33.3",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/emilk/egui",
+      "vcs": {
+        "git": {
+          "sha1": "44cdd653e2317d300fb8a6c9c36b03f23991e803"
+        },
+        "path_in_vcs": "crates/egui"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/emilk-egui-44cdd653e231/LICENSE-MIT",
+          "url": "https://raw.githubusercontent.com/emilk/egui/44cdd653e2317d300fb8a6c9c36b03f23991e803/LICENSE-MIT",
+          "sha256": "95ca92f5f8ea5231f1580b3a2a799e8260af3114b900e1def5355a7f44bcf60c"
+        },
+        {
+          "path": "docs/licenses/upstream/emilk-egui-44cdd653e231/LICENSE-APACHE",
+          "url": "https://raw.githubusercontent.com/emilk/egui/44cdd653e2317d300fb8a6c9c36b03f23991e803/LICENSE-APACHE",
+          "sha256": "8173d5c29b4f956d532781d2b86e4e30f83e6b7878dce18c919451d6ba707c90"
+        }
+      ],
+      "status": "license_text_recovered",
+      "review_required": false
+    },
+    {
+      "name": "egui-wgpu",
+      "version": "0.33.3",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/emilk/egui/tree/main/crates/egui-wgpu",
+      "vcs": {
+        "git": {
+          "sha1": "44cdd653e2317d300fb8a6c9c36b03f23991e803"
+        },
+        "path_in_vcs": "crates/egui-wgpu"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/emilk-egui-44cdd653e231/LICENSE-MIT",
+          "url": "https://raw.githubusercontent.com/emilk/egui/44cdd653e2317d300fb8a6c9c36b03f23991e803/LICENSE-MIT",
+          "sha256": "95ca92f5f8ea5231f1580b3a2a799e8260af3114b900e1def5355a7f44bcf60c"
+        },
+        {
+          "path": "docs/licenses/upstream/emilk-egui-44cdd653e231/LICENSE-APACHE",
+          "url": "https://raw.githubusercontent.com/emilk/egui/44cdd653e2317d300fb8a6c9c36b03f23991e803/LICENSE-APACHE",
+          "sha256": "8173d5c29b4f956d532781d2b86e4e30f83e6b7878dce18c919451d6ba707c90"
+        }
+      ],
+      "status": "license_text_recovered",
+      "review_required": false
+    },
+    {
+      "name": "egui-winit",
+      "version": "0.33.3",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/emilk/egui/tree/main/crates/egui-winit",
+      "vcs": {
+        "git": {
+          "sha1": "44cdd653e2317d300fb8a6c9c36b03f23991e803"
+        },
+        "path_in_vcs": "crates/egui-winit"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/emilk-egui-44cdd653e231/LICENSE-MIT",
+          "url": "https://raw.githubusercontent.com/emilk/egui/44cdd653e2317d300fb8a6c9c36b03f23991e803/LICENSE-MIT",
+          "sha256": "95ca92f5f8ea5231f1580b3a2a799e8260af3114b900e1def5355a7f44bcf60c"
+        },
+        {
+          "path": "docs/licenses/upstream/emilk-egui-44cdd653e231/LICENSE-APACHE",
+          "url": "https://raw.githubusercontent.com/emilk/egui/44cdd653e2317d300fb8a6c9c36b03f23991e803/LICENSE-APACHE",
+          "sha256": "8173d5c29b4f956d532781d2b86e4e30f83e6b7878dce18c919451d6ba707c90"
+        }
+      ],
+      "status": "license_text_recovered",
+      "review_required": false
+    },
+    {
+      "name": "egui_glow",
+      "version": "0.33.3",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/emilk/egui/tree/main/crates/egui_glow",
+      "vcs": {
+        "git": {
+          "sha1": "44cdd653e2317d300fb8a6c9c36b03f23991e803"
+        },
+        "path_in_vcs": "crates/egui_glow"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/emilk-egui-44cdd653e231/LICENSE-MIT",
+          "url": "https://raw.githubusercontent.com/emilk/egui/44cdd653e2317d300fb8a6c9c36b03f23991e803/LICENSE-MIT",
+          "sha256": "95ca92f5f8ea5231f1580b3a2a799e8260af3114b900e1def5355a7f44bcf60c"
+        },
+        {
+          "path": "docs/licenses/upstream/emilk-egui-44cdd653e231/LICENSE-APACHE",
+          "url": "https://raw.githubusercontent.com/emilk/egui/44cdd653e2317d300fb8a6c9c36b03f23991e803/LICENSE-APACHE",
+          "sha256": "8173d5c29b4f956d532781d2b86e4e30f83e6b7878dce18c919451d6ba707c90"
+        }
+      ],
+      "status": "license_text_recovered",
+      "review_required": false
+    },
+    {
+      "name": "emath",
+      "version": "0.33.3",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/emilk/egui/tree/main/crates/emath",
+      "vcs": {
+        "git": {
+          "sha1": "44cdd653e2317d300fb8a6c9c36b03f23991e803"
+        },
+        "path_in_vcs": "crates/emath"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/emilk-egui-44cdd653e231/LICENSE-MIT",
+          "url": "https://raw.githubusercontent.com/emilk/egui/44cdd653e2317d300fb8a6c9c36b03f23991e803/LICENSE-MIT",
+          "sha256": "95ca92f5f8ea5231f1580b3a2a799e8260af3114b900e1def5355a7f44bcf60c"
+        },
+        {
+          "path": "docs/licenses/upstream/emilk-egui-44cdd653e231/LICENSE-APACHE",
+          "url": "https://raw.githubusercontent.com/emilk/egui/44cdd653e2317d300fb8a6c9c36b03f23991e803/LICENSE-APACHE",
+          "sha256": "8173d5c29b4f956d532781d2b86e4e30f83e6b7878dce18c919451d6ba707c90"
+        }
+      ],
+      "status": "license_text_recovered",
+      "review_required": false
+    },
+    {
+      "name": "epaint",
+      "version": "0.33.3",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/emilk/egui/tree/main/crates/epaint",
+      "vcs": {
+        "git": {
+          "sha1": "44cdd653e2317d300fb8a6c9c36b03f23991e803"
+        },
+        "path_in_vcs": "crates/epaint"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/emilk-egui-44cdd653e231/LICENSE-MIT",
+          "url": "https://raw.githubusercontent.com/emilk/egui/44cdd653e2317d300fb8a6c9c36b03f23991e803/LICENSE-MIT",
+          "sha256": "95ca92f5f8ea5231f1580b3a2a799e8260af3114b900e1def5355a7f44bcf60c"
+        },
+        {
+          "path": "docs/licenses/upstream/emilk-egui-44cdd653e231/LICENSE-APACHE",
+          "url": "https://raw.githubusercontent.com/emilk/egui/44cdd653e2317d300fb8a6c9c36b03f23991e803/LICENSE-APACHE",
+          "sha256": "8173d5c29b4f956d532781d2b86e4e30f83e6b7878dce18c919451d6ba707c90"
+        }
+      ],
+      "status": "license_text_recovered",
+      "review_required": false
+    },
+    {
+      "name": "epaint_default_fonts",
+      "version": "0.33.3",
+      "license": "(MIT OR Apache-2.0) AND OFL-1.1 AND Ubuntu-font-1.0",
+      "repository": "https://github.com/emilk/egui/tree/main/crates/epaint_default_fonts",
+      "vcs": {
+        "git": {
+          "sha1": "44cdd653e2317d300fb8a6c9c36b03f23991e803"
+        },
+        "path_in_vcs": "crates/epaint_default_fonts"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/emilk-egui-44cdd653e231/LICENSE-MIT",
+          "url": "https://raw.githubusercontent.com/emilk/egui/44cdd653e2317d300fb8a6c9c36b03f23991e803/LICENSE-MIT",
+          "sha256": "95ca92f5f8ea5231f1580b3a2a799e8260af3114b900e1def5355a7f44bcf60c"
+        },
+        {
+          "path": "docs/licenses/upstream/emilk-egui-44cdd653e231/LICENSE-APACHE",
+          "url": "https://raw.githubusercontent.com/emilk/egui/44cdd653e2317d300fb8a6c9c36b03f23991e803/LICENSE-APACHE",
+          "sha256": "8173d5c29b4f956d532781d2b86e4e30f83e6b7878dce18c919451d6ba707c90"
+        },
+        {
+          "path": "docs/licenses/UFL.txt",
+          "url": null,
+          "sha256": "2f0015108d68627bd788d313f529c21ff4da2c2c42a5e1f3883acc83480f9002",
+          "note": "Existing embedded-font notice; retained unchanged."
+        },
+        {
+          "path": "docs/licenses/OFL.txt",
+          "url": null,
+          "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2",
+          "note": "Existing embedded-font notice; retained unchanged."
+        },
+        {
+          "path": "docs/licenses/Hack-Regular.txt",
+          "url": null,
+          "sha256": "47c0cccbeec7e8614548cc485588b28149e7874188df5f41b36efebcee285c87",
+          "note": "Existing embedded-font notice; retained unchanged."
+        },
+        {
+          "path": "docs/licenses/emoji-icon-font-mit-license.txt",
+          "url": null,
+          "sha256": "b9d2c1d909aa149996fd4c91dcb92b2362a04431640c1d200959da94caf8cde1",
+          "note": "Existing embedded-font notice; retained unchanged."
+        }
+      ],
+      "status": "license_text_recovered",
+      "review_required": false
+    },
+    {
+      "name": "hexf-parse",
+      "version": "0.2.1",
+      "license": "CC0-1.0",
+      "repository": "https://github.com/lifthrasiir/hexf",
+      "vcs": {
+        "git": {
+          "sha1": "4225763d744183d720f575ae96d04161b4d08ea0"
+        }
+      },
+      "files": [],
+      "status": "license_text_missing",
+      "review_required": true
+    },
+    {
+      "name": "objc-sys",
+      "version": "0.3.5",
+      "license": "MIT",
+      "repository": "https://github.com/madsmtm/objc2",
+      "vcs": {
+        "git": {
+          "sha1": "4fc083f1c6d6784577e38b0ee8dbd344481e2fd2"
+        },
+        "path_in_vcs": "crates/objc-sys"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/madsmtm-objc2-4fc083f1c6d6/LICENSE.txt",
+          "url": "https://raw.githubusercontent.com/madsmtm/objc2/4fc083f1c6d6784577e38b0ee8dbd344481e2fd2/LICENSE.txt",
+          "sha256": "e353f37b12aefbb9f9b29490e837cfee05d9bda70804b3562839a3285c1df1e5"
+        }
+      ],
+      "status": "license_text_recovered",
+      "review_required": false,
+      "caveat": "Upstream binding/Apple SDK provenance needs a separate distribution review; no project-wide clearance is inferred."
+    },
+    {
+      "name": "objc2",
+      "version": "0.5.3",
+      "license": "MIT",
+      "repository": "https://github.com/madsmtm/objc2",
+      "vcs": {
+        "git": {
+          "sha1": "5237cbf081d04ef75a1f6a207b4018e7c1ae7438"
+        },
+        "path_in_vcs": "crates/objc2"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/madsmtm-objc2-5237cbf081d0/LICENSE.txt",
+          "url": "https://raw.githubusercontent.com/madsmtm/objc2/5237cbf081d04ef75a1f6a207b4018e7c1ae7438/LICENSE.txt",
+          "sha256": "e353f37b12aefbb9f9b29490e837cfee05d9bda70804b3562839a3285c1df1e5"
+        }
+      ],
+      "status": "license_text_recovered",
+      "review_required": false,
+      "caveat": "Upstream binding/Apple SDK provenance needs a separate distribution review; no project-wide clearance is inferred."
+    },
+    {
+      "name": "objc2",
+      "version": "0.6.5",
+      "license": "MIT",
+      "repository": "https://github.com/madsmtm/objc2",
+      "vcs": {
+        "git": {
+          "sha1": "d7d2fa23ceaa5e6096c923b081040e5d81b3b9df"
+        },
+        "path_in_vcs": "crates/objc2"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/madsmtm-objc2-d7d2fa23ceaa/LICENSE.md",
+          "url": "https://raw.githubusercontent.com/madsmtm/objc2/d7d2fa23ceaa5e6096c923b081040e5d81b3b9df/LICENSE.md",
+          "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+        }
+      ],
+      "status": "statement_only",
+      "review_required": true,
+      "caveat": "Upstream binding/Apple SDK provenance needs a separate distribution review; no project-wide clearance is inferred."
+    },
+    {
+      "name": "objc2-app-kit",
+      "version": "0.2.2",
+      "license": "MIT",
+      "repository": "https://github.com/madsmtm/objc2",
+      "vcs": {
+        "git": {
+          "sha1": "e282618be4c3a3b9542957e0c8540e9588472ce8"
+        },
+        "path_in_vcs": "framework-crates/objc2-app-kit"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/madsmtm-objc2-e282618be4c3/LICENSE.txt",
+          "url": "https://raw.githubusercontent.com/madsmtm/objc2/e282618be4c3a3b9542957e0c8540e9588472ce8/LICENSE.txt",
+          "sha256": "e353f37b12aefbb9f9b29490e837cfee05d9bda70804b3562839a3285c1df1e5"
+        }
+      ],
+      "status": "license_text_recovered",
+      "review_required": false,
+      "caveat": "Upstream binding/Apple SDK provenance needs a separate distribution review; no project-wide clearance is inferred."
+    },
+    {
+      "name": "objc2-app-kit",
+      "version": "0.3.2",
+      "license": "Zlib OR Apache-2.0 OR MIT",
+      "repository": "https://github.com/madsmtm/objc2",
+      "vcs": {
+        "git": {
+          "sha1": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b"
+        },
+        "path_in_vcs": "framework-crates/objc2-app-kit"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/madsmtm-objc2-7b1abfd750a2/LICENSE.md",
+          "url": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+          "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+        }
+      ],
+      "status": "statement_only",
+      "review_required": true,
+      "caveat": "Upstream binding/Apple SDK provenance needs a separate distribution review; no project-wide clearance is inferred."
+    },
+    {
+      "name": "objc2-core-data",
+      "version": "0.2.2",
+      "license": "MIT",
+      "repository": "https://github.com/madsmtm/objc2",
+      "vcs": {
+        "git": {
+          "sha1": "e282618be4c3a3b9542957e0c8540e9588472ce8"
+        },
+        "path_in_vcs": "framework-crates/objc2-core-data"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/madsmtm-objc2-e282618be4c3/LICENSE.txt",
+          "url": "https://raw.githubusercontent.com/madsmtm/objc2/e282618be4c3a3b9542957e0c8540e9588472ce8/LICENSE.txt",
+          "sha256": "e353f37b12aefbb9f9b29490e837cfee05d9bda70804b3562839a3285c1df1e5"
+        }
+      ],
+      "status": "license_text_recovered",
+      "review_required": false,
+      "caveat": "Upstream binding/Apple SDK provenance needs a separate distribution review; no project-wide clearance is inferred."
+    },
+    {
+      "name": "objc2-core-foundation",
+      "version": "0.3.2",
+      "license": "Zlib OR Apache-2.0 OR MIT",
+      "repository": "https://github.com/madsmtm/objc2",
+      "vcs": {
+        "git": {
+          "sha1": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b"
+        },
+        "path_in_vcs": "framework-crates/objc2-core-foundation"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/madsmtm-objc2-7b1abfd750a2/LICENSE.md",
+          "url": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+          "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+        }
+      ],
+      "status": "statement_only",
+      "review_required": true,
+      "caveat": "Upstream binding/Apple SDK provenance needs a separate distribution review; no project-wide clearance is inferred."
+    },
+    {
+      "name": "objc2-core-graphics",
+      "version": "0.3.2",
+      "license": "Zlib OR Apache-2.0 OR MIT",
+      "repository": "https://github.com/madsmtm/objc2",
+      "vcs": {
+        "git": {
+          "sha1": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b"
+        },
+        "path_in_vcs": "framework-crates/objc2-core-graphics"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/madsmtm-objc2-7b1abfd750a2/LICENSE.md",
+          "url": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+          "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+        }
+      ],
+      "status": "statement_only",
+      "review_required": true,
+      "caveat": "Upstream binding/Apple SDK provenance needs a separate distribution review; no project-wide clearance is inferred."
+    },
+    {
+      "name": "objc2-core-image",
+      "version": "0.2.2",
+      "license": "MIT",
+      "repository": "https://github.com/madsmtm/objc2",
+      "vcs": {
+        "git": {
+          "sha1": "e282618be4c3a3b9542957e0c8540e9588472ce8"
+        },
+        "path_in_vcs": "framework-crates/objc2-core-image"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/madsmtm-objc2-e282618be4c3/LICENSE.txt",
+          "url": "https://raw.githubusercontent.com/madsmtm/objc2/e282618be4c3a3b9542957e0c8540e9588472ce8/LICENSE.txt",
+          "sha256": "e353f37b12aefbb9f9b29490e837cfee05d9bda70804b3562839a3285c1df1e5"
+        }
+      ],
+      "status": "license_text_recovered",
+      "review_required": false,
+      "caveat": "Upstream binding/Apple SDK provenance needs a separate distribution review; no project-wide clearance is inferred."
+    },
+    {
+      "name": "objc2-encode",
+      "version": "4.1.0",
+      "license": "MIT",
+      "repository": "https://github.com/madsmtm/objc2",
+      "vcs": {
+        "git": {
+          "sha1": "8d214f5477365ffcbcbb7de058c86ed9a518efb7"
+        },
+        "path_in_vcs": "crates/objc2-encode"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/madsmtm-objc2-8d214f547736/LICENSE.md",
+          "url": "https://raw.githubusercontent.com/madsmtm/objc2/8d214f5477365ffcbcbb7de058c86ed9a518efb7/LICENSE.md",
+          "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+        }
+      ],
+      "status": "statement_only",
+      "review_required": true,
+      "caveat": "Upstream binding/Apple SDK provenance needs a separate distribution review; no project-wide clearance is inferred."
+    },
+    {
+      "name": "objc2-io-surface",
+      "version": "0.3.2",
+      "license": "Zlib OR Apache-2.0 OR MIT",
+      "repository": "https://github.com/madsmtm/objc2",
+      "vcs": {
+        "git": {
+          "sha1": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b"
+        },
+        "path_in_vcs": "framework-crates/objc2-io-surface"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/madsmtm-objc2-7b1abfd750a2/LICENSE.md",
+          "url": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+          "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+        }
+      ],
+      "status": "statement_only",
+      "review_required": true,
+      "caveat": "Upstream binding/Apple SDK provenance needs a separate distribution review; no project-wide clearance is inferred."
+    },
+    {
+      "name": "objc2-metal",
+      "version": "0.2.2",
+      "license": "MIT",
+      "repository": "https://github.com/madsmtm/objc2",
+      "vcs": {
+        "git": {
+          "sha1": "e282618be4c3a3b9542957e0c8540e9588472ce8"
+        },
+        "path_in_vcs": "framework-crates/objc2-metal"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/madsmtm-objc2-e282618be4c3/LICENSE.txt",
+          "url": "https://raw.githubusercontent.com/madsmtm/objc2/e282618be4c3a3b9542957e0c8540e9588472ce8/LICENSE.txt",
+          "sha256": "e353f37b12aefbb9f9b29490e837cfee05d9bda70804b3562839a3285c1df1e5"
+        }
+      ],
+      "status": "license_text_recovered",
+      "review_required": false,
+      "caveat": "Upstream binding/Apple SDK provenance needs a separate distribution review; no project-wide clearance is inferred."
+    },
+    {
+      "name": "objc2-quartz-core",
+      "version": "0.2.2",
+      "license": "MIT",
+      "repository": "https://github.com/madsmtm/objc2",
+      "vcs": {
+        "git": {
+          "sha1": "e282618be4c3a3b9542957e0c8540e9588472ce8"
+        },
+        "path_in_vcs": "framework-crates/objc2-quartz-core"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/madsmtm-objc2-e282618be4c3/LICENSE.txt",
+          "url": "https://raw.githubusercontent.com/madsmtm/objc2/e282618be4c3a3b9542957e0c8540e9588472ce8/LICENSE.txt",
+          "sha256": "e353f37b12aefbb9f9b29490e837cfee05d9bda70804b3562839a3285c1df1e5"
+        }
+      ],
+      "status": "license_text_recovered",
+      "review_required": false,
+      "caveat": "Upstream binding/Apple SDK provenance needs a separate distribution review; no project-wide clearance is inferred."
+    },
+    {
+      "name": "profiling",
+      "version": "1.0.18",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/aclysma/profiling",
+      "vcs": {
+        "git": {
+          "sha1": "8271551172eb6fa4cba47369aedd93790c623df9"
+        },
+        "path_in_vcs": "profiling"
+      },
+      "files": [
+        {
+          "path": "docs/licenses/upstream/aclysma-profiling-8271551172eb/LICENSE-MIT",
+          "url": "https://raw.githubusercontent.com/aclysma/profiling/8271551172eb6fa4cba47369aedd93790c623df9/LICENSE-MIT",
+          "sha256": "c8167fdeeed46d3f244d3f85c5bf998ce889343691c32be2c61a8bc4b5c08333"
+        },
+        {
+          "path": "docs/licenses/upstream/aclysma-profiling-8271551172eb/LICENSE-APACHE",
+          "url": "https://raw.githubusercontent.com/aclysma/profiling/8271551172eb6fa4cba47369aedd93790c623df9/LICENSE-APACHE",
+          "sha256": "10d30a673cd5e9349bdc02aeb48f14b3386d27d0da32df8f0a555d4aa16aa551"
+        }
+      ],
+      "status": "license_text_recovered",
+      "review_required": false
+    }
+  ]
+}

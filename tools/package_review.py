@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 import zipfile
 from pathlib import Path
+from license_inventory import supplement
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -35,7 +36,7 @@ def main():
         stage.mkdir()
         shutil.copy2(binary, stage / binary.name)
         for name in ["README.md", "CHANGELOG.md", "Cargo.lock", "docs/DOCX_SUBSET.md",
-                     "docs/VALIDATION.md", "docs/THIRD_PARTY_NOTICES.md", "docs/REVIEW_PACKAGE.md"]:
+                     "docs/VALIDATION.md", "docs/LICENSE_REVIEW.md", "docs/THIRD_PARTY_NOTICES.md", "docs/REVIEW_PACKAGE.md"]:
             dst = stage / name
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(ROOT / name, dst)
@@ -55,8 +56,15 @@ def main():
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(file, dst)
                 copied.append(relative.as_posix())
+            evidence = supplement(package, source)
+            if evidence:
+                copied.extend(n["path"] for n in evidence["files"])
             inventory.append({key: package.get(key) for key in ("name", "version", "license", "repository")} |
-                             {"notice_files": copied, "review_required": not files})
+                             {"notice_files": copied,
+                              "review_required": (not files and (not evidence or evidence["review_required"])),
+                              "supplement_status": evidence["status"] if evidence else None,
+                              "source_commit": evidence["vcs"]["git"]["sha1"] if evidence else None,
+                              "caveat": evidence.get("caveat") if evidence else None})
         (stage / "DEPENDENCIES.json").write_text(json.dumps(inventory, indent=2) + "\n")
         files = {p.relative_to(stage).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
                  for p in sorted(stage.rglob("*")) if p.is_file()}
@@ -79,7 +87,8 @@ def main():
             shutil.copyfileobj(source, destination)
     print(json.dumps({"archive": str(output), "sha256": hashlib.sha256(output.read_bytes()).hexdigest(),
                       "dependency_count": len(inventory),
-                      "missing_notice_files": sum(p["review_required"] for p in inventory)}))
+                      "missing_notice_files": sum(not p["notice_files"] for p in inventory),
+                      "license_review_required": sum(p["review_required"] for p in inventory)}))
 
 
 if __name__ == "__main__":

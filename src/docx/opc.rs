@@ -114,7 +114,12 @@ pub(super) fn inspect(parts: &Parts) -> Result<Locations> {
         parts,
         "_rels/.rels",
         "",
-        &["officeDocument", "core-properties", "extended-properties"],
+        &[
+            "officeDocument",
+            "core-properties",
+            "extended-properties",
+            "custom-properties",
+        ],
         &mut links,
         &mut images,
         &mut sections,
@@ -150,10 +155,14 @@ pub(super) fn inspect(parts: &Parts) -> Result<Locations> {
         BTreeMap::new()
     };
     let locations = Locations {
-        metadata: [("core", "core-properties"), ("app", "extended-properties")]
-            .into_iter()
-            .filter_map(|(k, v)| main.get(v).map(|p| (k.into(), p.clone())))
-            .collect(),
+        metadata: [
+            ("core", "core-properties"),
+            ("app", "extended-properties"),
+            ("custom", "custom-properties"),
+        ]
+        .into_iter()
+        .filter_map(|(k, v)| main.get(v).map(|p| (k.into(), p.clone())))
+        .collect(),
         document,
         styles: rels.get("styles").cloned(),
         numbering: rels.get("numbering").cloned(),

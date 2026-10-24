@@ -5,9 +5,13 @@ pub(super) const CORE: &str =
     "http://schemas.openxmlformats.org/package/2006/metadata/core-properties";
 pub(super) const APP: &str =
     "http://schemas.openxmlformats.org/officeDocument/2006/extended-properties";
+pub(super) const CUSTOM: &str =
+    "http://schemas.openxmlformats.org/officeDocument/2006/custom-properties";
 pub(super) fn mime(key: &str) -> &'static str {
     if key == "core" {
         "application/vnd.openxmlformats-package.core-properties+xml"
+    } else if key == "custom" {
+        "application/vnd.openxmlformats-officedocument.custom-properties+xml"
     } else {
         "application/vnd.openxmlformats-officedocument.extended-properties+xml"
     }
@@ -21,6 +25,7 @@ pub(crate) fn validate(properties: &BTreeMap<String, String>) -> Result<()> {
         match key.as_str() {
             "core" => root(&n, CORE, "coreProperties")?,
             "app" => root(&n, APP, "Properties")?,
+            "custom" => root(&n, CUSTOM, "Properties")?,
             _ => return Err("Unknown metadata part".into()),
         };
     }
@@ -34,6 +39,8 @@ pub(super) fn write(d: &Document, parts: &mut Parts) -> Result<()> {
         let kind = if key == "core" {
             "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties"
                 .into()
+        } else if key == "custom" {
+            format!("{OFFICE_REL}custom-properties")
         } else {
             format!("{OFFICE_REL}extended-properties")
         };

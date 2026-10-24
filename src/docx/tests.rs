@@ -993,3 +993,119 @@ fn extended_failed_save_keeps_previous_bytes() {
     assert_eq!(std::fs::read(&path).unwrap(), before);
     assert_eq!(load(&path).unwrap(), d);
 }
+
+fn custom_properties() -> String {
+    format!(
+        "<p:Properties xmlns:p=\"{}\" xmlns:v=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\"><p:property fmtid=\"{{D5CDD505-2E9C-101B-9397-08002B2CF9AE}}\" pid=\"2\" name=\"Review label\"><v:lpwstr>Ї e&#x301; &amp; Русский</v:lpwstr></p:property><p:property fmtid=\"{{D5CDD505-2E9C-101B-9397-08002B2CF9AE}}\" pid=\"3\" name=\"Approved\"><v:bool>false</v:bool></p:property></p:Properties>",
+        metadata::CUSTOM
+    )
+}
+#[test]
+fn custom_properties_survive_edit_history_native_and_docx_without_rewriting_xml() {
+    let mut d = extended();
+    d.package_properties
+        .insert("custom".into(), custom_properties());
+    let bytes = encode(&d).unwrap();
+    let parts = package::read(&bytes).unwrap();
+    assert_eq!(parts["docProps/custom.xml"], custom_properties().as_bytes());
+    assert_eq!(decode(&bytes).unwrap(), d);
+    let native = crate::storage::encode(&d).unwrap();
+    assert_eq!(crate::storage::decode(&native).unwrap(), d);
+    let mut old: serde_json::Value = serde_json::from_slice(&native).unwrap();
+    old["content_version"] = 20.into();
+    assert!(crate::storage::decode(&serde_json::to_vec(&old).unwrap()).is_err());
+    let mut e = crate::commands::Editor::new(d.clone());
+    e.replace(0, 0, "Edited ", "Type").unwrap();
+    let after = e.document.clone();
+    assert_eq!(after.package_properties, d.package_properties);
+    e.undo();
+    assert_eq!(e.document, d);
+    e.redo();
+    assert_eq!(e.document, after);
+    assert_eq!(decode(&encode(&after).unwrap()).unwrap(), after);
+}
+#[test]
+fn invalid_custom_metadata_never_overwrites_destination() {
+    let mut d = extended();
+    d.package_properties
+        .insert("custom".into(), custom_properties());
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("properties.docx");
+    save(&d, &path).unwrap();
+    let before = std::fs::read(&path).unwrap();
+    for bad in [
+        "<Properties/>".into(),
+        format!("<!DOCTYPE x><Properties xmlns=\"{}\"/>", metadata::CUSTOM),
+        "x".repeat(128 * 1024 + 1),
+    ] {
+        let mut invalid = d.clone();
+        invalid.package_properties.insert("custom".into(), bad);
+        assert!(save(&invalid, &path).is_err());
+        assert_eq!(std::fs::read(&path).unwrap(), before);
+    }
+}
+#[test]
+fn external_page_cache_is_recomputed_not_treated_as_authored_text() {
+    let d = extended();
+    let source = package::read(&encode(&d).unwrap()).unwrap();
+    for cache in ["7", "123", "65535"] {
+        let mut p = source.clone();
+        change_part(
+            &mut p,
+            "word/footer2.xml",
+            "<w:t>1</w:t>",
+            &format!("<w:t>{cache}</w:t>"),
+        );
+        assert_eq!(decode(&package::write(&p).unwrap()).unwrap(), d);
+    }
+    for cache in ["0", "65536", "DATE", "-1", "1 2"] {
+        let mut p = source.clone();
+        change_part(
+            &mut p,
+            "word/footer2.xml",
+            "<w:t>1</w:t>",
+            &format!("<w:t>{cache}</w:t>"),
+        );
+        assert!(decode(&package::write(&p).unwrap()).is_err());
+    }
+}
+
+#[test]
+fn custom_properties_follow_safe_internal_relationships_only() {
+    let mut d = extended();
+    d.package_properties
+        .insert("custom".into(), custom_properties());
+    let source = package::read(&encode(&d).unwrap()).unwrap();
+    let mut relocated = source.clone();
+    let bytes = relocated.remove("docProps/custom.xml").unwrap();
+    relocated.insert("metadata/business.xml".into(), bytes);
+    change_part(
+        &mut relocated,
+        "_rels/.rels",
+        "docProps/custom.xml",
+        "metadata/business.xml",
+    );
+    change_part(
+        &mut relocated,
+        "[Content_Types].xml",
+        "/docProps/custom.xml",
+        "/metadata/business.xml",
+    );
+    assert_eq!(decode(&package::write(&relocated).unwrap()).unwrap(), d);
+    for (path, old, new) in [
+        (
+            "_rels/.rels",
+            "Target=\"docProps/custom.xml\"",
+            "Target=\"https://example.com/properties.xml\" TargetMode=\"External\"",
+        ),
+        (
+            "[Content_Types].xml",
+            "application/vnd.openxmlformats-officedocument.custom-properties+xml",
+            "application/xml",
+        ),
+    ] {
+        let mut invalid = source.clone();
+        change_part(&mut invalid, path, old, new);
+        assert!(decode(&package::write(&invalid).unwrap()).is_err());
+    }
+}

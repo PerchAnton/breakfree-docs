@@ -264,8 +264,11 @@ fn rejects_corrupt_foreign_unknown_and_duplicate_fields() {
     }
     let mut duplicate = String::from_utf8(storage::encode(&sample().document).unwrap()).unwrap();
     duplicate = duplicate.replacen(
-        "\"content_version\": 20",
-        "\"content_version\": 20, \"content_version\": 20",
+        &format!("\"content_version\": {}", storage::CONTENT_VERSION),
+        &format!(
+            "\"content_version\": {0}, \"content_version\": {0}",
+            storage::CONTENT_VERSION
+        ),
         1,
     );
     assert!(storage::decode(duplicate.as_bytes()).is_err());

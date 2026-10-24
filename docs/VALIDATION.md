@@ -2483,3 +2483,36 @@ Owner approved alpha.92; DOCX remains primary, native v19 optional.
 Server CI is separate and recorded in the journal after publication. External
 save-back, distribution/license clearance and general DOCX compatibility remain
 open. Windows and physical printing are deferred; VoiceOver remains last.
+
+
+## Alpha.95 DOCX metadata and dependency evidence
+
+2026-10-24, macOS aarch64, Rust 1.99.1. The interface, palette and icons are
+unchanged; native GUI/Word interaction was not repeated for this iteration.
+Windows and paper output remain deferred; VoiceOver remains the final gate.
+
+Four new adapter regressions cover custom property bytes through edit/history,
+native v21 and DOCX; corrupt metadata without destination loss; safe relocated
+parts versus external relationships/wrong MIME; and derived positive PAGE caches
+versus invalid values. The older native duplicate-version regression now uses
+the current version constant rather than a stale literal. A reproducible
+`cargo run --locked --no-default-features --example docx_properties` creates
+`examples/DocxProperties.docx` and `.bfdoc` and compares their complete models.
+The custom part is passive bounded XML, not a custom-property editor or broad
+support for every external metadata producer. Native versions 1–20 remain frozen.
+
+The offline license supplement regression rejects changed notice bytes, source
+revision, declaration and duplicate records. The repository checker validates
+all pinned notice hashes. The conservative 184-package macOS resolution has
+22 recovered full-text gaps, eight statement-only entries and two entries without
+notice text. Ten incomplete entries and SDK provenance remain review gates;
+no dependency or project license changed. See [license review](LICENSE_REVIEW.md).
+
+Results: 512 full / 252 core-only Rust tests passed, along with fmt, Clippy
+(all targets, capture feature, warnings denied), release build, repository checks
+and the Python supplement regression. The local unsigned review ZIP passed CRC
+and all manifest SHA-256 checks; extracted `--version` and `--capabilities` ran
+outside this checkout without Office or sibling repositories and reported
+0.1.0-alpha.95 / protocol 1. Package evidence was built from the dirty candidate
+checkout; it is not a signed release or redistribution approval. External
+Word save-back was not tested. Server CI is recorded separately in the journal.

@@ -41,3 +41,14 @@ References:
 - [Header inheritance in Word](https://learn.microsoft.com/en-us/openspecs/office_standards/ms-oi29500/5de15e59-3ec1-4f80-aa4d-00bdd447b86f).
 - [Current exact subset and limits](../DOCX_SUBSET.md).
 - [Validation and remaining acceptance gates](../VALIDATION.md).
+
+
+## Alpha.95 extension
+
+Preserve a standard custom-properties package part as passive bounded XML beside
+core/app metadata; do not interpret typed values or add an editing surface.
+Native v21 permits the new key and explicitly freezes v20. PAGE field cached
+decimal display text is derived and normalized for profile comparison; actual
+section restart/continuation settings remain unchanged.
+
+Reference: [Custom property structure](https://learn.microsoft.com/en-us/office/open-xml/word/how-to-set-a-custom-property-in-a-word-processing-document).

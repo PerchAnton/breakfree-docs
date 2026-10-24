@@ -47,3 +47,10 @@ notice files in the downloaded crate and are flagged in DEPENDENCIES.json for
 manual review. This conservative dependency inventory may include build/dev
 packages; it does not certify the binary's exact linkage or clear redistribution.
 No new runtime dependency, project license or host font redistribution was added.
+
+
+Alpha.95 [license review](LICENSE_REVIEW.md) addresses 22 of those missing-text
+entries using pinned original upstream files. Eight entries provide only upstream
+statements and two have no recovered text: ten remain incomplete. The supplement
+index records source commits/URLs/hashes; packaging verifies them offline.
+This does not clear SDK provenance or adopt a project license.

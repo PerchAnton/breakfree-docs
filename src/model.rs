@@ -1259,11 +1259,10 @@ impl Document {
     }
 
     pub fn validate(&self) -> Result<()> {
-        if self.package_properties.len() > 2
-            || self
-                .package_properties
-                .iter()
-                .any(|(k, v)| !matches!(k.as_str(), "core" | "app") || v.len() > 128 * 1024)
+        if self.package_properties.len() > 3
+            || self.package_properties.iter().any(|(k, v)| {
+                !matches!(k.as_str(), "core" | "app" | "custom") || v.len() > 128 * 1024
+            })
         {
             return Err("Unsupported or oversized package metadata".into());
         }
