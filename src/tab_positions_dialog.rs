@@ -13,6 +13,8 @@ pub(super) enum PositionsOutcome {
 
 pub(super) struct PositionsDialog {
     style_scope: bool,
+    sources: crate::tab_sources::Inspection,
+    source_dialog: Option<TabSourcesDialog>,
     positions: Vec<u16>,
     selected: Option<u16>,
     kinds: std::collections::BTreeMap<u16, crate::model::TabKind>,
@@ -31,6 +33,10 @@ impl PositionsDialog {
     pub fn for_style(editor: &crate::commands::Editor) -> Self {
         Self {
             style_scope: true,
+            sources: crate::tab_sources::style(
+                &editor.document,
+                editor.document.paragraphs[0].paragraph_style,
+            ),
             ..Self::new(editor)
         }
     }
@@ -51,6 +57,9 @@ impl PositionsDialog {
         });
         Self {
             style_scope: false,
+            sources: crate::tab_sources::inspect(&editor.document, editor.selection, None)
+                .unwrap_or_default(),
+            source_dialog: None,
             positions: if mixed { vec![] } else { positions.clone() },
             selected: None,
             kinds: if mixed {
@@ -123,6 +132,14 @@ impl PositionsDialog {
     }
 
     pub fn show(&mut self, ctx: &egui::Context, regions: &mut Vec<Region>) -> PositionsOutcome {
+        if let Some(mut dialog) = self.source_dialog.take() {
+            if dialog.show(ctx, regions) {
+                dialog.restore_focus(ctx);
+            } else {
+                self.source_dialog = Some(dialog);
+            }
+            return PositionsOutcome::Open;
+        }
         let mut accept = false;
         let mut cancel = false;
         let mut inherit = false;
@@ -137,7 +154,12 @@ impl PositionsDialog {
             .area(egui::Modal::default_area(id).fade_in(false))
             .show(ctx, |ui| {
                 ui.set_width(320.);
+                ui.horizontal(|ui| {
                 ui.heading(if self.style_scope { "Style tab positions" } else { "Tab positions" });
+                let source = ui.button("Sources…").on_hover_text("Inspect the settings at dialog entry; changes remain in this draft.");
+                record("tab-settings-sources", source.rect);
+                if source.clicked() { source.request_focus(); self.source_dialog = Some(TabSourcesDialog::new(self.sources.clone(), if self.style_scope { "Style tabulation sources at entry" } else { "Tabulation sources at entry" }, ctx)); }
+                });
                 ui.separator();
                 ui.label("Positions in points from the text-column edge.");
                 if self.mixed {

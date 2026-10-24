@@ -13027,3 +13027,290 @@ fn inherited_tabs_layout_matches_direct_settings_at_multiple_widths_and_zooms() 
         }
     }
 }
+
+#[test]
+fn tab_sources_keyboard_modal_preserves_numeric_caret_and_transaction() {
+    let (ctx, mut app) = setup();
+    let size = [640., 480.];
+    start_focus_preview(&ctx, &mut app, size);
+    let before = app.session.editor.document.clone();
+    let depth = app.session.editor.undo_stack.len();
+    tap_preview_key(&ctx, &mut app, Key::F2, size);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("120".into())],
+        size,
+        1.,
+    );
+    tap_preview_key(&ctx, &mut app, Key::ArrowLeft, size);
+    let caret = preview_caret(&ctx);
+    tap_preview_key(&ctx, &mut app, Key::F9, size);
+    assert!(app.tab_sources_dialog.is_some());
+    for k in [Key::End, Key::PageUp, Key::Home] {
+        tap_preview_key(&ctx, &mut app, k, size);
+    }
+    frame(
+        &ctx,
+        &mut app,
+        vec![
+            key(Key::B, true),
+            egui::Event::Text("SHOULD NOT EDIT".into()),
+        ],
+        size,
+        1.,
+    );
+    assert_eq!(app.session.editor.document, before);
+    tap_preview_key(&ctx, &mut app, Key::Escape, size);
+    assert!(app.tab_sources_dialog.is_none());
+    assert!(app.tab_ruler_drag.is_some());
+    assert_eq!(preview_caret(&ctx), caret);
+    assert!(ctx.memory(|m| m.has_focus(Id::new("ruler-tab-position-input"))));
+    click_region_at(&ctx, &mut app, "tab-preview-apply", size);
+    assert_eq!(app.session.editor.undo_stack.len(), depth + 1);
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.document, before);
+}
+
+#[test]
+fn tab_sources_nested_dialogs_restore_drafts_and_fit_compact_window() {
+    for action in [Action::TabInterval, Action::TabPositions] {
+        let (ctx, mut app) = setup();
+        let size = [640., 480.];
+        let before = app.session.editor.document.clone();
+        app.execute(action, &ctx);
+        frame(&ctx, &mut app, vec![], size, 1.);
+        click_region_at(&ctx, &mut app, "tab-settings-sources", size);
+        frame(&ctx, &mut app, vec![], size, 1.);
+        assert!(
+            Rect::from_min_size(Pos2::ZERO, vec2(640., 480.))
+                .contains_rect(region(&app, "tab-sources-dialog"))
+        );
+        tap_preview_key(&ctx, &mut app, Key::Escape, size);
+        frame(&ctx, &mut app, vec![], size, 1.);
+        assert!(app.tab_dialog.is_some() || app.tab_positions_dialog.is_some());
+        assert!(app.regions.iter().any(|r| r.name == "tab-settings-sources"));
+        tap_preview_key(&ctx, &mut app, Key::Escape, size);
+        assert_eq!(app.session.editor.document, before);
+        assert!(app.session.editor.undo_stack.is_empty());
+    }
+}
+
+#[test]
+fn tab_sources_global_shortcut_and_formatting_are_read_only() {
+    let (ctx, mut app) = setup();
+    let size = [916., 700.];
+    let before = app.session.editor.document.clone();
+    frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(Key::F9, Modifiers::CTRL | Modifiers::ALT)],
+        size,
+        1.,
+    );
+    assert!(app.tab_sources_dialog.is_some());
+    tap_preview_key(&ctx, &mut app, Key::Escape, size);
+    app.formatting = true;
+    frame(&ctx, &mut app, vec![], size, 1.);
+    assert!(
+        app.regions
+            .iter()
+            .any(|r| r.name == "provenance-Tab interval")
+    );
+    assert_eq!(app.session.editor.document, before);
+    assert!(app.session.editor.undo_stack.is_empty());
+}
+
+#[test]
+fn tab_sources_long_lists_scroll_and_remain_bounded_at_synthetic_scales() {
+    for dpi in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        app.session.editor.document.paragraphs.clear();
+        for n in 0..30 {
+            let id = app
+                .session
+                .editor
+                .document
+                .style_catalog
+                .add(
+                    &format!("Source {n} Україна e\u{301} long style name"),
+                    crate::model::StyleDefinition {
+                        tab_interval_half_points: Some(40 + n),
+                        ..Default::default()
+                    },
+                )
+                .unwrap();
+            app.session
+                .editor
+                .document
+                .paragraphs
+                .push(crate::model::Paragraph {
+                    paragraph_style: id,
+                    ..Default::default()
+                });
+        }
+        app.session.editor.selection = (0, 29);
+        app.sync_view();
+        let before = app.session.editor.document.clone();
+        app.open_tab_sources(&ctx, None);
+        let size = [640. * dpi, 480. * dpi];
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![], size, dpi);
+        }
+        let bounds = Rect::from_min_size(Pos2::ZERO, vec2(640., 480.));
+        assert!(bounds.contains_rect(region(&app, "tab-sources-dialog")));
+        frame(&ctx, &mut app, vec![key(Key::End, false)], size, dpi);
+        assert!(app.tab_sources_dialog.as_ref().unwrap().scroll > 0.);
+        frame(&ctx, &mut app, vec![key(Key::Home, false)], size, dpi);
+        assert_eq!(app.tab_sources_dialog.as_ref().unwrap().scroll, 0.);
+        let point = region(&app, "tab-sources-list").center();
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                egui::Event::PointerMoved(point),
+                egui::Event::MouseWheel {
+                    unit: egui::MouseWheelUnit::Point,
+                    delta: vec2(0., -80.),
+                    modifiers: Modifiers::NONE,
+                },
+            ],
+            size,
+            dpi,
+        );
+        assert!(app.tab_sources_dialog.as_ref().unwrap().scroll > 0.);
+        assert_eq!(app.session.editor.document, before);
+        assert!(app.session.editor.undo_stack.is_empty());
+    }
+}
+
+#[test]
+fn tab_sources_marker_menu_and_pointer_preview_return_without_committing() {
+    let (ctx, mut app) = setup();
+    let size = [916., 700.];
+    app.session.editor.document.paragraphs[0]
+        .spacing
+        .left_tab_stops_half_points = vec![180];
+    start_focus_preview(&ctx, &mut app, size);
+    let before = app.session.editor.document.clone();
+    tap_preview_key(&ctx, &mut app, Key::F2, size);
+    click_region_at(&ctx, &mut app, "tab-preview-sources", size);
+    assert!(app.tab_sources_dialog.is_some());
+    click_region_at(&ctx, &mut app, "tab-sources-close", size);
+    frame(&ctx, &mut app, vec![], size, 1.);
+    assert!(app.tab_ruler_drag.is_some());
+    assert!(ctx.memory(|m| m.has_focus(Id::new("ruler-tab-position-input"))));
+    tap_preview_key(&ctx, &mut app, Key::Escape, size);
+    let marker = app
+        .regions
+        .iter()
+        .find(|r| r.name.starts_with("ruler-tab-") && r.name[10..].parse::<u16>().is_ok())
+        .unwrap()
+        .rect
+        .center();
+    for pressed in [true, false] {
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                egui::Event::PointerMoved(marker),
+                egui::Event::PointerButton {
+                    pos: marker,
+                    button: egui::PointerButton::Secondary,
+                    pressed,
+                    modifiers: Modifiers::NONE,
+                },
+            ],
+            size,
+            1.,
+        );
+    }
+    click_region_at(&ctx, &mut app, "ruler-tab-sources", size);
+    assert!(app.tab_sources_dialog.is_some());
+    click_region_at(&ctx, &mut app, "tab-sources-close", size);
+    frame(&ctx, &mut app, vec![], size, 1.);
+    assert!(ctx.memory(|m| m.has_focus(Id::new(EDIT_ID))));
+    assert_eq!(app.session.editor.document, before);
+    assert!(app.session.editor.undo_stack.is_empty());
+}
+
+#[test]
+fn tab_sources_style_draft_displays_inherited_settings_without_flattening() {
+    let (ctx, mut app) = setup();
+    let size = [640., 480.];
+    app.session
+        .editor
+        .document
+        .style_catalog
+        .normal
+        .tab_interval_half_points = Some(96);
+    app.session.editor.document.paragraphs[0].paragraph_style = ParagraphStyle::Heading1;
+    let before = app.session.editor.document.clone();
+    app.execute(Action::ModifyStyle, &ctx);
+    click_region_at(&ctx, &mut app, "style-tab-interval", size);
+    click_region_at(&ctx, &mut app, "tab-settings-sources", size);
+    frame(&ctx, &mut app, vec![], size, 1.);
+    assert!(app.regions.iter().any(|r| r.name == "tab-sources-dialog"));
+    tap_preview_key(&ctx, &mut app, Key::Escape, size);
+    tap_preview_key(&ctx, &mut app, Key::Escape, size);
+    click_region_at(&ctx, &mut app, "style-dialog-cancel", size);
+    assert_eq!(app.session.editor.document, before);
+    assert!(app.session.editor.undo_stack.is_empty());
+}
+
+#[test]
+fn tab_sources_accessibility_focus_is_present_on_each_modal_transition() {
+    let (ctx, mut app) = setup();
+    let size = [640., 480.];
+    start_focus_preview(&ctx, &mut app, size);
+    tap_preview_key(&ctx, &mut app, Key::F2, size);
+    for events in [
+        vec![],
+        vec![key(Key::F9, false)],
+        vec![],
+        vec![key(Key::Escape, false)],
+        vec![],
+    ] {
+        let tree = ruler_accessibility_frame(&ctx, &mut app, events);
+        assert!(
+            tree.nodes.iter().any(|(id, _)| *id == tree.focus),
+            "Focus {:?} must name a node in this frame",
+            tree.focus
+        );
+    }
+    tap_preview_key(&ctx, &mut app, Key::Escape, size);
+    for action in [Action::TabInterval, Action::TabPositions] {
+        app.execute(action, &ctx);
+        click_region_at(&ctx, &mut app, "tab-settings-sources", size);
+        for events in [vec![], vec![key(Key::Escape, false)], vec![]] {
+            let tree = ruler_accessibility_frame(&ctx, &mut app, events);
+            assert!(tree.nodes.iter().any(|(id, _)| *id == tree.focus));
+        }
+        tap_preview_key(&ctx, &mut app, Key::Escape, size);
+    }
+}
+
+#[test]
+fn tab_sources_moved_marker_retains_authored_source_in_accessibility() {
+    let (ctx, mut app) = setup();
+    app.session.editor.document.style_catalog.normal.tab_stops =
+        Some(vec![crate::model::StyleTabStop {
+            position_half_points: 180,
+            kind: crate::model::TabKind::Left,
+            leader: Some(crate::model::TabLeader::Dots),
+        }]);
+    app.sync_view();
+    ruler_accessibility_frame(&ctx, &mut app, vec![]);
+    ruler_accessibility_frame(
+        &ctx,
+        &mut app,
+        vec![ruler_key(Key::F8, Modifiers::CTRL | Modifiers::ALT)],
+    );
+    let tree = ruler_accessibility_frame(&ctx, &mut app, vec![key(Key::ArrowRight, false)]);
+    assert!(tree.nodes.iter().any(|(_, node)| node.label().is_some_and(
+        |s| s.contains("90.5 points")
+            && s.contains("Paragraph style: Normal")
+            && s.contains("Dots 1")
+    )));
+    assert!(app.session.editor.undo_stack.is_empty());
+}

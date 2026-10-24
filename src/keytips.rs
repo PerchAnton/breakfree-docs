@@ -321,6 +321,9 @@ impl DocsApp {
             || self.style_dialog.is_some()
             || self.delete_style_dialog.is_some()
             || self.zoom_dialog.is_some()
+            || self.tab_dialog.is_some()
+            || self.tab_positions_dialog.is_some()
+            || self.tab_sources_dialog.is_some()
             || self.quick_reset
             || self.quick_order.is_some()
             || self.pending.is_some()
@@ -545,6 +548,9 @@ impl DocsApp {
             || self.style_dialog.is_some()
             || self.delete_style_dialog.is_some()
             || self.zoom_dialog.is_some()
+            || self.tab_dialog.is_some()
+            || self.tab_positions_dialog.is_some()
+            || self.tab_sources_dialog.is_some()
             || self.quick_reset
             || self.quick_order.is_some()
             || self.pending.is_some()

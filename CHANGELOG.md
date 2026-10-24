@@ -3,6 +3,25 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.88 — 2026-10-24
+
+- Correct Paste proportions from the supplied reference: a broader clipboard,
+  inset white paper and a larger front sheet positioned higher; retain hit targets.
+- Complete ten tabulation-provenance increments: independent interval/list sources,
+  grouped mixed selections and absent marker owners, Formatting rows, inspection
+  from both paragraph dialogs, live style-draft descriptions, marker hover/AX
+  sources, context-menu inspection and keyboard access with focus restoration.
+- Open complete read-only details with Ctrl+Alt+F9, or F9/Sources in a tab preview.
+  Scroll with arrows, Page Up/Down, Home/End or the wheel. Preserve numeric input,
+  caret, preview, selection and history while inspecting or dismissing details.
+- Keep dialog-entry snapshots explicit; ruler inspection describes the original
+  document. Preserve existing dialog keyboard order and block background edits.
+- Fix a native accessibility crash when dismissing source details: restore focus
+  only once the destination exists again. Keep moved-marker source identity and
+  preview leader counts correct; return context-menu inspection to the editor.
+- Retain native v18, protocol/settings v1, palette and other icons. Alpha.88 awaits
+  approval; Windows remains deferred and VoiceOver stays at final review.
+
 ## 0.1.0-alpha.87 — 2026-10-24
 
 - Refine original Clipboard/Paste, Cut, Copy and Save vectors from the supplied

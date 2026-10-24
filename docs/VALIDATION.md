@@ -2197,3 +2197,46 @@ latest explicitly approved version, and alpha.86 has no explicit approval record
   and [journal run 40069111865](https://github.com/PerchAnton/breakfree-docs/actions/runs/40069111865).
   Alpha.87 server status is recorded separately in the project journal. No merge,
   tag, release, dependency or license change.
+
+## Alpha.88 tabulation source validation
+
+2026-10-24, macOS arm64 / Rust 1.99.1. Alpha.85 remains the latest explicit owner
+approval; alpha.86–88 await approval. Windows is deferred and VoiceOver is last.
+
+- **454 full / 202 core-only tests pass**, including five new core and eight GUI
+  regressions. Coverage includes independent precedence and equal-looking values,
+  explicit empty lists, mixed owners, half-open selection, stable style references,
+  rename/history/roundtrip, cycle-bounded reporting and read-only inspection.
+- Widget tests exercise global/preview shortcuts, context menus, nested paragraph
+  and style drafts, pointer/keyboard focus, numeric caret, unchanged history,
+  long-list wheel/keyboard scrolling and bounds at synthetic 100/125/150% scales.
+  These scales do not establish Windows acceptance.
+- Native testing exposed a crash on closing the new inspector: AccessKit received
+  a focus ID absent from its tree. A regression reproduced that ID; focus now
+  returns only when the destination is rendered. Tests also cover editor focus
+  after context-menu inspection and source identity during marker movement.
+- Native macOS OS-input automation on a temporary InheritedTabs copy selected four
+  paragraphs, entered a marker preview with Ctrl+Alt+F8, edited position 120 using
+  F2, moved the caret left, and opened F9 sources. The inspector correctly reported
+  the original 180 pt stop, three owners and one absence. Escape returned safely;
+  typing 5 produced 1250, demonstrating retained caret position. Enter committed;
+  one Cmd+Z restored Saved locally and disabled Undo; Cmd+Shift+Z restored the
+  change. A final Undo returned to saved state before closing. Fixture bytes stayed
+  identical. A final-binary Ctrl+Alt+F9 → Escape check also restored focus to the
+  document text and exited cleanly. This is scoped OS automation, not physical-input
+  or speech acceptance.
+- Five native captures at 1366 × 900 and 640 × 480 DIP were inspected; dimensions,
+  hashes and reproduction modes are in [UI_SPEC](UI_SPEC.md#alpha88-paste-proportions-and-tabulation-sources).
+  No clipping/overlap observed in these states. Paste proportions changed without
+  changing its hit target; the remaining palette/icons stay unchanged.
+- fmt, normal/capture all-target Clippy, release/capture builds, repository/artwork/
+  links, workflow YAML, whitespace and isolated CLI checks pass. The copied release
+  executable reports alpha.88, v1 capabilities and explicit invalid-argument errors,
+  without Office or neighboring repositories. Native v18/settings v1 are unchanged.
+- Alpha.87 code and journal three-platform CI succeeded in
+  [code run 40069825859](https://github.com/PerchAnton/breakfree-docs/actions/runs/40069825859)
+  and [journal run 40069884105](https://github.com/PerchAnton/breakfree-docs/actions/runs/40069884105).
+  Alpha.88 CI is tracked separately in Actions and the journal. No merge, tag,
+  release, dependency or license change. Windows/reference comparison, VoiceOver,
+  full IME, pagination, decimal tabs and per-stop inheritance remain unverified or
+  future work as recorded in the roadmap.

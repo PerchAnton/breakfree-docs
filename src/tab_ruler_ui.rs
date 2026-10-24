@@ -314,12 +314,30 @@ impl DocsApp {
         }
     }
     pub(super) fn prepare_tab_ruler_input(&mut self, ctx: &egui::Context) -> bool {
+        if self.tab_sources_dialog.is_some() {
+            return true;
+        }
+        if self.tab_ruler_drag.as_ref().is_some_and(|d| d.keyboard)
+            && ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::F9))
+        {
+            let stop = self
+                .tab_ruler_drag
+                .as_ref()
+                .filter(|d| !d.draft.is_creation())
+                .map(|d| d.start);
+            self.open_tab_sources(ctx, stop);
+            return true;
+        }
         let eligible = self.tab_ruler_drag.is_none()
             && self.enabled(Action::TabPositions)
             && !self.composing
             && !self.backstage
             && self.ruler_key_focus.is_none()
             && !egui::Popup::is_any_open(ctx);
+        if eligible && ctx.input_mut(|i| i.consume_key(Modifiers::CTRL | Modifiers::ALT, Key::F9)) {
+            self.open_tab_sources(ctx, None);
+            return true;
+        }
         if eligible && ctx.input_mut(|i| i.consume_key(Modifiers::CTRL | Modifiers::ALT, Key::F7)) {
             self.rulers = true;
             self.cycle_tab_creation_kind();
@@ -786,11 +804,31 @@ impl DocsApp {
             && self.ruler_key_focus.is_none();
         for (value, coverage, kind) in positions {
             let leaders = crate::tab_ruler::leader_summary(
-                &self.session.editor.document,
+                self.tab_ruler_drag
+                    .as_ref()
+                    .map(|d| &d.draft.preview)
+                    .unwrap_or(&self.session.editor.document),
                 (start, end),
                 value,
             )
             .unwrap();
+            let active_draft = self
+                .tab_ruler_drag
+                .as_ref()
+                .filter(|d| d.draft.position == value);
+            let sources = if active_draft.is_some_and(|d| d.draft.is_creation()) {
+                "New stop preview; no authored source yet.".into()
+            } else {
+                let original_position = active_draft.map_or(value, |d| d.start);
+                crate::tab_sources::inspect(
+                    &self.session.editor.document,
+                    (start, end),
+                    Some(original_position),
+                )
+                .unwrap_or_default()
+                .positions
+                .summary()
+            };
             let leader_details = leaders.description();
             let kind_label = kind.map_or("Mixed types", crate::model::TabKind::label);
             let mixed = coverage != total || kind.is_none();
@@ -853,7 +891,7 @@ impl DocsApp {
                     egui::WidgetType::Button,
                     available,
                     format!(
-                        "{kind_label} tab, {:.1} points, {coverage}/{total} paragraphs. {leader_details}",
+                        "{kind_label} tab, {:.1} points, {coverage}/{total} paragraphs. {leader_details} Sources: {sources}",
                         f32::from(value) / 2.
                     ),
                 )
@@ -892,6 +930,15 @@ impl DocsApp {
                 }
             }
             response.context_menu(|ui| {
+                let source = ui.button("Tabulation sources…");
+                self.record("ruler-tab-sources", source.rect);
+                if source.clicked() {
+                    ui.close();
+                    self.open_tab_sources(ui.ctx(), Some(value));
+                    if let Some(dialog) = &mut self.tab_sources_dialog {
+                        dialog.return_focus = Some(Id::new(EDIT_ID));
+                    }
+                }
                 let edit = ui.add_enabled(available, Button::new("Edit tab preview…"));
                 self.record("ruler-tab-preview", edit.rect);
                 if edit.clicked() {
@@ -950,9 +997,11 @@ impl DocsApp {
                     }
                 }
             });
-            response.on_hover_text(format!("{kind_label} tab: {:.1} pt. Present in {coverage}/{total} selected paragraphs. {leader_details} Movement/deletion affects only paragraphs containing this stop and preserves each type. {}",f32::from(value)/2.,if collision {"Overlaps an indent marker; use Ctrl+Alt+F8 or Tab positions to edit."} else {"Drag to preview; release to apply; Escape cancels. Release outside the ruler cancels. Ctrl+Alt+F8 selects tabs; Ctrl+Alt+Shift+F8 creates; arrows move, Shift accelerates, Enter applies, Tab applies and selects next, Delete previews removal, Escape cancels. Right-click to delete."}));
+            response.on_hover_text(format!("{kind_label} tab: {:.1} pt. Present in {coverage}/{total} selected paragraphs. {leader_details} Sources: {sources}. Movement/deletion affects only paragraphs containing this stop and preserves each type. {}",f32::from(value)/2.,if collision {"Overlaps an indent marker; use Ctrl+Alt+F8 or Tab positions to edit."} else {"Drag to preview; release to apply; Escape cancels. Release outside the ruler cancels. Ctrl+Alt+F8 selects tabs; Ctrl+Alt+Shift+F8 creates; arrows move, Shift accelerates, Enter applies, Tab applies and selects next, Delete previews removal, Escape cancels. Right-click to delete."}));
         }
-        if let Some(drag) = &mut self.tab_ruler_drag {
+        if self.tab_sources_dialog.is_none()
+            && let Some(drag) = &mut self.tab_ruler_drag
+        {
             if !drag.keyboard
                 && let Some(pointer) = ui.input(|i| i.pointer.interact_pos())
             {
@@ -979,6 +1028,7 @@ impl DocsApp {
             });
             let mut apply = false;
             let mut cancel = false;
+            let mut inspect_sources = false;
             let popup = egui::Area::new(Id::new("tab-ruler-preview"))
                 .order(egui::Order::Tooltip)
                 .fixed_pos(pos2(rect.left() + 12., rect.bottom() + 4.))
@@ -1082,6 +1132,12 @@ impl DocsApp {
                                 } else {
                                     ui.memory(|m| m.focused())
                                 };
+                                let source = ui.button("Sources…").on_hover_text("F9: inspect original tabulation sources without changing this preview.");
+                                self.regions.push(Region { name: "tab-preview-sources".into(), rect: source.rect });
+                                inspect_sources = source.clicked();
+                                if source.clicked() || source.is_pointer_button_down_on() {
+                                    ui.memory_mut(|m| { m.surrender_focus(source.id); if let Some(id) = previous_focus { m.request_focus(id); } });
+                                }
                                 let r = ui.add(Button::new("Help").selected(self.tab_preview_help));
                                 self.regions.push(Region { name: "tab-preview-help-toggle".into(), rect: r.rect });
                                 if r.clicked() {
@@ -1114,6 +1170,11 @@ impl DocsApp {
                     });
                 });
             drag.popup = popup.response.rect;
+            if inspect_sources {
+                let stop = (!drag.draft.is_creation()).then_some(drag.start);
+                self.open_tab_sources(ui.ctx(), stop);
+                return;
+            }
             if cancel {
                 self.tab_ruler_drag = None;
                 ui.memory_mut(|m| m.surrender_focus(Id::new("ruler-tab-position-input")));

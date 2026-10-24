@@ -164,31 +164,41 @@ pub fn paint(ui: &Ui, icon: Icon, center: Pos2, size: f32, color: Color32, enabl
             line((-3. * d, 0.), (-7. * d, -4.));
         }
         Icon::Paste => {
+            // Broad board and inset paper, with a full-size sheet offset to the right.
             panel(
-                (-7., -6.),
+                (-8., -7.),
                 (5., 9.),
-                Color32::from_rgb(255, 250, 240),
-                Color32::from_rgb(221, 165, 77),
+                Color32::from_rgb(255, 251, 243),
+                Color32::from_rgb(218, 164, 79),
             );
-            // Raised curved clasp and a plain front sheet; no decorative text bars.
-            painter.rect_filled(Rect::from_min_max(p(-4., -7.), p(3.5, -3.5)), 0., SURFACE);
-            line((-4., -7.), (-1.8, -7.));
+            painter.rect_filled(
+                Rect::from_min_max(p(-6., -5.), p(3., 7.)),
+                0.,
+                Color32::WHITE,
+            );
+            painter.rect_filled(Rect::from_min_max(p(-5.5, -7.), p(2.5, -4.5)), 0., SURFACE);
+            line((-5.5, -4.5), (-5.5, -7.));
+            line((-5.5, -7.), (-3., -7.));
             painter.add(egui::epaint::CubicBezierShape::from_points_stroke(
-                [p(-1.8, -7.), p(-1.8, -11.), p(2., -11.), p(2., -7.)],
+                [p(-3., -7.), p(-3., -10.5), p(0.5, -10.5), p(0.5, -7.)],
                 false,
                 Color32::TRANSPARENT,
                 stroke,
             ));
-            line((2., -7.), (3.5, -7.));
-            line((3.5, -7.), (3.5, -3.5));
-            line((3.5, -3.5), (-4., -3.5));
-            line((-4., -3.5), (-4., -7.));
+            line((0.5, -7.), (2.5, -7.));
+            line((2.5, -7.), (2.5, -4.5));
+            line((2.5, -4.5), (-5.5, -4.5));
             painter.rect_filled(
-                Rect::from_min_max(p(0., 0.), p(9., 11.)),
+                Rect::from_min_max(p(0., -2.5), p(8.5, 10.)),
                 0.,
                 Color32::WHITE,
             );
-            rect((0., 0.), (9., 11.));
+            painter.rect_stroke(
+                Rect::from_min_max(p(0., -2.5), p(8.5, 10.)),
+                0.5,
+                Stroke::new(1.15_f32, color),
+                egui::StrokeKind::Inside,
+            );
         }
         Icon::Cut => {
             let handles = Stroke::new(1.0_f32, accent(Color32::from_rgb(85, 145, 173)));

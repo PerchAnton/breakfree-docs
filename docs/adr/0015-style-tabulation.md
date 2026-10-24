@@ -53,4 +53,23 @@ legacy rendered defaults. Opening never rewrites the source; saving writes v18.
 Alpha.85 and older reject v18. Use Save As to retain an older compatible copy.
 
 Windows and VoiceOver acceptance remain deferred. Decimal tabs, merging individual
-ancestor stops, tabulation provenance UI and full pagination remain separate work.
+ancestor stops, full pagination remain separate work.
+
+## Read-only provenance (alpha.88)
+
+The tab_sources module reports authored sources independently for interval and
+complete stop lists. Direct values, assigned styles, ancestors and defaults remain
+distinct even when their values match. A stop filter includes only actual owners
+and counts absent paragraphs separately. Selection uses the existing half-open
+paragraph rule. Group identity uses stable style IDs, not display names.
+
+Formatting and marker descriptions read current model values. Optional Sources
+inspection in the paragraph dialogs records the values at dialog entry; it is
+labeled accordingly and does not imply that uncommitted text has been applied.
+Nested style dialogs inspect the current style draft, without a paragraph direct
+override. Changing a parent and reopening a nested dialog recomputes its sources.
+Ruler preview inspection reads the original live document, so materialized preview
+overrides are not mistaken for the authored source. Close/Escape restores the
+previous field/control focus; the numeric cursor and draft survive inspection.
+The modal list scrolls with the wheel or keyboard. No inspection changes history,
+persistence or the native content version. Windows and speech review stay deferred.

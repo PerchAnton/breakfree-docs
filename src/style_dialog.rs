@@ -647,6 +647,29 @@ impl StyleDialog {
                                 draft.is_ok(),
                                 Button::new(label).min_size(vec2(0., 27.)),
                             );
+                            let response = if let Ok((_, catalog)) = &draft {
+                                let document = Document {
+                                    style_catalog: catalog.clone(),
+                                    ..Default::default()
+                                };
+                                let report = crate::tab_sources::style(&document, self.id);
+                                let info = if positions {
+                                    &report.positions
+                                } else {
+                                    &report.interval
+                                };
+                                let help = info.summary();
+                                response.widget_info(|| {
+                                    egui::WidgetInfo::labeled(
+                                        egui::WidgetType::Button,
+                                        response.enabled(),
+                                        format!("{label}. {help}"),
+                                    )
+                                });
+                                response.on_hover_text(help)
+                            } else {
+                                response
+                            };
                             record(regions, name, response.rect);
                             if self.return_to_tabs == Some(positions) {
                                 response.request_focus();

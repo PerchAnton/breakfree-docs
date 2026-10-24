@@ -441,8 +441,8 @@ Use public specifications and original test cases, not copied application code. 
   override precedence and explicit empty lists; shared layout/ruler resolution,
   nested style drafts with one Undo/Redo, independent paragraph resets and strict
   native v18 persistence. Local core/GUI/native evidence is in VALIDATION.
-- [ ] Next: show the supplying style or direct override for tab intervals and
-  position lists, including mixed selections. Keep Windows/VoiceOver acceptance separate.
+- [x] Alpha.88: show the supplying style or direct override for tab intervals and
+  position lists, including mixed selections; local core/GUI/native validation recorded.
 
 - [x] Alpha.83: owner-requested video-guided shell refinement; denser title/Home,
   neutral surfaces, semantic icon accents, sample/name style cards and View refit.
@@ -458,3 +458,25 @@ Use public specifications and original test cases, not copied application code. 
   targets or ribbon layout. Wide/compact native captures and existing tests pass.
   The next functional increment remains tabulation provenance; matched Windows
   comparison and VoiceOver acceptance stay deferred.
+
+### Alpha.88: tabulation provenance batch
+
+The following ten increments develop the tabulation-provenance milestone. Paste
+artwork refinement is a separate owner-requested correction in the same iteration.
+
+1. [x] Resolve interval sources independently: direct, assigned style, ancestor or default.
+2. [x] Resolve complete position/type/leader-list sources, including explicit empty lists.
+3. [x] Group mixed selections by authored source and value; distinguish absent marker owners.
+4. [x] Show tab interval and position provenance in the Formatting pane.
+5. [x] Inspect source settings from the interval dialog without losing its draft.
+6. [x] Inspect source settings from the positions dialog without losing its draft.
+7. [x] Expose current style-draft tabulation sources in button descriptions and nested inspection.
+8. [x] Include owner source information in ruler marker hover/accessibility descriptions.
+9. [x] Open full source details from a tab marker's context menu.
+10. [x] Open sources with Ctrl+Alt+F9 or preview F9, scroll long lists, and return to the prior focus/caret without a commit.
+
+Each inspection is read-only and shares the core cascade with layout. Full native
+Windows and spoken-accessibility acceptance remain separate deferred gates.
+
+- [ ] Next: independently reset tab interval or explicit positions through the ruler,
+  with preview/cancel and one Undo/Redo; retain each paragraph's inherited values.

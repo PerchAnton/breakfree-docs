@@ -2551,3 +2551,51 @@ then `BREAKFREE_CAPTURE_TO=/absolute/path/capture.png target/release/examples/ca
 1366 900 clipboard`. Use `home` for disabled Cut/Copy and `640 480 clipboard` for
 the compact window. These are native render captures with synthetic selection,
 not a physical-keyboard, Windows DPI or screen-reader acceptance test.
+
+## Alpha.88 Paste proportions and tabulation sources
+
+Paste is redrawn in original Rust vectors against the supplied macOS reference
+frame near 23.22 seconds. Its broader clipboard contains inset white paper; a
+raised curved clasp and higher, larger front sheet match the visible silhouette
+more closely. The drawing remains 26 DIP, with the existing hit target. The board
+uses #FFFBF3 / #DAA44F, the front sheet white with a 1.15 DIP neutral outline;
+other icons, palette, ribbon dimensions and states remain unchanged. This is a
+reference-guided approximation, not a verified pixel-identical Windows icon.
+
+Tabulation provenance is optional, not a permanent ribbon explanation. The
+Formatting pane includes separate interval and positions rows plus a Sources
+entry. Interval/positions dialogs put Sources beside the heading, retaining the
+existing input-to-footer keyboard sequence. Their inspector explicitly describes
+settings at entry; nested style inspection uses the current outer style draft.
+
+The read-only inspector has a 240–420 DIP content width and 90–300 DIP maximum
+scroll height, adjusted to the available window. It groups independent interval
+and full typed/leader-list sources, including equal values from different origins,
+explicit empty lists and missing marker owners. Hover summaries show at most
+three source groups; the modal retains all groups. Ctrl+Alt+F9 opens selection
+sources; F9 or Sources opens the active preview's original authored source.
+Marker context menus provide the same inspection. Arrows, Page Up/Down, Home/End
+and the wheel scroll; Close/Escape restore the prior focus and numeric caret.
+Focus restoration waits until the destination is rendered, avoiding an invalid
+native accessibility focus node. Inspection never commits a preview or changes
+selection/history. Marker movement retains original source identity while its
+leader coverage reflects the preview.
+
+Five native macOS captures were inspected: English/light theme, 100% document
+zoom, 2× backing scale. Home uses selected Welcome content; the other modes use
+InheritedTabs. Dialogs and footer actions fit the compact window without overlap.
+
+| Capture | Window (DIP) | PNG pixels | Image | SHA-256 |
+| :--- | :--- | :--- | :--- | :--- |
+| home | 1366 × 900 | 2732 × 1800 | [View](screenshots/rust-tab-sources-home-alpha88-macos.png) | `adf1d29bfbcdfc452cc19dfbb0154de0c029151a2d840fc46125b0932ae42ef3` |
+| sources | 640 × 480 | 1280 × 960 | [View](screenshots/rust-tab-sources-sources-alpha88-macos.png) | `8590f4f72b06ff001ff7af78fe7ee60c2dfd7a25f76e54144a8d78c16428b33b` |
+| preview-sources | 640 × 480 | 1280 × 960 | [View](screenshots/rust-tab-sources-preview-sources-alpha88-macos.png) | `0b0de9af953f0542a3ca9c97afe61d3802bac90668d7e0204a86254ebc642af5` |
+| interval | 640 × 480 | 1280 × 960 | [View](screenshots/rust-tab-sources-interval-alpha88-macos.png) | `537e8a5e1061e3a5a97bd231e0ac5342455a58b06bde8085c236be9ffc3d04fa` |
+| positions | 640 × 480 | 1280 × 960 | [View](screenshots/rust-tab-sources-positions-alpha88-macos.png) | `66b65af4db17fe3db39ad796bf0e48b3ba2eae1242f83df5957bfe0e8edf822d` |
+
+Reproduce with the existing `capture_ui` release example: `1366 900 clipboard`,
+or `640 480` with modes `tab-sources`, `tab-sources-preview`,
+`tab-sources-interval` and `tab-sources-positions`. Set `BREAKFREE_CAPTURE_TO`
+to an absolute PNG path. Captures test native rendering; separate OS-input
+validation is in VALIDATION. The reference build/scale remain unconfirmed;
+matched Windows 2024/DPI comparison is deferred and VoiceOver remains final.

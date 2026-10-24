@@ -18,6 +18,37 @@ struct Capture {
 
 impl eframe::App for Capture {
     fn raw_input_hook(&mut self, _ctx: &egui::Context, input: &mut egui::RawInput) {
+        if self.mode.starts_with("tab-sources") {
+            input.focused = true;
+            let event = if self.frames == 3
+                && matches!(self.mode.as_str(), "tab-sources" | "tab-sources-preview")
+            {
+                Some((
+                    if self.mode == "tab-sources" {
+                        egui::Key::F9
+                    } else {
+                        egui::Key::F8
+                    },
+                    egui::Modifiers::CTRL | egui::Modifiers::ALT,
+                ))
+            } else if self.frames == 6 && self.mode == "tab-sources-preview" {
+                Some((egui::Key::F9, egui::Modifiers::NONE))
+            } else {
+                None
+            };
+            if let Some((key, modifiers)) = event {
+                for pressed in [true, false] {
+                    input.events.push(egui::Event::Key {
+                        key,
+                        physical_key: None,
+                        pressed,
+                        repeat: false,
+                        modifiers,
+                    });
+                }
+            }
+        }
+
         if matches!(
             self.mode.as_str(),
             "style-tabs-dialog" | "style-tabs-interval"
@@ -669,6 +700,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         || ![
             "home",
             "clipboard",
+            "tab-sources",
+            "tab-sources-preview",
+            "tab-sources-interval",
+            "tab-sources-positions",
             "style-tabs",
             "style-tabs-dialog",
             "style-tabs-interval",
@@ -777,7 +812,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "examples/StyleDeletion.bfdoc"
         } else if ["styles-create", "styles-rename"].contains(&args[2].as_str()) {
             "examples/CustomStyles.bfdoc"
-        } else if args[2].starts_with("style-tabs") || args[2] == "inherited-tabs" {
+        } else if args[2].starts_with("style-tabs")
+            || args[2] == "inherited-tabs"
+            || args[2].starts_with("tab-sources")
+        {
             "examples/InheritedTabs.bfdoc"
         } else if args[2].starts_with("styles") {
             "examples/Styles.bfdoc"
@@ -1015,6 +1053,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 app.execute(Action::SelectAll, &cc.egui_ctx);
             }
             match mode.as_str() {
+                "tab-sources" | "tab-sources-preview" => {
+                    app.execute(Action::SelectAll, &cc.egui_ctx)
+                }
+                "tab-sources-interval" => app.execute(Action::TabInterval, &cc.egui_ctx),
+                "tab-sources-positions" => app.execute(Action::TabPositions, &cc.egui_ctx),
                 "clipboard" => app.execute(Action::SelectAll, &cc.egui_ctx),
                 "tab-positions" | "typed-tabs-dialog" | "leader-dialog" => {
                     app.execute(Action::TabPositions, &cc.egui_ctx)

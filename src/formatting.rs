@@ -258,6 +258,7 @@ pub fn inspect_paragraph(
         }
         next = definition.parent;
     }
+    rows.extend(crate::tab_sources::paragraph(document, paragraph).rows());
     rows
 }
 

@@ -45,6 +45,9 @@ mod tab_dialog;
 #[path = "tab_positions_dialog.rs"]
 mod tab_positions_dialog;
 use tab_positions_dialog::{PositionsDialog, PositionsOutcome};
+#[path = "tab_sources_dialog.rs"]
+mod tab_sources_dialog;
+use tab_sources_dialog::TabSourcesDialog;
 #[path = "zoom_dialog.rs"]
 mod zoom_dialog;
 use tab_dialog::{TabDialog, TabOutcome};
@@ -248,6 +251,7 @@ pub struct DocsApp {
     zoom_dialog: Option<ZoomDialog>,
     tab_dialog: Option<TabDialog>,
     tab_positions_dialog: Option<PositionsDialog>,
+    tab_sources_dialog: Option<TabSourcesDialog>,
     quick_access: Vec<Action>,
     quick_access_below: bool,
     quick_access_targets: Vec<RibbonTarget>,
@@ -385,6 +389,7 @@ impl DocsApp {
             zoom_dialog: None,
             tab_dialog: None,
             tab_positions_dialog: None,
+            tab_sources_dialog: None,
             quick_access: quick_access::DEFAULT.to_vec(),
             quick_access_below: false,
             quick_access_targets: Vec::new(),
@@ -481,6 +486,7 @@ impl DocsApp {
             || self.zoom_dialog.is_some()
             || self.tab_dialog.is_some()
             || self.tab_positions_dialog.is_some()
+            || self.tab_sources_dialog.is_some()
             || self.quick_reset
             || self.quick_order.is_some()
         {
@@ -2648,6 +2654,7 @@ impl DocsApp {
             || self.zoom_dialog.is_some()
             || self.tab_dialog.is_some()
             || self.tab_positions_dialog.is_some()
+            || self.tab_sources_dialog.is_some()
             || self.quick_reset
             || self.quick_order.is_some()
         {
@@ -2929,6 +2936,14 @@ impl DocsApp {
                         );
                         self.record(&format!("provenance-{}", row.name), response.rect);
                         ui.add(egui::Label::new(row.source).wrap());
+                    }
+                    let sources = ui
+                        .button("Tabulation sources…")
+                        .on_hover_text("Inspect interval and position sources. Ctrl+Alt+F9.");
+                    self.record("formatting-tab-sources", sources.rect);
+                    if sources.clicked() {
+                        sources.request_focus();
+                        self.open_tab_sources(ctx, None);
                     }
                     ui.separator();
                     self.command(ui, "Bold", Action::Bold, vec2(150., 28.));
@@ -3300,6 +3315,17 @@ impl DocsApp {
     }
 
     fn dialogs(&mut self, ctx: &egui::Context) {
+        if let Some(mut dialog) = self.tab_sources_dialog.take() {
+            if dialog.show(ctx, &mut self.regions) {
+                dialog.restore_focus(ctx);
+                if self.tab_ruler_drag.is_none() && dialog.return_focus.is_none() {
+                    self.focus_document = true;
+                }
+            } else {
+                self.tab_sources_dialog = Some(dialog);
+            }
+            return;
+        }
         self.show_style_context_menu(ctx);
         self.quick_reset_dialog(ctx);
         if let Some(mut dialog) = self.quick_order.take() {
@@ -3590,6 +3616,20 @@ impl DocsApp {
     }
 
     pub fn update_ui(&mut self, ctx: &egui::Context) {
+        if ctx.input(|i| i.focused)
+            && let Some(id) = ctx.data_mut(|d| {
+                let key = Id::new("tab-sources-return-focus");
+                let value = d.get_temp::<Id>(key);
+                d.remove::<Id>(key);
+                value
+            })
+        {
+            if id == Id::new(EDIT_ID) {
+                self.focus_document = true;
+            } else {
+                ctx.memory_mut(|m| m.request_focus(id));
+            }
+        }
         self.prepare_ruler_input(ctx);
         let mut close_requested = ctx.input(|i| i.viewport().close_requested());
         if close_requested
@@ -3601,6 +3641,7 @@ impl DocsApp {
                 || self.zoom_dialog.is_some()
                 || self.tab_dialog.is_some()
                 || self.tab_positions_dialog.is_some()
+                || self.tab_sources_dialog.is_some()
                 || self.quick_reset
                 || self.quick_order.is_some())
         {

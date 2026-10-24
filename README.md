@@ -1094,3 +1094,20 @@ more restrained accent colors. Clipboard has a raised clasp and plain front
 sheet; scissors are narrower; Copy has a folded corner. Button hit targets and
 commands are unchanged. [Native captures](docs/UI_SPEC.md#alpha87-clipboard-and-save-icons)
 record the active and disabled states and compact ribbon.
+
+## Tabulation sources (alpha.88)
+
+Formatting shows the authored source of Tab interval and Tab positions, independently
+of whether their values match. A direct override, the assigned style, a named parent
+and the document default remain distinct. Marker descriptions count only paragraphs
+owning the stop and identify absent paragraphs separately in the full inspector.
+
+Use **Sources…** in either tabulation dialog, **Tabulation sources…** in a tab
+marker's context menu, or **Ctrl+Alt+F9** from the document. During keyboard tab
+preview, **F9** or **Sources…** opens the original document's sources. Escape/Close
+returns to the prior draft and numeric caret without an edit. Arrows, Page Up/Down,
+Home/End and the wheel scroll long lists. Dialog inspection is explicitly a snapshot
+at entry; nested style dialogs describe the style draft. See [ADR 0015](docs/adr/0015-style-tabulation.md).
+
+Paste's board and front-sheet proportions are also corrected from the supplied
+video. No format migration, new runtime dependency or release is introduced.

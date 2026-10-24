@@ -276,3 +276,9 @@ Alpha.86 adds paragraph-style tab interval and complete stop/leader inheritance
 under [ADR 0015](adr/0015-style-tabulation.md), native v18 and transactional nested
 style drafts. Direct overrides win; explicit empty lists differ from inheritance.
 D01–D09 remain required; Windows and VoiceOver acceptance remain separate.
+
+Alpha.88 adds read-only tabulation provenance for interval and complete stop lists,
+including direct/style/ancestor/default sources and mixed ownership. Formatting,
+dialogs, marker descriptions, context menus and keyboard inspection share the
+same core report. Inspection preserves content, drafts, caret/selection and history.
+Native v18 remains unchanged; D01–D09 and deferred platform acceptance still apply.
