@@ -3,6 +3,19 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.87 — 2026-10-24
+
+- Refine original Clipboard/Paste, Cut, Copy and Save vectors from the supplied
+  reference: raised clasp and plain front sheet, narrower scissors, folded copy
+  corner and a compact disk outline.
+- Use finer neutral outlines, a quieter gold clipboard edge and smaller blue
+  scissor handles. Reduce the Paste drawing from 28 to 26 DIP, retaining hit targets,
+  disabled states, command routing and the existing ribbon layout.
+- Add a selected-document capture mode and inspect active/disabled icons in wide
+  and compact native windows. Preserve native v18 and all editing behavior.
+- Alpha.87 awaits approval; alpha.85 is the latest explicitly approved version.
+  Windows remains deferred and VoiceOver stays at final review.
+
 ## 0.1.0-alpha.86 — 2026-10-24
 
 - Inherit tab intervals and complete typed stop/leader lists from paragraph styles,

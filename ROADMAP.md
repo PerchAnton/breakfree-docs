@@ -452,3 +452,9 @@ Use public specifications and original test cases, not copied application code. 
 - [x] Alpha.84: reduce permanent instructions in previews/search/styles, retain
   optional keyboard/hover help and real mixed-state information, and refine icon
   color/details from the supplied reference. Local evidence in UI_SPEC/VALIDATION.
+
+- [x] Alpha.87: refine the original Clipboard/Paste, Cut, Copy and Save vectors
+  against the supplied video; reduce visual weight without changing command
+  targets or ribbon layout. Wide/compact native captures and existing tests pass.
+  The next functional increment remains tabulation provenance; matched Windows
+  comparison and VoiceOver acceptance stay deferred.

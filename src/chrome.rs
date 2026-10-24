@@ -77,7 +77,20 @@ pub fn paint(ui: &Ui, icon: Icon, center: Pos2, size: f32, color: Color32, enabl
     let painter = ui.painter();
     let scale = size / 20.;
     let p = |x: f32, y: f32| center + vec2(x, y) * scale;
-    let stroke = Stroke::new(1.15_f32, color);
+    // Clipboard and file actions use a lighter, finer outline than text-format tools.
+    let quiet = matches!(icon, Icon::Save | Icon::Paste | Icon::Cut | Icon::Copy);
+    let color = if quiet {
+        Color32::from_gray(if !enabled {
+            178
+        } else if matches!(icon, Icon::Save) {
+            118
+        } else {
+            105
+        })
+    } else {
+        color
+    };
+    let stroke = Stroke::new(if quiet { 1.0_f32 } else { 1.15_f32 }, color);
     let accent = |c| tint(c, enabled);
     let colored_line = |a: (f32, f32), b: (f32, f32), c| {
         painter.line_segment([p(a.0, a.1), p(b.0, b.1)], Stroke::new(1.15_f32, accent(c)));
@@ -118,10 +131,23 @@ pub fn paint(ui: &Ui, icon: Icon, center: Pos2, size: f32, color: Color32, enabl
             line((-7., 0.), (-1., 6.));
         }
         Icon::Save => {
-            rect((-7., -8.), (7., 8.));
-            rect((-4., -8.), (4., -1.));
-            rect((-4., 2.), (4., 8.));
-            line((2., -6.), (2., -3.));
+            // Clipped disk corner, recessed top slot and open label window.
+            painter.add(egui::Shape::closed_line(
+                vec![
+                    p(-6.5, -7.),
+                    p(3.5, -7.),
+                    p(6.5, -4.),
+                    p(6.5, 7.),
+                    p(-6.5, 7.),
+                ],
+                stroke,
+            ));
+            line((-3.5, -7.), (-3.5, -2.));
+            line((-3.5, -2.), (2.5, -2.));
+            line((2.5, -2.), (2.5, -7.));
+            line((-3.5, 7.), (-3.5, 1.));
+            line((-3.5, 1.), (3.5, 1.));
+            line((3.5, 1.), (3.5, 7.));
         }
         Icon::Undo | Icon::Redo => {
             let d = if matches!(icon, Icon::Undo) { 1. } else { -1. };
@@ -138,37 +164,51 @@ pub fn paint(ui: &Ui, icon: Icon, center: Pos2, size: f32, color: Color32, enabl
             line((-3. * d, 0.), (-7. * d, -4.));
         }
         Icon::Paste => {
-            panel((-7., -6.), (6., 8.), PALE_GOLD, GOLD);
-            // Neutral clasp and paper; color belongs to the clipboard edge.
-            painter.rect_filled(Rect::from_min_max(p(-3., -9.), p(3., -4.)), 1., SURFACE);
-            rect((-3., -9.), (3., -4.));
+            panel(
+                (-7., -6.),
+                (5., 9.),
+                Color32::from_rgb(255, 250, 240),
+                Color32::from_rgb(221, 165, 77),
+            );
+            // Raised curved clasp and a plain front sheet; no decorative text bars.
+            painter.rect_filled(Rect::from_min_max(p(-4., -7.), p(3.5, -3.5)), 0., SURFACE);
+            line((-4., -7.), (-1.8, -7.));
+            painter.add(egui::epaint::CubicBezierShape::from_points_stroke(
+                [p(-1.8, -7.), p(-1.8, -11.), p(2., -11.), p(2., -7.)],
+                false,
+                Color32::TRANSPARENT,
+                stroke,
+            ));
+            line((2., -7.), (3.5, -7.));
+            line((3.5, -7.), (3.5, -3.5));
+            line((3.5, -3.5), (-4., -3.5));
+            line((-4., -3.5), (-4., -7.));
             painter.rect_filled(
-                Rect::from_min_max(p(-1., -1.), p(9., 10.)),
-                1.,
+                Rect::from_min_max(p(0., 0.), p(9., 11.)),
+                0.,
                 Color32::WHITE,
             );
-            rect((-1., -1.), (9., 10.));
-            line((2., 3.), (6., 3.));
-            line((2., 6.), (6., 6.));
+            rect((0., 0.), (9., 11.));
         }
         Icon::Cut => {
-            let handles = Stroke::new(1.3_f32, accent(BLUE));
-            painter.circle_stroke(p(-5., 5.), 3. * scale, handles);
-            painter.circle_stroke(p(5., 5.), 3. * scale, handles);
-            line((-4., 3.), (6., -8.));
-            line((4., 3.), (-6., -8.));
+            let handles = Stroke::new(1.0_f32, accent(Color32::from_rgb(85, 145, 173)));
+            line((-2.4, 4.2), (3.5, -8.));
+            line((2.4, 4.2), (-3.5, -8.));
+            painter.circle_stroke(p(-3., 6.), 2.2 * scale, handles);
+            painter.circle_stroke(p(3., 6.), 2.2 * scale, handles);
         }
         Icon::Copy => {
-            rect((-7., -8.), (3., 5.));
-            painter.rect_filled(
-                Rect::from_min_max(p(-2., -4.), p(8., 9.)),
-                1.,
+            // Offset sheets with a folded front corner, drawn as separate outlines.
+            rect((-7., -8.), (2., 5.));
+            painter.add(egui::Shape::convex_polygon(
+                vec![p(-2., -4.), p(4., -4.), p(8., 0.), p(8., 9.), p(-2., 9.)],
                 Color32::WHITE,
-            );
-            rect((-2., -4.), (8., 9.));
-            for y in [0., 3., 6.] {
-                line((1., y), (5., y));
-            }
+                stroke,
+            ));
+            line((4., -4.), (4., 0.));
+            line((4., 0.), (8., 0.));
+            line((1., 3.), (5., 3.));
+            line((1., 6.), (5., 6.));
         }
         Icon::Brush => {
             painter.add(egui::Shape::convex_polygon(

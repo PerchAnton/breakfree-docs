@@ -2509,3 +2509,45 @@ Use the existing capture harness with the modes above. All three images were
 inspected for clipping/overlap; native input automation separately verified nested
 draft focus and one-step Undo/Redo. No matched Word or Windows/DPI acceptance
 was performed; VoiceOver remains at final review.
+
+## Alpha.87 Clipboard and Save icons
+
+The owner's supplied video was inspected again at approximately 23.22 seconds,
+including the Home Clipboard group and Quick Access Save. It shows Word on macOS
+with Russian labels; edition/build and UI scale are unconfirmed. It informs
+silhouette and color roles, not a matched Windows 2024 comparison. No reference
+pixels or external icon assets are included in the application or repository.
+
+Original native vector paths now use these measurable design parameters:
+
+| Element | Geometry and color |
+| :--- | :--- |
+| Shared outlines | 1.0 DIP stroke instead of 1.15; active Clipboard/Cut/Copy #696969; Save #767676; disabled #B2B2B2 |
+| Paste | 26 DIP drawing instead of 28, same hit target; curved raised clasp, plain white front sheet, pale #FFFAF0 board and #DDA54D edge |
+| Cut | Narrow crossed blades; small circular #5591AD handles, 1.0 DIP stroke |
+| Copy | Offset sheets with folded front corner and two short text lines |
+| Save | Compact clipped disk corner, top slot and open bottom label; neutral outline |
+
+Accent tinting still distinguishes disabled controls. Button fills, hover/pressed/
+focus states, labels, shortcuts, hit targets and group dividers are unchanged.
+The approved logo, violet selection and surrounding palette remain intentional
+brand differences. The new paths approximate visible reference shapes; exact
+stroke, pixel, platform and scale equivalence is not established.
+
+Native macOS captures inspected on 2026-10-24: light theme, English UI, 100%
+document zoom, 2× backing scale. `home` has disabled Cut/Copy; `clipboard` selects
+the synthetic Welcome document to show active controls. No clipping or overlap
+was observed in these states. The square in the fixture's emoji position remains
+the previously documented font-fallback limitation.
+
+| Capture | Window (DIP) | PNG pixels | Image | SHA-256 |
+| :--- | :--- | :--- | :--- | :--- |
+| home | 1366 × 900 | 2732 × 1800 | [View](screenshots/rust-icons-home-alpha87-macos.png) | `8161b253a5a26636536a1b3f18972bd0477f6bb0070c6595c67ec13a21a7d37e` |
+| clipboard | 1366 × 900 | 2732 × 1800 | [View](screenshots/rust-icons-clipboard-alpha87-macos.png) | `89cea5a54421789ff1f325fe9ec116cf2c5199762c7b92680f59aff6f33f919f` |
+| compact | 640 × 480 | 1280 × 960 | [View](screenshots/rust-icons-compact-alpha87-macos.png) | `e1b81f66ceb2f3d32729f35d47eb4a6f2059064d5aef87a32fe03419347303ea` |
+
+Reproduce with `cargo build --locked --release --features capture --example capture_ui`,
+then `BREAKFREE_CAPTURE_TO=/absolute/path/capture.png target/release/examples/capture_ui
+1366 900 clipboard`. Use `home` for disabled Cut/Copy and `640 480 clipboard` for
+the compact window. These are native render captures with synthetic selection,
+not a physical-keyboard, Windows DPI or screen-reader acceptance test.

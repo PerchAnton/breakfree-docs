@@ -1086,3 +1086,11 @@ Saves use native v18, with strict v1–v17 reading. Older alpha.85 applications 
 v18; use Save As to preserve older copies. See [ADR 0015](docs/adr/0015-style-tabulation.md).
 No palette, icon, ribbon geometry, dependency or integration command changes.
 Windows acceptance remains deferred and VoiceOver remains at final review.
+
+## Clipboard and Save icon refinement (alpha.87)
+
+Paste, Cut, Copy and the Quick Access Save icon use finer neutral outlines and
+more restrained accent colors. Clipboard has a raised clasp and plain front
+sheet; scissors are narrower; Copy has a folded corner. Button hit targets and
+commands are unchanged. [Native captures](docs/UI_SPEC.md#alpha87-clipboard-and-save-icons)
+record the active and disabled states and compact ribbon.

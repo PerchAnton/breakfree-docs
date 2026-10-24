@@ -2171,3 +2171,29 @@ Old files retain effective layout on import; absent/default tab settings can
 inherit a later explicitly edited style. Save As retains an older source.
 Per-stop inheritance/merging, decimal tabs and tabulation provenance UI remain
 future work; no crash-recovery or universal atomic-write guarantee is added.
+
+## Alpha.87 icon refinement validation
+
+2026-10-24, macOS arm64 / Rust 1.99.1. Alpha.87 awaits approval; alpha.85 is the
+latest explicitly approved version, and alpha.86 has no explicit approval recorded.
+
+- **441 full / 197 core-only tests pass**. Existing command, formatting, history,
+  persistence, Unicode, keyboard, geometry and tabulation regressions remain green.
+  No additional behavior is introduced by the four vector-path changes.
+- fmt, normal/capture all-target Clippy with warnings denied, release/capture builds,
+  repository/artwork/link, workflow YAML and whitespace checks pass.
+- Three native captures show active/disabled Cut/Copy and Save/Paste at wide and
+  compact sizes. No clipping/overlap observed; see [UI_SPEC](UI_SPEC.md#alpha87-clipboard-and-save-icons)
+  for exact dimensions, color values and hashes. Paste artwork shrinks by 2 DIP;
+  hit targets and command routing remain unchanged.
+- The supplied video supports shape/color comparison only: macOS/Russian reference,
+  unconfirmed build/scale. Native Windows and matched Word/DPI acceptance remain
+  deferred; VoiceOver was not enabled. No physical-input retest is claimed here.
+- A copied release executable outside the checkout reports alpha.87, valid v1
+  capabilities and explicit missing/relative/conflicting/unknown argument errors.
+  Office and neighboring repositories are not needed. Native v18 stays unchanged.
+- Alpha.86 code and journal CI completed successfully on macOS/Linux/Windows in
+  [code run 40069054203](https://github.com/PerchAnton/breakfree-docs/actions/runs/40069054203)
+  and [journal run 40069111865](https://github.com/PerchAnton/breakfree-docs/actions/runs/40069111865).
+  Alpha.87 server status is recorded separately in the project journal. No merge,
+  tag, release, dependency or license change.

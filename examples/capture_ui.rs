@@ -668,6 +668,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if args.len() != 3
         || ![
             "home",
+            "clipboard",
             "style-tabs",
             "style-tabs-dialog",
             "style-tabs-interval",
@@ -1014,6 +1015,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 app.execute(Action::SelectAll, &cc.egui_ctx);
             }
             match mode.as_str() {
+                "clipboard" => app.execute(Action::SelectAll, &cc.egui_ctx),
                 "tab-positions" | "typed-tabs-dialog" | "leader-dialog" => {
                     app.execute(Action::TabPositions, &cc.egui_ctx)
                 }

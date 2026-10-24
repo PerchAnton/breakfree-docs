@@ -1570,7 +1570,7 @@ impl DocsApp {
             "command-Paste",
             TargetKind::Action(Action::Paste),
         );
-        chrome::paint(ui, Icon::Paste, top.center(), 28., color, enabled);
+        chrome::paint(ui, Icon::Paste, top.center(), 26., color, enabled);
         if response
             .on_hover_text("Paste plain text · Ctrl/Command+V")
             .on_disabled_hover_text("Finish text composition first.")
