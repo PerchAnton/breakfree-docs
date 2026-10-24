@@ -59,3 +59,16 @@ fallback. External rendering and native dialog checks are reported separately in
 
 No project license, dependency, brand, Office process command or release-stage
 change accompanies this decision.
+
+## Alpha.92 extension: hyperlink ranges
+
+Map supported external hyperlink relationships to existing model-owned ranges.
+Runs split at both character-format and link boundaries; adjacent links remain
+separate, and reused imported relationship IDs keep their targets. Validate
+grapheme boundaries through the model before accepting the document. No imported
+link is fetched or opened. Unknown link metadata is rejected rather than discarded;
+this adds no model version, dependency, UI redesign or native format change.
+
+OOXML reference: [WordprocessingML hyperlink example](https://download.microsoft.com/download/e/1/4/e14fb96f-83b8-4a2a-84db-7fa8acbe061a/Office%20Open%20XML%20Part%201%20-%20Fundamentals.pdf).
+The model does not store history/tooltip/anchor/frame properties, so those remain
+outside this bounded profile.

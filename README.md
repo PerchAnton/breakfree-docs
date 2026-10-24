@@ -35,6 +35,14 @@
 > the longer-term plan; the [validation report](docs/VALIDATION.md) separates actual
 > checks from pending work.
 
+## Alpha.92 — DOCX hyperlinks
+
+DOCX remains primary. HTTP/HTTPS/mailto hyperlinks now exchange as model-owned
+ranges, preserving mixed run formatting, Unicode and links inside numbered lists.
+Existing link editing and undo/redo use the same model. Unsupported link metadata
+fails explicitly; import never activates a destination. See the
+[DOCX profile](docs/DOCX_SUBSET.md) and [validation](docs/VALIDATION.md).
+
 ## Write without getting in your own way
 
 BreakFree Docs starts with everyday writing and can grow toward demanding document workflows. The aim is a dependable editor for letters, reports and long-form documents, with local files, clear controls and an extensible foundation.

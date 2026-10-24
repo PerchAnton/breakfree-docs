@@ -1,4 +1,5 @@
 //! Explicit, fail-closed OOXML interchange for the primary document format.
+mod links;
 mod numbering;
 mod opc;
 mod package;
@@ -74,9 +75,6 @@ pub fn check_export(d: &Document) -> Result<()> {
         if p.structure.block.is_some() {
             unsupported.insert("tables or pictures");
         }
-        if !p.structure.links.is_empty() {
-            unsupported.insert("hyperlinks");
-        }
         if p.structure.section.is_some() {
             unsupported.insert("multiple sections");
         }
@@ -122,6 +120,8 @@ pub fn encode(d: &Document) -> Result<Vec<u8>> {
         let rels=String::from_utf8(parts["word/_rels/document.xml.rels"].clone()).unwrap().replace("</Relationships>",&format!("<Relationship Id=\"rIdNumbering\" Type=\"{OFFICE_REL}numbering\" Target=\"numbering.xml\"/></Relationships>"));
         parts.insert("word/_rels/document.xml.rels".into(), rels.into_bytes());
     }
+    let mut link_relationships = String::new();
+    let mut link_id = 0usize;
     let mut body = String::new();
     for (index, p) in d.paragraphs.iter().enumerate() {
         body.push_str("<w:p><w:pPr>");
@@ -155,9 +155,30 @@ pub fn encode(d: &Document) -> Result<Vec<u8>> {
         let chars: Vec<_> = p.text.chars().collect();
         let mut start = 0;
         while start < chars.len() {
+            let link = p
+                .structure
+                .links
+                .iter()
+                .find(|l| l.start <= start && start < l.end);
+            if let Some(link) = link.filter(|l| l.start == start) {
+                link_id += 1;
+                link_relationships += &format!(
+                    "<Relationship Id=\"rIdLink{link_id}\" Type=\"{OFFICE_REL}hyperlink\" Target=\"{}\" TargetMode=\"External\"/>",
+                    escape(&link.target)
+                );
+                body += &format!("<w:hyperlink r:id=\"rIdLink{link_id}\">");
+            }
+            let boundary = link.map(|l| l.end).unwrap_or_else(|| {
+                p.structure
+                    .links
+                    .iter()
+                    .find(|l| l.start > start)
+                    .map(|l| l.start)
+                    .unwrap_or(chars.len())
+            });
             let format = p.styles[start];
             let mut end = start + 1;
-            while end < chars.len() && p.styles[end] == format {
+            while end < boundary && p.styles[end] == format {
                 end += 1;
             }
             body.push_str("<w:r><w:rPr>");
@@ -185,16 +206,29 @@ pub fn encode(d: &Document) -> Result<Vec<u8>> {
                 ));
             }
             body.push_str("</w:r>");
+            if link.is_some_and(|l| l.end == end) {
+                body.push_str("</w:hyperlink>");
+            }
             start = end;
         }
         body.push_str("</w:p>");
     }
+    let rels = String::from_utf8(parts["word/_rels/document.xml.rels"].clone())
+        .unwrap()
+        .replace(
+            "</Relationships>",
+            &(link_relationships + "</Relationships>"),
+        );
+    parts.insert("word/_rels/document.xml.rels".into(), rels.into_bytes());
     let p = &d.page;
     body.push_str(&format!("<w:sectPr><w:pgSz w:w=\"{}\" w:h=\"{}\"/><w:pgMar w:left=\"{}\" w:right=\"{}\" w:top=\"{}\" w:bottom=\"{}\"/></w:sectPr>",p.width_points*20,p.height_points*20,p.left_points*20,p.right_points*20,p.top_points*20,p.bottom_points*20));
     parts.insert(
         "word/document.xml".into(),
-        format!("{DECL}<w:document xmlns:w=\"{W}\"><w:body>{body}</w:body></w:document>")
-            .into_bytes(),
+        format!(
+            "{DECL}<w:document xmlns:w=\"{W}\" xmlns:r=\"{}\"><w:body>{body}</w:body></w:document>",
+            OFFICE_REL.trim_end_matches('/')
+        )
+        .into_bytes(),
     );
     let bytes = package::write(&parts)?;
     if decode(&bytes)? != *d {
@@ -226,6 +260,7 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
     let body = document.child("body").ok_or("Missing DOCX body")?;
     body.allowed(W, &["p", "sectPr"], &[])?;
     d.paragraphs.clear();
+    let mut used_links = std::collections::BTreeSet::new();
     for (index, n) in body.children.iter().enumerate() {
         if n.name == "sectPr" {
             if index + 1 != body.children.len() {
@@ -234,7 +269,7 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
             d.page = read_section(n)?;
             continue;
         }
-        n.allowed(W, &["pPr", "r"], &[])?;
+        n.allowed(W, &["pPr", "r", "hyperlink"], &[])?;
         if n.children.iter().filter(|n| n.name == "pPr").count() > 1 {
             return Err("Duplicate paragraph properties".into());
         }
@@ -279,38 +314,17 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
             p.structure.keep_with_next = properties::flag(pr, "keepNext")?.unwrap_or(false);
             p.structure.keep_lines = properties::flag(pr, "keepLines")?.unwrap_or(false);
         }
-        for run in n.children.iter().filter(|n| n.name == "r") {
-            run.allowed(W, &["rPr", "t", "tab"], &[])?;
-            if run.children.iter().filter(|n| n.name == "rPr").count() > 1 {
-                return Err("Duplicate run properties".into());
-            }
-            let format = run
-                .child("rPr")
-                .map(|r| properties::read_run(r, &map))
-                .transpose()?
-                .unwrap_or_default();
-            for node in run.children.iter().filter(|n| n.name != "rPr") {
-                let text = if node.name == "tab" {
-                    node.allowed(W, &[], &[])?;
-                    "\t"
-                } else {
-                    if !node.children.is_empty()
-                        || node.attrs.iter().any(|((ns, k), v)| {
-                            ns != "http://www.w3.org/XML/1998/namespace"
-                                || k != "space"
-                                || !["preserve", "default"].contains(&v.as_str())
-                        })
-                    {
-                        return Err("Unsupported text properties".into());
-                    }
-                    &node.text
-                };
-                p.text.push_str(text);
-                p.styles
-                    .extend(std::iter::repeat_n(format, text.chars().count()));
+        for node in n.children.iter().filter(|n| n.name != "pPr") {
+            if node.name == "hyperlink" {
+                links::read(node, &locations.links, &mut used_links, &map, &mut p)?;
+            } else {
+                links::read_run(node, &map, &mut p)?;
             }
         }
         d.paragraphs.push(p);
+    }
+    if used_links.len() != locations.links.len() {
+        return Err("Unreferenced DOCX hyperlink relationship".into());
     }
     if d.paragraphs.is_empty() {
         return Err("DOCX body has no paragraphs".into());

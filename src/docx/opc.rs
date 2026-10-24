@@ -7,6 +7,7 @@ pub(super) struct Locations {
     pub document: String,
     pub styles: Option<String>,
     pub numbering: Option<String>,
+    pub links: BTreeMap<String, String>,
 }
 fn resolve(base: &str, target: &str) -> Result<String> {
     if target.contains(['\\', ':', '%', '?', '#'])
@@ -42,6 +43,7 @@ fn relationships(
     path: &str,
     base: &str,
     allowed: &[&str],
+    links: &mut BTreeMap<String, String>,
 ) -> Result<BTreeMap<String, String>> {
     let n = part(parts, path)?;
     root(&n, REL, "Relationships")?;
@@ -54,9 +56,6 @@ fn relationships(
             &[],
             &[("", "Id"), ("", "Type"), ("", "Target"), ("", "TargetMode")],
         )?;
-        if r.attr("", "TargetMode").is_some_and(|v| v != "Internal") {
-            return Err("External DOCX relationships are unsupported".into());
-        }
         let id = r.attr("", "Id").ok_or("Missing relationship ID")?;
         if id.is_empty() || !ids.insert(id) {
             return Err("Empty or duplicate relationship ID".into());
@@ -66,6 +65,18 @@ fn relationships(
             .and_then(|s| s.strip_prefix(OFFICE_REL))
             .filter(|s| allowed.contains(s))
             .ok_or("Unsupported DOCX relationship type")?;
+        if kind == "hyperlink" {
+            if r.attr("", "TargetMode") != Some("External") {
+                return Err("Hyperlinks require an explicit external relationship".into());
+            }
+            let target = r.attr("", "Target").ok_or("Missing hyperlink target")?;
+            crate::structure::validate_target(target)?;
+            links.insert(id.into(), target.into());
+            continue;
+        }
+        if r.attr("", "TargetMode").is_some_and(|v| v != "Internal") {
+            return Err("Only hyperlink relationships may be external".into());
+        }
         let target = resolve(
             base,
             r.attr("", "Target").ok_or("Missing relationship target")?,
@@ -77,7 +88,8 @@ fn relationships(
     Ok(result)
 }
 pub(super) fn inspect(parts: &Parts) -> Result<Locations> {
-    let main = relationships(parts, "_rels/.rels", "", &["officeDocument"])?;
+    let mut links = BTreeMap::new();
+    let main = relationships(parts, "_rels/.rels", "", &["officeDocument"], &mut links)?;
     let document = main
         .get("officeDocument")
         .ok_or("Missing main document relationship")?
@@ -89,7 +101,13 @@ pub(super) fn inspect(parts: &Parts) -> Result<Locations> {
         format!("{dir}/_rels/{file}.rels")
     };
     let rels = if parts.contains_key(&relpath) {
-        relationships(parts, &relpath, &document, &["styles", "numbering"])?
+        relationships(
+            parts,
+            &relpath,
+            &document,
+            &["styles", "numbering", "hyperlink"],
+            &mut links,
+        )?
     } else {
         BTreeMap::new()
     };
@@ -97,6 +115,7 @@ pub(super) fn inspect(parts: &Parts) -> Result<Locations> {
         document,
         styles: rels.get("styles").cloned(),
         numbering: rels.get("numbering").cloned(),
+        links,
     };
     let mut expected = BTreeMap::from([
         (

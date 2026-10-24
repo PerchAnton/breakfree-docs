@@ -445,3 +445,157 @@ fn unsupported_primary_save_keeps_destination_and_offers_native_path() {
     assert!(!s.dirty());
     assert!(!s.is_docx());
 }
+
+fn linked_document() -> Document {
+    use crate::structure::Link;
+    let mut d = sample();
+    d.paragraphs[0].structure.links = vec![
+        Link {
+            start: 0,
+            end: 7,
+            target: "https://example.org/?a=1&b=%D1%82#part".into(),
+        },
+        Link {
+            start: 7,
+            end: 9,
+            target: "mailto:test@example.org?subject=Hello%20world".into(),
+        },
+        Link {
+            start: 10,
+            end: d.paragraphs[0].styles.len(),
+            target: "http://example.org/".into(),
+        },
+    ];
+    d
+}
+#[test]
+fn hyperlinks_preserve_ranges_runs_unicode_and_native_roundtrip() {
+    let d = linked_document();
+    let bytes = encode(&d).unwrap();
+    assert_eq!(decode(&bytes).unwrap(), d);
+    assert_eq!(
+        crate::storage::decode(&crate::storage::encode(&d).unwrap()).unwrap(),
+        d
+    );
+    let parts = package::read(&bytes).unwrap();
+    let xml = String::from_utf8(parts["word/document.xml"].clone()).unwrap();
+    assert_eq!(xml.matches("<w:hyperlink ").count(), 3);
+    assert_eq!(xml.matches("</w:hyperlink>").count(), 3);
+    assert!(
+        String::from_utf8(parts["word/_rels/document.xml.rels"].clone())
+            .unwrap()
+            .contains("&amp;b=%D1%82#part")
+    );
+}
+fn external_links() -> Parts {
+    let mut p = external_minimal();
+    let rel = String::from_utf8(p["text/_rels/main.xml.rels"].clone()).unwrap().replace("</Relationships>", &format!("<Relationship Id='web' Type='{OFFICE_REL}hyperlink' Target='https://example.org/?a=1&amp;b=2' TargetMode='External'/></Relationships>"));
+    p.insert("text/_rels/main.xml.rels".into(), rel.into_bytes());
+    p.insert("text/main.xml".into(),format!("<x:document xmlns:x='{W}' xmlns:q='{}'><x:body><x:p><x:pPr><x:numPr><x:numId x:val='7'/></x:numPr></x:pPr><x:r><x:t>Go </x:t></x:r><x:hyperlink q:id='web'><x:r><x:rPr><x:b/></x:rPr><x:t>Україна </x:t></x:r><x:r><x:t>é🙂</x:t></x:r></x:hyperlink><x:r><x:t> / </x:t></x:r><x:hyperlink q:id='web'><x:r><x:t>again</x:t></x:r></x:hyperlink></x:p></x:body></x:document>",OFFICE_REL.trim_end_matches('/')).into_bytes());
+    p
+}
+#[test]
+fn external_links_with_shared_relationship_and_list_import_without_activation() {
+    let d = decode(&package::write(&external_links()).unwrap()).unwrap();
+    let p = &d.paragraphs[0];
+    assert_eq!(p.text, "Go Україна é🙂 / again");
+    assert_eq!(
+        (p.structure.links[0].start, p.structure.links[0].end),
+        (3, 14)
+    );
+    assert_eq!(p.structure.links[0].target, "https://example.org/?a=1&b=2");
+    assert_eq!(p.structure.links[1].target, p.structure.links[0].target);
+    assert_eq!(p.styles[3].bold, Some(true));
+    assert_eq!(crate::structure::labels(&d), vec![Some("3.".into())]);
+    assert_eq!(decode(&encode(&d).unwrap()).unwrap(), d);
+}
+#[test]
+fn hyperlink_relationships_and_unrepresented_properties_fail_closed() {
+    for (path, from, to) in [
+        (
+            "text/_rels/main.xml.rels",
+            "https://example.org/?a=1&amp;b=2",
+            "file:///tmp/private",
+        ),
+        (
+            "text/_rels/main.xml.rels",
+            "https://example.org/?a=1&amp;b=2",
+            "javascript:alert(1)",
+        ),
+        (
+            "text/_rels/main.xml.rels",
+            "TargetMode='External'",
+            "TargetMode='Internal'",
+        ),
+        ("text/_rels/main.xml.rels", "TargetMode='External'", ""),
+        ("text/_rels/main.xml.rels", "Id='web'", "Id='numbers'"),
+        ("text/main.xml", "q:id='web'", "q:id='absent'"),
+        ("text/main.xml", "q:id='web'", "x:anchor='bookmark'"),
+        ("text/main.xml", "q:id='web'", "q:id='web' x:tooltip='tip'"),
+        (
+            "text/main.xml",
+            "q:id='web'",
+            "q:id='web' x:history='false'",
+        ),
+        (
+            "text/main.xml",
+            "<x:hyperlink q:id='web'>",
+            "<x:hyperlink q:id='web'><x:hyperlink/>",
+        ),
+    ] {
+        let mut p = external_links();
+        let original = String::from_utf8(p[path].clone()).unwrap();
+        assert!(original.contains(from));
+        p.insert(path.into(), original.replacen(from, to, 1).into_bytes());
+        assert!(decode(&package::write(&p).unwrap()).is_err(), "{path} {to}");
+    }
+    let mut p = external_links();
+    p.insert(
+        "text/main.xml".into(),
+        format!("<w:document xmlns:w='{W}'><w:body><w:p/></w:body></w:document>").into_bytes(),
+    );
+    assert!(
+        decode(&package::write(&p).unwrap())
+            .unwrap_err()
+            .contains("Unreferenced")
+    );
+}
+#[test]
+fn hyperlink_grapheme_boundaries_and_empty_ranges_are_rejected() {
+    for text in [
+        "<x:hyperlink q:id='web'><x:r><x:t>e</x:t></x:r></x:hyperlink><x:r><x:t>́</x:t></x:r>",
+        "<x:hyperlink q:id='web'><x:r><x:t/></x:r></x:hyperlink>",
+    ] {
+        let mut p = external_links();
+        p.insert("text/main.xml".into(),format!("<x:document xmlns:x='{W}' xmlns:q='{}'><x:body><x:p>{text}</x:p></x:body></x:document>",OFFICE_REL.trim_end_matches('/')).into_bytes());
+        assert!(decode(&package::write(&p).unwrap()).is_err());
+    }
+}
+#[test]
+fn imported_hyperlink_edit_undo_redo_and_primary_save() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("links.docx");
+    let d = linked_document();
+    save(&d, &path).unwrap();
+    let mut session = crate::session::Session::open(&path).unwrap();
+    session.editor.selection = (0, 7);
+    session
+        .editor
+        .set_link(Some("https://example.org/revised"))
+        .unwrap();
+    let after = session.editor.document.clone();
+    assert_ne!(after, d);
+    session.save(&path).unwrap();
+    assert_eq!(load(&path).unwrap(), after);
+    session.editor.undo();
+    assert_eq!(session.editor.document, d);
+    session.editor.redo();
+    assert_eq!(session.editor.document, after);
+    session.editor.set_link(None).unwrap();
+    assert_eq!(
+        session.editor.document.paragraphs[0].structure.links.len(),
+        2
+    );
+    session.editor.undo();
+    assert_eq!(session.editor.document, after);
+}

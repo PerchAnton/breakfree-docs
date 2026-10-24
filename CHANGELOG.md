@@ -3,6 +3,18 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.92 — 2026-10-24
+
+- Extend primary DOCX read/write with HTTP, HTTPS and mailto hyperlink ranges,
+  including mixed-format runs, Unicode, adjacent links and links inside lists.
+- Resolve referenced external hyperlink relationships without fetching or opening
+  destinations; preserve shared targets and reject missing/duplicate references.
+- Keep unsupported anchors, fields, tooltips, history flags and target-frame
+  metadata explicit errors; reject invalid/grapheme-splitting or empty ranges.
+- Add independent import markup, native/DOCX fixtures and shared editing/history
+  checks. Preserve design, palette, icons and the optional native format.
+- Windows and paper printing remain deferred; VoiceOver remains last.
+
 ## 0.1.0-alpha.91 — 2026-10-24
 
 - Make DOCX the primary/default format. Save updates an opened DOCX; Save As

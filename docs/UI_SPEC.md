@@ -2651,3 +2651,9 @@ The window title follows an opened DOCX path. File → Current document explains
 primary format and reports successful DOCX/native saves without changing ribbon
 layout, palette or icons. Unknown DOCX properties and outside-file changes block
 saving with a visible error; Save As is explicit, never an automatic fallback.
+
+## Alpha.92 DOCX hyperlink persistence
+
+Existing Insert/Link editing and activation behavior is retained. DOCX Save/Open
+now preserves supported link ranges and targets without opening them. No ribbon,
+palette, icon or layout changes accompany this adapter extension.

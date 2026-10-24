@@ -1,4 +1,4 @@
-# DOCX profile — alpha.91
+# DOCX profile — alpha.92
 
 **DOCX is the primary/default document format.** `.bfdoc` is optional and can retain
 all current model features. Primary status does not imply general Word compatibility:
@@ -18,7 +18,8 @@ are not supported.
 | Imported defaults | Optional styles/defaults; supported non-baseline defaults become a named root style so inheritance remains editable |
 | Lists | Decimal `1.` and bullets `•`, `◦`, `▪`; levels 0–8, independent streams and explicit starts/restarts |
 | Page | One section, exact whole-point dimensions and margins |
-| Relationships | Internal main document, styles and numbering; parts can use other locations |
+| Relationships | Internal main document, styles and numbering; parts can use other locations; referenced external HTTP/HTTPS/mailto hyperlinks |
+| Hyperlinks | Grapheme-aligned ranges, mixed runs, shared relationship targets and links in lists; no automatic activation |
 
 Unspecified imported defaults use Arial 11 pt, single lines and zero paragraph
 spacing/indents. This is an explicit import baseline, not a claim about every
@@ -51,9 +52,30 @@ Linked numbering continued after ordinary paragraphs or another independent
 instance is rejected when the native sequential model cannot retain its behavior.
 There are at most 1,024 exported instances; counters fit 1–65,535.
 
+## Hyperlink boundary (alpha.92)
+
+`w:hyperlink` contains ordinary supported runs and references an external hyperlink
+relationship by namespace-qualified `r:id`. HTTP, HTTPS and mailto targets follow
+existing model validation (at most 2,048 bytes, no spaces/control characters).
+Import never fetches or activates a target. Internal package parts still require
+internal relationships; external images/templates are not enabled.
+
+Text order, per-run formatting, Unicode/grapheme ranges and distinct adjacent links
+survive native/DOCX round trips. Reused relationship IDs may serve several ranges;
+export assigns each range its own ID. Empty ranges, missing/duplicate IDs, unused
+hyperlink relationships, nested links and grapheme-splitting boundaries fail.
+Bookmarks/anchors, fields, tooltips, target frames, document locations and history
+flags remain unsupported and are rejected, including explicitly written defaults.
+Colors and undeclared built-in Hyperlink styles remain outside the style profile;
+no automatic visual style is added during exchange.
+
+Reproduce with `cargo run --locked --no-default-features --example docx_links`.
+This writes the synthetic `examples/DocxLinks.docx` / `.bfdoc` pair and asserts
+full-model equality. External links are not followed by this check.
+
 ## Explicit rejection rather than loss
 
-Tables, images, hyperlinks, multiple sections, headers/footers, page numbering,
+Tables, images, multiple sections, headers/footers, page numbering,
 explicit/style tab stops, revision marks, comments, fields, colors and unsupported
 fonts/themes are still rejected. Additional unaccounted parts, including document
 properties/theme/settings parts, are not silently stripped. No lossy bypass or
@@ -62,7 +84,7 @@ hidden native sidecar is included in DOCX.
 Limits: 32 MiB compressed/total expanded, 8 MiB per part, 128 ZIP entries, XML depth
 64 and 200,000 nodes per part, plus existing model limits. ZIP64/encrypted/split
 archives, unsafe/duplicate paths, overlapping payloads, CRC failures, external
-relationships, DTDs and custom entities fail. Relationship traversal cannot escape
+relationships other than supported hyperlinks, DTDs and custom entities fail. Relationship traversal cannot escape
 the package root; percent-encoded/external targets are rejected. Nothing is fetched
 or executed. A styles part and document relationships part are optional when unused;
 any declared relationship must resolve with the proper content type.
@@ -106,7 +128,7 @@ for actual external/native checks. External save-back remains unverified.
 
 ## Next D4 increments
 
-Expand ordinary external defaults/fonts and metadata preservation, then hyperlinks,
+Expand ordinary external defaults/fonts and metadata preservation, then
 tables/PNG, sections/headers/footers and tabulation. Extend independent fixtures and
 save-back checks before preparing tested-target archives and reviewing distribution
 notices. D4 remains in progress; no tag, merge or public alpha package is authorized.

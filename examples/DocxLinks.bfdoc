@@ -1,0 +1,167 @@
+{
+  "page": {
+    "width_points": 612,
+    "height_points": 792,
+    "left_points": 72,
+    "right_points": 72,
+    "top_points": 72,
+    "bottom_points": 72,
+    "header": "",
+    "footer": "",
+    "page_numbers": false,
+    "number_start": null
+  },
+  "format": "breakfree.docs.native",
+  "content_version": 19,
+  "style_catalog": {
+    "custom": [],
+    "normal": {
+      "next_style": null,
+      "parent": null,
+      "character": {
+        "bold": null,
+        "italic": null,
+        "underline": null,
+        "font_size": null
+      },
+      "line_height_percent": null,
+      "space_after_half_points": null
+    },
+    "no_spacing": {
+      "next_style": null,
+      "parent": "normal",
+      "character": {
+        "bold": null,
+        "italic": null,
+        "underline": null,
+        "font_size": null
+      },
+      "line_height_percent": 100,
+      "space_after_half_points": 0
+    },
+    "heading1": {
+      "next_style": null,
+      "parent": "normal",
+      "character": {
+        "bold": true,
+        "italic": null,
+        "underline": null,
+        "font_size": 36
+      },
+      "line_height_percent": null,
+      "space_after_half_points": null
+    }
+  },
+  "character_styles": [],
+  "paragraphs": [
+    {
+      "structure": {
+        "list": {
+          "kind": "decimal",
+          "level": 0,
+          "restart": 3
+        },
+        "links": [
+          {
+            "start": 12,
+            "end": 22,
+            "target": "https://example.org/?a=1&b=2#part"
+          },
+          {
+            "start": 25,
+            "end": 32,
+            "target": "http://example.org/"
+          },
+          {
+            "start": 35,
+            "end": 40,
+            "target": "mailto:test@example.org"
+          }
+        ],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "DOCX links: ",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        },
+        {
+          "text": "У",
+          "character_style": null,
+          "direct": {
+            "bold": true,
+            "italic": null,
+            "underline": true,
+            "font_size": null
+          }
+        },
+        {
+          "text": "країна é",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": true,
+            "font_size": null
+          }
+        },
+        {
+          "text": " / ",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        },
+        {
+          "text": "Русский",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": true,
+            "font_size": null
+          }
+        },
+        {
+          "text": " / ",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        },
+        {
+          "text": "email",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": true,
+            "font_size": null
+          }
+        }
+      ]
+    }
+  ]
+}

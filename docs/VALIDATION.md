@@ -2369,3 +2369,38 @@ The owner approved alpha.90 and selected DOCX as primary, `.bfdoc` as optional.
   the current font renderer despite preserved data; no full-script rendering claim.
   Post-dialog keyboard and AX operations succeeded in this run. Optional native
   Save As is covered by session tests, not a new native dialog test.
+
+## Alpha.92 DOCX hyperlink validation
+
+2026-10-24, macOS aarch64, Rust 1.99.1; candidate `0.1.0-alpha.92`.
+Owner approved alpha.91; DOCX remains primary and native v19 remains optional.
+
+- Five new adapter tests cover mixed-format/adjacent link ranges, Unicode and
+  native/DOCX equality; independently authored relocated XML with reused targets
+  and numbered-list context; missing/duplicate/unreferenced relationships; unsupported
+  protocols/metadata/nesting; empty and grapheme-splitting ranges; shared link
+  replacement/removal undo/redo and primary Session Save/reopen.
+- No imported destination is fetched or activated. Existing failed-write and
+  source-conflict checks remain in the required suites. Full-model export readback
+  still precedes replacement; no hidden sidecar or lossy conversion was introduced.
+- `docx_links` generates the synthetic fixture pair and asserts exact reopen.
+  Word for Mac **16.114 (16.114.26101123)** opened `DocxLinks.docx` without a repair
+  prompt and exposed three link elements through AX. The [capture](screenshots/alpha92-docx-links-word.png)
+  shows the actual start-at-3 item and underlined Unicode text. AX normalizes list
+  ordinals and omits URL fragments; exact target retention is established by model/
+  XML tests, not by that normalized representation. No destination was activated.
+  This is an interchange check, not a matched-theme Windows visual comparison.
+- Word remains activation-required/read-only, so external editing/save-back is
+  unverified. The native editor GUI was not retested manually in this adapter-only
+  iteration; shared commands and synthetic widget regressions are covered separately.
+- Bookmarks, fields, link tooltip/history/frame metadata, broader fonts/themes,
+  document properties and remaining D4 objects still fail explicitly. Windows and
+  paper printing remain deferred; VoiceOver remains last. No merge, tag or release.
+
+- Final checks: **493 full tests / 234 core-only tests passed**, including 22 DOCX
+  adapter tests. Required fmt, denied-warning all-target Clippy, release build,
+  repository references and diff checks passed. Copied release executable in a
+  fresh temporary directory reported alpha.92, DOCX first in capabilities and
+  rejected missing/relative/unknown arguments without GUI. No Office or sibling
+  checkout was required. Initial Clippy found a needless reference after extracting
+  the run parser; it was corrected before these final suites.
