@@ -2130,3 +2130,44 @@ alpha.85 awaits approval. Alpha.78–83 still have no explicit approval recorded
   This iteration's CI is recorded separately in the journal. Native Windows
   keyboard/DPI acceptance remains deferred; no matched Word comparison or full
   IME/accessibility acceptance is claimed. No merge, tag or release was performed.
+
+## Alpha.86 style tabulation validation
+
+2026-10-24, macOS arm64 / Rust 1.99.1. Alpha.85 explicitly approved by the owner;
+alpha.86 awaits approval. Windows remains deferred and VoiceOver is last.
+
+- **441 full tests / 197 without GUI pass**, including ten new core tests and
+  three GUI regressions. Nearest-parent and independent-property resolution, direct
+  overrides, explicit empty lists, reset/history, half-open selection, no-op redo,
+  Enter/custom-style creation, mixed ruler owners, cancellation/stale drafts,
+  strict v18/legacy reads and failed write/sync/replace preservation are covered.
+- New layout comparison checks inherited versus equivalent direct tabulation at
+  three widths and three text sizes, including center/right stops, leaders and
+  English/Ukrainian/Russian/combining text. This does not establish all-script support.
+- Widget tests exercise nested interval/position edits and outer single-step
+  Undo/Redo, outer cancellation and paragraph inheritance reset. Existing keyboard,
+  preview focus, storage and synthetic-scale regressions remain passing. The old
+  delete-last-stop assertion now expects an explicit-empty flag, which prevents
+  inherited positions reappearing; Undo still restores the exact prior document.
+- fmt, normal/capture all-target Clippy, release/capture builds, repository/artwork/
+  links, YAML and whitespace checks pass. CLI validation is performed from an
+  isolated copied executable without Office or sibling repositories.
+- Three native captures were inspected at 640 × 480 and 1366 × 900 logical sizes;
+  [UI_SPEC](UI_SPEC.md#alpha86-inherited-tabulation) records their hashes. Footer
+  actions and nested controls fit; palette, icon source and ribbon geometry remain.
+- Native macOS OS-input automation opened a temporary copy of InheritedTabs.bfdoc,
+  changed Normal's interval from 48 to 60 pt, cleared its list in the same draft,
+  and accepted the outer dialog. Nested OK left the document saved and returned
+  focus to its entry button. One Cmd+Z returned to Saved locally and disabled Undo;
+  Cmd+Shift+Z restored Unsaved changes. A final Undo restored saved state before
+  closing. On-disk fixture bytes are unchanged. This is scoped OS automation,
+  not physical-keyboard, full IME or spoken-accessibility acceptance.
+- Alpha.85 server CI succeeded on macOS/Linux/Windows in
+  [run 40022726086](https://github.com/PerchAnton/breakfree-docs/actions/runs/40022726086).
+  Alpha.86 CI is reported separately in the journal. No merge, tag or release.
+
+Native v18 is a compatibility boundary: alpha.85 and older reject new saves.
+Old files retain effective layout on import; absent/default tab settings can
+inherit a later explicitly edited style. Save As retains an older source.
+Per-stop inheritance/merging, decimal tabs and tabulation provenance UI remain
+future work; no crash-recovery or universal atomic-write guarantee is added.

@@ -8,6 +8,7 @@ pub(super) enum TabOutcome {
 }
 
 pub(super) struct TabDialog {
+    style_scope: bool,
     value: String,
     default: bool,
     focus: bool,
@@ -17,6 +18,12 @@ pub(super) struct TabDialog {
 }
 
 impl TabDialog {
+    pub fn for_style(editor: &crate::commands::Editor) -> Self {
+        Self {
+            style_scope: true,
+            ..Self::new(editor)
+        }
+    }
     pub fn new(editor: &crate::commands::Editor) -> Self {
         let (start, end) = editor.selection;
         let (first, _) = editor.document.locate(start).unwrap();
@@ -26,14 +33,21 @@ impl TabDialog {
         }
         let values = &editor.document.paragraphs[first..=last];
         let value = values[0].spacing.tab_interval_half_points;
-        let mixed = values
-            .iter()
-            .any(|p| p.spacing.tab_interval_half_points != value);
+        let effective = editor
+            .document
+            .resolved_tabs(&values[0])
+            .tab_interval_half_points
+            .unwrap_or(72);
+        let mixed = values.iter().any(|p| {
+            p.spacing.tab_interval_half_points != value
+                || editor.document.resolved_tabs(p).tab_interval_half_points != Some(effective)
+        });
         Self {
+            style_scope: false,
             value: if mixed {
                 String::new()
             } else {
-                format!("{}", f32::from(value.unwrap_or(72)) / 2.)
+                format!("{}", f32::from(effective) / 2.)
             },
             default: !mixed && value.is_none(),
             focus: true,
@@ -41,7 +55,7 @@ impl TabDialog {
             mixed,
             explicit_positions: values
                 .iter()
-                .any(|p| !p.spacing.left_tab_stops_half_points.is_empty()),
+                .any(|p| !editor.document.resolved_tabs(p).tab_positions().is_empty()),
         }
     }
 
@@ -78,9 +92,17 @@ impl TabDialog {
             .area(egui::Modal::default_area(id).fade_in(false))
             .show(ctx, |ui| {
                 ui.set_width(290.);
-                ui.heading("Tab interval");
+                ui.heading(if self.style_scope {
+                    "Style tab interval"
+                } else {
+                    "Tab interval"
+                });
                 ui.separator();
-                ui.label("Applies to the selected paragraphs.");
+                ui.label(if self.style_scope {
+                    "Changes stay in the style draft until its OK."
+                } else {
+                    "Applies to the selected paragraphs."
+                });
                 if self.mixed {
                     ui.small("Selection contains different interval settings.");
                 }
@@ -115,17 +137,26 @@ impl TabDialog {
                     }
                     ui.label("pt");
                 });
-                let response = ui.checkbox(&mut self.default, "Use default interval (36 pt)");
+                let response = ui.checkbox(
+                    &mut self.default,
+                    if self.style_scope {
+                        "Inherit interval from parent"
+                    } else {
+                        "Inherit interval from style"
+                    },
+                );
                 record("tab-default", response.rect);
                 if response.changed() && self.default {
-                    self.value = "36".into();
+                    self.value.clear();
                     self.error = false;
                 }
                 ui.small("0.5–144 pt, in 0.5 pt steps. Left tab grid only.");
                 if self.explicit_positions {
                     ui.small("Explicit positions take precedence over this interval.");
                 }
-                ui.small("Edit explicit positions through Paragraph → Tab positions.");
+                if !self.style_scope {
+                    ui.small("Edit explicit positions through Paragraph → Tab positions.");
+                }
                 if self.error {
                     ui.colored_label(Color32::DARK_RED, "Enter 0.5–144 pt in half-point steps.");
                 }

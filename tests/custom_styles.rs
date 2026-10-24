@@ -60,10 +60,10 @@ fn definition_only_empty_paragraph_and_custom_parents_share_graph_rules() {
     assert_eq!(e.document.paragraphs, before);
     let child = e.create_style("Child", based_on(parent), true).unwrap();
     assert_eq!(e.selected_paragraph_style(), Some(child));
-    let mut definition = *e.document.style_catalog.get(parent).unwrap();
+    let mut definition = e.document.style_catalog.get(parent).unwrap().clone();
     definition.character.font_size = Some("20".parse().unwrap());
     definition.character.italic = Some(true);
-    e.modify_style(parent, definition).unwrap();
+    e.modify_style(parent, definition.clone()).unwrap();
     assert_eq!(e.selected_font_size().unwrap().to_string(), "20");
     assert_eq!(
         e.document.style_catalog.resolve(child).line_height_percent,
@@ -71,10 +71,10 @@ fn definition_only_empty_paragraph_and_custom_parents_share_graph_rules() {
     );
     let valid = e.document.clone();
     definition.parent = Some(child);
-    assert!(e.modify_style(parent, definition).is_err());
+    assert!(e.modify_style(parent, definition.clone()).is_err());
     assert_eq!(e.document, valid);
     assert!(
-        e.modify_style(ParagraphStyle::Custom(99), definition)
+        e.modify_style(ParagraphStyle::Custom(99), definition.clone())
             .is_err()
     );
     assert!(
@@ -253,9 +253,10 @@ fn native_v8_roundtrip_rejects_malformed_ids_names_graphs_and_preserves_previous
 #[test]
 fn v4_import_preserves_definitions_without_rewriting_and_rejects_custom_extensions() {
     let mut e = Editor::default();
-    let mut definition = e.document.style_catalog.normal;
+    let mut definition = e.document.style_catalog.normal.clone();
     definition.character.italic = Some(true);
-    e.modify_style(ParagraphStyle::Normal, definition).unwrap();
+    e.modify_style(ParagraphStyle::Normal, definition.clone())
+        .unwrap();
     let mut v4: serde_json::Value =
         serde_json::from_slice(&storage::encode(&e.document).unwrap()).unwrap();
     v4["content_version"] = 4.into();
@@ -359,7 +360,7 @@ fn rename_parent_preserves_ids_descendants_direct_values_and_exact_history() {
     let mut e = Editor::new(doc);
     let parent = ParagraphStyle::Custom(1);
     let child = ParagraphStyle::Custom(2);
-    let mut child_definition = *e.document.style_catalog.get(child).unwrap();
+    let mut child_definition = e.document.style_catalog.get(child).unwrap().clone();
     child_definition.parent = Some(parent);
     e.modify_style(child, child_definition).unwrap();
     e.selection = (0, e.document.character_count());
@@ -368,8 +369,8 @@ fn rename_parent_preserves_ids_descendants_direct_values_and_exact_history() {
     let selection = e.selection;
     let pending = e.typing_style;
     let depth = e.undo_stack.len();
-    let definition = *before.style_catalog.get(parent).unwrap();
-    e.modify_custom_style(parent, "Заголовок café Русский", definition)
+    let definition = before.style_catalog.get(parent).unwrap().clone();
+    e.modify_custom_style(parent, "Заголовок café Русский", definition.clone())
         .unwrap();
     let after = e.document.clone();
     assert_eq!(e.undo_stack.len(), depth + 1);
@@ -401,13 +402,13 @@ fn rename_noops_errors_and_combined_invalid_definition_preserve_redo() {
     let mut e =
         Editor::new(storage::decode(include_bytes!("../examples/CustomStyles.bfdoc")).unwrap());
     let id = ParagraphStyle::Custom(1);
-    let definition = *e.document.style_catalog.get(id).unwrap();
+    let definition = e.document.style_catalog.get(id).unwrap().clone();
     e.replace(0, 0, "Undo me", "Input").unwrap();
     e.undo();
     let before = e.document.clone();
     let selection = e.selection;
     let pending = e.typing_style;
-    e.modify_custom_style(id, "Report Heading", definition)
+    e.modify_custom_style(id, "Report Heading", definition.clone())
         .unwrap();
     assert!(e.undo_stack.is_empty());
     assert_eq!(e.redo_stack.len(), 1);
@@ -423,7 +424,7 @@ fn rename_noops_errors_and_combined_invalid_definition_preserve_redo() {
         &"x".repeat(65),
     ] {
         assert!(
-            e.modify_custom_style(id, name, definition).is_err(),
+            e.modify_custom_style(id, name, definition.clone()).is_err(),
             "{name:?}"
         );
         assert_eq!(e.document, before);
@@ -437,22 +438,22 @@ fn rename_noops_errors_and_combined_invalid_definition_preserve_redo() {
         ParagraphStyle::Custom(999),
     ] {
         assert!(
-            e.modify_custom_style(target, "Valid name", definition)
+            e.modify_custom_style(target, "Valid name", definition.clone())
                 .is_err()
         );
         assert_eq!(e.document, before);
     }
-    let mut cycle = definition;
+    let mut cycle = definition.clone();
     cycle.parent = Some(id);
     assert!(e.modify_custom_style(id, "Still valid", cycle).is_err());
-    let mut invalid = definition;
+    let mut invalid = definition.clone();
     invalid.line_height_percent = Some(99);
     assert!(e.modify_custom_style(id, "Still valid", invalid).is_err());
     assert_eq!(e.document, before);
     assert_eq!((e.selection, e.typing_style), (selection, pending));
     assert_eq!(e.redo_stack.len(), 1);
     // A case-only edit is valid: the target is not a duplicate of itself.
-    e.modify_custom_style(id, "REPORT HEADING", definition)
+    e.modify_custom_style(id, "REPORT HEADING", definition.clone())
         .unwrap();
     assert_eq!(e.undo_stack.len(), 1);
     assert!(e.redo_stack.is_empty());
@@ -487,8 +488,9 @@ fn rename_and_definition_change_are_one_transaction_and_work_at_catalog_capacity
         first_line_half_points: None,
         space_after_half_points: Some(17),
         next_style: None,
+        ..Default::default()
     };
-    e.modify_custom_style(id, &"Ї".repeat(64), definition)
+    e.modify_custom_style(id, &"Ї".repeat(64), definition.clone())
         .unwrap();
     assert_eq!(e.undo_stack.len(), depth + 1);
     assert_eq!(e.document.style_catalog.custom.len(), MAX_CUSTOM_STYLES);
@@ -518,10 +520,10 @@ fn rename_roundtrip_dirty_checkpoint_failed_write_and_stale_preview_keep_referen
         .preview_replace_all(&[(0, 1)], "Another")
         .unwrap();
     let id = ParagraphStyle::Custom(1);
-    let definition = *old.style_catalog.get(id).unwrap();
+    let definition = old.style_catalog.get(id).unwrap().clone();
     session
         .editor
-        .modify_custom_style(id, "Renamed Україна", definition)
+        .modify_custom_style(id, "Renamed Україна", definition.clone())
         .unwrap();
     assert!(session.dirty());
     assert!(session.editor.apply_replace_all(stale).is_err());
@@ -566,11 +568,12 @@ fn rename_roundtrip_dirty_checkpoint_failed_write_and_stale_preview_keep_referen
 fn deletion_fixture() -> Editor {
     let mut e =
         Editor::new(storage::decode(include_bytes!("../examples/CustomStyles.bfdoc")).unwrap());
-    let mut child = *e
+    let mut child = e
         .document
         .style_catalog
         .get(ParagraphStyle::Custom(2))
-        .unwrap();
+        .unwrap()
+        .clone();
     child.parent = Some(ParagraphStyle::Custom(1));
     e.modify_style(ParagraphStyle::Custom(2), child).unwrap();
     e.create_style(

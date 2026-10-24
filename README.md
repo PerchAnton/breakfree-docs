@@ -1068,3 +1068,21 @@ selection without adding history. Resize, hidden rulers and window deactivation
 also cancel; an inactive window waits until focus returns. Delete cancels a new
 stop in marker mode. Apply still commits one Undo/Redo operation. The compact
 preview, optional Help/F7, colors and original icons remain as in alpha.84.
+
+## Inherited tabulation (alpha.86)
+
+Home → Styles → Modify style now exposes Tab interval and Tab positions in the
+footer. The existing Based on selector applies to these settings too. Interval
+and the complete positions/types/leaders list inherit independently; direct
+paragraph settings win. Nested OK edits the draft; outer OK commits once, and
+outer Cancel discards it all. Create style supports the same workflow.
+
+In Paragraph → Tab interval, select Inherit interval from style to clear the
+direct interval. In Tab positions, Use inherited positions clears the direct list;
+Clear all suppresses the inherited positions instead. The ruler displays effective
+positions and edits only changed owners, retaining one-step undo/redo.
+
+Saves use native v18, with strict v1–v17 reading. Older alpha.85 applications reject
+v18; use Save As to preserve older copies. See [ADR 0015](docs/adr/0015-style-tabulation.md).
+No palette, icon, ribbon geometry, dependency or integration command changes.
+Windows acceptance remains deferred and VoiceOver remains at final review.

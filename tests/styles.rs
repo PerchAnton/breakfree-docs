@@ -280,7 +280,8 @@ fn modify_parent_and_properties_updates_descendants_in_one_exact_undo() {
         space_after_half_points: Some(20),
         ..Default::default()
     };
-    e.modify_style(ParagraphStyle::Normal, definition).unwrap();
+    e.modify_style(ParagraphStyle::Normal, definition.clone())
+        .unwrap();
     let after = e.document.clone();
     assert_eq!(after.paragraphs, before.paragraphs);
     assert_eq!(e.selection, (7, 20));
@@ -324,7 +325,7 @@ fn modify_parent_and_properties_updates_descendants_in_one_exact_undo() {
         },
         ..Default::default()
     };
-    e.modify_style(ParagraphStyle::Heading1, definition)
+    e.modify_style(ParagraphStyle::Heading1, definition.clone())
         .unwrap();
     let resolved = e.document.style_catalog.resolve(ParagraphStyle::Heading1);
     assert!(!resolved.character.bold);
@@ -351,10 +352,10 @@ fn invalid_cycles_and_noop_definitions_preserve_document_selection_and_redo() {
         (ParagraphStyle::Normal, ParagraphStyle::Normal),
         (ParagraphStyle::Normal, ParagraphStyle::Heading1),
     ] {
-        let mut definition = *before.style_catalog.get(id).unwrap();
+        let mut definition = before.style_catalog.get(id).unwrap().clone();
         definition.parent = Some(parent);
         assert!(
-            e.modify_style(id, definition)
+            e.modify_style(id, definition.clone())
                 .unwrap_err()
                 .contains("inherit")
         );
@@ -362,7 +363,7 @@ fn invalid_cycles_and_noop_definitions_preserve_document_selection_and_redo() {
         assert!(e.undo_stack.is_empty());
         assert_eq!(e.redo_stack.len(), 1);
     }
-    e.modify_style(ParagraphStyle::Normal, before.style_catalog.normal)
+    e.modify_style(ParagraphStyle::Normal, before.style_catalog.normal.clone())
         .unwrap();
     assert!(e.undo_stack.is_empty());
     assert_eq!(e.redo_stack.len(), 1);
@@ -387,7 +388,8 @@ fn editable_catalog_survives_text_bulk_edits_and_invalidates_old_preview() {
         },
         ..Default::default()
     };
-    e.modify_style(ParagraphStyle::Normal, definition).unwrap();
+    e.modify_style(ParagraphStyle::Normal, definition.clone())
+        .unwrap();
     assert!(e.apply_replace_all(plan).is_err());
     let catalog = e.document.style_catalog.clone();
     e.replace(0, 0, "new\n", "Input").unwrap();
@@ -425,6 +427,7 @@ fn catalog_validation_and_failed_save_preserve_previous_document() {
             first_line_half_points: None,
             space_after_half_points: Some(1),
             next_style: None,
+            ..Default::default()
         },
     )
     .unwrap();

@@ -32,7 +32,7 @@ Use local evidence reporting and the pinned `contracts/v1/` snapshot until it ex
 - Do not discard unsupported content silently or overwrite a valid file after a failed save.
 - Test Unicode, editing, undo/redo, layout and persistence separately.
 - Preserve semantic style inheritance and direct overrides through shared commands,
-  layout and storage; follow ADR 0006, ADR 0007, ADR 0008, ADR 0009, ADR 0010, ADR 0011, ADR 0012, ADR 0013 and ADR 0014. Do not flatten styles or infer inheritance
+  layout and storage; follow ADR 0006, ADR 0007, ADR 0008, ADR 0009, ADR 0010, ADR 0011, ADR 0012, ADR 0013, ADR 0014 and ADR 0015. Do not flatten styles or infer inheritance
   from legacy resolved formatting.
 - Add CLI and optional automation through the same validated command interface, with explicit file and consent boundaries.
 - Never invent build commands, platform support, test results, dates or DOCX compatibility percentages.

@@ -4116,7 +4116,7 @@ fn modified_catalog_drives_layout_and_selection_without_flattening_direct_values
         500.,
         15.,
     );
-    let mut definition = doc.style_catalog.normal;
+    let mut definition = doc.style_catalog.normal.clone();
     definition.character.font_size = Some("30".parse().unwrap());
     definition.space_after_half_points = Some(60);
     app.session
@@ -5023,13 +5023,14 @@ fn enter_before_existing_separator_uses_caret_not_ambiguous_diff() {
         .editor
         .apply_paragraph_style(0, 0, ParagraphStyle::Heading1)
         .unwrap();
-    let mut d = *app
+    let mut d = app
         .session
         .editor
         .document
         .style_catalog
         .get(ParagraphStyle::Heading1)
-        .unwrap();
+        .unwrap()
+        .clone();
     d.next_style = Some(ParagraphStyle::NoSpacing);
     app.session
         .editor
@@ -9745,12 +9746,14 @@ fn ruler_tab_create_click_and_keyboard_delete_are_single_transactions() {
             dpi,
         );
         assert!(app.tab_ruler_drag.is_none());
-        assert_eq!(app.session.editor.document, before);
+        let mut deleted = before.clone();
+        deleted.paragraphs[0].spacing.clear_tab_stops = true;
+        assert_eq!(app.session.editor.document, deleted);
         assert_eq!(app.session.editor.undo_stack.len(), count + 2);
         app.session.editor.undo();
         assert_eq!(app.session.editor.document, created);
         app.session.editor.redo();
-        assert_eq!(app.session.editor.document, before);
+        assert_eq!(app.session.editor.document, deleted);
     }
 }
 
@@ -12858,5 +12861,169 @@ fn preview_focus_after_unicode_replacement_undo_restores_the_whole_selection() {
         assert_eq!(app.session.editor.document.text(), "CHECK");
         app.execute(Action::Undo, &ctx);
         assert_eq!(app.session.editor.document, before);
+    }
+}
+
+#[test]
+fn inherited_tabs_style_drafts_commit_once_and_cancel_as_a_unit() {
+    let (ctx, mut app) = setup();
+    let size = [640., 480.];
+    let before = app.session.editor.document.clone();
+    let depth = app.session.editor.undo_stack.len();
+    app.execute(Action::ModifyStyle, &ctx);
+    click_region_at(&ctx, &mut app, "style-tab-interval", size);
+    frame(&ctx, &mut app, vec![], size, 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("48".into())],
+        size,
+        1.,
+    );
+    click_region_at(&ctx, &mut app, "tab-ok", size);
+    assert_eq!(app.session.editor.document, before);
+    click_region_at(&ctx, &mut app, "style-tab-positions", size);
+    frame(&ctx, &mut app, vec![], size, 1.);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("120".into())],
+        size,
+        1.,
+    );
+    click_region_at(&ctx, &mut app, "tab-kind-right", size);
+    click_region_at(&ctx, &mut app, "tab-leader-dots", size);
+    click_region_at(&ctx, &mut app, "tab-position-add", size);
+    click_region_at(&ctx, &mut app, "tab-positions-ok", size);
+    assert_eq!(app.session.editor.document, before);
+    click_region_at(&ctx, &mut app, "style-dialog-ok", size);
+    let after = app.session.editor.document.clone();
+    assert_eq!(app.session.editor.undo_stack.len(), depth + 1);
+    let tabs = after.resolved_tabs(&after.paragraphs[0]);
+    assert_eq!(tabs.tab_interval_half_points, Some(96));
+    assert_eq!(tabs.tab_positions(), [(240, crate::model::TabKind::Right)]);
+    assert_eq!(tabs.tab_leader(240), Some(crate::model::TabLeader::Dots));
+    assert!(!after.paragraphs[0].spacing.has_direct_tab_stops());
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.document, before);
+    app.execute(Action::Redo, &ctx);
+    assert_eq!(app.session.editor.document, after);
+    app.execute(Action::ModifyStyle, &ctx);
+    click_region_at(&ctx, &mut app, "style-tab-positions", size);
+    frame(&ctx, &mut app, vec![], size, 1.);
+    click_region_at(&ctx, &mut app, "tab-position-clear", size);
+    click_region_at(&ctx, &mut app, "tab-positions-ok", size);
+    click_region_at(&ctx, &mut app, "style-dialog-cancel", size);
+    assert_eq!(app.session.editor.document, after);
+    assert_eq!(app.session.editor.undo_stack.len(), depth + 1);
+}
+
+#[test]
+fn inherited_tabs_paragraph_reset_and_nested_escape_keep_focus_and_history() {
+    use crate::model::{StyleTabStop, TabKind};
+    let (ctx, mut app) = setup();
+    app.session.editor.document.style_catalog.normal.tab_stops = Some(vec![StyleTabStop {
+        position_half_points: 180,
+        kind: TabKind::Left,
+        leader: None,
+    }]);
+    app.session
+        .editor
+        .set_tab_positions(0, 0, vec![(72, TabKind::Right)])
+        .unwrap();
+    let before = app.session.editor.document.clone();
+    let depth = app.session.editor.undo_stack.len();
+    app.execute(Action::TabPositions, &ctx);
+    click_region_at(&ctx, &mut app, "tab-positions-inherit", [640., 480.]);
+    assert_eq!(app.session.editor.undo_stack.len(), depth + 1);
+    assert_eq!(
+        crate::tab_ruler::positions(&app.session.editor.document, (0, 0)).unwrap(),
+        [(180, 1)]
+    );
+    app.execute(Action::Undo, &ctx);
+    assert_eq!(app.session.editor.document, before);
+    app.execute(Action::ModifyStyle, &ctx);
+    click_region_at(&ctx, &mut app, "style-tab-interval", [640., 480.]);
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Escape, false)],
+        [640., 480.],
+        1.,
+    );
+    frame(&ctx, &mut app, vec![], [640., 480.], 1.);
+    assert!(app.style_dialog.is_some());
+    assert_eq!(app.session.editor.document, before);
+    // Escape discarded only the child draft; its entry button receives focus.
+    let focused = ctx.memory(|m| m.focused());
+    assert!(focused.is_some());
+    click_region_at(&ctx, &mut app, "style-dialog-cancel", [640., 480.]);
+    assert_eq!(app.session.editor.document, before);
+}
+
+#[test]
+fn inherited_tabs_layout_matches_direct_settings_at_multiple_widths_and_zooms() {
+    use crate::model::{StyleTabStop, TabKind, TabLeader};
+    let (ctx, _) = setup();
+    let mut editor = crate::commands::Editor::default();
+    editor
+        .replace(0, 0, "English\tТекст\te\u{301}\nУкраїнська\t42", "Fixture")
+        .unwrap();
+    editor
+        .document
+        .style_catalog
+        .normal
+        .tab_interval_half_points = Some(100);
+    editor.document.style_catalog.normal.tab_stops = Some(vec![
+        StyleTabStop {
+            position_half_points: 180,
+            kind: TabKind::Center,
+            leader: Some(TabLeader::Dots),
+        },
+        StyleTabStop {
+            position_half_points: 360,
+            kind: TabKind::Right,
+            leader: Some(TabLeader::Line),
+        },
+    ]);
+    let inherited = editor.document.clone();
+    let mut direct = inherited.clone();
+    for p in &mut direct.paragraphs {
+        let tabs = inherited.resolved_tabs(p);
+        p.spacing.copy_tab_stops(&tabs);
+        p.spacing.tab_interval_half_points = tabs.tab_interval_half_points;
+    }
+    direct.style_catalog.normal.tab_stops = None;
+    direct.style_catalog.normal.tab_interval_half_points = None;
+    for width in [90., 300., 600.] {
+        for size in [8.25, 11., 16.5] {
+            let a = layout::galley(
+                &ctx,
+                &inherited,
+                &inherited.text(),
+                CharacterFormat::default(),
+                0,
+                width,
+                size,
+            );
+            let b = layout::galley(
+                &ctx,
+                &direct,
+                &direct.text(),
+                CharacterFormat::default(),
+                0,
+                width,
+                size,
+            );
+            assert_eq!(a.rows.len(), b.rows.len());
+            for (a, b) in a.rows.iter().zip(&b.rows) {
+                assert_eq!(a.pos, b.pos);
+                assert_eq!(a.glyphs.len(), b.glyphs.len());
+                for (a, b) in a.glyphs.iter().zip(&b.glyphs) {
+                    assert_eq!(a.pos, b.pos);
+                    assert_eq!(a.chr, b.chr);
+                }
+            }
+        }
     }
 }

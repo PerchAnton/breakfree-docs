@@ -209,7 +209,7 @@ fn parent_edits_and_replace_all_keep_semantic_character_references() {
     e.replace(0, 0, "cat cat", "Input").unwrap();
     e.apply_character_style(0, 7, Some(CharacterStyle::Emphasis))
         .unwrap();
-    let mut definition = e.document.style_catalog.normal;
+    let mut definition = e.document.style_catalog.normal.clone();
     definition.character.bold = Some(true);
     e.modify_style(ParagraphStyle::Normal, definition).unwrap();
     let base = e

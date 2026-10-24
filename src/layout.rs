@@ -158,15 +158,15 @@ pub fn galley(
             job.append("", 0., format(style, size, resolved.line_height()));
         }
         let mut paragraph = if p.text.contains('\t') {
+            let tabs = source.resolved_tabs(p);
             tab_layout::layout(
                 ctx,
                 job,
                 [first_width, text_width],
                 [first_left, body_left],
-                f32::from(p.spacing.tab_interval_half_points.unwrap_or(72)) * size / 22.,
+                f32::from(tabs.tab_interval_half_points.unwrap_or(72)) * size / 22.,
                 &{
-                    p.spacing
-                        .tab_positions()
+                    tabs.tab_positions()
                         .into_iter()
                         .map(|(position, kind)| {
                             (
@@ -176,7 +176,7 @@ pub fn galley(
                                     crate::model::TabKind::Center => 0.5,
                                     crate::model::TabKind::Right => 1.,
                                 },
-                                p.spacing.tab_leader(position),
+                                tabs.tab_leader(position),
                             )
                         })
                         .collect::<Vec<_>>()

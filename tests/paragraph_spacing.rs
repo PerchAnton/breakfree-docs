@@ -176,9 +176,10 @@ fn before_cascades_through_styles_direct_zero_and_single_history_reset() {
     let mut e = Editor::default();
     e.replace(0, 0, "English\nУкраїна e\u{301}\nРусский", "Fixture")
         .unwrap();
-    let mut normal = e.document.style_catalog.normal;
+    let mut normal = e.document.style_catalog.normal.clone();
     normal.space_before_half_points = Some(15);
-    e.modify_style(ParagraphStyle::Normal, normal).unwrap();
+    e.modify_style(ParagraphStyle::Normal, normal.clone())
+        .unwrap();
     e.apply_paragraph_style(0, 0, ParagraphStyle::Heading1)
         .unwrap();
     assert_eq!(
@@ -228,7 +229,8 @@ fn before_cascades_through_styles_direct_zero_and_single_history_reset() {
     assert_eq!(e.document, changed);
     e.redo();
     normal.space_before_half_points = Some(30);
-    e.modify_style(ParagraphStyle::Normal, normal).unwrap();
+    e.modify_style(ParagraphStyle::Normal, normal.clone())
+        .unwrap();
     assert_eq!(
         e.document
             .resolved_paragraph(&e.document.paragraphs[0])
@@ -270,7 +272,7 @@ fn before_invalid_noop_empty_and_mixed_ranges_preserve_history() {
     e.set_paragraph_spacing_with_before(0, 0, None, Some(Some(10)), None)
         .unwrap();
     assert_eq!(e.redo_stack.len(), 1);
-    let mut style = e.document.style_catalog.normal;
+    let mut style = e.document.style_catalog.normal.clone();
     style.space_before_half_points = Some(401);
     assert!(e.modify_style(ParagraphStyle::Normal, style).is_err());
     assert_eq!(e.document, before);

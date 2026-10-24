@@ -107,7 +107,7 @@ fn leader_storage_rejects_invalid_data_and_preserves_legacy_reading() {
         .unwrap();
     let base: serde_json::Value =
         serde_json::from_slice(&storage::encode(&e.document).unwrap()).unwrap();
-    assert_eq!(base["content_version"], 17);
+    assert_eq!(base["content_version"], storage::CONTENT_VERSION);
     for bad in [
         serde_json::json!(null),
         serde_json::json!([{"position_half_points":144,"leader":"unknown"}]),
@@ -138,7 +138,7 @@ fn leader_storage_rejects_invalid_data_and_preserves_legacy_reading() {
         storage::decode(&serde_json::to_vec(&old).unwrap()).unwrap(),
         e.document
     );
-    old["content_version"] = 18.into();
+    old["content_version"] = (storage::CONTENT_VERSION + 1).into();
     assert!(storage::decode(&serde_json::to_vec(&old).unwrap()).is_err());
 }
 

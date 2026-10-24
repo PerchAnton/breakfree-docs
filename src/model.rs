@@ -239,9 +239,14 @@ impl ParagraphStyle {
 }
 
 /// Optional properties inherit from the parent, or the frozen root defaults.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct StyleDefinition {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tab_interval_half_points: Option<u16>,
+    /// None inherits the complete list; Some(empty) suppresses ancestor stops.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tab_stops: Option<Vec<StyleTabStop>>,
     /// None repeats this style; this behavior is not inherited.
     pub next_style: Option<ParagraphStyle>,
     pub parent: Option<ParagraphStyle>,
@@ -323,6 +328,55 @@ impl ResolvedParagraphStyle {
     }
 }
 impl StyleCatalog {
+    /// Resolve interval and the complete stop list independently, nearest ancestor first.
+    pub fn resolve_tabs(&self, id: ParagraphStyle) -> ParagraphSpacing {
+        let mut result = ParagraphSpacing::default();
+        let mut interval = None;
+        let mut stops = None;
+        let mut seen = Vec::new();
+        let mut next = Some(id);
+        while let Some(id) = next {
+            if seen.contains(&id) {
+                break;
+            }
+            seen.push(id);
+            let Some(definition) = self.get(id) else {
+                break;
+            };
+            interval = interval.or(definition.tab_interval_half_points);
+            if stops.is_none() {
+                stops = definition.tab_stops.as_ref();
+            }
+            next = definition.parent;
+        }
+        result.tab_interval_half_points = Some(interval.unwrap_or(72));
+        if let Some(stops) = stops {
+            // Validation rejects invalid authored lists; resolution remains total.
+            for stop in stops {
+                match stop.kind {
+                    TabKind::Left => result
+                        .left_tab_stops_half_points
+                        .push(stop.position_half_points),
+                    kind => result.aligned_tab_stops.push(AlignedTabStop {
+                        position_half_points: stop.position_half_points,
+                        alignment: if kind == TabKind::Center {
+                            TabStopAlignment::Center
+                        } else {
+                            TabStopAlignment::Right
+                        },
+                    }),
+                }
+                if let Some(leader) = stop.leader {
+                    result.tab_leaders.push(TabLeaderStop {
+                        position_half_points: stop.position_half_points,
+                        leader,
+                    });
+                }
+            }
+        }
+        result
+    }
+
     pub fn ids(&self) -> Vec<ParagraphStyle> {
         ParagraphStyle::ALL
             .into_iter()
@@ -472,6 +526,26 @@ impl StyleCatalog {
         }
         for id in self.ids() {
             let definition = self.get(id).ok_or("Unknown paragraph style.")?;
+            ParagraphSpacing {
+                tab_interval_half_points: definition.tab_interval_half_points,
+                ..Default::default()
+            }
+            .validate()?;
+            if let Some(stops) = &definition.tab_stops {
+                if stops
+                    .windows(2)
+                    .any(|w| w[0].position_half_points >= w[1].position_half_points)
+                {
+                    return Err("Style tab positions must be increasing and unique.".into());
+                }
+                let mut tabs = ParagraphSpacing::default();
+                tabs.set_tab_positions(
+                    &stops
+                        .iter()
+                        .map(|s| (s.position_half_points, s.kind))
+                        .collect::<Vec<_>>(),
+                )?;
+            }
             if definition.character.character_style.is_some() {
                 return Err("Paragraph definitions cannot reference character styles.".into());
             }
@@ -576,8 +650,9 @@ pub enum Alignment {
     Justify,
 }
 
-/// Editing representation; native v16 keeps left and aligned arrays separately.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+/// Editing representation; paragraph storage retains separate left/aligned arrays.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum TabKind {
     #[default]
     Left,
@@ -635,10 +710,22 @@ pub struct TabLeaderStop {
     pub leader: TabLeader,
 }
 
-/// Direct paragraph geometry; tab properties do not inherit from named styles.
+/// One authored style stop, including its optional leader.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct StyleTabStop {
+    pub position_half_points: u16,
+    pub kind: TabKind,
+    pub leader: Option<TabLeader>,
+}
+
+/// Direct geometry overrides. Empty stop arrays inherit unless explicitly cleared.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ParagraphSpacing {
+    /// An explicitly empty list, distinct from inheritance. Nonempty arrays are direct.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub clear_tab_stops: bool,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub tab_leaders: Vec<TabLeaderStop>,
     /// Center/right stops; separate from the retained left-stop representation.
@@ -647,7 +734,7 @@ pub struct ParagraphSpacing {
     /// Strictly increasing left stops in half points from the text-column origin.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub left_tab_stops_half_points: Vec<u16>,
-    /// Direct tab grid interval; None uses the 36 pt document default.
+    /// Direct interval; None inherits from the paragraph style, then the 36 pt default.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tab_interval_half_points: Option<u16>,
     pub line_height_percent: Option<u16>,
@@ -663,6 +750,29 @@ pub struct ParagraphSpacing {
     pub first_line_half_points: Option<i16>,
 }
 impl ParagraphSpacing {
+    pub fn has_direct_tab_stops(&self) -> bool {
+        self.clear_tab_stops
+            || !self.left_tab_stops_half_points.is_empty()
+            || !self.aligned_tab_stops.is_empty()
+    }
+    /// Copy only stop properties; interval and other geometry remain independent.
+    pub fn copy_tab_stops(&mut self, source: &Self) {
+        self.left_tab_stops_half_points = source.left_tab_stops_half_points.clone();
+        self.aligned_tab_stops = source.aligned_tab_stops.clone();
+        self.tab_leaders = source.tab_leaders.clone();
+        self.clear_tab_stops = source.tab_positions().is_empty();
+    }
+    pub fn style_tab_stops(&self) -> Vec<StyleTabStop> {
+        self.tab_positions()
+            .into_iter()
+            .map(|(position_half_points, kind)| StyleTabStop {
+                position_half_points,
+                kind,
+                leader: self.tab_leader(position_half_points),
+            })
+            .collect()
+    }
+
     pub fn tab_positions(&self) -> Vec<(u16, TabKind)> {
         let mut stops: Vec<_> = self
             .left_tab_stops_half_points
@@ -687,6 +797,7 @@ impl ParagraphSpacing {
             return Err("Tab positions must be increasing and unique.".into());
         }
         let mut next = self.clone();
+        next.clear_tab_stops = stops.is_empty();
         next.left_tab_stops_half_points.clear();
         next.aligned_tab_stops.clear();
         for &(position, kind) in stops {
@@ -1056,6 +1167,17 @@ impl Document {
             }
         }
         Ok(())
+    }
+
+    pub fn resolved_tabs(&self, paragraph: &Paragraph) -> ParagraphSpacing {
+        let mut tabs = self.style_catalog.resolve_tabs(paragraph.paragraph_style);
+        if let Some(interval) = paragraph.spacing.tab_interval_half_points {
+            tabs.tab_interval_half_points = Some(interval);
+        }
+        if paragraph.spacing.has_direct_tab_stops() {
+            tabs.copy_tab_stops(&paragraph.spacing);
+        }
+        tabs
     }
 
     pub fn resolved_paragraph(&self, paragraph: &Paragraph) -> ResolvedParagraphStyle {

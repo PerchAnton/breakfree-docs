@@ -437,8 +437,12 @@ Use public specifications and original test cases, not copied application code. 
 - [x] Alpha.85: extended preview focus recovery across marker/numeric/control modes,
   pointer handoff, held F6, cancellation, window focus loss and re-entry. Retain
   draft/caret/selection and history; local evidence is in VALIDATION.
-- [ ] Next: style inheritance for tabulation, beginning with a bounded model/storage
-  design and explicit precedence rules. Keep Windows and VoiceOver acceptance separate.
+- [x] Alpha.86: inherited tab interval and complete typed stop/leader lists, direct
+  override precedence and explicit empty lists; shared layout/ruler resolution,
+  nested style drafts with one Undo/Redo, independent paragraph resets and strict
+  native v18 persistence. Local core/GUI/native evidence is in VALIDATION.
+- [ ] Next: show the supplying style or direct override for tab intervals and
+  position lists, including mixed selections. Keep Windows/VoiceOver acceptance separate.
 
 - [x] Alpha.83: owner-requested video-guided shell refinement; denser title/Home,
   neutral surfaces, semantic icon accents, sample/name style cards and View refit.

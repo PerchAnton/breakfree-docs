@@ -53,7 +53,7 @@ fn special_indent_inherits_overrides_resets_and_undoes_once() {
     e.undo();
     assert_eq!(e.document, after);
     e.redo();
-    let mut style = e.document.style_catalog.normal;
+    let mut style = e.document.style_catalog.normal.clone();
     style.first_line_half_points = Some(51);
     let depth = e.undo_stack.len();
     e.modify_style(ParagraphStyle::Normal, style).unwrap();
@@ -83,7 +83,7 @@ fn special_indent_validation_noop_empty_and_mixed_selection() {
     let redo = e.redo_stack.len();
     for v in [i16::MIN, -289, 289, i16::MAX] {
         assert!(e.set_paragraph_geometry(0, 0, patch(Some(v))).is_err());
-        let mut d = e.document.style_catalog.normal;
+        let mut d = e.document.style_catalog.normal.clone();
         d.first_line_half_points = Some(v);
         assert!(e.modify_style(ParagraphStyle::Normal, d).is_err());
     }

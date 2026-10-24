@@ -84,7 +84,7 @@ fn indent_cascade_partial_selection_reset_and_history() {
         );
         assert_eq!(e.document, snapshot);
     }
-    let mut definition = e.document.style_catalog.normal;
+    let mut definition = e.document.style_catalog.normal.clone();
     definition.left_indent_half_points = Some(60);
     let depth = e.undo_stack.len();
     e.modify_style(ParagraphStyle::Normal, definition).unwrap();

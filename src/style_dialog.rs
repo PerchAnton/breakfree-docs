@@ -30,10 +30,13 @@ pub(super) struct StyleDialog {
     pub first_line: String,
     pub hanging: bool,
     focus: bool,
+    tabs: Option<PositionsDialog>,
+    interval: Option<TabDialog>,
+    return_to_tabs: Option<bool>,
 }
 impl StyleDialog {
     pub fn new(id: ParagraphStyle, catalog: &StyleCatalog) -> Self {
-        let definition = catalog.get(id).copied().unwrap_or_default();
+        let definition = catalog.get(id).cloned().unwrap_or_default();
         Self {
             id,
             creating: false,
@@ -45,7 +48,7 @@ impl StyleDialog {
             name: catalog.name(id).into(),
             apply: true,
             catalog: catalog.clone(),
-            definition,
+            definition: definition.clone(),
             size: definition
                 .character
                 .font_size
@@ -77,6 +80,9 @@ impl StyleDialog {
                 .unwrap_or_default(),
             hanging: definition.first_line_half_points.is_some_and(|v| v < 0),
             focus: true,
+            tabs: None,
+            interval: None,
+            return_to_tabs: None,
         }
     }
     pub fn create(parent: ParagraphStyle, catalog: &StyleCatalog) -> Self {
@@ -127,7 +133,7 @@ impl StyleDialog {
         Some(dialog)
     }
     fn draft(&self) -> Result<(StyleDefinition, StyleCatalog)> {
-        let mut definition = self.definition;
+        let mut definition = self.definition.clone();
         definition.character.font_size = if self.size.trim().is_empty() {
             None
         } else {
@@ -179,16 +185,54 @@ impl StyleDialog {
             };
             document.set_character_parent(id, self.character_parent)?;
         } else if self.creating {
-            catalog.add(&self.name, definition)?;
+            catalog.add(&self.name, definition.clone())?;
         } else if matches!(self.id, ParagraphStyle::Custom(_)) {
-            catalog.update_custom(self.id, &self.name, definition)?;
+            catalog.update_custom(self.id, &self.name, definition.clone())?;
         } else {
-            *catalog.get_mut(self.id).ok_or("Unknown paragraph style.")? = definition;
+            *catalog.get_mut(self.id).ok_or("Unknown paragraph style.")? = definition.clone();
         }
         catalog.validate()?;
         Ok((definition, catalog))
     }
     pub fn show(&mut self, ctx: &egui::Context, regions: &mut Vec<Region>) -> StyleOutcome {
+        if let Some(mut dialog) = self.interval.take() {
+            match dialog.show(ctx, regions) {
+                TabOutcome::Open => self.interval = Some(dialog),
+                TabOutcome::Cancel => self.return_to_tabs = Some(false),
+                TabOutcome::Apply(value) => {
+                    self.definition.tab_interval_half_points = value;
+                    self.return_to_tabs = Some(false);
+                }
+            }
+            return StyleOutcome::Open;
+        }
+        if let Some(mut dialog) = self.tabs.take() {
+            match dialog.show(ctx, regions) {
+                PositionsOutcome::Open => self.tabs = Some(dialog),
+                PositionsOutcome::Cancel => self.return_to_tabs = Some(true),
+                PositionsOutcome::Inherit => {
+                    self.definition.tab_stops = None;
+                    self.return_to_tabs = Some(true);
+                }
+                PositionsOutcome::Apply { positions, leaders } => {
+                    self.definition.tab_stops = Some(
+                        positions
+                            .into_iter()
+                            .map(|(position_half_points, kind)| crate::model::StyleTabStop {
+                                position_half_points,
+                                kind,
+                                leader: leaders
+                                    .iter()
+                                    .find(|s| s.position_half_points == position_half_points)
+                                    .map(|s| s.leader),
+                            })
+                            .collect(),
+                    );
+                    self.return_to_tabs = Some(true);
+                }
+            }
+            return StyleOutcome::Open;
+        }
         let popup_was_open = egui::Popup::is_any_open(ctx);
         let mut outcome = StyleOutcome::Open;
         let mut accept = false;
@@ -594,9 +638,43 @@ impl StyleDialog {
                         ui.add_enabled(draft.is_ok(), Button::new("OK").min_size(vec2(82., 27.)));
                     record(regions, "style-dialog-ok", ok.rect);
                     accept = ok.clicked();
+                    if !self.character {
+                        for (positions, label, name) in [
+                            (true, "Tab positions…", "style-tab-positions"),
+                            (false, "Tab interval…", "style-tab-interval"),
+                        ] {
+                            let response = ui.add_enabled(
+                                draft.is_ok(),
+                                Button::new(label).min_size(vec2(0., 27.)),
+                            );
+                            record(regions, name, response.rect);
+                            if self.return_to_tabs == Some(positions) {
+                                response.request_focus();
+                                self.return_to_tabs = None;
+                            }
+                            if response.clicked()
+                                && let Ok((definition, catalog)) = &draft
+                            {
+                                let mut editor = crate::commands::Editor::default();
+                                editor.document.style_catalog = catalog.clone();
+                                editor.document.paragraphs[0].paragraph_style = self.id;
+                                editor.document.paragraphs[0]
+                                    .spacing
+                                    .tab_interval_half_points = definition.tab_interval_half_points;
+                                if positions {
+                                    self.tabs = Some(PositionsDialog::for_style(&editor));
+                                } else {
+                                    self.interval = Some(TabDialog::for_style(&editor));
+                                }
+                            }
+                        }
+                    }
                 });
             });
         record(regions, "style-dialog", modal.response.rect);
+        if self.tabs.is_some() || self.interval.is_some() {
+            return StyleOutcome::Open;
+        }
         // Let an open combo consume Enter/Escape before the containing dialog.
         if !popup_was_open && !egui::Popup::is_any_open(ctx) {
             if ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Escape)) {

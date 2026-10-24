@@ -4,11 +4,12 @@ fn configured() -> Editor {
     let mut e = Editor::default();
     e.replace(0, 0, "English Україна Русский cafe\u{301}", "Input")
         .unwrap();
-    let mut d = *e
+    let mut d = e
         .document
         .style_catalog
         .get(ParagraphStyle::Heading1)
-        .unwrap();
+        .unwrap()
+        .clone();
     d.next_style = Some(ParagraphStyle::NoSpacing);
     e.modify_style(ParagraphStyle::Heading1, d).unwrap();
     e.apply_paragraph_style(0, 0, ParagraphStyle::Heading1)
@@ -69,14 +70,15 @@ fn successor_is_not_inherited_and_sequences_may_cycle() {
     e.insert_paragraph_break(e.selection.0, e.selection.1)
         .unwrap();
     assert_eq!(e.document.paragraphs.last().unwrap().paragraph_style, child);
-    let mut d = *e.document.style_catalog.get(child).unwrap();
+    let mut d = e.document.style_catalog.get(child).unwrap().clone();
     d.next_style = Some(ParagraphStyle::Heading1);
-    e.modify_style(child, d).unwrap();
-    let mut h = *e
+    e.modify_style(child, d.clone()).unwrap();
+    let mut h = e
         .document
         .style_catalog
         .get(ParagraphStyle::Heading1)
-        .unwrap();
+        .unwrap()
+        .clone();
     h.next_style = Some(child);
     e.modify_style(ParagraphStyle::Heading1, h).unwrap();
     e.insert_paragraph_break(e.selection.0, e.selection.1)
@@ -92,7 +94,7 @@ fn successor_is_not_inherited_and_sequences_may_cycle() {
     e.undo();
     let redo = e.redo_stack.len();
     d.next_style = Some(ParagraphStyle::Custom(999));
-    assert!(e.modify_style(child, d).is_err());
+    assert!(e.modify_style(child, d.clone()).is_err());
     assert_eq!(e.redo_stack.len(), redo);
     e.redo();
     assert_eq!(e.document, before);
@@ -126,11 +128,12 @@ fn migration_is_strict_and_deleted_successor_is_remapped_and_undoable() {
             .next_style
             .is_none()
     }));
-    let mut d = *e
+    let mut d = e
         .document
         .style_catalog
         .get(ParagraphStyle::Normal)
-        .unwrap();
+        .unwrap()
+        .clone();
     d.next_style = Some(ParagraphStyle::Custom(1));
     e.modify_style(ParagraphStyle::Normal, d).unwrap();
     let before = e.document.clone();
@@ -178,7 +181,7 @@ fn migration_is_strict_and_deleted_successor_is_remapped_and_undoable() {
 fn empty_and_cross_paragraph_enter_preserve_alignment_direct_overrides_and_dirty_checkpoint() {
     use breakfree_docs::session::Session;
     let mut s = Session::default();
-    let mut d = s.editor.document.style_catalog.normal;
+    let mut d = s.editor.document.style_catalog.normal.clone();
     d.next_style = Some(ParagraphStyle::Heading1);
     s.editor.modify_style(ParagraphStyle::Normal, d).unwrap();
     let dir = tempfile::tempdir().unwrap();

@@ -271,3 +271,8 @@ empty/trailing paragraphs, narrow views, synthetic scale and zoom/edit/history.
 Compact style creation reserves extra room for differing interface-font metrics.
 Native content stays v13; interactive ruler handles and native Windows acceptance
 remain pending.
+
+Alpha.86 adds paragraph-style tab interval and complete stop/leader inheritance
+under [ADR 0015](adr/0015-style-tabulation.md), native v18 and transactional nested
+style drafts. Direct overrides win; explicit empty lists differ from inheritance.
+D01–D09 remain required; Windows and VoiceOver acceptance remain separate.

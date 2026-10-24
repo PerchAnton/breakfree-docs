@@ -1,12 +1,12 @@
 # Native BreakFree Docs document format
 
-Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v17.
+Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v18.
 This is not a DOCX container. Process protocol and file-content versions are independent.
 
 ```json
 {
   "format": "breakfree.docs.native",
-  "content_version": 17,
+  "content_version": 18,
   "character_styles": [],
   "style_catalog": {
     "custom": [],
@@ -281,3 +281,22 @@ means none; automatic grid stops never acquire leaders. Native v17 stores sorted
 `dashes`, `line`). Every entry must reference an existing explicit stop; duplicates,
 unsorted/orphan positions, null and unknown keys/types are rejected. v1–v16 remain
 readable but reject this field even when empty/null. Alpha.74 and older reject v17.
+
+## Inherited tabulation (v18)
+
+Style definitions accept optional `tab_interval_half_points` and `tab_stops`.
+An example list is `[{"position_half_points": 240, "kind": "right", "leader":
+"dots"}]`. Missing/null inherits the nearest ancestor; `[]` explicitly selects
+no positions. Interval and complete list resolve independently. Stops are unique,
+increasing, limited to 32 and 1–2880 half points; interval is 1–288.
+
+Paragraph nonempty direct arrays retain precedence. With empty arrays, the new
+optional boolean `clear_tab_stops` distinguishes explicit suppression (`true`)
+from inheritance (`false` or absent). Null is rejected. Leaders belong to the
+complete stop list. See [ADR 0015](adr/0015-style-tabulation.md).
+
+V1–v17 readers reject these new keys even when null/empty, including style
+intervals; the writer emits v18. Legacy files have no style tabulation, so their
+existing effective layout remains unchanged on import. Default/empty settings
+can inherit a later explicit style edit; authored direct settings are preserved.
+Alpha.85 and older reject v18; Save As preserves an older source. Protocol stays v1.

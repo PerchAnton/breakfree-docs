@@ -2479,3 +2479,33 @@ the cancel image shows the original whole-document selection. Home is unchanged.
 Reproduce with `cargo build --locked --release --features capture --example capture_ui`,
 then set `BREAKFREE_CAPTURE_TO` and run `target/release/examples/capture_ui WIDTH
 HEIGHT MODE` using the table values. The normal editor CLI remains unchanged.
+
+## Alpha.86 inherited tabulation
+
+Home/ribbon geometry, palette, original icons and ruler drawing are unchanged.
+Create/Modify Style adds Tab interval and Tab positions to its existing footer.
+The compact 640 × 480 DIP dialog keeps its four footer actions visible. Nested
+dialogs identify the style-draft scope; their OK does not commit the document.
+Nested Cancel/Escape returns focus to the originating button; outer OK applies
+the whole definition once. Paragraph dialogs offer independent inheritance resets.
+
+Positions/types/leaders resolve as a complete list, independently of the interval.
+The ruler and layout consume the same effective model values. Explicit empty
+lists suppress inherited positions; inspecting unchanged lists preserves authored
+inheritance. This is a Docs implementation, without a Windows/reference parity claim.
+
+Native macOS captures: English/light UI, 100% document zoom, 2× backing scale.
+The Home image's caret is in the explicit-empty paragraph; its ruler has no tab
+markers. The first two paragraphs inherit Normal's positions; the third overrides
+them. All samples are synthetic, stored in examples/InheritedTabs.bfdoc.
+
+| Capture mode | Window (DIP) | Pixels | Image | SHA-256 |
+| :--- | :--- | :--- | :--- | :--- |
+| `style-tabs` | 640 × 480 | 1280 × 960 | [View](screenshots/rust-style-tabs-style-alpha86-macos.png) | `a9ce1a316babef9d0ba95704d38eaaf44aa992795753a2ac5dcaceab1953aeed` |
+| `style-tabs-dialog` | 640 × 480 | 1280 × 960 | [View](screenshots/rust-style-tabs-positions-alpha86-macos.png) | `e408b082f8d196db8c5bf01f6e684659cf517c722fb47d88395ce70c5954f98b` |
+| `inherited-tabs` | 1366 × 900 | 2732 × 1800 | [View](screenshots/rust-style-tabs-home-alpha86-macos.png) | `4fbcf7af28c3d83f51edc8c2d4d61d1ab3bc766521a823ab587f124bb73d98fb` |
+
+Use the existing capture harness with the modes above. All three images were
+inspected for clipping/overlap; native input automation separately verified nested
+draft focus and one-step Undo/Redo. No matched Word or Windows/DPI acceptance
+was performed; VoiceOver remains at final review.

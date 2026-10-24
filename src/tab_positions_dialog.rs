@@ -4,6 +4,7 @@ use super::*;
 pub(super) enum PositionsOutcome {
     Open,
     Cancel,
+    Inherit,
     Apply {
         positions: Vec<(u16, crate::model::TabKind)>,
         leaders: Vec<crate::model::TabLeaderStop>,
@@ -11,6 +12,7 @@ pub(super) enum PositionsOutcome {
 }
 
 pub(super) struct PositionsDialog {
+    style_scope: bool,
     positions: Vec<u16>,
     selected: Option<u16>,
     kinds: std::collections::BTreeMap<u16, crate::model::TabKind>,
@@ -26,6 +28,12 @@ pub(super) struct PositionsDialog {
 }
 
 impl PositionsDialog {
+    pub fn for_style(editor: &crate::commands::Editor) -> Self {
+        Self {
+            style_scope: true,
+            ..Self::new(editor)
+        }
+    }
     pub fn new(editor: &crate::commands::Editor) -> Self {
         let (start, end) = editor.selection;
         let (first, _) = editor.document.locate(start).unwrap();
@@ -34,13 +42,15 @@ impl PositionsDialog {
             last -= 1;
         }
         let paragraphs = &editor.document.paragraphs[first..=last];
-        let stops = paragraphs[0].spacing.tab_positions();
+        let effective = editor.document.resolved_tabs(&paragraphs[0]);
+        let stops = effective.tab_positions();
         let positions: Vec<_> = stops.iter().map(|s| s.0).collect();
         let mixed = paragraphs.iter().any(|p| {
-            p.spacing.tab_positions() != stops
-                || p.spacing.tab_leaders != paragraphs[0].spacing.tab_leaders
+            editor.document.resolved_tabs(p).tab_positions() != stops
+                || editor.document.resolved_tabs(p).tab_leaders != effective.tab_leaders
         });
         Self {
+            style_scope: false,
             positions: if mixed { vec![] } else { positions.clone() },
             selected: None,
             kinds: if mixed {
@@ -52,8 +62,7 @@ impl PositionsDialog {
             leaders: if mixed {
                 Default::default()
             } else {
-                paragraphs[0]
-                    .spacing
+                effective
                     .tab_leaders
                     .iter()
                     .map(|s| (s.position_half_points, s.leader))
@@ -116,6 +125,7 @@ impl PositionsDialog {
     pub fn show(&mut self, ctx: &egui::Context, regions: &mut Vec<Region>) -> PositionsOutcome {
         let mut accept = false;
         let mut cancel = false;
+        let mut inherit = false;
         let mut record = |name: &str, rect| {
             regions.push(Region {
                 name: name.into(),
@@ -127,13 +137,13 @@ impl PositionsDialog {
             .area(egui::Modal::default_area(id).fade_in(false))
             .show(ctx, |ui| {
                 ui.set_width(320.);
-                ui.heading("Tab positions");
+                ui.heading(if self.style_scope { "Style tab positions" } else { "Tab positions" });
                 ui.separator();
                 ui.label("Positions in points from the text-column edge.");
                 if self.mixed {
                     ui.small("Different positions, types or leaders selected. Build a replacement or Clear all.");
                 }
-                ui.small("OK replaces positions, types and leaders in selected paragraphs.");
+                ui.small(if self.style_scope { "Changes stay in the style draft until its OK." } else { "OK replaces positions, types and leaders in selected paragraphs." });
                 egui::ScrollArea::vertical()
                     .id_salt("positions-list")
                     .max_height(75.)
@@ -279,15 +289,23 @@ impl PositionsDialog {
                     );
                     record("tab-positions-ok", r.rect);
                     accept = r.clicked();
+                    let r = ui.button("Use inherited positions");
+                    record("tab-positions-inherit", r.rect);
+                    inherit = r.clicked();
                 });
             });
         record("tab-positions-dialog", modal.response.rect);
         if cancel || ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Escape)) {
             return PositionsOutcome::Cancel;
         }
+        if inherit {
+            return PositionsOutcome::Inherit;
+        }
         if accept {
             if self.input_dirty && !self.input.trim().is_empty() {
                 self.error = Some("Use Add or Update before applying the list.".into());
+            } else if !self.changed {
+                return PositionsOutcome::Cancel;
             } else {
                 return PositionsOutcome::Apply {
                     positions: self.positions.iter().map(|p| (*p, self.kinds[p])).collect(),

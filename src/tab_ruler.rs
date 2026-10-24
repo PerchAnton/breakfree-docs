@@ -65,9 +65,14 @@ impl Draft {
             last -= 1;
         }
         if source.is_some_and(|value| {
-            !editor.document.paragraphs[first..=last]
-                .iter()
-                .any(|p| p.spacing.tab_positions().iter().any(|s| s.0 == value))
+            !editor.document.paragraphs[first..=last].iter().any(|p| {
+                editor
+                    .document
+                    .resolved_tabs(p)
+                    .tab_positions()
+                    .iter()
+                    .any(|s| s.0 == value)
+            })
         }) {
             return Err("Tab position no longer exists.".into());
         }
@@ -120,7 +125,9 @@ impl Draft {
         let mut preview = self.original.clone();
         let mut added = false;
         for paragraph in &mut preview.paragraphs[self.first..=self.last] {
-            let mut positions = paragraph.spacing.tab_positions();
+            let effective = self.original.resolved_tabs(paragraph);
+            let original_spacing = paragraph.spacing.clone();
+            let mut positions = effective.tab_positions();
             let kind = if let Some(source) = self.source {
                 let Some((_, kind)) = positions.iter().find(|s| s.0 == source).copied() else {
                     continue;
@@ -139,6 +146,7 @@ impl Draft {
                 }
                 self.creation_kind
             };
+            paragraph.spacing.copy_tab_stops(&effective);
             if let Some(source) = self.source {
                 for leader in &mut paragraph.spacing.tab_leaders {
                     if leader.position_half_points == source {
@@ -171,6 +179,9 @@ impl Draft {
                         .tab_leaders
                         .sort_by_key(|s| s.position_half_points);
                 }
+            }
+            if paragraph.spacing.style_tab_stops() == effective.style_tab_stops() {
+                paragraph.spacing = original_spacing;
             }
             added = true;
         }
@@ -214,13 +225,16 @@ impl Draft {
         let source = self.source.ok_or("Cannot remove an uncommitted new tab.")?;
         self.preview = self.original.clone();
         for paragraph in &mut self.preview.paragraphs[self.first..=self.last] {
-            let positions: Vec<_> = paragraph
-                .spacing
+            let effective = self.original.resolved_tabs(paragraph);
+            let positions: Vec<_> = effective
                 .tab_positions()
                 .into_iter()
                 .filter(|s| s.0 != source)
                 .collect();
-            paragraph.spacing.set_tab_positions(&positions)?;
+            if positions.len() != effective.tab_positions().len() {
+                paragraph.spacing.copy_tab_stops(&effective);
+                paragraph.spacing.set_tab_positions(&positions)?;
+            }
         }
         self.preview.validate()?;
         self.deleting = true;
@@ -239,12 +253,12 @@ impl Draft {
             self.selection.1,
             self.preview.paragraphs[self.first..=self.last]
                 .iter()
-                .map(|p| p.spacing.tab_positions())
+                .map(|p| self.preview.resolved_tabs(p).tab_positions())
                 .collect(),
             Some(
                 self.preview.paragraphs[self.first..=self.last]
                     .iter()
-                    .map(|p| p.spacing.tab_leaders.clone())
+                    .map(|p| self.preview.resolved_tabs(p).tab_leaders)
                     .collect(),
             ),
         )
@@ -263,7 +277,7 @@ pub fn positions(document: &Document, selection: (usize, usize)) -> Result<Vec<(
     }
     let mut counts = std::collections::BTreeMap::new();
     for paragraph in &document.paragraphs[first..=last] {
-        for (position, _) in paragraph.spacing.tab_positions() {
+        for (position, _) in document.resolved_tabs(paragraph).tab_positions() {
             *counts.entry(position).or_insert(0) += 1;
         }
     }
@@ -288,7 +302,8 @@ pub fn common_kind(
         return None;
     }
     let mut kinds = document.paragraphs[first..=last].iter().filter_map(|p| {
-        p.spacing
+        document
+            .resolved_tabs(p)
             .tab_positions()
             .into_iter()
             .find(|s| s.0 == position)
@@ -352,9 +367,14 @@ pub fn leader_summary(
         counts: [0; 4],
     };
     for p in &document.paragraphs[first..=last] {
-        if p.spacing.tab_positions().iter().any(|s| s.0 == position) {
+        if document
+            .resolved_tabs(p)
+            .tab_positions()
+            .iter()
+            .any(|s| s.0 == position)
+        {
             use crate::model::TabLeader as L;
-            let i = match p.spacing.tab_leader(position) {
+            let i = match document.resolved_tabs(p).tab_leader(position) {
                 None => 0,
                 Some(L::Dots) => 1,
                 Some(L::Dashes) => 2,

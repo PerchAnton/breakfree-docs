@@ -3,6 +3,19 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.86 — 2026-10-24
+
+- Inherit tab intervals and complete typed stop/leader lists from paragraph styles,
+  with nearest-parent resolution, direct override precedence and explicit empty lists.
+- Edit tabs inside Create/Modify Style drafts and commit the entire definition in
+  one undo/redo operation; nested cancellation returns focus without editing.
+- Resolve inherited positions in layout, dialogs and ruler. Materialize direct
+  lists only for changed owners; reset paragraph lists/intervals independently.
+- Write native v18 and retain strict v1–v17 reading and failed-write preservation.
+  Older applications reject v18; Save As retains an older compatible source.
+- Add inheritance, history, storage, ruler and GUI regressions; retain the design,
+  palette and icons. Windows remains deferred and VoiceOver stays at final review.
+
 ## 0.1.0-alpha.85 — 2026-10-23
 
 - Preserve the numeric draft, caret and selection when returning from preview

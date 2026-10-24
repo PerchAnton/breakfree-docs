@@ -20,6 +20,29 @@ impl eframe::App for Capture {
     fn raw_input_hook(&mut self, _ctx: &egui::Context, input: &mut egui::RawInput) {
         if matches!(
             self.mode.as_str(),
+            "style-tabs-dialog" | "style-tabs-interval"
+        ) && self.frames == 4
+        {
+            let name = if self.mode == "style-tabs-dialog" {
+                "style-tab-positions"
+            } else {
+                "style-tab-interval"
+            };
+            if let Some(region) = self.app.regions.iter().find(|r| r.name == name) {
+                let pos = region.rect.center();
+                input.events.push(egui::Event::PointerMoved(pos));
+                for pressed in [true, false] {
+                    input.events.push(egui::Event::PointerButton {
+                        pos,
+                        button: egui::PointerButton::Primary,
+                        pressed,
+                        modifiers: egui::Modifiers::NONE,
+                    });
+                }
+            }
+        }
+        if matches!(
+            self.mode.as_str(),
             "leader-details"
                 | "leader-choice"
                 | "leader-pointer"
@@ -645,6 +668,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if args.len() != 3
         || ![
             "home",
+            "style-tabs",
+            "style-tabs-dialog",
+            "style-tabs-interval",
+            "inherited-tabs",
             "tabs",
             "explicit-tabs",
             "aligned-tabs",
@@ -749,6 +776,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "examples/StyleDeletion.bfdoc"
         } else if ["styles-create", "styles-rename"].contains(&args[2].as_str()) {
             "examples/CustomStyles.bfdoc"
+        } else if args[2].starts_with("style-tabs") || args[2] == "inherited-tabs" {
+            "examples/InheritedTabs.bfdoc"
         } else if args[2].starts_with("styles") {
             "examples/Styles.bfdoc"
         } else if ["formatting", "font"].contains(&args[2].as_str()) {
@@ -1008,9 +1037,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     app.ribbon_collapsed = true;
                     app.ribbon_temporary = true;
                 }
-                "styles-modify" | "styles-rename" | "styles-following" => {
-                    app.execute(Action::ModifyStyle, &cc.egui_ctx)
-                }
+                "styles-modify"
+                | "styles-rename"
+                | "styles-following"
+                | "style-tabs"
+                | "style-tabs-dialog"
+                | "style-tabs-interval" => app.execute(Action::ModifyStyle, &cc.egui_ctx),
                 "styles-character-delete" => {
                     app.execute(
                         Action::CharacterStyle(Some(

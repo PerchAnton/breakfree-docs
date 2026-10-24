@@ -600,8 +600,12 @@ impl Editor {
         }
         let mut result = self.document.clone();
         for p in &mut result.paragraphs[first..=last] {
+            let original = p.spacing.clone();
+            let effective = self.document.resolved_tabs(p);
+            p.spacing.copy_tab_stops(&effective);
             if !p.spacing.tab_positions().iter().any(|s| s.0 == position) {
                 if owners_only {
+                    p.spacing = original;
                     continue;
                 }
                 return Err("The selected paragraph has no explicit tab at this position.".into());
@@ -617,6 +621,9 @@ impl Editor {
                 p.spacing
                     .tab_leaders
                     .sort_by_key(|s| s.position_half_points);
+            }
+            if p.spacing.style_tab_stops() == effective.style_tab_stops() {
+                p.spacing = original;
             }
         }
         result.validate()?;
@@ -639,8 +646,14 @@ impl Editor {
         }
         let mut result = self.document.clone();
         for paragraph in &mut result.paragraphs[first..=last] {
-            paragraph.spacing.aligned_tab_stops = stops.clone();
-            paragraph.spacing.retain_tab_leaders();
+            let effective = self.document.resolved_tabs(paragraph);
+            let mut next = effective.clone();
+            next.aligned_tab_stops = stops.clone();
+            next.retain_tab_leaders();
+            next.validate()?;
+            if next.style_tab_stops() != effective.style_tab_stops() {
+                paragraph.spacing.copy_tab_stops(&next);
+            }
         }
         result.validate()?;
         self.commit(result, "Aligned tab stops", (start, end), self.typing_style);
@@ -667,8 +680,15 @@ impl Editor {
         }
         let mut result = self.document.clone();
         for p in &mut result.paragraphs[first..=last] {
+            let original = p.spacing.clone();
+            let effective = self.document.resolved_tabs(p);
+            p.spacing.copy_tab_stops(&effective);
             p.spacing.left_tab_stops_half_points = positions.clone();
             p.spacing.retain_tab_leaders();
+            p.spacing.clear_tab_stops = p.spacing.tab_positions().is_empty();
+            if p.spacing.style_tab_stops() == effective.style_tab_stops() {
+                p.spacing = original;
+            }
         }
         result.validate()?;
         self.commit(result, "Left tab stops", (start, end), self.typing_style);
@@ -740,15 +760,26 @@ impl Editor {
             return Err("Tab list selection mismatch.".into());
         }
         let mut result = self.document.clone();
-        for (paragraph, positions) in result.paragraphs[first..=last].iter_mut().zip(lists) {
-            paragraph.spacing.set_tab_positions(&positions)?;
+        if leaders
+            .as_ref()
+            .is_some_and(|values| values.len() != lists.len())
+        {
+            return Err("Tab leader selection mismatch.".into());
         }
-        if let Some(leaders) = leaders {
-            if leaders.len() != last - first + 1 {
-                return Err("Tab leader selection mismatch.".into());
+        for (index, (paragraph, positions)) in result.paragraphs[first..=last]
+            .iter_mut()
+            .zip(lists)
+            .enumerate()
+        {
+            let effective = self.document.resolved_tabs(paragraph);
+            let mut next = effective.clone();
+            next.set_tab_positions(&positions)?;
+            if let Some(leaders) = &leaders {
+                next.tab_leaders = leaders[index].clone();
             }
-            for (p, leaders) in result.paragraphs[first..=last].iter_mut().zip(leaders) {
-                p.spacing.tab_leaders = leaders;
+            next.validate()?;
+            if next.style_tab_stops() != effective.style_tab_stops() {
+                paragraph.spacing.copy_tab_stops(&next);
             }
         }
         result.validate()?;
@@ -756,7 +787,32 @@ impl Editor {
         Ok(())
     }
 
-    /// Set a direct tab interval, or restore the default grid, in one transaction.
+    /// Remove direct stop lists while retaining the independently authored interval.
+    pub fn inherit_tab_stops(&mut self, start: usize, end: usize) -> Result<()> {
+        validate_range(&self.document.text(), start, end)?;
+        let (first, _) = self.document.locate(start)?;
+        let (mut last, offset) = self.document.locate(end)?;
+        if end > start && offset == 0 && last > first {
+            last -= 1;
+        }
+        let mut result = self.document.clone();
+        for p in &mut result.paragraphs[first..=last] {
+            p.spacing.left_tab_stops_half_points.clear();
+            p.spacing.aligned_tab_stops.clear();
+            p.spacing.tab_leaders.clear();
+            p.spacing.clear_tab_stops = false;
+        }
+        result.validate()?;
+        self.commit(
+            result,
+            "Inherit tab positions",
+            (start, end),
+            self.typing_style,
+        );
+        Ok(())
+    }
+
+    /// Set a direct tab interval, or inherit the style grid, in one transaction.
     pub fn set_tab_interval(
         &mut self,
         start: usize,
@@ -849,7 +905,9 @@ impl Editor {
         definition: StyleDefinition,
     ) -> Result<()> {
         let mut result = self.document.clone();
-        result.style_catalog.update_custom(id, name, definition)?;
+        result
+            .style_catalog
+            .update_custom(id, name, definition.clone())?;
         result.validate()?;
         let label = if self.document.style_catalog.get(id) == Some(&definition) {
             "Rename style"

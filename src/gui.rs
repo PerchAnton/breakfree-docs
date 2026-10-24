@@ -3431,6 +3431,13 @@ impl DocsApp {
             match dialog.show(ctx, &mut self.regions) {
                 PositionsOutcome::Open => self.tab_positions_dialog = Some(dialog),
                 PositionsOutcome::Cancel => self.focus_document = self.paragraph_dialog.is_none(),
+                PositionsOutcome::Inherit => {
+                    let (start, end) = self.session.editor.selection;
+                    let result = self.session.editor.inherit_tab_stops(start, end);
+                    self.fail(result);
+                    self.sync_view();
+                    self.focus_document = self.paragraph_dialog.is_none();
+                }
                 PositionsOutcome::Apply { positions, leaders } => {
                     let (start, end) = self.session.editor.selection;
                     let result = self
