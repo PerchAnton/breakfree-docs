@@ -1,0 +1,172 @@
+# ADR 0013 — Direct paragraph spacing
+
+- Date: 2026-10-18
+- Status: implemented for owner review in alpha.41
+- Scope: independent Rust model/commands, layout, native v10 and Home spacing draft
+
+## Decision
+
+Add optional direct line-height percentage and space-after half points to each
+paragraph. Resolve paragraph-style inheritance first, then these overrides. Null
+inherits; explicit zero after is retained. Use the same limits as style spacing:
+100–300% and 0–200 pt in half-point steps. Alignment remains independent.
+
+A shared partial command distinguishes keep, set and inherit for each property.
+Validate range, grapheme boundaries and the candidate document before committing.
+Apply to intersecting paragraphs, excluding a next paragraph at an exclusive end;
+a caret and an empty paragraph are valid targets. All changes share one history
+entry; no-ops preserve redo. Character formatting and style catalogs are untouched.
+
+The modal changes only checked properties. Editing checks the corresponding
+property; blank means inherit. Use style spacing checks and clears both fields.
+Cancel/Escape do not edit; Cancel starts focused. Background commands/KeyTips are
+blocked while the draft is open. H → PS is a Docs-specific provisional KeyTip.
+The original Home spacing icon becomes active without changing palette/geometry.
+Formatting inspection identifies each direct spacing source separately.
+
+## Text edit policy
+
+Enter, pasted paragraph breaks and replacement-created paragraphs copy the first
+intersected paragraph's spacing, like its alignment. Following-style selection
+still changes the semantic style; explicit spacing remains. Joining paragraphs
+keeps the first paragraph's spacing. Replace All carries original spacing across
+untouched paragraph boundaries and copies current spacing for inserted breaks.
+Snapshots restore every value on undo/redo.
+
+## Persistence and limits
+
+Native v10 requires a spacing object per paragraph. Strict frozen v1–v9 readers
+initialize inherited values; they do not infer overrides from rendered spacing.
+Unknown fields/versions/ranges fail before changing a source file. The existing
+temporary-file write/sync/replace implementation and failure tests remain in use.
+Alpha.40 and earlier reject v10 saves; use Save As to retain an older file.
+Process/settings versions remain 1. No new dependency or project-license change.
+
+Indentation, tabs, exact line-height units and pagination are
+separate increments. Native Windows/reference acceptance is deferred by owner
+instruction; synthetic DPI tests do not close that gate.
+
+## Alpha.42 extension
+
+Add optional space-before to paragraph style definitions and direct spacing, using
+the same half-point range as space-after. Nearest ancestor supplies the value;
+document default is zero. Direct zero is an override. A three-property command
+preserves keep/set/inherit semantics in one validated history transaction. Dialog
+reset now clears all three properties. Native v11 carries the new key; older
+readers reject it and retain their strict typed validation. Continuous layout adds
+before-current to after-previous, including before the first paragraph, once per
+paragraph regardless of wrapping. This does not establish pagination behavior.
+
+## Alpha.43 extension: horizontal indents
+
+Store left/right optional half-point indents alongside paragraph geometry in the
+existing spacing object and paragraph style definition. Limit each to 0–144 pt;
+resolve independently through ancestors/default zero/direct override. Keep/set/
+inherit patches share a validated command and one history transaction with spacing.
+Existing Enter, join and Replace All geometry copying includes these fields.
+Native v12 adds keys; v1–v11 reject them, even null. No dependency/license change.
+
+The layout adapter subtracts both indents before wrapping/justification, then shifts
+rendered glyphs and cursor geometry by the left indent and alignment offset. On
+narrow viewports, scale indents proportionally to reserve up to 32 DIP for text,
+without editing the model. First-line/hanging indents, negative outdents, ruler
+handles and page-layout width constraints require separate decisions and tests.
+
+## Alpha.44 extension: first-line and hanging indents
+
+Add one signed optional `first_line_half_points` property to style/direct geometry,
+range -288…288. Positive insets only the first row; negative insets continuation
+rows, keeping the first at the left indent. Left marks the outermost edge. A blank
+amount inherits both type/magnitude, zero cancels them. This representation avoids
+conflicting first-line and hanging values. One validated partial command includes
+the property; reset/history and editing preservation follow the existing policy.
+Native v13 adds the key and v1–v12 reject it even when null.
+
+Shape the paragraph at the first-row width to find its initial wrap boundary, keep
+that row, and shape its suffix at continuation width. Keep run formats and scalar
+indices; concatenate without synthesizing a newline between these portions. Use
+the real first/continuation widths for alignment and justification. Rebuild first
+portion metrics and retain only its real mesh counts. Scale all horizontal insets
+proportionally in narrow views. This does not add page layout or ruler handles.
+
+The type/amount UI and continuous-layout geometry are original implementations.
+Matched native Windows/Word acceptance remains deferred; no equivalence claim.
+
+## Alpha.45 correction: logical whitespace extent
+
+Justification measures visible ink without trailing spaces. Preserve this visual
+measure for alignment, then extend the logical row width through the last stored
+glyph. Otherwise a cursor at a soft-wrap end maps back before its trailing space.
+Do not move or remove glyphs, edit document text or change file semantics. Logical
+caret/selection extent may exceed the visible justified edge through whitespace.
+The regression matrix checks text reconstruction, grapheme boundaries in tested
+examples, real paragraph delimiters, mesh counts, heights and cursor mapping.
+
+## Alpha.46 extension: interactive ruler draft
+
+The toolkit-independent ruler draft owns a source snapshot and preview, never the
+live editor. Each absolute pointer displacement is rounded to a half point and
+projected with the same narrow-column scale as text. A completed drag calls the
+existing geometry command once; no-op/cancellation preserves inheritance and redo.
+The GUI cancels on Escape, focus/pointer loss and geometry changes, and blocks
+text/shortcuts during a draft. Commit rejects a changed source or selection.
+
+First-line and continuation handles preserve the opposite line origin, storing
+outer-left = min(first, continuation) and special = first − continuation. Moving
+the overall-left handle preserves special; right is independent. Existing bounds
+apply. The first selected paragraph supplies values; changed properties apply to
+the original half-open paragraph selection. Unchanged properties remain inherited.
+No native format, dependency or license change. Direct handle keyboard navigation,
+tab stops, margins and pagination remain separate work.
+
+## Alpha.47 extension: keyboard ruler interaction
+
+Keyboard nudging uses the same immutable-source draft and validated command as
+pointer dragging. The provisional Docs entry is Ctrl+Shift+F8, avoiding AltGr text
+combinations. Arrows change by one half point, Shift+arrows by ten; displacement is
+recomputed from the effective preview position, so clamping never accumulates an
+invisible overshoot. Enter or Tab commits one marker transaction; Escape/F6, focus
+loss, geometry change or pointer takeover discards the pending draft. Tab then
+selects the next marker. Toolkit directional focus traversal is suppressed while
+the ruler owns input, including the first frame before its focus filter settles.
+The readout uses resolved model half points, independent of display zoom/scaling.
+File/version semantics, dependencies and palette remain unchanged.
+
+## Alpha.48 extension: mixed-selection inspection
+
+A toolkit-independent read-only summary resolves every selected paragraph using
+the command engine's half-open paragraph selection rule. Aggregate each displayed
+amount and each marker origin independently in integer half points. Compare values,
+not provenance: different inherited/direct sources with equal results are common.
+The readout uses Mixed instead of a misleading first-paragraph value, with exact
+minimum/maximum ranges in tooltips. Marker dashes identify different logical origins,
+which include left plus the applicable special indent. Existing first-paragraph
+anchors and partial-edit semantics stay unchanged. Summaries of preview snapshots
+update without committing; cancellation/history restore the corresponding summary.
+No format, dependency, palette or license change.
+
+
+## Alpha.51 extension: property-specific ruler reset
+
+A typed reset scope builds the same partial paragraph-geometry patch as other
+ruler edits. Clearing one optional override restores that property's style-chain
+resolution for each selected paragraph; other optional overrides remain untouched.
+First-line and hanging remain two signs of one property, not independent fields.
+The detached draft previews the result; acceptance commits one shared command,
+with existing no-op history preservation and stale document/selection rejection.
+No native schema or model property is added.
+
+## Alpha.60 stepped paragraph indentation
+
+Home Increase indent / Decrease indent changes each selected paragraph's resolved
+left indent by 36 pt (72 half points), bounded to 0–144 pt. Changed values become
+direct overrides; paragraphs already at the boundary retain their exact authored
+value or inheritance. Right and first-line/hanging properties stay untouched.
+The half-open selection rule excludes the paragraph at an exclusive end; a caret
+acts on its paragraph. One command creates one history entry; a complete no-op
+preserves redo. The existing native v13 schema persists the result.
+
+The existing two Home icons now dispatch the shared command. Command search also
+exposes both actions; Docs-specific KeyTips H → II / DI are not a verified Word
+mapping. Geometry, palette and icons are unchanged; enabled states now reflect
+working commands. Lists, tab stops and editable page margins remain future work.

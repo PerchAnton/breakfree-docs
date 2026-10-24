@@ -1,0 +1,1800 @@
+{
+  "page": {
+    "width_points": 595,
+    "height_points": 842,
+    "left_points": 72,
+    "right_points": 72,
+    "top_points": 72,
+    "bottom_points": 72,
+    "header": "BreakFree Docs · synthetic report",
+    "footer": "Local document · validation fixture",
+    "page_numbers": true,
+    "number_start": null
+  },
+  "format": "breakfree.docs.native",
+  "content_version": 19,
+  "style_catalog": {
+    "custom": [],
+    "normal": {
+      "next_style": null,
+      "parent": null,
+      "character": {
+        "bold": null,
+        "italic": null,
+        "underline": null,
+        "font_size": null
+      },
+      "line_height_percent": null,
+      "space_after_half_points": null
+    },
+    "no_spacing": {
+      "next_style": null,
+      "parent": "normal",
+      "character": {
+        "bold": null,
+        "italic": null,
+        "underline": null,
+        "font_size": null
+      },
+      "line_height_percent": 100,
+      "space_after_half_points": 0
+    },
+    "heading1": {
+      "next_style": null,
+      "parent": "normal",
+      "character": {
+        "bold": true,
+        "italic": null,
+        "underline": null,
+        "font_size": 36
+      },
+      "line_height_percent": null,
+      "space_after_half_points": null
+    }
+  },
+  "character_styles": [],
+  "paragraphs": [
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": true,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "heading1",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "BreakFree Docs report",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "English · Українська · Русский · é",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": {
+          "kind": "decimal",
+          "level": 0,
+          "restart": null
+        },
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "First item",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": {
+          "kind": "decimal",
+          "level": 0,
+          "restart": null
+        },
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Second item",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [
+          {
+            "start": 0,
+            "end": 11,
+            "target": "https://example.com"
+          }
+        ],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Source link",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Table follows",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Figures and sections",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": {
+          "kind": "table",
+          "widths_points": [
+            90,
+            180,
+            90
+          ],
+          "rows": [
+            [
+              "Item",
+              "Description",
+              "Value"
+            ],
+            [
+              "1",
+              "Україна · Русский · item 1",
+              "7"
+            ],
+            [
+              "2",
+              "Україна · Русский · item 2",
+              "14"
+            ],
+            [
+              "3",
+              "Україна · Русский · item 3",
+              "21"
+            ],
+            [
+              "4",
+              "Україна · Русский · item 4",
+              "28"
+            ],
+            [
+              "5",
+              "Україна · Русский · item 5",
+              "35"
+            ],
+            [
+              "6",
+              "Україна · Русский · item 6",
+              "42"
+            ],
+            [
+              "7",
+              "Україна · Русский · item 7",
+              "49"
+            ],
+            [
+              "8",
+              "Україна · Русский · item 8",
+              "56"
+            ],
+            [
+              "9",
+              "Україна · Русский · item 9",
+              "63"
+            ],
+            [
+              "10",
+              "Україна · Русский · item 10",
+              "70"
+            ],
+            [
+              "11",
+              "Україна · Русский · item 11",
+              "77"
+            ],
+            [
+              "12",
+              "Україна · Русский · item 12",
+              "84"
+            ],
+            [
+              "13",
+              "Україна · Русский · item 13",
+              "91"
+            ],
+            [
+              "14",
+              "Україна · Русский · item 14",
+              "98"
+            ],
+            [
+              "15",
+              "Україна · Русский · item 15",
+              "105"
+            ],
+            [
+              "16",
+              "Україна · Русский · item 16",
+              "112"
+            ],
+            [
+              "17",
+              "Україна · Русский · item 17",
+              "119"
+            ],
+            [
+              "18",
+              "Україна · Русский · item 18",
+              "126"
+            ],
+            [
+              "19",
+              "Україна · Русский · item 19",
+              "133"
+            ],
+            [
+              "20",
+              "Україна · Русский · item 20",
+              "140"
+            ],
+            [
+              "21",
+              "Україна · Русский · item 21",
+              "147"
+            ]
+          ],
+          "repeat_header": true
+        },
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "￼",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": []
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": {
+          "kind": "picture",
+          "png": [
+            137,
+            80,
+            78,
+            71,
+            13,
+            10,
+            26,
+            10,
+            0,
+            0,
+            0,
+            13,
+            73,
+            72,
+            68,
+            82,
+            0,
+            0,
+            0,
+            160,
+            0,
+            0,
+            0,
+            90,
+            8,
+            2,
+            0,
+            0,
+            0,
+            176,
+            164,
+            202,
+            5,
+            0,
+            0,
+            2,
+            133,
+            73,
+            68,
+            65,
+            84,
+            120,
+            1,
+            237,
+            192,
+            3,
+            160,
+            36,
+            89,
+            150,
+            198,
+            241,
+            255,
+            119,
+            238,
+            141,
+            200,
+            204,
+            167,
+            114,
+            75,
+            99,
+            174,
+            109,
+            219,
+            182,
+            109,
+            219,
+            182,
+            109,
+            219,
+            182,
+            109,
+            105,
+            140,
+            158,
+            150,
+            74,
+            175,
+            158,
+            50,
+            51,
+            34,
+            238,
+            249,
+            118,
+            183,
+            106,
+            122,
+            166,
+            135,
+            59,
+            107,
+            213,
+            175,
+            190,
+            215,
+            27,
+            254,
+            38,
+            151,
+            137,
+            103,
+            18,
+            207,
+            36,
+            158,
+            73,
+            60,
+            147,
+            120,
+            38,
+            241,
+            76,
+            226,
+            153,
+            196,
+            51,
+            137,
+            103,
+            18,
+            207,
+            36,
+            158,
+            73,
+            60,
+            147,
+            120,
+            38,
+            241,
+            76,
+            226,
+            153,
+            196,
+            51,
+            137,
+            103,
+            18,
+            207,
+            36,
+            158,
+            73,
+            60,
+            147,
+            120,
+            38,
+            241,
+            76,
+            226,
+            153,
+            196,
+            51,
+            137,
+            103,
+            18,
+            207,
+            36,
+            158,
+            73,
+            60,
+            147,
+            120,
+            38,
+            241,
+            76,
+            226,
+            153,
+            196,
+            51,
+            137,
+            103,
+            18,
+            207,
+            36,
+            158,
+            73,
+            60,
+            147,
+            120,
+            38,
+            241,
+            76,
+            226,
+            153,
+            196,
+            51,
+            137,
+            103,
+            18,
+            207,
+            36,
+            158,
+            73,
+            60,
+            147,
+            120,
+            38,
+            241,
+            76,
+            226,
+            153,
+            196,
+            51,
+            137,
+            103,
+            18,
+            207,
+            36,
+            158,
+            73,
+            60,
+            147,
+            160,
+            34,
+            174,
+            250,
+            191,
+            139,
+            138,
+            184,
+            234,
+            255,
+            46,
+            42,
+            226,
+            170,
+            255,
+            187,
+            168,
+            136,
+            171,
+            254,
+            239,
+            162,
+            34,
+            174,
+            250,
+            191,
+            139,
+            138,
+            184,
+            234,
+            255,
+            46,
+            42,
+            226,
+            170,
+            255,
+            187,
+            168,
+            136,
+            171,
+            254,
+            239,
+            162,
+            34,
+            174,
+            250,
+            191,
+            139,
+            138,
+            184,
+            234,
+            255,
+            46,
+            42,
+            226,
+            170,
+            255,
+            187,
+            168,
+            136,
+            171,
+            254,
+            239,
+            162,
+            34,
+            174,
+            250,
+            191,
+            139,
+            138,
+            184,
+            234,
+            255,
+            46,
+            42,
+            226,
+            170,
+            255,
+            187,
+            168,
+            136,
+            171,
+            254,
+            239,
+            162,
+            34,
+            174,
+            250,
+            191,
+            139,
+            138,
+            184,
+            234,
+            255,
+            46,
+            42,
+            226,
+            170,
+            255,
+            187,
+            168,
+            136,
+            171,
+            254,
+            239,
+            162,
+            34,
+            174,
+            250,
+            191,
+            139,
+            138,
+            184,
+            234,
+            255,
+            46,
+            42,
+            226,
+            170,
+            255,
+            187,
+            168,
+            136,
+            171,
+            254,
+            239,
+            162,
+            34,
+            174,
+            250,
+            191,
+            139,
+            138,
+            184,
+            234,
+            255,
+            46,
+            42,
+            226,
+            170,
+            255,
+            187,
+            168,
+            136,
+            171,
+            254,
+            239,
+            162,
+            34,
+            174,
+            250,
+            191,
+            139,
+            138,
+            184,
+            234,
+            255,
+            46,
+            42,
+            226,
+            170,
+            255,
+            187,
+            168,
+            136,
+            171,
+            254,
+            239,
+            162,
+            34,
+            174,
+            250,
+            191,
+            139,
+            138,
+            184,
+            234,
+            255,
+            46,
+            42,
+            226,
+            170,
+            255,
+            187,
+            168,
+            136,
+            171,
+            254,
+            239,
+            162,
+            34,
+            174,
+            250,
+            191,
+            139,
+            138,
+            184,
+            234,
+            255,
+            46,
+            42,
+            226,
+            170,
+            255,
+            187,
+            168,
+            136,
+            171,
+            254,
+            239,
+            162,
+            34,
+            174,
+            250,
+            191,
+            139,
+            138,
+            184,
+            234,
+            255,
+            46,
+            42,
+            226,
+            170,
+            255,
+            187,
+            168,
+            136,
+            171,
+            254,
+            239,
+            162,
+            34,
+            174,
+            250,
+            191,
+            139,
+            138,
+            184,
+            234,
+            255,
+            46,
+            42,
+            226,
+            170,
+            255,
+            187,
+            168,
+            136,
+            171,
+            254,
+            239,
+            162,
+            34,
+            174,
+            250,
+            191,
+            139,
+            138,
+            184,
+            234,
+            255,
+            46,
+            42,
+            226,
+            170,
+            255,
+            187,
+            168,
+            136,
+            171,
+            254,
+            239,
+            162,
+            34,
+            174,
+            250,
+            191,
+            139,
+            138,
+            184,
+            234,
+            255,
+            46,
+            42,
+            226,
+            170,
+            255,
+            187,
+            168,
+            136,
+            171,
+            254,
+            239,
+            162,
+            34,
+            174,
+            250,
+            191,
+            139,
+            138,
+            184,
+            234,
+            255,
+            46,
+            42,
+            226,
+            170,
+            255,
+            187,
+            168,
+            136,
+            171,
+            254,
+            239,
+            162,
+            34,
+            174,
+            250,
+            191,
+            139,
+            138,
+            184,
+            234,
+            255,
+            46,
+            42,
+            226,
+            170,
+            255,
+            187,
+            168,
+            136,
+            171,
+            254,
+            239,
+            162,
+            34,
+            174,
+            250,
+            191,
+            139,
+            138,
+            184,
+            234,
+            255,
+            46,
+            42,
+            226,
+            170,
+            255,
+            187,
+            168,
+            136,
+            171,
+            254,
+            239,
+            162,
+            34,
+            174,
+            250,
+            191,
+            139,
+            138,
+            184,
+            234,
+            255,
+            46,
+            42,
+            226,
+            170,
+            255,
+            187,
+            168,
+            136,
+            171,
+            254,
+            239,
+            162,
+            34,
+            174,
+            250,
+            191,
+            139,
+            138,
+            184,
+            234,
+            255,
+            46,
+            42,
+            226,
+            170,
+            255,
+            187,
+            168,
+            136,
+            171,
+            254,
+            239,
+            162,
+            34,
+            174,
+            250,
+            191,
+            139,
+            138,
+            184,
+            234,
+            255,
+            46,
+            42,
+            226,
+            170,
+            255,
+            187,
+            168,
+            136,
+            171,
+            254,
+            239,
+            162,
+            34,
+            174,
+            250,
+            191,
+            139,
+            138,
+            184,
+            234,
+            255,
+            46,
+            42,
+            226,
+            170,
+            255,
+            187,
+            168,
+            136,
+            171,
+            254,
+            239,
+            162,
+            34,
+            174,
+            250,
+            191,
+            139,
+            138,
+            184,
+            234,
+            255,
+            46,
+            42,
+            226,
+            170,
+            255,
+            187,
+            168,
+            136,
+            171,
+            254,
+            239,
+            162,
+            34,
+            174,
+            250,
+            191,
+            139,
+            127,
+            4,
+            170,
+            61,
+            3,
+            90,
+            103,
+            106,
+            192,
+            91,
+            0,
+            0,
+            0,
+            0,
+            73,
+            69,
+            78,
+            68,
+            174,
+            66,
+            96,
+            130
+          ],
+          "width_points": 216,
+          "height_points": 122,
+          "alt": "Original purple gradient test image"
+        },
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "￼",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": {
+          "width_points": 842,
+          "height_points": 595,
+          "left_points": 72,
+          "right_points": 72,
+          "top_points": 72,
+          "bottom_points": 72,
+          "header": "BreakFree Docs · synthetic report",
+          "footer": "Local document · validation fixture",
+          "page_numbers": true,
+          "number_start": 10
+        }
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Landscape section",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "This section uses its own page size and numbering.",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Long paragraphs below test line splitting and page transitions.",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Paragraph 1. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. ",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Paragraph 2. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. ",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Paragraph 3. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. ",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Paragraph 4. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. ",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Paragraph 5. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. ",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Paragraph 6. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. ",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Paragraph 7. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. ",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Paragraph 8. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. ",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Paragraph 9. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. ",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Paragraph 10. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. ",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Paragraph 11. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. ",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Paragraph 12. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. ",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Paragraph 13. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. ",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Paragraph 14. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. ",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Paragraph 15. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. ",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Paragraph 16. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. ",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Paragraph 17. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. ",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Paragraph 18. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. English text, український текст, русский текст and combining é. ",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    }
+  ]
+}

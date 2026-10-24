@@ -1,0 +1,446 @@
+{
+  "page": {
+    "width_points": 612,
+    "height_points": 792,
+    "left_points": 72,
+    "right_points": 72,
+    "top_points": 72,
+    "bottom_points": 72,
+    "header": "",
+    "footer": "",
+    "page_numbers": false,
+    "number_start": null
+  },
+  "format": "breakfree.docs.native",
+  "content_version": 19,
+  "style_catalog": {
+    "custom": [],
+    "normal": {
+      "next_style": null,
+      "parent": null,
+      "character": {
+        "bold": null,
+        "italic": null,
+        "underline": null,
+        "font_size": null
+      },
+      "line_height_percent": null,
+      "space_after_half_points": null
+    },
+    "no_spacing": {
+      "next_style": null,
+      "parent": "normal",
+      "character": {
+        "bold": null,
+        "italic": null,
+        "underline": null,
+        "font_size": null
+      },
+      "line_height_percent": 100,
+      "space_after_half_points": 0
+    },
+    "heading1": {
+      "next_style": null,
+      "parent": "normal",
+      "character": {
+        "bold": true,
+        "italic": null,
+        "underline": null,
+        "font_size": 36
+      },
+      "line_height_percent": null,
+      "space_after_half_points": null
+    }
+  },
+  "character_styles": [],
+  "paragraphs": [
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "DOCX list exchange",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": {
+          "kind": "decimal",
+          "level": 0,
+          "restart": 3
+        },
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "First numbered item",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": {
+          "kind": "decimal",
+          "level": 1,
+          "restart": null
+        },
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Nested item",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": {
+          "kind": "decimal",
+          "level": 1,
+          "restart": null
+        },
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Second nested item",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": {
+          "kind": "decimal",
+          "level": 2,
+          "restart": 8
+        },
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Deeper restart",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": {
+          "kind": "decimal",
+          "level": 0,
+          "restart": null
+        },
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Back to outer level",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": {
+          "kind": "decimal",
+          "level": 1,
+          "restart": null
+        },
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Reset nested stream",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": null,
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "A paragraph between lists",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": {
+          "kind": "bullet",
+          "level": 0,
+          "restart": null
+        },
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Bullet: Україна",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": {
+          "kind": "bullet",
+          "level": 1,
+          "restart": null
+        },
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Nested bullet: Русский",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": {
+          "kind": "bullet",
+          "level": 2,
+          "restart": null
+        },
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "Deeper bullet: é 🙂",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    },
+    {
+      "structure": {
+        "list": {
+          "kind": "decimal",
+          "level": 0,
+          "restart": null
+        },
+        "links": [],
+        "block": null,
+        "page_break_before": false,
+        "keep_with_next": false,
+        "keep_lines": false,
+        "section": null
+      },
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null
+      },
+      "runs": [
+        {
+          "text": "New numbered list",
+          "character_style": null,
+          "direct": {
+            "bold": null,
+            "italic": null,
+            "underline": null,
+            "font_size": null
+          }
+        }
+      ]
+    }
+  ]
+}

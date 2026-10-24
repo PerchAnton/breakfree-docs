@@ -1,0 +1,7 @@
+include AGENTS.md CONTRIBUTING.md ROADMAP.md .editorconfig .gitignore
+recursive-include docs *.md *.webp
+recursive-include contracts *.md *.json
+recursive-include tools *.py
+recursive-include tests *.py
+recursive-include examples *.bfdoc
+recursive-include .github *.yml *.md

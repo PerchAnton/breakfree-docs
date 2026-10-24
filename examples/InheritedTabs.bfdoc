@@ -1,0 +1,116 @@
+{
+  "format": "breakfree.docs.native",
+  "content_version": 18,
+  "paragraphs": [
+    {
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {},
+      "runs": [
+        {
+          "text": "From Normal\tУкраїна\t42",
+          "character_style": null,
+          "direct": {}
+        }
+      ]
+    },
+    {
+      "alignment": "left",
+      "paragraph_style": "no_spacing",
+      "spacing": {},
+      "runs": [
+        {
+          "text": "From parent\tРусский\t84",
+          "character_style": null,
+          "direct": {}
+        }
+      ]
+    },
+    {
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null,
+        "aligned_tab_stops": [
+          {
+            "position_half_points": 360,
+            "alignment": "center"
+          },
+          {
+            "position_half_points": 720,
+            "alignment": "right"
+          }
+        ],
+        "tab_leaders": [
+          {
+            "position_half_points": 360,
+            "leader": "line"
+          },
+          {
+            "position_half_points": 720,
+            "leader": "line"
+          }
+        ]
+      },
+      "runs": [
+        {
+          "text": "Direct override\té\t128",
+          "character_style": null,
+          "direct": {}
+        }
+      ]
+    },
+    {
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "clear_tab_stops": true
+      },
+      "runs": [
+        {
+          "text": "No explicit stops\tEnglish\t256",
+          "character_style": null,
+          "direct": {}
+        }
+      ]
+    }
+  ],
+  "style_catalog": {
+    "custom": [],
+    "normal": {
+      "parent": null,
+      "next_style": null,
+      "character": {},
+      "tab_interval_half_points": 96,
+      "tab_stops": [
+        {
+          "position_half_points": 360,
+          "kind": "center",
+          "leader": "dots"
+        },
+        {
+          "position_half_points": 720,
+          "kind": "right",
+          "leader": "line"
+        }
+      ]
+    },
+    "no_spacing": {
+      "parent": "normal",
+      "next_style": null,
+      "character": {},
+      "line_height_percent": 100,
+      "space_after_half_points": 0
+    },
+    "heading1": {
+      "parent": "normal",
+      "next_style": "normal",
+      "character": {
+        "bold": true,
+        "font_size": 36
+      }
+    }
+  },
+  "character_styles": []
+}

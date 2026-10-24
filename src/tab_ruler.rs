@@ -1,0 +1,387 @@
+//! Toolkit-independent creation, movement and removal of explicit typed tab stops.
+use crate::{
+    Result,
+    commands::Editor,
+    model::{Document, TabKind},
+};
+
+pub struct Draft {
+    original: Document,
+    selection: (usize, usize),
+    source: Option<u16>,
+    creation_kind: TabKind,
+    leader_override: Option<Option<crate::model::TabLeader>>,
+    first: usize,
+    last: usize,
+    valid: bool,
+    pub preview: Document,
+    pub position: u16,
+    pub deleting: bool,
+}
+impl Draft {
+    pub fn new(editor: &Editor, source: u16) -> Result<Self> {
+        Self::snapshot(editor, Some(source))
+    }
+    /// Uncommitted creation session; invalid until a position passes validation.
+    pub fn creation_preview(editor: &Editor) -> Result<Self> {
+        Self::creation_preview_typed(editor, TabKind::Left)
+    }
+    pub fn creation_preview_typed(editor: &Editor, kind: TabKind) -> Result<Self> {
+        let mut draft = Self::snapshot(editor, None)?;
+        draft.creation_kind = kind;
+        draft.position = 72;
+        draft.valid = false;
+        Ok(draft)
+    }
+    pub fn kind(&self) -> Option<TabKind> {
+        match self.source {
+            Some(position) => common_kind(&self.original, self.selection, position),
+            None => Some(self.creation_kind),
+        }
+    }
+    pub fn is_creation(&self) -> bool {
+        self.source.is_none()
+    }
+    pub fn create(editor: &Editor, position: u16) -> Result<Self> {
+        Self::create_typed(editor, position, TabKind::Left)
+    }
+    pub fn create_typed(editor: &Editor, position: u16, kind: TabKind) -> Result<Self> {
+        if !(1..=2880).contains(&position) {
+            return Err("Tab position must be 0.5–1440 pt.".into());
+        }
+        let mut draft = Self::creation_preview_typed(editor, kind)?;
+        draft.move_to(f32::from(position))?;
+        Ok(draft)
+    }
+    fn snapshot(editor: &Editor, source: Option<u16>) -> Result<Self> {
+        editor.document.validate()?;
+        let (start, end) = editor.selection;
+        if start > end {
+            return Err("Invalid tab ruler selection.".into());
+        }
+        let (first, _) = editor.document.locate(start)?;
+        let (mut last, offset) = editor.document.locate(end)?;
+        if end > start && offset == 0 && last > first {
+            last -= 1;
+        }
+        if source.is_some_and(|value| {
+            !editor.document.paragraphs[first..=last].iter().any(|p| {
+                editor
+                    .document
+                    .resolved_tabs(p)
+                    .tab_positions()
+                    .iter()
+                    .any(|s| s.0 == value)
+            })
+        }) {
+            return Err("Tab position no longer exists.".into());
+        }
+        Ok(Self {
+            original: editor.document.clone(),
+            preview: editor.document.clone(),
+            selection: editor.selection,
+            source,
+            creation_kind: TabKind::Left,
+            leader_override: None,
+            first,
+            last,
+            valid: true,
+            position: source.unwrap_or(1),
+            deleting: false,
+        })
+    }
+    /// Exact point input: never round or clamp a typed value, and invalidate stale previews.
+    pub fn move_to_text(&mut self, text: &str) -> Result<()> {
+        self.valid = false;
+        self.deleting = false;
+        self.preview = self.original.clone();
+        let text = text.trim();
+        let (whole, fraction) = text.split_once('.').unwrap_or((text, "0"));
+        let half = match fraction {
+            "" | "0" => 0,
+            "5" => 1,
+            _ => return Err("Use 0.5 pt steps, for example 48.5.".into()),
+        };
+        let value = whole
+            .parse::<u16>()
+            .ok()
+            .and_then(|v| v.checked_mul(2))
+            .and_then(|v| v.checked_add(half))
+            .filter(|v| (1..=2880).contains(v))
+            .ok_or("Enter 0.5–1440 pt.")?;
+        self.move_to(f32::from(value))
+    }
+    pub fn move_to(&mut self, half_points: f32) -> Result<()> {
+        self.deleting = false;
+        self.valid = false;
+        self.preview = self.original.clone();
+        if !half_points.is_finite() {
+            return Err("Invalid tab position.".into());
+        }
+        let position = half_points.round().clamp(1., 2880.) as u16;
+        // Track the attempted coordinate even when occupied, so another arrow can
+        // cross a conflict. The preview remains original and commit stays invalid.
+        self.position = position;
+        let mut preview = self.original.clone();
+        let mut added = false;
+        for paragraph in &mut preview.paragraphs[self.first..=self.last] {
+            let effective = self.original.resolved_tabs(paragraph);
+            let original_spacing = paragraph.spacing.clone();
+            let mut positions = effective.tab_positions();
+            let kind = if let Some(source) = self.source {
+                let Some((_, kind)) = positions.iter().find(|s| s.0 == source).copied() else {
+                    continue;
+                };
+                if position != source && positions.iter().any(|s| s.0 == position) {
+                    return Err("A selected paragraph already has a tab at this destination. Choose another position or cancel.".into());
+                }
+                positions.retain(|s| s.0 != source);
+                kind
+            } else {
+                if let Some((_, kind)) = positions.iter().find(|s| s.0 == position) {
+                    if *kind == self.creation_kind {
+                        continue;
+                    }
+                    return Err("A different tab type already uses this position.".into());
+                }
+                self.creation_kind
+            };
+            paragraph.spacing.copy_tab_stops(&effective);
+            if let Some(source) = self.source {
+                for leader in &mut paragraph.spacing.tab_leaders {
+                    if leader.position_half_points == source {
+                        leader.position_half_points = position;
+                    }
+                }
+                paragraph
+                    .spacing
+                    .tab_leaders
+                    .sort_by_key(|s| s.position_half_points);
+            }
+            positions.push((position, kind));
+            positions.sort_by_key(|s| s.0);
+            paragraph.spacing.set_tab_positions(&positions)?;
+            if let Some(leader) = self.leader_override {
+                paragraph
+                    .spacing
+                    .tab_leaders
+                    .retain(|s| s.position_half_points != position);
+                if let Some(leader) = leader {
+                    paragraph
+                        .spacing
+                        .tab_leaders
+                        .push(crate::model::TabLeaderStop {
+                            position_half_points: position,
+                            leader,
+                        });
+                    paragraph
+                        .spacing
+                        .tab_leaders
+                        .sort_by_key(|s| s.position_half_points);
+                }
+            }
+            if paragraph.spacing.style_tab_stops() == effective.style_tab_stops() {
+                paragraph.spacing = original_spacing;
+            }
+            added = true;
+        }
+        if self.source.is_none() && !added {
+            return Err("All selected paragraphs already have this tab.".into());
+        }
+        preview.validate()?;
+        self.preview = preview;
+        self.position = position;
+        self.valid = true;
+        Ok(())
+    }
+    pub fn selection(&self) -> (usize, usize) {
+        self.selection
+    }
+
+    pub fn preview_leader_choice(&self) -> Option<Option<crate::model::TabLeader>> {
+        self.leader_override
+    }
+
+    /// Update the active preview only; movement keeps the choice until commit/cancel.
+    pub fn set_preview_leader(&mut self, leader: Option<crate::model::TabLeader>) -> Result<()> {
+        if !self.valid || self.deleting {
+            return Err("Choose a valid movement preview before changing the leader.".into());
+        }
+        self.leader_override = Some(leader);
+        self.move_to(f32::from(self.position))
+    }
+
+    /// Restore each original owner's leader while retaining the preview position.
+    pub fn restore_preview_leaders(&mut self) -> Result<()> {
+        if !self.valid || self.deleting {
+            return Err("Choose a valid movement preview before restoring leaders.".into());
+        }
+        self.leader_override = None;
+        self.move_to(f32::from(self.position))
+    }
+
+    pub fn remove(&mut self) -> Result<()> {
+        self.valid = false;
+        let source = self.source.ok_or("Cannot remove an uncommitted new tab.")?;
+        self.preview = self.original.clone();
+        for paragraph in &mut self.preview.paragraphs[self.first..=self.last] {
+            let effective = self.original.resolved_tabs(paragraph);
+            let positions: Vec<_> = effective
+                .tab_positions()
+                .into_iter()
+                .filter(|s| s.0 != source)
+                .collect();
+            if positions.len() != effective.tab_positions().len() {
+                paragraph.spacing.copy_tab_stops(&effective);
+                paragraph.spacing.set_tab_positions(&positions)?;
+            }
+        }
+        self.preview.validate()?;
+        self.deleting = true;
+        self.valid = true;
+        Ok(())
+    }
+    pub fn commit(self, editor: &mut Editor) -> Result<()> {
+        if !self.valid {
+            return Err("Invalid tab preview; drag cancelled.".into());
+        }
+        if editor.document != self.original || editor.selection != self.selection {
+            return Err("Tab drag cancelled because the document or selection changed.".into());
+        }
+        editor.set_paragraph_tab_settings(
+            self.selection.0,
+            self.selection.1,
+            self.preview.paragraphs[self.first..=self.last]
+                .iter()
+                .map(|p| self.preview.resolved_tabs(p).tab_positions())
+                .collect(),
+            Some(
+                self.preview.paragraphs[self.first..=self.last]
+                    .iter()
+                    .map(|p| self.preview.resolved_tabs(p).tab_leaders)
+                    .collect(),
+            ),
+        )
+    }
+}
+
+/// Sorted union with coverage counts for the half-open paragraph selection.
+pub fn positions(document: &Document, selection: (usize, usize)) -> Result<Vec<(u16, usize)>> {
+    if selection.0 > selection.1 {
+        return Err("Invalid tab ruler selection.".into());
+    }
+    let (first, _) = document.locate(selection.0)?;
+    let (mut last, offset) = document.locate(selection.1)?;
+    if selection.1 > selection.0 && offset == 0 && last > first {
+        last -= 1;
+    }
+    let mut counts = std::collections::BTreeMap::new();
+    for paragraph in &document.paragraphs[first..=last] {
+        for (position, _) in document.resolved_tabs(paragraph).tab_positions() {
+            *counts.entry(position).or_insert(0) += 1;
+        }
+    }
+    Ok(counts.into_iter().collect())
+}
+
+/// Common kind among paragraphs owning a position; None denotes mixed kinds.
+pub fn common_kind(
+    document: &Document,
+    selection: (usize, usize),
+    position: u16,
+) -> Option<TabKind> {
+    if selection.0 > selection.1 {
+        return None;
+    }
+    let (first, _) = document.locate(selection.0).ok()?;
+    let (mut last, offset) = document.locate(selection.1).ok()?;
+    if selection.1 > selection.0 && offset == 0 && last > first {
+        last -= 1;
+    }
+    if first > last {
+        return None;
+    }
+    let mut kinds = document.paragraphs[first..=last].iter().filter_map(|p| {
+        document
+            .resolved_tabs(p)
+            .tab_positions()
+            .into_iter()
+            .find(|s| s.0 == position)
+            .map(|s| s.1)
+    });
+    let first = kinds.next()?;
+    kinds.all(|k| k == first).then_some(first)
+}
+
+/// Read-only distribution; no-stop paragraphs are not counted as leader None.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LeaderSummary {
+    pub selected: usize,
+    /// None, Dots, Dashes, Line, among owners of the explicit stop.
+    pub counts: [usize; 4],
+}
+impl LeaderSummary {
+    pub fn owners(&self) -> usize {
+        self.counts.iter().sum()
+    }
+    pub fn common(&self) -> Option<Option<crate::model::TabLeader>> {
+        use crate::model::TabLeader as L;
+        let owners = self.owners();
+        if owners == 0 {
+            return None;
+        }
+        [None, Some(L::Dots), Some(L::Dashes), Some(L::Line)]
+            .into_iter()
+            .zip(self.counts)
+            .find(|(_, n)| *n == owners)
+            .map(|(leader, _)| leader)
+    }
+    pub fn description(&self) -> String {
+        format!(
+            "Leaders in {}/{} paragraphs: None {}, Dots {}, Dashes {}, Line {}. No stop: {}.",
+            self.owners(),
+            self.selected,
+            self.counts[0],
+            self.counts[1],
+            self.counts[2],
+            self.counts[3],
+            self.selected - self.owners()
+        )
+    }
+}
+pub fn leader_summary(
+    document: &Document,
+    selection: (usize, usize),
+    position: u16,
+) -> Result<LeaderSummary> {
+    if selection.0 > selection.1 {
+        return Err("Invalid tab ruler selection.".into());
+    }
+    let (first, _) = document.locate(selection.0)?;
+    let (mut last, offset) = document.locate(selection.1)?;
+    if selection.1 > selection.0 && offset == 0 && last > first {
+        last -= 1;
+    }
+    let mut summary = LeaderSummary {
+        selected: last - first + 1,
+        counts: [0; 4],
+    };
+    for p in &document.paragraphs[first..=last] {
+        if document
+            .resolved_tabs(p)
+            .tab_positions()
+            .iter()
+            .any(|s| s.0 == position)
+        {
+            use crate::model::TabLeader as L;
+            let i = match document.resolved_tabs(p).tab_leader(position) {
+                None => 0,
+                Some(L::Dots) => 1,
+                Some(L::Dashes) => 2,
+                Some(L::Line) => 3,
+            };
+            summary.counts[i] += 1;
+        }
+    }
+    Ok(summary)
+}

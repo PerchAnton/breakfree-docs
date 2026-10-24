@@ -1,0 +1,155 @@
+{
+  "format": "breakfree.docs.native",
+  "content_version": 16,
+  "paragraphs": [
+    {
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null,
+        "aligned_tab_stops": [
+          {
+            "position_half_points": 360,
+            "alignment": "center"
+          },
+          {
+            "position_half_points": 720,
+            "alignment": "right"
+          }
+        ]
+      },
+      "runs": [
+        {
+          "text": "Label\tCentered\tRight edge",
+          "character_style": null,
+          "direct": {}
+        }
+      ]
+    },
+    {
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null,
+        "aligned_tab_stops": [
+          {
+            "position_half_points": 360,
+            "alignment": "center"
+          },
+          {
+            "position_half_points": 720,
+            "alignment": "right"
+          }
+        ]
+      },
+      "runs": [
+        {
+          "text": "English\tDraft\t123.45",
+          "character_style": null,
+          "direct": {}
+        }
+      ]
+    },
+    {
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null,
+        "aligned_tab_stops": [
+          {
+            "position_half_points": 360,
+            "alignment": "center"
+          },
+          {
+            "position_half_points": 720,
+            "alignment": "right"
+          }
+        ]
+      },
+      "runs": [
+        {
+          "text": "Україна\tТабуляція\t678.90",
+          "character_style": null,
+          "direct": {}
+        }
+      ]
+    },
+    {
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null,
+        "aligned_tab_stops": [
+          {
+            "position_half_points": 360,
+            "alignment": "center"
+          },
+          {
+            "position_half_points": 720,
+            "alignment": "right"
+          }
+        ]
+      },
+      "runs": [
+        {
+          "text": "Русский\tТабуляция\t42.00",
+          "character_style": null,
+          "direct": {}
+        }
+      ]
+    },
+    {
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "spacing": {
+        "line_height_percent": null,
+        "space_after_half_points": null,
+        "aligned_tab_stops": [
+          {
+            "position_half_points": 360,
+            "alignment": "center"
+          },
+          {
+            "position_half_points": 720,
+            "alignment": "right"
+          }
+        ]
+      },
+      "runs": [
+        {
+          "text": "Combining é\tCenter é\tEnd",
+          "character_style": null,
+          "direct": {}
+        }
+      ]
+    }
+  ],
+  "style_catalog": {
+    "custom": [],
+    "normal": {
+      "parent": null,
+      "next_style": null,
+      "character": {}
+    },
+    "no_spacing": {
+      "parent": "normal",
+      "next_style": null,
+      "character": {},
+      "line_height_percent": 100,
+      "space_after_half_points": 0
+    },
+    "heading1": {
+      "parent": "normal",
+      "next_style": "normal",
+      "character": {
+        "bold": true,
+        "font_size": 36
+      }
+    }
+  },
+  "character_styles": []
+}

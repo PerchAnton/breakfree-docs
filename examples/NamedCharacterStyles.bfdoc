@@ -1,0 +1,108 @@
+{
+  "format": "breakfree.docs.native",
+  "content_version": 8,
+  "paragraphs": [
+    {
+      "alignment": "left",
+      "paragraph_style": "heading1",
+      "runs": [
+        {
+          "text": "Character styles",
+          "character_style": null,
+          "direct": {}
+        }
+      ]
+    },
+    {
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "runs": [
+        {
+          "text": "Strong inherits the paragraph size.",
+          "character_style": "strong",
+          "direct": {}
+        }
+      ]
+    },
+    {
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "runs": [
+        {
+          "text": "Annotation: italic, underline, 14 pt.",
+          "character_style": {
+            "custom": 1
+          },
+          "direct": {}
+        }
+      ]
+    },
+    {
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "runs": [
+        {
+          "text": "Regular note inherits other properties.",
+          "character_style": {
+            "custom": 2
+          },
+          "direct": {
+            "bold": false
+          }
+        }
+      ]
+    },
+    {
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "runs": [
+        {
+          "text": "English · Україна · Русский · é · 🙂",
+          "character_style": "emphasis",
+          "direct": {}
+        }
+      ]
+    }
+  ],
+  "style_catalog": {
+    "custom": [],
+    "normal": {
+      "parent": null,
+      "next_style": null,
+      "character": {}
+    },
+    "no_spacing": {
+      "parent": "normal",
+      "next_style": null,
+      "character": {},
+      "line_height_percent": 100,
+      "space_after_half_points": 0
+    },
+    "heading1": {
+      "parent": "normal",
+      "next_style": "normal",
+      "character": {
+        "bold": true,
+        "font_size": 36
+      }
+    }
+  },
+  "character_styles": [
+    {
+      "id": 1,
+      "name": "Annotation",
+      "format": {
+        "italic": true,
+        "underline": true,
+        "font_size": 28
+      }
+    },
+    {
+      "id": 2,
+      "name": "Regular note",
+      "format": {
+        "bold": false
+      }
+    }
+  ]
+}

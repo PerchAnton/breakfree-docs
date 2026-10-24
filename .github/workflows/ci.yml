@@ -1,0 +1,78 @@
+name: Standalone Rust editor checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  editor:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned Rust toolchain
+        run: |
+          rustup toolchain install 1.99.1 --profile minimal --component rustfmt,clippy
+          rustup show
+      - name: Linux native build libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y pkg-config libxkbcommon-dev libwayland-dev libgl1-mesa-dev libegl1-mesa-dev
+      - name: Formatting
+        run: cargo fmt --check
+      - name: Clippy including native capture harness
+        run: cargo clippy --locked --all-targets --features capture -- -D warnings
+      - name: Core-only tests without a GUI dependency
+        run: cargo test --locked --no-default-features
+      - name: Model, storage, CLI and real widget event tests
+        run: cargo test --locked
+      - name: Check local links and artwork
+        run: |
+          python tools/check_repository.py
+          python tools/test_license_inventory.py
+      - name: Build independent native executable
+        run: cargo build --locked --release
+      - name: Native executable capabilities without opening a window
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            ./target/release/breakfree-docs.exe --capabilities
+          else
+            ./target/release/breakfree-docs --capabilities
+          fi
+      - name: Record Windows review build provenance
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $exe = 'target/release/breakfree-docs.exe'
+          $version = & $exe --version
+          if ($LASTEXITCODE -ne 0) { throw 'Version check failed' }
+          @{
+            source_commit = '${{ github.sha }}'
+            version = $version
+            executable_sha256 = (Get-FileHash $exe -Algorithm SHA256).Hash
+            runner = '${{ runner.os }}'
+            native_keyboard_and_display_scaling = 'NOT VERIFIED by CI'
+          } | ConvertTo-Json | Set-Content -Encoding utf8 windows-build.json
+      - name: Upload Windows review build (not a release)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-review-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            target/release/breakfree-docs.exe
+            examples/StyleNavigation.bfdoc
+            docs/WINDOWS_ACCEPTANCE.md
+            windows-build.json

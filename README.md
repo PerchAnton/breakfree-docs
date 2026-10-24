@@ -6,12 +6,12 @@
 
 <p align="center">
   <strong>Your words. Your freedom.</strong><br>
-  An independent document editor in the making.<br>
+  An independent local document editor prototype.<br>
   A place for letters, reports and ideas — part of BreakFree Office.
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/status-planning-8055C8?style=flat-square" alt="Status: planning">
+  <img src="https://img.shields.io/badge/status-working%20prototype-8055C8?style=flat-square" alt="Status: working prototype">
   <img src="https://img.shields.io/badge/focus-documents-8055C8?style=flat-square" alt="Focus: documents">
   <img src="https://img.shields.io/badge/suite-BreakFree%20Office-241337?style=flat-square" alt="Part of BreakFree Office">
 </p>
@@ -27,11 +27,61 @@
 ---
 
 > [!IMPORTANT]
-> **Planning stage — not a working editor yet.** This repository contains original project documentation and approved branding. There are no installers or verified DOCX compatibility results. The roadmap describes proposed work, not shipped functionality.
+> **Working Rust editor, native ribbon prototype.** Create, edit, format, undo,
+> save and reopen local `.docx` documents (with optional `.bfdoc`) in a standalone desktop window. No Office
+> installation, cloud service or neighboring repository is required. There are no
+> installers or releases. A [restricted DOCX profile](docs/DOCX_SUBSET.md) is available;
+> general Word compatibility is not claimed. The detailed roadmap remains
+> the longer-term plan; the [validation report](docs/VALIDATION.md) separates actual
+> checks from pending work.
+
+## Alpha.96 — external DOCX corpus
+
+The [seven-file corpus](docs/DOCX_CORPUS.md) records independent inputs and raw
+macOS Cocoa save-back output. Shared-session save/reopen is exact for accepted
+cases; external text/emphasis/alignment checks pass, but Cocoa reimport still
+fails safely on unsupported package parts. Failures now identify the relationship
+part and type. This is measured acceptance evidence, not broad compatibility.
+Design and runtime dependencies are unchanged.
+
+## Alpha.95 — DOCX properties and dependency evidence
+
+Custom DOCX properties now survive editing and optional native v21 conversion
+without rewriting their XML. Updated decimal PAGE caches are accepted as derived
+display values. [License review](docs/LICENSE_REVIEW.md) recovers full upstream
+texts for 22 of the previous 32 missing-notice entries; ten remain incomplete.
+Packaging checks pinned source revisions and notice hashes offline. Design is
+unchanged; external save-back and distribution clearance remain open.
+
+## Alpha.94 — combined DOCX exchange
+
+The bounded profile now includes inline PNG, next-page sections, plain headers/
+footers and page-number restarts, explicit tab stops/leaders and three named font
+families. Core/app metadata survives edits and conversion to optional native v20.
+The Font dialog selects Arial, Times New Roman or Courier New with one Undo/Redo.
+See [precise limits](docs/DOCX_SUBSET.md), the combined
+[fixture](examples/docx_extended.rs), and [local review packaging](docs/REVIEW_PACKAGE.md).
+External Word save-back and public release acceptance remain open.
+
+## Alpha.93 — DOCX tables
+
+DOCX now exchanges the editor's fixed-grid plain-text tables: rows/cells, exact
+column widths, empty/Unicode/multiline cells and a repeating first row. Shared
+object editing and undo/redo remain unchanged. This is a strict plain-cell profile,
+not arbitrary Word table formatting; unsupported properties fail before writing.
+See [the table boundary](docs/DOCX_SUBSET.md#table-boundary-alpha93).
+
+## Alpha.92 — DOCX hyperlinks
+
+DOCX remains primary. HTTP/HTTPS/mailto hyperlinks now exchange as model-owned
+ranges, preserving mixed run formatting, Unicode and links inside numbered lists.
+Existing link editing and undo/redo use the same model. Unsupported link metadata
+fails explicitly; import never activates a destination. See the
+[DOCX profile](docs/DOCX_SUBSET.md) and [validation](docs/VALIDATION.md).
 
 ## Write without getting in your own way
 
-BreakFree Docs is being planned for everyday writing and, over time, demanding document workflows. The aim is a dependable editor for letters, reports and long-form documents, with local files, clear controls and an extensible foundation.
+BreakFree Docs starts with everyday writing and can grow toward demanding document workflows. The aim is a dependable editor for letters, reports and long-form documents, with local files, clear controls and an extensible foundation.
 
 Start with a small workflow that earns trust. Expand it through demonstrated results, not a list of buttons that do not work.
 
@@ -50,13 +100,25 @@ The first implementation milestone covers paragraphs, selection, basic emphasis 
 | Undo, recovery and versioned persistence | Search, navigation, print and PDF | Templates, mail merge and automation |
 | Tests that run without the interface | A tested DOCX subset | Optional assistant integrations |
 
-All items are planned. Advanced capabilities are separate milestones, not promises for the first release. Full compatibility with every Word feature is not an initial release requirement.
+The basic D1 writing loop is implemented as a prototype. Advanced capabilities are
+planned separate milestones, not promises for the first release. See the roadmap
+for the distinction between local evidence and completed milestone approval.
 
 ## Built around the document
 
-**Your files stay under your control.** Offline essentials, recoverable saves and explicit handling of unsupported content are design requirements. Imported macros and remote resources must not run or load silently.
+**Your files stay under your control.** Save writes a temporary file beside the
+destination, flushes it, then replaces the destination. Tested failures before
+replacement preserve the previous file. There is no autosave, crash recovery or
+power-loss guarantee; see [file semantics](docs/NATIVE_FORMAT.md). Unsupported
+formats and content versions are rejected explicitly.
 
-**The interface is not the engine.** The proposed architecture separates the document model, editing operations, layout, storage and application shell. Desktop UI, command-line tools and future opt-in automation will use the same validated command interface.
+**The interface is not the engine.** The value-based document model, commands,
+undo/redo, persistence, text projection, native layout and GUI are separate Rust modules.
+The GUI and tests use the same edit commands. The process adapter supplies the
+optional Office launch interface. Rust is approved by the owner;
+[ADR 0002](docs/adr/0002-rust-native-ribbon.md) records the replaceable native GUI
+prototype. [UI_SPEC](docs/UI_SPEC.md) defines the Word 2024 Windows reference,
+measurable layout and pending comparison gates.
 
 **Text and accessibility come first.** Input methods, international text, keyboard navigation, screen-reader behavior and font fallback must influence architecture selection, not wait until the final polish stage.
 
@@ -68,18 +130,314 @@ The [detailed roadmap](ROADMAP.md) defines architecture proposals, feature areas
 
 DOCX support will be measured separately for reading, editing and writing. Text preservation, page layout, unsupported elements and font substitution need separate results. Opening one sample is not proof of general compatibility.
 
+## Versions and release approval
+
+The first cycle is `0.1.0-alpha.N` → `0.1.0-beta.N` → `0.1.0-rc.N` → `0.1.0`.
+After publishing the first stable release, development moves to `0.2.0`. Read
+[versioning and approval](docs/VERSIONING.md) and [CHANGELOG](CHANGELOG.md).
+`Cargo.toml` defines the current application version; `--version`, capabilities
+and GUI Help show that same build version. Every delivered change set increments
+the prerelease counter and updates CHANGELOG, including documentation-only work.
+Every work report ends with the current version for owner approval. No release
+or tag is automatically published.
+
+## Build and run
+
+Install [Rust](https://rust-lang.org/tools/install/); `rust-toolchain.toml` selects
+1.99.1 and `Cargo.lock` pins dependencies. All runtime layers are Rust. No Office,
+Python, Node, neighboring repository or cloud account is required. Dependency
+installation needs registry access; the installed editor makes no network requests.
+The earlier Python experiment is retained only in `prototypes/python/`.
+
+On macOS install Xcode Command Line Tools. On Debian/Ubuntu install native build
+libraries (`pkg-config libxkbcommon-dev libwayland-dev libgl1-mesa-dev libegl1-mesa-dev`)
+and use a working desktop/OpenGL session. Linux file dialogs use an XDG portal.
+Then, from this checkout:
+
+```sh
+cargo build --locked --release
+./target/release/breakfree-docs --new
+./target/release/breakfree-docs --open "/absolute/path/My document.docx"
+./target/release/breakfree-docs --capabilities
+./target/release/breakfree-docs --version
+```
+
+On Windows install Rust's MSVC toolchain and Visual Studio Build Tools with
+**Desktop development with C++** (MSVC and Windows SDK). In PowerShell:
+
+```powershell
+cargo build --locked --release
+.\target\release\breakfree-docs.exe --new
+.\target\release\breakfree-docs.exe --open "C:\Users\YourName\Documents\My document.docx"
+.\target\release\breakfree-docs.exe --capabilities
+.\target\release\breakfree-docs.exe --version
+```
+
+The native executable is `breakfree-docs` (`.exe` on Windows); there is no installer,
+file association or signing yet. Build/CI success is distinct from native-platform
+input validation; see [VALIDATION](docs/VALIDATION.md). `cargo run --locked -- --new`
+is convenient during development. `cargo build --locked --no-default-features`
+builds a model/CLI binary that answers information commands without a GUI toolkit;
+it advertises no desktop launch actions and rejects launch attempts clearly.
+
+## Use the editor
+
+Open [examples/Welcome.bfdoc](examples/Welcome.bfdoc) for the original v1 fixture or
+[examples/Formatting.bfdoc](examples/Formatting.bfdoc) for sized/underlined Unicode text.
+Home has real clipboard, bold/italic/underline, font size, alignment, Find/Replace
+and Select All commands. At a collapsed caret, character formatting sets the next
+insertion style. The size field accepts 1–400 pt in half-point steps (for example,
+`12.5`); Enter or leaving the field applies it and Escape cancels. Mixed selected
+sizes show an empty field. Grow/Shrink Font steps each selected run independently
+through common presets, with one undo operation. At a caret it changes pending
+insertion size. Native paste is plain text; the Paste menu explains this scope.
+Find opens navigation directly; its arrow and Select expose command menus.
+Navigation shows the active result number and highlighted context for all literal
+matches. Match case starts enabled; Whole words starts disabled. Tab/Space changes
+these window-local search options without changing the document. Previous/Next
+buttons or Enter/Down and Shift+Enter/Up in
+the search field wrap through the matches without leaving that field. Clear resets
+the query; Escape closes the pane and returns to the document. Selecting a result
+scrolls the continuous canvas to it. Search respects complete combining/emoji
+clusters. Ignoring case uses Unicode simple folding; Whole words uses Unicode
+word boundaries, including internal apostrophes. Search does not normalize text,
+expand ß to SS, or apply locale-specific casing. Wildcards are not supported.
+Queries above 4,096 UTF-8 bytes show an error without truncation.
+Replace uses the same matches and existing one-operation undo boundary. Replace
+All… opens a read-only preview with match/change counts and before/after excerpts.
+Cancel or Escape leaves the document unchanged; Tab from the initially focused
+Cancel button to Apply, then Enter, applies one transaction. One Undo restores all
+text, formatting and the prior selection. Equal-text matches are skipped without
+changing their mixed formatting. Inserted text takes each match's first character
+style. Over-limit results and stale previews are rejected before editing.
+[Batch replacement semantics](docs/adr/0005-replace-all-preview.md).
+Clear character formatting (the Home eraser, Ctrl+Space in the document, or
+KeyTips H → FC) removes direct bold/italic/underline and size overrides in one
+Undo operation, restoring the paragraph style. Text and paragraph alignment remain unchanged. At a caret it resets
+only future input; it does not expand to the surrounding word. This is the
+supported character-only reset; paragraph style and alignment remain intact.
+Control remains Control on macOS; system input-source shortcuts may intercept it.
+The ribbon and command search provide the same action without that chord.
+[Navigation details and evidence](docs/UI_SPEC.md#alpha15-search-options).
+The Font launcher opens a dialog for style, size and underline with a preview.
+Only OK applies the draft, together in one undo operation; Cancel/Escape discards
+it. Mixed properties stay unchanged unless edited. Unimplemented font-family and list commands are disabled with explanations.
+
+Home Styles applies Normal, No Spacing or Heading 1 to selected paragraphs in one
+undo. Direct formatting and alignment remain unchanged; Clear character formatting
+returns the selected text to its paragraph style. No Spacing changes real spacing.
+Older files retain their explicit formatting until cleared. New paragraphs repeat
+the current style unless a following style is explicitly selected. Compact layouts offer all styles through
+More styles or More. [Inheritance rules](docs/adr/0006-built-in-paragraph-styles.md).
+
+Modify an existing definition through Home → More styles → Modify style, or
+right-click its gallery card. Change its parent, emphasis, size and paragraph
+spacing in a local draft. Blank fields inherit; On/Off explicitly override a
+parent. Invalid cycles disable OK. Cancel/Escape changes nothing; OK updates
+inheriting paragraphs and descendants in one Undo, preserving direct formatting.
+These settings belong only to the current document. [Definition rules](docs/adr/0007-editable-style-definitions.md).
+
+Home Styles → Create style opens a named-style draft. Choose a built-in/custom
+parent or No style, enter a unique name and optionally adjust supported properties.
+Apply to selected paragraphs is checked initially; creation and application use
+one Undo. Uncheck it to create the definition only. Cancel/Escape changes nothing.
+The current document supports up to 64 custom styles; names are 1–64 Unicode
+characters, without outer whitespace/control characters, unique after Unicode
+lowercasing. Styles remain available in More styles and command search after reopen.
+KeyTips H → L → C (wide/compact) or H → E → C (minimum width) opens creation.
+Modify Style also renames custom styles: the current name is selected on entry.
+Confirm name, parent and property changes together in one undo; IDs and all
+paragraph/descendant references stay intact. Built-in names remain fixed.
+Right-click a gallery card or any Styles-list row → Modify style to edit it
+without applying it to the document. Cancel/unchanged OK preserves redo history.
+Delete style opens a draft with separate replacements for paragraphs and direct
+child styles (including a No style parent). Counts reflect actual references;
+inherited appearance may change, while direct formatting and text remain intact.
+Delete commits once; one Undo restores the definition and all references.
+Cancel/Escape changes nothing; built-ins cannot be deleted and cycles are rejected.
+Use the style's context menu to delete an unused definition without applying it.
+KeyTips H → L → D or narrow H → E → D opens the selected style's draft.
+Following paragraph in Create/Modify Style selects Same style or a built-in/custom
+style. Enter applies it to the new right paragraph in one Undo/Redo; paste does not.
+This choice is independent of the parent. Deletion remaps following references to
+the paragraph replacement. [Following-style rules](docs/adr/0010-following-paragraph-styles.md).
+Home → Styles also offers **Strong**, **Emphasis** and **Default paragraph font**.
+The cascade is paragraph style → character style → direct formatting: direct
+`false` wins too. Each run has at most one character style. Applying/removing it
+preserves direct overrides; Clear character formatting removes only direct
+properties. Select text to change it in one Undo/Redo, or use a caret to set an
+undoable insertion style without dirtying the document until text is entered.
+After F10/Alt → H → L (narrow: H → E), B/I/Z applies Strong/Emphasis/removes the
+character style. Arrow navigation scrolls the Styles list; command search also
+finds these actions. Built-ins remain fixed.
+
+Home Styles → Create character style opens a local draft with a unique name,
+optional Bold/Italic/Underline (Inherit/On/Off), font size and a preview based on
+the active paragraph. Blank size inherits. Apply to selection / future typing is
+checked initially; definition creation and application share one Undo/Redo.
+Uncheck it to create an unused definition. Cancel/Escape changes nothing.
+Names are 1–64 Unicode scalars, unique ignoring case within character styles;
+up to 64 custom character styles are stored per document. They appear in the
+scrollable Character styles list and command search after reopening. KeyTips
+H → L → K (narrow: H → E → K) opens creation. Paragraph and character names are
+separate namespaces. Direct formatting is preserved and may mask the new style.
+Select text carrying one custom character style, then Home Styles → Modify
+character style (KeyTips H → L → J; narrow H → E → J). Change Inherit/On/Off
+properties or size, preview, then OK to commit one Undo/Redo. Cancel changes
+nothing. Right-click a custom style in the list to modify even an unused definition.
+IDs, references and direct overrides stay unchanged; direct overrides can
+mask definition changes. Built-ins and mixed selections disable the main command.
+The name is selected on entry: type a new unique name to rename the style.
+Name and property changes commit together in one Undo/Redo. Cancel/Escape changes
+nothing; invalid or reserved names keep OK disabled. Home and command search show
+the new name after confirmation and reopen. Unchanged drafts preserve redo.
+Home Styles → Delete character style opens a replacement draft for a uniform
+custom style (F10/Alt → H → L → X; narrow H → E → X). Its context menu also deletes
+unused definitions. Choose another custom style, Strong/Emphasis or Default
+paragraph font to remove references. All text and future-typing references are
+remapped together; direct overrides and paragraph styles stay. Appearance may
+change. Delete commits one Undo/Redo; Cancel/Escape changes nothing. Cancel starts
+focused, so Enter alone does not delete. Built-ins cannot be deleted.
+Create/Modify Character Style includes Style based on: a custom style, Strong,
+Emphasis or (Paragraph style). Unset properties follow the parent chain; direct
+formatting wins. Invalid parent cycles disable OK. Name, parent and properties
+commit together in one Undo/Redo. Deleting a parent also remaps its direct children
+to the replacement and rejects a descendant replacement that would create a cycle.
+[Named character styles](docs/adr/0012-named-character-styles.md).
+[Character-style rules](docs/adr/0011-character-style-precedence.md).
+[Style rules](docs/adr/0008-custom-named-styles.md) · [Deletion rules](docs/adr/0009-delete-custom-styles.md).
+
+This build reads native content v1–v21 and saves **v21**. Earlier builds reject new
+v21 saves; use Save As to retain older files. See [format details](docs/NATIVE_FORMAT.md).
+File provides New/Open/Save/Save As, unsaved Save/Discard/Cancel, PDF export and
+print preview. View → Print Layout enables editable pages with actual page counts;
+continuous editing remains available. Physical printing is a separate unverified gate.
+Status reports real word/paragraph counts and zoom. The ribbon uses compact vector controls, two-row Font/Paragraph groups and
+an active paragraph-style gallery; it compacts and moves commands into overflow menus as
+the window narrows. File has Home/Options navigation and real document properties.
+The status bar provides zoom out/in and a percentage button that opens Zoom.
+View groups real Ruler/Navigation checkboxes, Zoom, 100% and Canvas Width. Width
+fit tracks the window and side panes within 50–200%; manual zoom exits fit mode.
+See [current Home layout captures](docs/UI_SPEC.md#alpha11-native-captures) and
+[reproducible capture commands](docs/UI_SPEC.md#actual-application-capture).
+
+Ctrl (Command on macOS) + N/O/S, Shift+S, B/I/U, Z/Y or Shift+Z handle file, emphasis
+and history actions. Ctrl/Command+Shift+P focuses and selects the size field.
+Ctrl/Command+D or Ctrl/Command+Shift+F opens the Font dialog.
+Ctrl/Command+Shift+> / < grows/shrinks the selected text (period/comma keys).
+Ctrl/Command + L/E/R/J aligns paragraphs; F opens Find. Ctrl+H opens Replace
+on Windows/Linux. On macOS use Home → Replace: Command+H is reserved by the OS.
+Ctrl+F1 switches pinned/tabs-only ribbon mode; double-click a tab or use its context
+menu for the same choice. A collapsed tab opens temporarily over the canvas and
+closes after a command, outside click or Escape. Alt+F opens File; Alt+H enters Home;
+Alt+Q focuses command search. Tap Alt (release it without another key) or F10 to
+show KeyTips. Then press H for Home: 1/2/3 toggles bold/italic/underline, F then S
+focuses size, F then N opens Font, and A then L/C/R/J aligns. File uses F, then
+N/O/S/A/T for New/Open/Save/Save As/Options. H → E opens narrow-window More.
+Top-level 1/2/3 invokes Save/Undo/Redo on the default Quick Access Toolbar (also
+Alt+1/2/3). Alt, 0 opens customization: show/hide New/Open/Save/Undo/Redo, move
+the toolbar above/below the ribbon, or reset. New entries append; hints 1–5 follow
+visible order, and disabled actions keep their place. Command visibility, order and
+above/below placement persist across launches. Visibility and placement changes
+save immediately. Choose More Commands to reorder the current commands: Up/Down
+selects, Alt+Up/Down or the move buttons changes order, and OK applies and saves.
+Cancel/Escape discards the draft; unchanged OK does not write. Tab/Shift+Tab cycles
+the list, enabled move buttons and OK/Cancel. From focused tabs, Up enters the toolbar (Down also works below the
+ribbon); Left/Right skips unavailable actions, Down opens options, Tab returns to
+tabs and Escape backs out. N/JI/G/P/S/M/R/W/Y1 selects the
+other tabs. T opens More tabs when the row overflows. View W → K/R toggles
+Navigation Pane/Canvas Rulers; W → Q opens Zoom with a validated 50–200% draft.
+W → J restores 100%; W → C fits the continuous canvas width.
+Unimplemented tabs explain their limits and retain Escape navigation.
+Backspace removes a prefix; Escape clears it, backs up a level, then restores
+previous focus. Invalid/repeated hint keys cannot enter document text.
+Tab/Shift+Tab and
+arrows navigate enabled Home/View controls, Ctrl+Left/Right changes groups, Down or
+Alt+Down opens dropdowns, Enter/Space activates. Escape closes menu, ribbon and
+focus levels in order. F6/Shift+F6 cycles document, visible panes, status and ribbon. Input events delivered in one widget update form one text undo operation;
+explicit paste and formatting commands have separate boundaries. See the
+[implemented KeyTips and limits](docs/UI_SPEC.md#alpha9-quick-access-and-view).
+Bare Alt is implemented and event-tested; native Windows Alt/AltGr, exact Word 2024 mappings and assistive-technology behavior
+remain review gates. Draw/Help/ruler/100% assignments are provisional; unsupported-tab
+commands and broader toolbar customization remain roadmap work. See the
+[ordering dialog](docs/UI_SPEC.md#alpha12-toolbar-ordering).
+
+## Interface palette
+
+The native shell uses light neutral surfaces, dark outlines and small colored
+icon details: gold Clipboard/Open, blue file and editing details, and muted
+indicators on unavailable formatting commands. Violet remains the BreakFree
+focus/selection accent. All icons are original Rust vectors; color does not
+indicate a newly implemented command. File keeps working Home/Options actions
+and explained disabled Print. [Palette and captures](docs/UI_SPEC.md#alpha13-icon-palette)
+describe the reference scope and remaining differences.
+
+## Local toolbar settings
+
+Settings apply to this user/profile across documents. Reset Toolbar asks for
+confirmation and keeps the previous settings file as a backup before restoring
+Save/Undo/Redo above the ribbon. Cancel/Escape changes nothing. A failed save shows
+an error and a menu warning; the toolbar remains usable in the current window.
+Use Retry Saving after fixing permissions or another transient cause. Corrupt or
+future settings use defaults with an error and are not automatically overwritten.
+
+Windows stores settings at `%APPDATA%\BreakFree\Docs\settings.json`, macOS at
+`$HOME/Library/Application Support/BreakFree/Docs/settings.json`, and Linux under
+`$XDG_CONFIG_HOME/breakfree-docs/settings.json` (default `$HOME/.config`). For an
+isolated test profile, set an absolute directory before starting:
+
+```powershell
+$env:BREAKFREE_DOCS_CONFIG_DIR = Join-Path $env:TEMP "breakfree-docs-review"
+.\target\release\breakfree-docs.exe --new
+```
+
+On macOS/Linux use `BREAKFREE_DOCS_CONFIG_DIR=/absolute/profile/path` before the
+same executable command. Close and reopen Docs to verify persistence; there is
+no extra launch flag. `--version` and `--capabilities` neither read nor write
+settings. Other windows do not update live; conflicting writes are rejected.
+[ADR 0004](docs/adr/0004-local-toolbar-preferences.md) defines the schema, paths,
+backup/reset behavior and lock/power-loss limits. Document files and history are
+independent of preferences.
+
+## Check
+
+```sh
+cargo fmt --check
+cargo clippy --locked --all-targets -- -D warnings
+cargo test --locked
+cargo test --locked --no-default-features
+python3 tools/check_repository.py
+```
+
+Python is optional for the documentation/brand check only. GUI event tests run the
+actual egui widgets without creating OS windows; they do not prove native IME or
+Windows scaling. To capture this application's native rendering on a desktop:
+
+```sh
+mkdir -p artifacts
+EFRAME_SCREENSHOT_TO="$PWD/artifacts/editor.png" cargo run --locked --features capture -- --new
+```
+
+PowerShell: create `artifacts`, set `$env:EFRAME_SCREENSHOT_TO` to an absolute PNG
+path, then run the same Cargo command. The capture-only feature exits after a frame.
+See [UI_SPEC](docs/UI_SPEC.md) for comparison conditions and remaining visual gates.
+
 ## Development status
 
 | Area | Current position |
 | :--- | :--- |
 | Identity and planning documents | Available |
-| Implementation language | Rust-first proposal for review; not adopted yet |
-| UI toolkit and native persistence format | Selection and prototypes pending |
-| Windows, macOS and Linux | Intended evaluation targets; no supported builds |
-| Application code, test results and releases | Not available |
+| Implementation language | Rust approved; language decision complete |
+| UI toolkit and native persistence format | Native eframe/egui ribbon experiment; strict `.bfdoc` v1/v2/v3 reading, v3 writing |
+| Windows, macOS and Linux | macOS local build/render; native Windows/Linux evaluation pending |
+| Application code and tests | Available; [evidence and limits](docs/VALIDATION.md) |
+| Releases and installers | None |
 | License | Owner decision pending |
 
-There is nothing to install yet. Reproducible build instructions will be published with a working implementation. Docs remains the first development priority within the suite.
+Docs remains the first development priority within the suite. The
+[local process contract v1](contracts/v1/BASELINE.md) is provisional: Office has
+not published a contract at the inspected source commit, so upstream conformance
+and launching from an actual Office shell remain unverified.
 
 ## The BreakFree family
 
@@ -105,3 +463,760 @@ BreakFree Docs is an independent project, not affiliated with Microsoft. Referen
 ---
 
 <p align="center"><strong>BreakFree Office · Your work. Your freedom.</strong><br><sub>Created by <a href="https://github.com/PerchAnton">Anton Perchenko</a></sub></p>
+
+## Formatting provenance (alpha.30)
+
+Open Home's Formatting pane to inspect Bold, Italic, Underline and font size.
+Each row shows its resolved value and authored source, including the named parent
+that supplies an inherited value. Equal-looking direct overrides remain direct.
+Mixed values and mixed sources are reported independently. With no selection,
+the pane describes future typing; selected paragraph separators have no character
+properties. This read-only view does not change document/history or native v9.
+Alpha.31 adds paragraph-property provenance below; style-management filtering remains future work.
+
+## Paragraph provenance (alpha.31)
+
+Formatting also shows Alignment, Line spacing (percent) and Space after (points).
+Alignment is an explicit paragraph value in the current model, labeled
+“Paragraph value (not inherited)”; it is not attributed to a style or guessed
+from appearance. Intervals show the nearest supplying paragraph style/ancestor,
+or Document default. Explicit zero is preserved. Space before and direct interval overrides are supported from alpha.42; the inspector identifies their supplying style or direct source.
+
+The paragraph section uses the same half-open selection rule as alignment/style
+commands: an exclusive end at the next paragraph start excludes that paragraph;
+a caret or selected empty paragraph still has paragraph properties. Mixed values
+and sources are independent. Inspection never mutates the document or undo history.
+Native content stays v9; palette and icons are unchanged.
+
+## Style filtering (alpha.32)
+
+Open Home → More styles (or the compact Editing menu). Filter by name and cycle
+All / Paragraph / Character / Custom using the scope button. Reset clears both.
+The list reports no matches explicitly; management commands remain available.
+F3 focuses the name field; Down enters the filtered command list, Enter applies,
+and Escape closes the popup. Tab/Space operate the filter controls.
+
+Filtering is view-only and session-local: no document/history/settings writes.
+Search trims surrounding whitespace and compares Unicode lowercase substrings;
+canonical normalization, locale-sensitive folding and fuzzy matching are not
+claimed. Built-in/default-character entries are excluded by Custom. Existing
+style application and context editing retain stable IDs. Native v9, palette and
+icons are unchanged.
+
+## Used styles (alpha.33)
+
+Enable **Used in document** in More styles. This intersects name/category filters
+and includes styles assigned to every paragraph (even empty ones), character
+styles referenced by text, and all transitive parents. Direct formatting does
+not remove a semantic style dependency. Unused descendants/siblings, next-style
+links and pending typing alone do not count. Default paragraph font is shown for
+text without a character style or an empty paragraph. Reset clears all filters.
+Usage is recomputed from the current model, so edits and Undo/Redo update the list;
+filtering itself never modifies content/history/settings. Native v9 is unchanged.
+
+## Style usage labels (alpha.34)
+
+Home style menus show Direct use, Parent dependency or Not used beneath each
+name, including when the used-only filter is off. Direct assignment wins if a
+style is also an ancestor. Parent dependency means inheritance-only use, not
+direct formatting. Empty paragraphs and default character formatting retain the
+alpha.33 rules; pending typing and next-style links do not count. Search matches
+style names, not these labels. Labels are read-only, recomputed after edits and
+Undo/Redo, and do not change stable IDs, ordering, storage or settings.
+
+## Dependency consumers (alpha.35)
+
+Style rows with assigned descendants show Required by followed by their names.
+Consumers are unique directly assigned styles in document encounter order; the
+walk includes every transitive parent, excludes self and unassigned intermediate
+styles, and is bounded for invalid external cycles. Paragraph and character
+style namespaces remain separate. Direct-use parents also show their consumers.
+Names wrap inside the existing scroll area; filtering does not hide dependency
+evidence. Renaming, editing and Undo/Redo are reflected from the current model.
+No document, history, settings, palette, icons or native format changes.
+
+## Dependency navigation (alpha.36)
+
+Activate a Required by name to reveal its style row without applying it. The
+menu stays open; name/category filters clear, Used in document stays unchanged,
+and the destination receives keyboard focus and scrolls into view. Links use
+stable paragraph/character IDs, so duplicate names across namespaces are safe.
+Enter/Space activates the navigation target; a separate activation of the focused
+style applies it. Escape closes the menu. Document/history/settings stay unchanged.
+
+## Return to parent (alpha.37)
+
+Back to parent restores the source of the first Required by jump together with
+its exact query, category and used-only setting. Further jumps and filter edits
+do not replace that return point. Pointer or keyboard activation keeps the menu
+open, focuses and scrolls to the original style without applying it. The return
+point is consumed on return and discarded when the menu closes; it is not saved
+in the document, settings or undo history. The list shrinks from 125 to 100 DIP
+while Back is available so the minimum-height popup remains bounded.
+
+## Named return destination (alpha.38)
+
+The return button now says Back to: followed by the original parent style name.
+The name is resolved from the stored stable ID on each frame, including custom
+paragraph and character names. Its 23-DIP-high button fits the 220-DIP menu width and truncates long labels;
+the tooltip retains the full name and restoration explanation. Return behavior,
+palette, icons, document/history and storage are unchanged.
+
+
+## Dependency navigation resilience (alpha.39)
+
+Pending jumps are checked against the current document and filters. If a source
+was removed, renamed outside the saved query or excluded by changed usage,
+Return restores the exact filters, explains why the row cannot be shown and
+focuses the filter. It does not apply a replacement style. Explicit filter edits
+cancel pending navigation and clear the notice. Navigation does not change
+content or undo history. A 32-style reverse-catalog chain and repeated keyboard
+jumps are covered by widget tests; native Windows acceptance remains open.
+
+
+## Windows navigation acceptance preparation (alpha.40)
+
+An 18-case CPU widget matrix exercises dependency navigation at synthetic
+100/125/150% scale, three window sizes and expanded/collapsed Home.
+The [Windows acceptance checklist](docs/WINDOWS_ACCEPTANCE.md) defines the separate native gate.
+A Unicode 32-style fixture and a Windows CI review artifact with source/version/hash
+metadata make the procedure reproducible. No suitable Windows desktop was
+available; native keyboard, display scaling and Word comparison remain unverified.
+The review artifact is not a release. Runtime behavior, palette and icons are unchanged.
+
+
+## Direct paragraph spacing (alpha.41)
+
+Home's existing spacing icon or F10 → H → PS opens Paragraph spacing; command
+search also finds it. Enter a whole line-height percentage (100–300) or space
+after in points (0–200, in 0.5 pt steps). Editing checks that property; unchecked
+fields keep their existing per-paragraph values, including mixed selections.
+A checked blank field inherits its style; Use style spacing resets all three. OK is
+one undo operation; Cancel/Escape changes nothing. The selection uses the same
+half-open paragraph range as alignment. Direct spacing survives style changes,
+Enter, joins and Replace All. Formatting inspection identifies direct overrides.
+
+Alignment stays independent; first-line/hanging indents,
+tabs and pagination remain deferred. [ADR 0013](docs/adr/0013-direct-paragraph-spacing.md)
+defines native v10 and editing policy. Windows acceptance is deferred by the owner.
+
+## Space before paragraph (alpha.42)
+
+Home → Paragraph spacing supports Space before in points (0–200, steps of 0.5).
+Check the field to change it; leave it unchecked to preserve each selected value.
+A checked blank field inherits from the paragraph style. Use style spacing clears
+all three direct interval overrides in one Undo/Redo. Paragraph style creation and
+modification also support space before; a blank style value inherits its parent,
+with zero as the document default. Explicit zero overrides a nonzero ancestor.
+Formatting inspection reports the source. Spacing applies once before each
+paragraph, including the first, and adds to the previous paragraph's space after.
+This continuous layout policy is not pagination. Native v11 preserves the property;
+v1–v10 imports resolve to zero before. Windows acceptance remains deferred.
+
+## Paragraph indents (alpha.43)
+
+Home → Paragraph spacing now includes Left indent and Right indent, in points
+(0–144, half-point steps). Each checkbox selects a property to change; unchecked
+fields keep existing values. A checked blank restores style inheritance. Use style
+spacing and indents resets all five properties in one Undo/Redo. Paragraph style
+creation/modification exposes the same fields; blank inherits the nearest ancestor,
+then document default zero. Direct zero explicitly cancels an inherited indent.
+Formatting inspection identifies each supplying style or direct override.
+
+Wrap and alignment use the indented column. On narrow views, horizontal indents
+shrink proportionally to retain up to 32 DIP of text width; document values remain
+unchanged. This is continuous layout, not pagination. Enter/join/Replace All follow
+the existing paragraph geometry copying policy. Native v12 preserves both indents;
+v1–v11 imports use zero. First-line/hanging indents, negative outdents and interactive
+ruler keyboard nudging remains a separate increment. Windows acceptance remains deferred.
+
+## First-line and hanging indents (alpha.44)
+
+Home → Paragraph spacing → Special indent changes only the checked property.
+Choose First line or Hanging and enter 0–144 pt in 0.5 pt steps. First line moves
+the first row right from the left indent; Hanging leaves the first row at the left
+indent and moves continuation rows right by the amount. The left indent denotes
+the outermost edge in this continuous-layout policy. Right indent is unchanged.
+
+A checked blank inherits the nearest paragraph style/ancestor; explicit zero
+disables the inherited special indent. Use style spacing and indents resets all
+six properties together. Style creation/modification has the same type and amount.
+A blank style amount inherits both type and magnitude regardless of the displayed
+type choice. Document default is zero. Apply/reset/parent changes each use one
+Undo/Redo. Formatting inspection reports type, amount and source.
+
+Wrapping uses distinct first-row/continuation widths without inserting characters
+or paragraph breaks. Narrow views proportionally reduce visual left/right/special
+indents to retain up to 32 DIP of text width; saved values do not change. Enter,
+joins and Replace All retain the established geometry copying policy. Native v13
+preserves the signed property; older imports inherit zero. Negative outer-edge outdents and pagination remain future work. Windows is deferred.
+
+## Indent layout hardening (alpha.45)
+
+Justified trailing spaces retain their logical cursor positions after visible ink.
+The visual text column is unchanged; a row-end caret can extend through trailing
+whitespace beyond the visible justified edge. This avoids moving the caret before
+a stored space at a soft wrap. Tests cover long mixed-format Unicode paragraphs,
+empty/trailing paragraphs, narrow views, synthetic scale and zoom/edit/history.
+Compact style creation reserves extra room for differing interface-font metrics.
+Native content stays v13; native Windows acceptance remains pending.
+
+## Interactive ruler prototype (alpha.46)
+
+With View → Ruler enabled, drag the upper triangle for the first line, the lower
+triangle for continuation lines, the rectangle for the overall left indent, or
+the right triangle for the right indent. The first selected paragraph supplies
+starting values; changed properties apply to selected paragraphs, excluding an
+exclusive end at the next paragraph start. Values snap to 0.5 pt within existing
+0–144 pt indent / ±144 pt special-indent limits. Other properties stay inherited.
+
+Motion previews without editing the document. Release commits one “Ruler indent”
+Undo/Redo. Escape, focus/pointer loss or a changed canvas/window transform cancels;
+returning to the original value preserves inheritance and redo. Text/shortcuts
+are blocked during dragging. Home → Paragraph spacing remains the keyboard
+alternative. This is a continuous-canvas prototype: no margins, tab stops,
+pagination yet. Alpha.49 adds a read-only vertical canvas ruler.
+
+## Ruler keyboard control and values (alpha.47)
+
+Ctrl+Shift+F8 reveals the ruler and focuses its first-line marker (a provisional
+Docs shortcut). Tab/Shift+Tab cycles first line, continuation lines, overall left
+and right. Left/Right previews 0.5 pt movement; Shift+Left/Right moves 5 pt. Enter
+commits one Undo/Redo and keeps focus. Tab commits the current marker before moving
+to another. Escape or F6 cancels the pending preview and returns to the document.
+Focus loss, resize or pointer takeover also cancels uncommitted changes. At a bound,
+reverse direction responds immediately. Text and editing shortcuts stay blocked
+while controlling markers; return to the document to use Undo/Redo.
+
+The readout shows exact resolved left/right and first-line/hanging amounts in
+points for the first selected paragraph, including the current preview. Zero is
+shown as 0.0 pt; zoom never changes stored/reported values. Left remains the
+outermost edge, while First/Hanging are additional distances. The first-line and
+continuation handles preserve the opposite origin. No native-format change.
+
+## Mixed paragraph indents (alpha.48)
+
+The ruler readout shows Mixed independently for Left, Right, First and Hanging
+when selected paragraphs have different resolved amounts. Equal values from
+different styles or direct overrides remain numeric. Hover a marker
+for exact minimum/maximum values. A caret includes its paragraph; an exclusive end
+at the next paragraph start does not include that next paragraph.
+
+A small dash beside a marker means its logical origin differs across the selection.
+First/continuation origins include the left indent, so a common marker origin can
+coexist with mixed individual amounts. Markers stay anchored to the first selected
+paragraph; tooltips identify this baseline. Editing still applies changed properties
+to selected paragraphs with one transaction. Indicators follow the live preview,
+cancel and Undo/Redo. Inspection never creates overrides or history entries.
+
+
+## Compact two-axis rulers (alpha.49)
+
+View → Ruler shows both axes. The horizontal ruler stays above the document when
+scrolling; the vertical ruler follows the continuous canvas text origin. Both use
+inches (eight subdivisions per inch) and follow document zoom. The 24-DIP horizontal
+and 20-DIP vertical scales retain neutral margins and compact indent markers.
+Exact values appear in marker tooltips and during keyboard/drag editing without a
+permanent readout above the document. Keyboard shortcuts and one-step Undo/Redo are
+unchanged. Vertical ruler margins are read-only; tab stops, editable page margins
+and pagination remain future work. Windows/reference matching remains unverified.
+
+
+## Reset ruler indents (alpha.50)
+
+Right-click the horizontal ruler and choose **Reset indents to style**. Alternatively,
+press Ctrl+Shift+F8 to enter the markers, then Delete. The preview removes direct
+left/right and first-line/hanging overrides from the selected paragraphs; each
+paragraph inherits its own style. Enter applies in one Undo/Redo step; Escape or F6
+cancels. Tab applies before changing markers. Arrow nudging is paused during reset
+preview. Spacing and alignment remain unchanged. A reset with no overrides creates
+no history entry and preserves redo. The vertical ruler remains read-only.
+
+
+## Individual ruler resets (alpha.51)
+
+The horizontal ruler context menu also resets **Left**, **Right**, or
+**First-line/hanging** independently. Enter marker control with Ctrl+Shift+F8,
+select a marker with Tab, then press **Shift+Delete** to preview its property reset.
+First-line and continuation markers refer to the same signed property; resetting
+it preserves the direct left indent. Plain Delete still resets all three properties.
+Enter/Tab accepts one Undo/Redo operation, Escape/F6 cancels. Other direct indents,
+spacing, alignment and content are preserved, including when the chosen property
+already inherits its value (no-op reset preserves redo).
+
+
+## Ruler value sources (alpha.52)
+
+Hover an indent marker to see whether its value comes from direct paragraph
+formatting, its paragraph style, an ancestor style (named), or the document default.
+Source groups include paragraph counts; equal values can still have Mixed sources.
+First-line/continuation markers show both left and special-indent provenance.
+The inspection follows the current reset/drag preview and undo/redo. It creates no
+overrides or history. Long source lists show three groups and a remaining count.
+
+
+## Keyboard ruler sources (alpha.53)
+
+Press Ctrl+Shift+F8 to enter the ruler, Tab to choose a marker, then **F1** to
+inspect its values and sources. **Enter, Escape or F1** closes the details and
+returns to the same marker. Pending indentation previews remain untouched; apply
+or cancel them separately after closing details. Other editing/navigation keys
+are ignored while inspecting. Existing focus-loss/pointer-takeover cancellation
+still applies. This is a Docs-specific shortcut, not verified Word equivalence.
+
+Ruler source inspection: focus a marker with Ctrl+Shift+F8, then press F1.
+Use Up/Down, Page Up/Down or Home/End to read all source groups; Enter, Escape
+or F1 returns to the marker without accepting or cancelling an indent preview.
+
+Mouse wheel source inspection (alpha.55): hover the open F1 panel to scroll its
+list. The wheel stays isolated from the document while inspecting, including at
+list edges. Horizontal/modified wheel input is ignored; click takeover retains
+the existing draft-cancellation policy. Keyboard scrolling remains available.
+
+Right-click the horizontal ruler and choose First line sources, Continuation line
+sources, Left indent sources or Right indent sources (alpha.56). Enter/Escape/F1
+returns to the chosen marker. Right-click cancels any uncommitted ruler preview;
+use F1 on its focused marker to inspect that preview without cancelling it.
+
+With a ruler marker focused, press **Shift+F10** to open its context menu
+(alpha.57). Use arrows, Tab/Shift+Tab or Home/End; Enter/Space runs the selected
+command and Escape returns to the marker. Opening/closing with the keyboard
+preserves a pending preview; until it is applied/cancelled, only that marker's
+source command is available. The dedicated Menu key is not exposed by the current
+GUI key abstraction; use Shift+F10. Windows acceptance remains deferred.
+
+Alpha.58 exposes marker keyboard instructions and uncommitted-preview status to
+assistive technology. F1 exposes the full source list through the focused marker's
+accessible name; it does not depend on visually scrolling every row. Accessibility
+Focus/Click enters marker control without editing. Native speech acceptance is
+still open; see [validation](docs/VALIDATION.md#alpha58-ruler-accessibility-validation).
+
+VoiceOver speech/cursor acceptance is postponed to the final accessibility review
+by owner request (alpha.59). Existing keyboard/AX checks do not substitute for it.
+
+Home **Increase indent / Decrease indent** changes the selected paragraphs' left
+indents by 36 pt within 0–144 pt, preserving right and special indents. One Undo
+restores the selection's prior formatting. Each paragraph steps from its own
+resolved value. Command search and Home KeyTips II/DI offer the same actions.
+
+## Alpha.61 tab grid
+
+Plain Tab in the document inserts a stored tab, advancing to a left grid stop
+every 36 pt. Existing tabs survive save/reopen in native v14. Modified Tab is
+reserved; keyboard routes to the ribbon remain available. The engine can store
+a custom paragraph interval; a GUI interval editor is not included yet.
+Tab paragraphs use fixed spacing: Justify displays left placement, while
+Center/Right align the row as a block. Arbitrary ruler stops, leaders and decimal
+tabs remain future work. The ribbon, palette and icons are unchanged.
+
+## Alpha.62 tab interval dialog
+
+Open Home → Paragraph spacing → **Tab interval…**, or search commands for
+**Tab interval**. Enter 0.5–144 pt in half-point steps, or select **Use default
+interval (36 pt)**. OK applies to the selected paragraphs as one Undo/Redo step;
+Cancel/Escape changes nothing. Mixed selections are labeled and require an explicit
+value or default choice. The paragraph dialog retains its independent draft.
+The interval is direct formatting in native v14; custom stops and style inheritance
+remain planned. VoiceOver final review and Windows validation remain deferred.
+
+## Alpha.63 explicit left tab positions
+
+The engine and native v15 files support up to 32 explicit left tab positions in
+half-point units (0.5–1440 pt). Tabs advance to the next position and resume the
+regular interval grid after the final one. The shared command preserves one-step
+Undo/Redo and paragraph editing; empty lists restore interval-only behavior.
+This increment adds storage and layout; GUI/ruler position editing follows next.
+The existing interval dialog preserves explicit positions when changing the grid.
+Alpha.62 and older cannot read v15 saves. See [format details](docs/NATIVE_FORMAT.md).
+
+## Alpha.64 tab position editing
+
+Open **Home → Paragraph spacing → Tab positions…**, or search for **Tab positions**.
+Enter a position in points and use **Add**; select an existing position, change its
+value and use **Update**. **Remove** deletes the selected stop; **Clear all** restores
+interval-only layout. The scrollable list supports up to 32 left positions.
+**OK** applies the complete draft to the selected paragraphs in one Undo/Redo;
+**Cancel/Escape** changes nothing. For mixed lists, explicitly build a replacement
+or choose Clear all. Native v15, palette and icons are unchanged.
+
+## Alpha.65 ruler tab markers
+
+Existing explicit left positions appear as L markers on the horizontal ruler.
+Drag a marker to preview its position; release applies one Undo/Redo operation.
+**Escape** or release outside the ruler cancels. Focus loss, resizing and zoom
+changes also cancel; a duplicate destination cannot overwrite another stop.
+Selected paragraphs must have identical lists. Mixed lists, overlaps with indent
+markers and off-column positions remain editable through **Tab positions**.
+The prototype moves existing stops; add/remove and keyboard editing use the dialog.
+Native v15, design, palette and icons remain unchanged.
+
+## Alpha.66: keyboard ruler tabs
+
+Ctrl+Alt+F8 enters existing explicit tab stops (a Docs shortcut, not a verified
+Word mapping). Left/Right previews 0.5 pt steps; Shift changes the step to 5 pt.
+Enter applies and exits; Tab/Shift+Tab applies once and selects the next/previous
+stop in sorted order, wrapping. Escape cancels only the current preview. Exact
+values appear below the ruler. A no-op does not consume Undo or discard Redo.
+A duplicate destination blocks acceptance until corrected or cancelled.
+
+## Alpha.67: ruler tab creation and deletion
+
+Click empty horizontal ruler space inside the text column to create a left tab at
+the nearest half point. The click must finish on the ruler; indent/tab hit targets
+keep priority. Right-click a tab and choose **Delete tab at … pt** to remove it.
+Each completed action uses the same validated list command in one Undo/Redo.
+Dismissing the menu changes nothing. Dragging outside still cancels movement;
+this increment deliberately does not change that gesture into deletion.
+
+In Ctrl+Alt+F8 tab mode, Delete previews removal of the original selected tab.
+Enter or Tab applies once and exits (including when the last tab is removed).
+Escape cancels; arrows return to movement preview. Deleting after movement removes
+the original source in one transaction, without committing an intermediate move.
+Exact removal text appears below the ruler. No text input reaches the document.
+
+## Alpha.68: mixed-list ruler editing
+
+The ruler and Ctrl+Alt+F8 traversal use the sorted union of positions in the
+half-open paragraph selection, including positions absent from its first paragraph.
+Partial-coverage markers retain the existing gray tone; tooltips report N/M selected
+paragraphs. Hover/active accents, indent hit priority, scale and icons are unchanged.
+
+Creation adds a position to each selected paragraph where it is missing, leaving
+existing occurrences and all other positions untouched. If all paragraphs already
+have that position, show an explicit message without modifying history. Move and
+remove affect only paragraphs containing the original source position. A destination
+in a paragraph without that source is not a collision. A destination conflict in
+any affected paragraph, or a 32-stop capacity failure when adding, rejects the whole
+operation. Failed preview returns to the original document, never a partial result.
+
+## Alpha.69: keyboard ruler tab creation
+
+Ctrl+Alt+Shift+F8 starts a new tab preview, including when existing positions are
+present. Ctrl+Alt+F8 keeps existing-marker traversal, but starts creation if the
+selected union is empty. These are Docs shortcuts, not verified Word mappings.
+Creation begins at 36 pt independently of the paragraph's automatic grid interval.
+Left/Right adjusts by 0.5 pt; Shift uses 5 pt, bounded to 0.5–1440 pt.
+
+The exact readout says **New tab**; the canvas and accent marker show the preview.
+Enter or Tab applies once and exits. Escape or Delete cancels only the new draft.
+Focus loss, pointer press, resize/zoom and hidden-ruler cancellation retain the same
+policy as marker editing. Input is isolated; a second creation shortcut during an
+active preview cannot silently commit or replace it.
+
+## Exact ruler tab input (alpha.70)
+
+Enter a keyboard tab preview with Ctrl+Alt+F8 (existing stops) or
+Ctrl+Alt+Shift+F8 (new stop), then press F2. The focused Position field selects
+its current value. Type or paste points using a decimal dot, in 0.5 pt steps
+from 0.5 to 1440. Enter or Tab applies once and exits; Escape cancels the entire
+preview. Text-editing keys operate the field; Delete edits text in this mode.
+Invalid input resets the visual preview and blocks acceptance, including after
+a previously valid value. No rounding/clamping of typed values is performed.
+Mixed-list and stale-source checks use the same validated draft transaction.
+This is a Docs-specific shortcut; native v15, palette and icons are unchanged.
+
+## Center/right tab stops (alpha.71)
+
+The model, transaction API and native layout support central and right tab stops.
+Open [AlignedTabs.bfdoc](examples/AlignedTabs.bfdoc) using `--open` with its absolute
+path to inspect alignment. Each following field extends to the next tab or end
+of the paragraph. Long fields never move backwards and may wrap; see the exact
+[layout/storage policy](docs/NATIVE_FORMAT.md#center-and-right-tab-storagelayout-alpha71).
+
+Saves now use native v16; v1–v15 remain readable. Alpha.70 and older reject v16,
+so keep an earlier copy if needed. Current dialog/ruler controls edit left stops
+and preserve center/right entries; choosing types and new markers is next.
+Palette/icons unchanged; Windows and VoiceOver acceptance remain deferred.
+
+## Typed tab editing (alpha.72)
+
+The Tab positions dialog now lists all Left/Center/Right stops and shows their type.
+Selecting an entry restores its position and type. Choose Alignment, then Add or
+Update to stage the edit; OK applies the entire list to the selected paragraphs in
+one Undo/Redo. Pending nonempty input/type changes require Add/Update before OK.
+Cancel/Escape discards the draft. Remove and Clear all affect all types. Mixed
+selection compares both positions and types; its replacement policy is explicit.
+Tab reaches the position field, three type controls and the existing action buttons.
+
+The ruler shows L-shaped left stops, a bottom bar on both sides for center, and a
+mirrored L for right. Partial coverage remains gray. Different types at the same
+position show a gray double-bar marker and a Mixed types label. Tooltip/widget
+labels include type and selected-paragraph coverage; active previews use the
+existing accent. Indent hit targets retain priority.
+
+Pointer movement/release, Ctrl+Alt+F8 traversal, arrows/Shift+arrows, F2 exact input,
+Delete and context-menu deletion now support all types. Movement/deletion changes
+only paragraphs owning the source position and preserves each stored type, including
+mixed types. A destination conflict in any affected paragraph rejects the whole
+transaction. Enter applies once; Tab applies/traverses; Escape, focus loss and
+transform changes keep the previous cancellation policy. No-op acceptance preserves
+Redo. Existing ruler creation still inserts left stops; choose Center/Right in the
+dialog. Type selection for new ruler stops is a separate next increment.
+
+The unified editing representation maps to the existing v16 arrays; no schema,
+palette, icon or layout-policy change. Physical keyboard/IME, matched Word,
+Windows and VoiceOver acceptance remain deferred.
+
+## Typed ruler creation (alpha.73)
+
+The 24 × 24 DIP selector immediately left of the horizontal ruler shows the type
+for new stops. Click it or press Ctrl+Alt+F7 to cycle Left → Center → Right → Left;
+right-click for explicit choices. This Docs-specific shortcut shows the ruler if
+hidden. The choice is local to the window, starts at Left and is not serialized or
+included in undo history. Existing stops and the document selection stay unchanged.
+The selector is unavailable during drafts, modal editing, composition or indent
+keyboard control. Type is frozen when a creation draft begins.
+
+Press an empty ruler location to preview a stop of that type; move horizontally
+while held and release inside the ruler to apply once. Escape, window focus loss,
+transform changes or release outside cancel. A press/release in the same event
+frame commits once. Existing indent/tab hit targets retain priority. Invalid
+creation previews cannot commit; releasing inside reports their error.
+
+Ctrl+Alt+Shift+F8 starts creation at 36 pt using the selector. Ctrl+Alt+F8 does the
+same when no explicit positions exist. Arrows adjust by 0.5 pt (Shift: 5 pt), F2
+opens exact point input, Enter/Tab commits once and exits, Escape/Delete cancels.
+The preview identifies the selected type. Numeric-input Delete retains text-editing
+behavior. Same-kind stops at the destination are preserved while missing entries
+are added; a different kind at that position rejects the entire operation.
+Capacity, stale-source and half-open paragraph-selection validation remain shared.
+
+Native v16, existing layout policy, palette and icons remain unchanged. Physical
+keyboard/IME, matched Word, Windows and VoiceOver acceptance remain separate.
+
+### Tab interaction fixes (alpha.74)
+
+Keyboard tab movement can cross occupied positions with repeated arrows. A rejected
+position never changes the document; Enter stays blocked until the destination is
+valid. Hiding rulers cancels pointer previews, preserving history. Mixed-owner,
+transform-cancellation and re-entry regression checks precede tab leaders.
+
+### Tab leaders (alpha.75)
+
+Open [TabLeaders.bfdoc](examples/TabLeaders.bfdoc) to see dots, dashes and lines
+between tab-aligned fields. Leaders are decorations, not inserted characters.
+They follow explicit stops during ruler movement and disappear with deletion.
+The shared engine supports one-operation set/clear; dialog controls follow later.
+Saves now use native v17; v1–v16 remain readable. Alpha.74 and older reject v17,
+so preserve an older copy when using those builds. Design/palette/icons are retained.
+
+### Leader editing (alpha.76)
+
+Use Home → Paragraph spacing → Tab positions (or command search). Choose a row,
+set Leader, then Update and OK. Add creates a stop with the chosen leader; None
+clears a leader. An illustrative sample updates immediately. Mixed lists require
+explicit replacement. Right-click a ruler tab to set/reset its leader only in
+selected paragraphs owning that tab. Completed changes use one Undo/Redo.
+Tab/Shift+Tab navigates the dialog; Enter/Space activates and Escape cancels.
+
+### Mixed leaders and keyboard preview (alpha.77)
+
+Hover a tab marker or open its context menu to inspect leader counts; paragraphs
+without that stop are counted separately. Enter tab keyboard control with
+Ctrl+Alt+F8, press F1 for details, and F3 to cycle the preview's leader. Arrows or
+F2 then adjust position. Enter applies both once; Escape cancels. F3 operates
+outside numeric input; mixed leaders first become None. Native v17 is unchanged.
+
+### Direct ruler leader selection (alpha.78)
+
+In a keyboard tab preview, press 0/1/2/3 for None/Dots/Dashes/Line. Shift+F3
+cycles backward (mixed starts at Line); F3 still cycles forward. Backspace
+restores each original owner's leader, keeping the current position. Creation
+restores no fill on newly added stops and preserves preexisting owners.
+F2 enters numeric input; digits then edit the position. F4 returns to marker
+controls only when the position is valid, without committing. Enter applies once;
+Escape cancels all draft changes. The chosen leader is displayed separately from
+coverage, because preserved creation owners may retain different leaders.
+These are BreakFree preview shortcuts; no reference-app shortcut equivalence is
+claimed. Native v17, palette and icons remain unchanged.
+
+### Shared ruler preview controls (alpha.79)
+
+Right-click a tab marker and choose Edit tab preview to enter the same draft used
+by Ctrl+Alt+F8. None/Dots/Dashes/Line and Restore leaders change the preview only.
+Exact position opens numeric input; Back to marker requires valid input and does
+not commit. Apply commits the entire draft once; Cancel/Escape discards it.
+Invalid positions disable leader changes and Apply, but leave Cancel available.
+Outside clicks still cancel; pointer dragging still uses its original release
+policy. Mixed owners and preexisting creation stops retain the established rules.
+Keyboard commands remain available; Tab retains its apply-and-next behavior.
+Focus traversal for these new buttons is a separate next step. Windows and
+VoiceOver acceptance remain deferred. Native v17, palette and icons are unchanged.
+
+### Preview control navigation (alpha.80)
+
+F6 enters the preview buttons at the first enabled control. Tab/Shift+Tab wraps
+through enabled leader choices, Restore, Position, Apply and Cancel. Enter/Space
+activates the focused button; repeated key events do not reactivate it. A border
+using the existing accent marks focus independently of the selected leader.
+Clicking a button makes it the starting point for subsequent keyboard traversal.
+F6 returns to the marker or numeric input without committing; clicking numeric
+input returns to text editing. Outside controls, Tab keeps apply-and-next behavior.
+If the focused control becomes disabled, focus moves to Cancel. Invalid numeric
+input exposes only Cancel to control traversal; F6 returns to input for correction.
+Escape still cancels the entire draft. Native v17 and palette/icons are retained.
+These are local synthetic/native-render checks, not Windows or VoiceOver acceptance.
+
+### Preview descriptions (alpha.81)
+
+The focused preview button shows a read-only explanation and contextual shortcuts.
+The same help is available on pointer hover and in button accessibility labels.
+Leader help distinguishes existing owners from newly created stops; position help
+switches between F2 entry and F4 return. Numeric-mode digits remain position input.
+Disabled controls explain invalid positions, deletion or already-retained original
+leaders. Selection and disabled metadata remain separate from descriptive labels.
+No help inspection changes document/history. Native v17, palette/icons and existing
+preview commands are retained. AccessKit tree checks do not establish VoiceOver
+speech; physical input, Windows and spoken-output acceptance remain deferred.
+
+### Compact preview help (alpha.82)
+
+F7 or **Hide help / Show help** toggles focused-button descriptions without moving
+focus or applying edits. Holding F7 does not repeatedly toggle. The numeric input
+keeps its caret/selection, including invalid drafts; Escape and Cancel still discard
+the draft. Hover descriptions and full accessibility labels remain available.
+Visibility is remembered for this editor window only, across subsequent previews;
+a new window starts with help hidden (since alpha.84). No document or settings-file change occurs.
+
+### Reference-guided shell refinement (alpha.83)
+
+The title, tabs and ribbon occupy 158 DIP together (previously 180). Home keeps its
+real controls and overflow while using flatter neutral surfaces, stronger semantic
+icon accents and more compact rows. Style cards separate a formatted sample from
+the style name. View fits the same reduced ribbon height. macOS interface text uses
+installed Arial; document font handling is unchanged. The owner-provided Word
+macOS video informs these visual details; Windows comparison remains deferred.
+
+### Quieter editor chrome (alpha.84)
+
+Tab previews now open with concise position/leader information and the action row.
+**Help** or F7 shows mode-specific instructions or the focused-control description;
+F1 expands leader counts. Both remain optional while errors stay visible. Hover
+and accessibility descriptions, numeric caret preservation, cancellation and the
+single Undo/Redo operation are retained. Search/styles lose redundant permanent
+hints; their shortcuts remain in hover help. Icon color is concentrated on small
+semantic details, with neutral Save/Copy outlines matching the supplied reference.
+
+
+### Preview focus recovery (alpha.85)
+
+F6 moves between the current marker/position mode and preview controls. Returning
+from controls preserves the numeric caret and selection; holding F6 does not cycle
+repeatedly. F2 refocuses an existing position draft without replacing incomplete
+or invalid text. Entering the field from marker mode selects the current position.
+F4 or Back to marker returns a valid draft without committing or leaving focus on
+a hidden control. Clicking the position field takes focus on pointer press.
+
+Escape, Cancel and an outside press discard the preview and restore document
+selection without adding history. Resize, hidden rulers and window deactivation
+also cancel; an inactive window waits until focus returns. Delete cancels a new
+stop in marker mode. Apply still commits one Undo/Redo operation. The compact
+preview, optional Help/F7, colors and original icons remain as in alpha.84.
+
+## Inherited tabulation (alpha.86)
+
+Home → Styles → Modify style now exposes Tab interval and Tab positions in the
+footer. The existing Based on selector applies to these settings too. Interval
+and the complete positions/types/leaders list inherit independently; direct
+paragraph settings win. Nested OK edits the draft; outer OK commits once, and
+outer Cancel discards it all. Create style supports the same workflow.
+
+In Paragraph → Tab interval, select Inherit interval from style to clear the
+direct interval. In Tab positions, Use inherited positions clears the direct list;
+Clear all suppresses the inherited positions instead. The ruler displays effective
+positions and edits only changed owners, retaining one-step undo/redo.
+
+Saves use native v18, with strict v1–v17 reading. Older alpha.85 applications reject
+v18; use Save As to preserve older copies. See [ADR 0015](docs/adr/0015-style-tabulation.md).
+No palette, icon, ribbon geometry, dependency or integration command changes.
+Windows acceptance remains deferred and VoiceOver remains at final review.
+
+## Clipboard and Save icon refinement (alpha.87)
+
+Paste, Cut, Copy and the Quick Access Save icon use finer neutral outlines and
+more restrained accent colors. Clipboard has a raised clasp and plain front
+sheet; scissors are narrower; Copy has a folded corner. Button hit targets and
+commands are unchanged. [Native captures](docs/UI_SPEC.md#alpha87-clipboard-and-save-icons)
+record the active and disabled states and compact ribbon.
+
+## Tabulation sources (alpha.88)
+
+Formatting shows the authored source of Tab interval and Tab positions, independently
+of whether their values match. A direct override, the assigned style, a named parent
+and the document default remain distinct. Marker descriptions count only paragraphs
+owning the stop and identify absent paragraphs separately in the full inspector.
+
+Use **Sources…** in either tabulation dialog, **Tabulation sources…** in a tab
+marker's context menu, or **Ctrl+Alt+F9** from the document. During keyboard tab
+preview, **F9** or **Sources…** opens the original document's sources. Escape/Close
+returns to the prior draft and numeric caret without an edit. Arrows, Page Up/Down,
+Home/End and the wheel scroll long lists. Dialog inspection is explicitly a snapshot
+at entry; nested style dialogs describe the style draft. See [ADR 0015](docs/adr/0015-style-tabulation.md).
+
+Paste's board and front-sheet proportions are also corrected from the supplied
+video. No format migration, new runtime dependency or release is introduced.
+
+
+## Structured documents and pages (alpha.89)
+
+Home adds real bullets, numbering and list settings. Increase/Decrease Indent
+changes levels for selected list paragraphs. Enter continues a list; Enter in an
+empty item exits it. Insert offers page breaks, tables, PNG pictures and hyperlinks.
+Table dialogs edit plain-text cells, rows/columns, widths and repeated header rows;
+double-click an existing object to edit it. Pictures use separate paragraph anchors,
+explicit point sizes and alternative text. Hyperlinks require selected text within
+one paragraph; Ctrl/Command+K opens their dialog. Open address is explicit.
+Navigation shows headings derived from Heading 1 without inferring structure from
+visual font size. Copying a table yields tab-separated cell text.
+
+Layout → Page setup controls size, orientation, margins, header/footer and page
+numbers, either document-wide or as a new-page section at the current paragraph.
+Paragraph pagination controls page-break-before, keep-with-next and keep-lines.
+Ctrl/Command+Enter inserts a page break at the caret. View → Print Layout retains
+normal editing and undo on actual pages. Ctrl/Command+P opens preview without
+printing. File → Export PDF saves the same layout as **144 dpi raster PDF** (not
+searchable or tagged). CUPS printing on macOS/Linux requires an explicit queue and
+Print document action; Windows can export PDF. No paper-output validation is claimed.
+
+Run the standalone editor using the existing Cargo instructions on macOS/Linux or
+Windows. Generate the reproducible corpus with:
+
+```sh
+cargo run --locked --example structured_report -- report.bfdoc report.pdf
+cargo run --locked -- --open /absolute/path/report.bfdoc
+```
+
+On Windows use an absolute path such as `C:\Docs\report.bfdoc` with `--open`;
+`target\release\breakfree-docs.exe --capabilities` remains GUI-free. Windows GUI
+acceptance is deferred. No Office checkout or service is needed.
+
+These are bounded D2/D3 implementations: no merged/rich table cells, floating images,
+columns, bookmarks, searchable PDF, full RTL/CJK support or general DOCX exchange. See
+[ADR 0016](docs/adr/0016-document-structure-and-pages.md) and
+[validation](docs/VALIDATION.md#alpha89-structure-and-page-validation). Design,
+palette and approved icons are retained; Windows reference equivalence is unverified.
+
+## Restricted DOCX exchange (alpha.90)
+
+File → Open and `--open <absolute.docx>` import the declared text/style profile;
+File → Export DOCX writes that profile without changing the native save destination.
+Unsupported content produces an error before replacement or writing. Imported
+files use Save As `.bfdoc`, preserving the original DOCX. Most existing Word files
+are currently outside this strict profile. See [supported properties, errors,
+fixtures and Windows commands](docs/DOCX_SUBSET.md). D4 and public-alpha packaging
+remain in progress; no release is published.
+
+## Primary DOCX and list interchange (alpha.91)
+
+DOCX is now the default. New Save proposes `Untitled.docx`; opening a supported
+DOCX retains its filename and Save updates that file. Save As also offers optional
+`.bfdoc`, which retains all current editor features. An opened `.bfdoc` keeps its
+explicit format until Save As. Unsupported DOCX features produce an error before
+writing, never a silent conversion. Binary `.doc` and macro-enabled `.docm` remain
+unsupported. This supersedes the alpha.90 forced-native Save behavior above.
+
+Decimal/bullet lists, nested levels and restarts now exchange through numbering
+parts. Import also accepts relocated internal parts, optional styles and supported
+document defaults. See [the exact profile](docs/DOCX_SUBSET.md) and [ADR 0018](docs/adr/0018-primary-docx-and-numbering.md).
+Run `cargo run --locked --no-default-features --example docx_lists` to reproduce
+[DocxLists.docx](examples/DocxLists.docx) and its optional native fixture.

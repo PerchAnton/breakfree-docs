@@ -1,0 +1,316 @@
+{
+  "format": "breakfree.docs.native",
+  "content_version": 9,
+  "paragraphs": [
+    {
+      "alignment": "left",
+      "paragraph_style": "heading1",
+      "runs": [
+        {
+          "text": "Dependency navigation acceptance",
+          "character_style": null,
+          "direct": {}
+        }
+      ]
+    },
+    {
+      "alignment": "left",
+      "paragraph_style": "normal",
+      "runs": [
+        {
+          "text": "Leaf English Україна Русский é. ",
+          "character_style": {
+            "custom": 1
+          },
+          "direct": {}
+        },
+        {
+          "text": "Middle direct use.",
+          "character_style": {
+            "custom": 17
+          },
+          "direct": {}
+        }
+      ]
+    }
+  ],
+  "style_catalog": {
+    "custom": [],
+    "normal": {
+      "parent": null,
+      "next_style": null,
+      "character": {}
+    },
+    "no_spacing": {
+      "parent": "normal",
+      "next_style": null,
+      "character": {},
+      "line_height_percent": 100,
+      "space_after_half_points": 0
+    },
+    "heading1": {
+      "parent": "normal",
+      "next_style": "normal",
+      "character": {
+        "bold": true,
+        "font_size": 36
+      }
+    }
+  },
+  "character_styles": [
+    {
+      "id": 1,
+      "name": "Chain 01",
+      "parent": {
+        "custom": 2
+      },
+      "format": {}
+    },
+    {
+      "id": 2,
+      "name": "Chain 02",
+      "parent": {
+        "custom": 3
+      },
+      "format": {}
+    },
+    {
+      "id": 3,
+      "name": "Chain 03",
+      "parent": {
+        "custom": 4
+      },
+      "format": {}
+    },
+    {
+      "id": 4,
+      "name": "Chain 04",
+      "parent": {
+        "custom": 5
+      },
+      "format": {}
+    },
+    {
+      "id": 5,
+      "name": "Chain 05",
+      "parent": {
+        "custom": 6
+      },
+      "format": {}
+    },
+    {
+      "id": 6,
+      "name": "Chain 06",
+      "parent": {
+        "custom": 7
+      },
+      "format": {}
+    },
+    {
+      "id": 7,
+      "name": "Chain 07",
+      "parent": {
+        "custom": 8
+      },
+      "format": {}
+    },
+    {
+      "id": 8,
+      "name": "Chain 08",
+      "parent": {
+        "custom": 9
+      },
+      "format": {}
+    },
+    {
+      "id": 9,
+      "name": "Chain 09",
+      "parent": {
+        "custom": 10
+      },
+      "format": {}
+    },
+    {
+      "id": 10,
+      "name": "Chain 10",
+      "parent": {
+        "custom": 11
+      },
+      "format": {}
+    },
+    {
+      "id": 11,
+      "name": "Chain 11",
+      "parent": {
+        "custom": 12
+      },
+      "format": {}
+    },
+    {
+      "id": 12,
+      "name": "Chain 12",
+      "parent": {
+        "custom": 13
+      },
+      "format": {}
+    },
+    {
+      "id": 13,
+      "name": "Chain 13",
+      "parent": {
+        "custom": 14
+      },
+      "format": {}
+    },
+    {
+      "id": 14,
+      "name": "Chain 14",
+      "parent": {
+        "custom": 15
+      },
+      "format": {}
+    },
+    {
+      "id": 15,
+      "name": "Chain 15",
+      "parent": {
+        "custom": 16
+      },
+      "format": {}
+    },
+    {
+      "id": 16,
+      "name": "Chain 16",
+      "parent": {
+        "custom": 17
+      },
+      "format": {}
+    },
+    {
+      "id": 17,
+      "name": "Chain 17",
+      "parent": {
+        "custom": 18
+      },
+      "format": {}
+    },
+    {
+      "id": 18,
+      "name": "Chain 18",
+      "parent": {
+        "custom": 19
+      },
+      "format": {}
+    },
+    {
+      "id": 19,
+      "name": "Chain 19",
+      "parent": {
+        "custom": 20
+      },
+      "format": {}
+    },
+    {
+      "id": 20,
+      "name": "Chain 20",
+      "parent": {
+        "custom": 21
+      },
+      "format": {}
+    },
+    {
+      "id": 21,
+      "name": "Chain 21",
+      "parent": {
+        "custom": 22
+      },
+      "format": {}
+    },
+    {
+      "id": 22,
+      "name": "Chain 22",
+      "parent": {
+        "custom": 23
+      },
+      "format": {}
+    },
+    {
+      "id": 23,
+      "name": "Chain 23",
+      "parent": {
+        "custom": 24
+      },
+      "format": {}
+    },
+    {
+      "id": 24,
+      "name": "Chain 24",
+      "parent": {
+        "custom": 25
+      },
+      "format": {}
+    },
+    {
+      "id": 25,
+      "name": "Chain 25",
+      "parent": {
+        "custom": 26
+      },
+      "format": {}
+    },
+    {
+      "id": 26,
+      "name": "Chain 26",
+      "parent": {
+        "custom": 27
+      },
+      "format": {}
+    },
+    {
+      "id": 27,
+      "name": "Chain 27",
+      "parent": {
+        "custom": 28
+      },
+      "format": {}
+    },
+    {
+      "id": 28,
+      "name": "Chain 28",
+      "parent": {
+        "custom": 29
+      },
+      "format": {}
+    },
+    {
+      "id": 29,
+      "name": "Chain 29",
+      "parent": {
+        "custom": 30
+      },
+      "format": {}
+    },
+    {
+      "id": 30,
+      "name": "Chain 30",
+      "parent": {
+        "custom": 31
+      },
+      "format": {}
+    },
+    {
+      "id": 31,
+      "name": "Chain 31",
+      "parent": {
+        "custom": 32
+      },
+      "format": {}
+    },
+    {
+      "id": 32,
+      "name": "Parent Україна Русский é",
+      "parent": "strong",
+      "format": {}
+    }
+  ]
+}

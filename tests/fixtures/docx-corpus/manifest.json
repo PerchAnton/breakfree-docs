@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "platform": "ProductName:\t\tmacOS\nProductVersion:\t\t27.0.1\nBuildVersion:\t\t26A434",
+  "tool_sha256": "c6ac9100c5df44fb740bac76738fbfe2f6e4431f7098406a12e38f9ee8518c0e",
+  "cases": [
+    {
+      "file": "independent.docx",
+      "producer": "Original independent OOXML via Python zipfile; not external application evidence",
+      "accepted": true,
+      "expected_text": "Independent Україна é italic",
+      "sha256": "f48fdf3f3d81c6876466156f2df47be942b8d7fdb4f8a15f0902dec284190a33"
+    },
+    {
+      "file": "cocoa-unicode.docx",
+      "producer": "macOS textutil / CocoaOOXMLWriter",
+      "source": "tests/fixtures/docx-corpus/sources/unicode.txt",
+      "accepted": false,
+      "error_contains": "customXml",
+      "source_sha256": "831ae874882178d5a8266369e0e31652e516a89b20d62f4749278c6b1b10de1b",
+      "sha256": "e50ef095631fb1d7500b4134e0cad457549519bdd421c0d8a9ecc5e355ff24dc"
+    },
+    {
+      "file": "cocoa-emphasis.docx",
+      "producer": "macOS textutil / CocoaOOXMLWriter",
+      "source": "tests/fixtures/docx-corpus/sources/emphasis.rtf",
+      "accepted": false,
+      "error_contains": "customXml",
+      "source_sha256": "a58707276730c8b402907649ea7e734ce5067800b3d410b9148ce3732b1659b1",
+      "sha256": "2c2c658c5d56676560cf856e83e8326e230cc59d46bee297ffb0306daa6763ae"
+    },
+    {
+      "file": "cocoa-saveback.docx",
+      "producer": "macOS textutil / CocoaOOXMLWriter",
+      "source": "tests/fixtures/docx-corpus/independent.docx",
+      "accepted": false,
+      "error_contains": "customXml",
+      "source_sha256": "f48fdf3f3d81c6876466156f2df47be942b8d7fdb4f8a15f0902dec284190a33",
+      "sha256": "5dd63c40cd9014e8462de7ca63647f90e99ee969f0e7d6e2342fd80002e324b0"
+    },
+    {
+      "file": "cocoa-docs-saveback.docx",
+      "producer": "macOS textutil / CocoaOOXMLWriter",
+      "source": "examples/DocxExchange.docx",
+      "accepted": false,
+      "error_contains": "customXml",
+      "source_sha256": "2f675553bd8a232f0190ca545c02e07f87c41130e7540023fecef60d22df897d",
+      "sha256": "13d0b7fe9bd13473ac7f60fcfaff08b9ad5f83db91ba0b57fb2d2be2146ea167"
+    },
+    {
+      "file": "docs-saved.docx",
+      "producer": "BreakFree session export",
+      "accepted": true,
+      "error_contains": null,
+      "expected_text": "Edited · Independent Україна é italic",
+      "sha256": "e7a5b79f4e02a87a8ff7647a432c45be7c230d526573139fa32a776930f4cae6"
+    },
+    {
+      "file": "cocoa-returned.docx",
+      "producer": "macOS textutil / CocoaOOXMLWriter after BreakFree edit/save",
+      "accepted": false,
+      "error_contains": "customXml",
+      "sha256": "12c6b60359e8ba8cec2d5a481a189a3e441a71e3a6c2565c878eb8835c153fa1"
+    }
+  ]
+}
