@@ -2404,3 +2404,34 @@ Owner approved alpha.91; DOCX remains primary and native v19 remains optional.
   rejected missing/relative/unknown arguments without GUI. No Office or sibling
   checkout was required. Initial Clippy found a needless reference after extracting
   the run parser; it was corrected before these final suites.
+
+## Alpha.93 DOCX table validation
+
+2026-10-24, macOS aarch64, Rust 1.99.1; candidate `0.1.0-alpha.93`.
+Owner approved alpha.92; DOCX remains primary, native v19 optional.
+
+- Six new adapter tests cover plain-cell Unicode/newline/tab/empty content, header
+  flags, widths and full native/DOCX equality; independently authored relocated
+  table-only markup; unsupported grid/merge/style/nesting/rich formatting; model
+  and import row limits; lists separated by a table; shared object editing,
+  undo/redo and primary Save/reopen. A rejected save preserves prior bytes and
+  the dirty checkpoint. Existing write-failure/source-conflict tests remain active.
+- `docx_tables` generates the synthetic 3×3 DOCX/native fixture and asserts exact
+  model reopen. Word for Mac 16.114 (16.114.26101123) opened it without a repair
+  prompt, exposed individual cells via AX and showed the intended column ratios,
+  bold header, empty cell and multiline English/Ukrainian/Russian text with a
+  combining accent. [Actual capture](screenshots/alpha93-docx-table-word.png).
+  The fixture fits one page: repeated-header pagination was not visually tested
+  in Word; its flag is covered by serialization tests. No pixel-equivalence claim.
+- Word remains activation-required/read-only; external save-back is unverified.
+  No manual native Docs GUI retest this adapter iteration. Windows/paper printing
+  deferred; VoiceOver last. No merge, tag, release, activation attempt or print job.
+- The strict plain-cell profile excludes arbitrary external table styles, merged/
+  nested/rich cells, multiple paragraphs, row heights and unsupported object flow.
+  See the profile for exact required properties; broader tables remain D4 work.
+
+- Final required checks: **499 full / 240 core-only tests passed**, including 28
+  DOCX adapter tests. Formatting, denied-warning all-target Clippy, release build,
+  repository references and whitespace checks passed. The copied executable in a
+  fresh directory reported alpha.93 and DOCX-first capabilities, and rejected
+  missing/relative/unknown arguments without GUI or neighboring repositories.

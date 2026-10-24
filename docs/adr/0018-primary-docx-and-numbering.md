@@ -72,3 +72,17 @@ this adds no model version, dependency, UI redesign or native format change.
 OOXML reference: [WordprocessingML hyperlink example](https://download.microsoft.com/download/e/1/4/e14fb96f-83b8-4a2a-84db-7fa8acbe061a/Office%20Open%20XML%20Part%201%20-%20Fundamentals.pdf).
 The model does not store history/tooltip/anchor/frame properties, so those remain
 outside this bounded profile.
+
+## Alpha.93 extension: fixed plain-cell tables
+
+Map `tbl`/`tblGrid`/`tr`/`tc` to existing atomic table blocks. Keep exact widths,
+plain cell text and the first-row repeat flag; reset sequential numbering across
+a table. Require the explicit fixed presentation documented in the profile so
+unrepresented rich cell/table formatting is rejected rather than stripped. Line
+breaks remain in one cell paragraph; paragraph semantics are not flattened.
+Reject object-paragraph overrides that have no OOXML table equivalent in this
+profile. Export readback compares the whole model before any destination write.
+
+No native version, GUI, dependency or license change. Exact inter-application line
+metrics/pagination and external save-back remain outside the evidence.
+Reference: [WordprocessingML tables](https://learn.microsoft.com/en-us/office/open-xml/word/working-with-wordprocessingml-tables).

@@ -35,6 +35,14 @@
 > the longer-term plan; the [validation report](docs/VALIDATION.md) separates actual
 > checks from pending work.
 
+## Alpha.93 — DOCX tables
+
+DOCX now exchanges the editor's fixed-grid plain-text tables: rows/cells, exact
+column widths, empty/Unicode/multiline cells and a repeating first row. Shared
+object editing and undo/redo remain unchanged. This is a strict plain-cell profile,
+not arbitrary Word table formatting; unsupported properties fail before writing.
+See [the table boundary](docs/DOCX_SUBSET.md#table-boundary-alpha93).
+
 ## Alpha.92 — DOCX hyperlinks
 
 DOCX remains primary. HTTP/HTTPS/mailto hyperlinks now exchange as model-owned

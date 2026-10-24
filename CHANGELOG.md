@@ -3,6 +3,18 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.93 — 2026-10-24
+
+- Add primary DOCX read/write for fixed-grid plain-cell tables: exact column
+  widths, rows/cells, empty cells, Unicode, line breaks and a repeating first row.
+- Preserve table blocks through shared editing/undo/redo and Save/reopen; reset
+  sequential list streams across tables. Validate full-model readback before writes.
+- Define an explicit plain-cell layout profile; reject merged/nested/rich cells,
+  unknown styles, mismatched widths and unrepresented flow/presentation settings.
+- Add independent input markup, native/DOCX fixture pairs and rejection/preservation
+  tests. Preserve existing design, palette/icons and optional native v19 format.
+- Windows and paper printing remain deferred; VoiceOver remains last.
+
 ## 0.1.0-alpha.92 — 2026-10-24
 
 - Extend primary DOCX read/write with HTTP, HTTPS and mailto hyperlink ranges,

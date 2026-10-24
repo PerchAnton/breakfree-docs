@@ -274,7 +274,7 @@ Rust selection is complete; this gate evaluates GUI behavior and visual fidelity
 - [ ] Test native round trips, DOCX round trips and exported files reopened in a named external application/build.
 - [ ] Publish per-feature import/write limitations and an alpha package only for tested targets.
 
-**Alpha.92 progress:** DOCX is primary/default, `.bfdoc` optional. Text/styles/geometry plus scoped decimal/bullet levels/restarts exchange through standard parts. Relationship-located parts, optional styles and supported inherited defaults now import. HTTP/HTTPS/mailto hyperlink ranges now preserve mixed runs and list context. Tables, images, multiple sections, broad fonts/defaults/metadata and external save-back remain open. D4 is not complete; no alpha package published.
+**Alpha.93 progress:** DOCX is primary/default, `.bfdoc` optional. Text/styles/geometry plus scoped decimal/bullet levels/restarts exchange through standard parts. Relationship-located parts, optional styles and supported inherited defaults now import. HTTP/HTTPS/mailto hyperlink ranges now preserve mixed runs and list context. Fixed-grid plain-cell tables now preserve widths, rows, line breaks and first-row repeat metadata. Broader table formatting, images, multiple sections, broad fonts/defaults/metadata and external save-back remain open. D4 is not complete; no alpha package published.
 
 **Exit:** D1–D3 core workflows pass, the declared DOCX subset exchanges successfully, and no known release-blocking data-loss issue remains. The alpha label does not imply broad Word equivalence.
 

@@ -2657,3 +2657,11 @@ saving with a visible error; Save As is explicit, never an automatic fallback.
 Existing Insert/Link editing and activation behavior is retained. DOCX Save/Open
 now preserves supported link ranges and targets without opening them. No ribbon,
 palette, icon or layout changes accompany this adapter extension.
+
+## Alpha.93 DOCX table persistence
+
+Existing Insert/Table and Edit object dialogs retain their design and command path.
+Supported DOCX tables open as the same editable table blocks as native documents.
+Save uses the fixed plain-cell profile; unsupported presentation/flow settings
+produce an explicit error and retain the current destination. No ribbon, palette
+or icon changes accompany this adapter increment.

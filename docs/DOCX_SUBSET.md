@@ -1,4 +1,4 @@
-# DOCX profile — alpha.92
+# DOCX profile — alpha.93
 
 **DOCX is the primary/default document format.** `.bfdoc` is optional and can retain
 all current model features. Primary status does not imply general Word compatibility:
@@ -17,6 +17,7 @@ are not supported.
 | Styles | Named paragraph/character graphs, stable exported IDs, parents and next references; unused built-ins may be absent |
 | Imported defaults | Optional styles/defaults; supported non-baseline defaults become a named root style so inheritance remains editable |
 | Lists | Decimal `1.` and bullets `•`, `◦`, `▪`; levels 0–8, independent streams and explicit starts/restarts |
+| Tables | Fixed rectangular plain-cell profile, exact widths, empty/Unicode/multiline cells, first-row repeat flag; see strict boundary below |
 | Page | One section, exact whole-point dimensions and margins |
 | Relationships | Internal main document, styles and numbering; parts can use other locations; referenced external HTTP/HTTPS/mailto hyperlinks |
 | Hyperlinks | Grapheme-aligned ranges, mixed runs, shared relationship targets and links in lists; no automatic activation |
@@ -73,9 +74,40 @@ Reproduce with `cargo run --locked --no-default-features --example docx_links`.
 This writes the synthetic `examples/DocxLinks.docx` / `.bfdoc` pair and asserts
 full-model equality. External links are not followed by this check.
 
+## Table boundary (alpha.93)
+
+Tables map to model-owned atomic table blocks, not tab-separated paragraph text.
+The initial profile requires 1–100 rows, 1–12 columns, widths of 18–720 whole points,
+no more than 50,000 cell characters and total width within the page text area.
+Grid, total and individual cell widths must agree exactly. A table can be the only
+body block; tables reset the native sequential list stream.
+
+The model has no arbitrary cell formatting storage. Therefore import requires an
+explicit fixed plain-cell presentation: left-aligned fixed layout, six single
+0.5 pt `9B9B9B` grid borders, 4 pt cell margins, non-splitting rows, and at most the
+first row marked as a repeated header. Cells contain one paragraph with explicit
+zero spacing/indents, single lines, left alignment and explicit Arial 11 pt runs,
+no italic/underline, bold only for the repeated header. Text, empty cells, preserved
+spaces, literal tabs and line breaks survive. Multiple identical-format runs are
+accepted; other formatting is not flattened. This deliberately excludes most
+arbitrarily styled external tables until the model can represent their properties.
+
+Merged cells, row spans, nested tables, multiple cell paragraphs, rich text, links,
+images, table styles, custom border/margin/alignment, auto-fit and row heights fail.
+Table-object paragraph style/format/flow overrides also block export rather than
+disappear. Native v19 remains unchanged; optional `.bfdoc` retains those model
+properties. Fixed native and Word renderers can differ in line metrics/pagination;
+no pixel-identical table layout is claimed.
+
+Reproduce: `cargo run --locked --no-default-features --example docx_tables`, then
+open `examples/DocxTables.docx`. The generator writes the native counterpart and
+asserts exact full-model reopen. On Windows use
+`cargo run --locked -- --open (Join-Path (Get-Location) 'examples\DocxTables.docx')`.
+Native Windows checks remain deferred.
+
 ## Explicit rejection rather than loss
 
-Tables, images, multiple sections, headers/footers, page numbering,
+Images, multiple sections, headers/footers, page numbering,
 explicit/style tab stops, revision marks, comments, fields, colors and unsupported
 fonts/themes are still rejected. Additional unaccounted parts, including document
 properties/theme/settings parts, are not silently stripped. No lossy bypass or
@@ -129,6 +161,6 @@ for actual external/native checks. External save-back remains unverified.
 ## Next D4 increments
 
 Expand ordinary external defaults/fonts and metadata preservation, then
-tables/PNG, sections/headers/footers and tabulation. Extend independent fixtures and
+broader tables/PNG, sections/headers/footers and tabulation. Extend independent fixtures and
 save-back checks before preparing tested-target archives and reviewing distribution
 notices. D4 remains in progress; no tag, merge or public alpha package is authorized.

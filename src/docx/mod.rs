@@ -5,6 +5,7 @@ mod opc;
 mod package;
 mod properties;
 mod styles;
+mod tables;
 mod xml;
 use crate::{Result, model::*, structure::Section};
 use package::Parts;
@@ -72,8 +73,12 @@ pub fn check_export(d: &Document) -> Result<()> {
         unsupported.insert("headers, footers or page numbering");
     }
     for p in &d.paragraphs {
-        if p.structure.block.is_some() {
-            unsupported.insert("tables or pictures");
+        match &p.structure.block {
+            Some(crate::structure::Block::Picture(_)) => {
+                unsupported.insert("pictures");
+            }
+            Some(crate::structure::Block::Table(t)) => tables::check(d, p, t)?,
+            None => {}
         }
         if p.structure.section.is_some() {
             unsupported.insert("multiple sections");
@@ -124,6 +129,10 @@ pub fn encode(d: &Document) -> Result<Vec<u8>> {
     let mut link_id = 0usize;
     let mut body = String::new();
     for (index, p) in d.paragraphs.iter().enumerate() {
+        if let Some(crate::structure::Block::Table(t)) = &p.structure.block {
+            body += &tables::write(t);
+            continue;
+        }
         body.push_str("<w:p><w:pPr>");
         body.push_str(&element("pStyle", styles::pid(p.paragraph_style)));
         for (name, value) in [
@@ -258,7 +267,7 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
     document.allowed(W, &["body"], &[])?;
     singleton_children(&document)?;
     let body = document.child("body").ok_or("Missing DOCX body")?;
-    body.allowed(W, &["p", "sectPr"], &[])?;
+    body.allowed(W, &["p", "tbl", "sectPr"], &[])?;
     d.paragraphs.clear();
     let mut used_links = std::collections::BTreeSet::new();
     for (index, n) in body.children.iter().enumerate() {
@@ -267,6 +276,11 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
                 return Err("Section settings must be final".into());
             }
             d.page = read_section(n)?;
+            continue;
+        }
+        if n.name == "tbl" {
+            lists.paragraph(None)?;
+            d.paragraphs.push(tables::read(n, &map)?);
             continue;
         }
         n.allowed(W, &["pPr", "r", "hyperlink"], &[])?;
