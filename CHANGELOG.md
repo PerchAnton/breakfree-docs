@@ -3,6 +3,20 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.91 — 2026-10-24
+
+- Make DOCX the primary/default format. Save updates an opened DOCX; Save As
+  retains optional `.bfdoc` support. Reject unsupported content without silent
+  conversion and detect source changes before overwriting a loaded DOCX.
+- Add decimal/bullet list read/write, levels and restarts through real numbering
+  definitions; retain shared editing/undo and reject unrepresentable sequences.
+- Expand import to relationship-located parts, optional styles/missing unused
+  built-ins and supported document defaults represented as an inherited root style.
+- Validate each encoded DOCX by exact model readback before writing; add independent
+  input markup, list fixture pairs and preservation/history/conflict tests.
+- Preserve design/palette/icons. `.doc`/`.docm`, broader DOCX objects/fonts and public
+  release remain unsupported or pending. Windows deferred; VoiceOver last.
+
 ## 0.1.0-alpha.90 — 2026-10-24
 
 - Begin D4 with a bounded ZIP/XML DOCX adapter and an explicit restricted profile:

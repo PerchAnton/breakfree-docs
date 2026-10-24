@@ -429,8 +429,8 @@ impl DocsApp {
                 Default::default(),
             )
         });
-        let output_notice = session.imported_docx.then(|| {
-            "DOCX imported. Save creates a native .bfdoc; the source DOCX is unchanged.".into()
+        let output_notice = session.is_docx().then(|| {
+            "DOCX document. Save updates this file; unsupported content blocks saving. Use Save As for an optional .bfdoc copy.".into()
         });
         let buffer = session.editor.document.text();
         let initial_cursor = CCursorRange::two(
@@ -671,20 +671,21 @@ impl DocsApp {
             self.session.path.clone()
         } else {
             rfd::FileDialog::new()
-                .set_title("Save BreakFree Docs document")
-                .add_filter("BreakFree Docs", &["bfdoc"])
+                .set_title("Save document — DOCX by default")
+                .add_filter("Word document", &["docx"])
+                .add_filter("BreakFree Docs (optional)", &["bfdoc"])
                 .set_file_name(
                     self.session
                         .path
                         .as_ref()
                         .and_then(|p| p.file_name())
                         .and_then(|p| p.to_str())
-                        .unwrap_or("Untitled.bfdoc"),
+                        .unwrap_or("Untitled.docx"),
                 )
                 .save_file()
                 .map(|mut p| {
                     if p.extension().is_none() {
-                        p.set_extension("bfdoc");
+                        p.set_extension("docx");
                     }
                     p
                 })
@@ -693,7 +694,17 @@ impl DocsApp {
             return false;
         };
         match self.session.save(&path) {
-            Ok(()) => true,
+            Ok(()) => {
+                self.output_notice = Some(
+                    if self.session.is_docx() {
+                        "Saved Word document (.docx)."
+                    } else {
+                        "Saved optional BreakFree Docs document (.bfdoc)."
+                    }
+                    .into(),
+                );
+                true
+            }
             Err(e) => {
                 self.error = Some(e);
                 false
@@ -728,8 +739,8 @@ impl DocsApp {
                 return;
             }
         }
-        self.output_notice = self.session.imported_docx.then(|| {
-            "DOCX imported. Save creates a native .bfdoc; the source DOCX is unchanged.".into()
+        self.output_notice = self.session.is_docx().then(|| {
+            "DOCX document. Save updates this file; unsupported content blocks saving. Use Save As for an optional .bfdoc copy.".into()
         });
         self.backstage = false;
         self.font_size_dirty = false;
@@ -782,7 +793,8 @@ impl DocsApp {
             Action::Open => {
                 if let Some(path) = rfd::FileDialog::new()
                     .set_title("Open document (DOCX subset is restricted)")
-                    .add_filter("Documents", &["bfdoc", "docx"])
+                    .add_filter("Word document", &["docx"])
+                    .add_filter("BreakFree Docs (optional)", &["bfdoc"])
                     .pick_file()
                 {
                     match Session::open(&path) {
@@ -2690,7 +2702,7 @@ impl DocsApp {
             self.view_ribbon(ui);
         } else if self.tab == 9 {
             ui.label(format!("BreakFree Docs {VERSION}"));
-            ui.label("Local .bfdoc documents · pages, preview and PDF");
+            ui.label("DOCX documents · pages, preview and PDF");
             ui.label("Ctrl+N/O/S · Ctrl+B/I/U · Ctrl+Shift+P · Ctrl+Z/Y · Ctrl+F");
             if self.keytips.level == Some(keytips::Level::Tab(9)) {
                 ui.small("Help is informational. Esc returns to tab KeyTips.");
@@ -3657,7 +3669,7 @@ impl DocsApp {
 
                     ui.add_space(18.);
 
-                    ui.small("Local document format: BreakFree Docs (.bfdoc)");
+                    ui.small("Default: Word document (.docx). Optional: BreakFree Docs (.bfdoc).");
                     ui.small(format!(
                         "Saves use format v{}. Earlier builds cannot open new saves.",
                         crate::storage::CONTENT_VERSION

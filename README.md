@@ -28,7 +28,7 @@
 
 > [!IMPORTANT]
 > **Working Rust editor, native ribbon prototype.** Create, edit, format, undo,
-> save and reopen local `.bfdoc` documents in a standalone desktop window. No Office
+> save and reopen local `.docx` documents (with optional `.bfdoc`) in a standalone desktop window. No Office
 > installation, cloud service or neighboring repository is required. There are no
 > installers or releases. A [restricted DOCX profile](docs/DOCX_SUBSET.md) is available;
 > general Word compatibility is not claimed. The detailed roadmap remains
@@ -113,7 +113,7 @@ Then, from this checkout:
 ```sh
 cargo build --locked --release
 ./target/release/breakfree-docs --new
-./target/release/breakfree-docs --open "/absolute/path/My document.bfdoc"
+./target/release/breakfree-docs --open "/absolute/path/My document.docx"
 ./target/release/breakfree-docs --capabilities
 ./target/release/breakfree-docs --version
 ```
@@ -124,7 +124,7 @@ On Windows install Rust's MSVC toolchain and Visual Studio Build Tools with
 ```powershell
 cargo build --locked --release
 .\target\release\breakfree-docs.exe --new
-.\target\release\breakfree-docs.exe --open "C:\Users\YourName\Documents\My document.bfdoc"
+.\target\release\breakfree-docs.exe --open "C:\Users\YourName\Documents\My document.docx"
 .\target\release\breakfree-docs.exe --capabilities
 .\target\release\breakfree-docs.exe --version
 ```
@@ -1161,3 +1161,18 @@ files use Save As `.bfdoc`, preserving the original DOCX. Most existing Word fil
 are currently outside this strict profile. See [supported properties, errors,
 fixtures and Windows commands](docs/DOCX_SUBSET.md). D4 and public-alpha packaging
 remain in progress; no release is published.
+
+## Primary DOCX and list interchange (alpha.91)
+
+DOCX is now the default. New Save proposes `Untitled.docx`; opening a supported
+DOCX retains its filename and Save updates that file. Save As also offers optional
+`.bfdoc`, which retains all current editor features. An opened `.bfdoc` keeps its
+explicit format until Save As. Unsupported DOCX features produce an error before
+writing, never a silent conversion. Binary `.doc` and macro-enabled `.docm` remain
+unsupported. This supersedes the alpha.90 forced-native Save behavior above.
+
+Decimal/bullet lists, nested levels and restarts now exchange through numbering
+parts. Import also accepts relocated internal parts, optional styles and supported
+document defaults. See [the exact profile](docs/DOCX_SUBSET.md) and [ADR 0018](docs/adr/0018-primary-docx-and-numbering.md).
+Run `cargo run --locked --no-default-features --example docx_lists` to reproduce
+[DocxLists.docx](examples/DocxLists.docx) and its optional native fixture.

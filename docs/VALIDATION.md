@@ -2324,3 +2324,48 @@ print jobs were submitted; paper printing and Windows are deferred, VoiceOver la
   binary, installer, tag, merge or release. D4 remains open: broader input defaults,
   lists/tables/images/links/sections/tabulation mapping, external save-back and
   release packaging/notice review need additional evidence.
+
+## Alpha.91 primary DOCX and list validation
+
+2026-10-24, macOS aarch64, Rust 1.99.1; candidate `0.1.0-alpha.91`.
+The owner approved alpha.90 and selected DOCX as primary, `.bfdoc` as optional.
+
+- 17 adapter tests cover exact Unicode/style/geometry/list round trips, independent
+  input markup with relocated parts/optional styles/start-at-3 numbering, supported
+  document defaults, bad references/paths/list schemes, native storage, shared
+  restart undo/redo, source conflicts including canonical aliases, unsupported
+  primary-save preservation and explicit native Save As. Existing failed-write,
+  package/XML and GUI candidate-replacement regressions remain included.
+- DOCX keeps its opened path. Save/unsaved-close Save share the same validated
+  writer and advance the checkpoint only on success; undo history survives saves.
+  Encoded candidates undergo exact full-model decode comparison before replacement.
+  The external-change check is best-effort, not atomic cross-process protection.
+- Word for Mac **16.114 (16.114.26101123)** opened the list fixture without repair.
+  Visual inspection initially found a fresh list continuing at 5 rather than 1
+  when separate instances shared an abstract definition. The writer now emits a
+  distinct abstract definition per stream; a regression protects that boundary.
+  The corrected [capture](screenshots/alpha91-docx-lists-word.png) shows
+  **3, 1, 2, 8, 4, 1**, `• / ◦ / ▪`, then a new **1**. Word AX text normalizes list
+  ordinals and textutil reduces them to bullets, so neither was used as proof of
+  the displayed counter values. The first screen capture failed transiently;
+  the retry succeeded. Word remains activation-required/read-only, so editing
+  and saving back from Word were not tested.
+- Lists are scoped to sequential decimal/native bullet labels, levels 0–8,
+  supported restarts and the documented font/indent profile. Broader list styles,
+  linked numbering, tables/images/links/sections/tabulation, themes/fonts and
+  metadata need further D4 work. No broad compatibility or release claim.
+- Windows and paper printing stay deferred; VoiceOver remains last. No print job,
+  activation attempt, merge, tag or release was performed.
+
+- Final full suite: **488 passed**; core-only suite: **229 passed**. All-target
+  Clippy with denied warnings, formatting, release build, repository and isolated
+  executable version/capabilities checks passed. No neighboring repository needed.
+- Native release UI: created three English/Ukrainian/Russian paragraphs including
+  combining e + acute and emoji, selected all and applied Numbering. Cmd+S proposed
+  Untitled; entering an extensionless name produced a valid `.docx`. Cmd+Z/Save
+  removed numbering; Cmd+Shift+Z/Save restored all three numPr records and exact
+  Unicode text in the ZIP XML. The [editor capture](screenshots/alpha91-primary-docx.png)
+  shows the saved destination and list. Emoji remains a missing-glyph square in
+  the current font renderer despite preserved data; no full-script rendering claim.
+  Post-dialog keyboard and AX operations succeeded in this run. Optional native
+  Save As is covered by session tests, not a new native dialog test.

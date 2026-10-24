@@ -44,8 +44,14 @@ pub(super) fn write_run(f: CharacterFormat) -> String {
     s
 }
 pub(super) fn read_run(n: &Node, map: &Map) -> Result<CharacterFormat> {
-    n.allowed(W, &["b", "i", "u", "sz", "rStyle"], &[])?;
+    n.allowed(W, &["b", "i", "u", "sz", "rStyle", "rFonts"], &[])?;
     singleton_children(n)?;
+    if let Some(font) = n.child("rFonts") {
+        font.allowed(W, &[], &[(W, "ascii"), (W, "hAnsi")])?;
+        if font.attrs.values().any(|v| v != "Arial") {
+            return Err("Only explicit Arial font families are supported; theme and substitute fonts are not silently changed".into());
+        }
+    }
     let mut f = CharacterFormat {
         bold: flag(n, "b")?,
         italic: flag(n, "i")?,

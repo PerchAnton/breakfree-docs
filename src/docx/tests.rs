@@ -225,3 +225,223 @@ fn namespace_prefix_is_not_identity() {
     });
     assert_eq!(decode(&b).unwrap(), sample());
 }
+
+fn list_document() -> Document {
+    use crate::structure::{ListItem, ListKind};
+    let mut d = Document::default();
+    d.paragraphs.clear();
+    for i in 0..90 {
+        let text = format!("Item {i} Україна e\u{301}");
+        let list = if i % 19 == 18 {
+            None
+        } else {
+            Some(ListItem {
+                kind: if i < 50 {
+                    ListKind::Decimal
+                } else {
+                    ListKind::Bullet
+                },
+                level: (i % 9) as u8,
+                restart: if i % 11 == 0 { Some(7) } else { None },
+            })
+        };
+        d.paragraphs.push(Paragraph {
+            text: text.clone(),
+            styles: vec![CharacterFormat::default(); text.chars().count()],
+            structure: crate::structure::ParagraphStructure {
+                list,
+                ..Default::default()
+            },
+            ..Default::default()
+        });
+    }
+    d
+}
+#[test]
+fn nested_lists_restarts_gaps_and_kinds_roundtrip_exactly() {
+    let d = list_document();
+    // Word for Mac continued a new outer list when abstracts were shared.
+    let parts = package::read(&encode(&d).unwrap()).unwrap();
+    let numbering = part(&parts, "word/numbering.xml").unwrap();
+    let references: Vec<_> = numbering
+        .children
+        .iter()
+        .filter(|n| n.name == "num")
+        .map(|n| n.child("abstractNumId").unwrap().val().unwrap())
+        .collect();
+    assert_eq!(
+        references.len(),
+        references
+            .iter()
+            .collect::<std::collections::BTreeSet<_>>()
+            .len()
+    );
+    let reopened = decode(&encode(&d).unwrap()).unwrap();
+    assert_eq!(reopened, d);
+    assert_eq!(
+        crate::structure::labels(&reopened),
+        crate::structure::labels(&d)
+    );
+    let native = crate::storage::decode(&crate::storage::encode(&reopened).unwrap()).unwrap();
+    assert_eq!(native, d);
+}
+#[test]
+fn imported_lists_share_editing_and_undo() {
+    let d = list_document();
+    let mut e = crate::commands::Editor::new(decode(&encode(&d).unwrap()).unwrap());
+    e.selection = (0, 0);
+    e.restart_list(12).unwrap();
+    let after = e.document.clone();
+    assert_ne!(after, d);
+    assert_eq!(decode(&encode(&after).unwrap()).unwrap(), after);
+    e.undo();
+    assert_eq!(e.document, d);
+    e.redo();
+    assert_eq!(e.document, after);
+}
+
+// Independently authored markup, not produced by the DOCX exporter.
+fn external_minimal() -> Parts {
+    Parts::from([
+        ("[Content_Types].xml".into(),format!("<Types xmlns='{CT}'><Default Extension='xml' ContentType='application/xml'/><Default Extension='rels' ContentType='application/vnd.openxmlformats-package.relationships+xml'/><Override PartName='/text/main.xml' ContentType='{MAIN_TYPE}'/><Override PartName='/numbering.xml' ContentType='{}'/></Types>",opc::NUMBER_TYPE).into_bytes()),
+        ("_rels/.rels".into(),format!("<Relationships xmlns='{REL}'><Relationship Id='main' Type='{OFFICE_REL}officeDocument' Target='text/main.xml'/></Relationships>").into_bytes()),
+        ("text/_rels/main.xml.rels".into(),format!("<Relationships xmlns='{REL}'><Relationship Id='numbers' Type='{OFFICE_REL}numbering' Target='../numbering.xml'/></Relationships>").into_bytes()),
+        ("text/main.xml".into(),format!("<x:document xmlns:x='{W}'><x:body><x:p><x:pPr><x:numPr><x:numId x:val='7'/></x:numPr></x:pPr><x:r><x:t>First</x:t></x:r></x:p><x:p><x:pPr><x:numPr><x:ilvl x:val='0'/><x:numId x:val='7'/></x:numPr></x:pPr><x:r><x:t>Second</x:t></x:r></x:p></x:body></x:document>").into_bytes()),
+        ("numbering.xml".into(),format!("<w:numbering xmlns:w='{W}'><w:abstractNum w:abstractNumId='5'><w:lvl w:ilvl='0'><w:start w:val='3'/><w:numFmt w:val='decimal'/><w:lvlText w:val='%1.'/><w:pPr><w:ind w:left='480' w:hanging='360'/></w:pPr></w:lvl></w:abstractNum><w:num w:numId='7'><w:abstractNumId w:val='5'/></w:num></w:numbering>").into_bytes()),
+    ])
+}
+#[test]
+fn external_relocated_parts_optional_styles_and_numbering() {
+    let d = decode(&package::write(&external_minimal()).unwrap()).unwrap();
+    assert_eq!(d.text(), "First\nSecond");
+    assert_eq!(
+        crate::structure::labels(&d),
+        vec![Some("3.".into()), Some("4.".into())]
+    );
+    assert_eq!(
+        d.style_catalog
+            .resolve(ParagraphStyle::Normal)
+            .line_height_percent,
+        100
+    );
+    assert_eq!(
+        d.style_catalog
+            .resolve(ParagraphStyle::Normal)
+            .space_after_half_points,
+        0
+    );
+    assert_eq!(decode(&encode(&d).unwrap()).unwrap(), d);
+}
+#[test]
+fn optional_styles_and_document_defaults_preserve_inheritance() {
+    let mut p = package::read(&encode(&Document::default()).unwrap()).unwrap();
+    p.insert("word/styles.xml".into(),format!("<w:styles xmlns:w='{W}'><w:docDefaults><w:pPrDefault><w:pPr><w:spacing w:after='40' w:before='10' w:lineRule='auto' w:line='264'/></w:pPr></w:pPrDefault><w:rPrDefault><w:rPr><w:sz w:val='24'/><w:rFonts w:hAnsi='Arial' w:ascii='Arial'/></w:rPr></w:rPrDefault></w:docDefaults><w:style w:type='paragraph' w:styleId='Normal' w:default='true'><w:name w:val='normal'/></w:style></w:styles>").into_bytes());
+    let d = decode(&package::write(&p).unwrap()).unwrap();
+    let resolved = d.style_catalog.resolve(ParagraphStyle::Normal);
+    assert_eq!(u16::from(resolved.character.font_size), 24);
+    assert_eq!(resolved.line_height_percent, 110);
+    assert_eq!(resolved.space_before_half_points, 1);
+    assert_eq!(resolved.space_after_half_points, 4);
+    assert!(d.style_catalog.normal.parent.is_some());
+    assert_eq!(decode(&encode(&d).unwrap()).unwrap(), d);
+}
+#[test]
+fn unsupported_numbering_and_package_targets_are_not_flattened() {
+    for (from, to) in [
+        ("decimal", "lowerRoman"),
+        ("%1.", "%1.%2."),
+        ("w:left='480'", "w:left='720'"),
+        (
+            "<w:start w:val='3'/>",
+            "<w:start w:val='3'/><w:lvlRestart w:val='0'/>",
+        ),
+        ("w:abstractNumId='5'", "w:abstractNumId='9'"),
+    ] {
+        let mut p = external_minimal();
+        let n = String::from_utf8(p["numbering.xml"].clone())
+            .unwrap()
+            .replacen(from, to, 1);
+        p.insert("numbering.xml".into(), n.into_bytes());
+        assert!(decode(&package::write(&p).unwrap()).is_err(), "{to}");
+    }
+    for target in [
+        "../../numbering.xml",
+        "https://example.org/x",
+        "%2e%2e/numbering.xml",
+    ] {
+        let mut p = external_minimal();
+        let r = String::from_utf8(p["text/_rels/main.xml.rels"].clone())
+            .unwrap()
+            .replace("../numbering.xml", target);
+        p.insert("text/_rels/main.xml.rels".into(), r.into_bytes());
+        assert!(decode(&package::write(&p).unwrap()).is_err());
+    }
+}
+#[test]
+fn disconnected_numbering_is_rejected_before_silent_conversion() {
+    let mut p = external_minimal();
+    let s = String::from_utf8(p["text/main.xml"].clone())
+        .unwrap()
+        .replacen(
+            "</x:p><x:p>",
+            "</x:p><x:p><x:r><x:t>Gap</x:t></x:r></x:p><x:p>",
+            1,
+        );
+    p.insert("text/main.xml".into(), s.into_bytes());
+    assert!(
+        decode(&package::write(&p).unwrap())
+            .unwrap_err()
+            .contains("discontinuous")
+    );
+}
+#[test]
+fn docx_save_retains_path_history_and_detects_external_changes() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("primary.docx");
+    let d = list_document();
+    save(&d, &path).unwrap();
+    let mut s = crate::session::Session::open(&path).unwrap();
+    assert_eq!(s.path.as_deref(), Some(path.as_path()));
+    assert!(s.is_docx());
+    s.editor.selection = (0, 0);
+    s.editor.restart_list(9).unwrap();
+    let history = s.editor.undo_stack.len();
+    assert!(s.dirty());
+    assert!(
+        s.can_leave(crate::session::LeaveChoice::Save, None)
+            .unwrap()
+    );
+    assert!(!s.dirty());
+    assert_eq!(s.editor.undo_stack.len(), history);
+    assert_eq!(load(&path).unwrap(), s.editor.document);
+    s.editor.undo();
+    assert!(s.dirty());
+    s.editor.redo();
+    assert!(!s.dirty());
+    std::fs::write(&path, b"changed by another editor").unwrap();
+    s.editor.restart_list(10).unwrap();
+    assert!(s.save(&path).unwrap_err().contains("outside this window"));
+    assert_eq!(std::fs::read(&path).unwrap(), b"changed by another editor");
+    std::fs::create_dir(dir.path().join("alias")).unwrap();
+    let alias = dir.path().join("alias/../primary.docx");
+    assert!(s.save(&alias).unwrap_err().contains("outside this window"));
+    assert!(s.dirty());
+}
+#[test]
+fn unsupported_primary_save_keeps_destination_and_offers_native_path() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("primary.docx");
+    save(&Document::default(), &path).unwrap();
+    let original = std::fs::read(&path).unwrap();
+    let mut s = crate::session::Session::open(&path).unwrap();
+    s.editor.document.page.header = "Not in DOCX subset".into();
+    assert!(s.save(&path).is_err());
+    assert!(s.dirty());
+    assert_eq!(s.path.as_deref(), Some(path.as_path()));
+    assert_eq!(std::fs::read(&path).unwrap(), original);
+    let secondary = dir.path().join("optional.bfdoc");
+    s.save(&secondary).unwrap();
+    assert_eq!(crate::storage::load(&secondary).unwrap(), s.editor.document);
+    assert!(!s.dirty());
+    assert!(!s.is_docx());
+}

@@ -4,8 +4,12 @@ use std::collections::BTreeMap;
 pub(super) struct Map {
     p: BTreeMap<String, ParagraphStyle>,
     c: BTreeMap<String, CharacterStyle>,
+    default: ParagraphStyle,
 }
 impl Map {
+    pub fn default_paragraph(&self) -> ParagraphStyle {
+        self.default
+    }
     pub fn p(&self, id: &str) -> Result<ParagraphStyle> {
         self.p
             .get(id)
@@ -113,41 +117,58 @@ pub(super) fn write(d: &Document) -> Result<String> {
     s += "</w:styles>";
     Ok(s)
 }
-// Default-property equality is semantic (namespace/attribute order independent).
-fn equivalent(a: &Node, b: &Node) -> bool {
-    a.ns == b.ns
-        && a.name == b.name
-        && a.attrs == b.attrs
-        && a.text.trim() == b.text.trim()
-        && a.children.len() == b.children.len()
-        && a.children
-            .iter()
-            .zip(&b.children)
-            .all(|(a, b)| equivalent(a, b))
+// Represent external document defaults as an explicit root style when they
+// differ from the native frozen baseline, retaining inheritance and provenance.
+fn defaults(n: &Node) -> Result<StyleDefinition> {
+    if n.children
+        .iter()
+        .filter(|c| c.name == "docDefaults")
+        .count()
+        > 1
+    {
+        return Err("Duplicate document defaults".into());
+    }
+    let mut format = CharacterFormat::default();
+    let mut spacing = ParagraphSpacing::default();
+    if let Some(defaults) = n.child("docDefaults") {
+        defaults.allowed(W, &["rPrDefault", "pPrDefault"], &[])?;
+        singleton_children(defaults)?;
+        if let Some(r) = defaults.child("rPrDefault") {
+            r.allowed(W, &["rPr"], &[])?;
+            singleton_children(r)?;
+            if let Some(pr) = r.child("rPr") {
+                format = properties::read_run(pr, &Map::default())?;
+            }
+        }
+        if let Some(p) = defaults.child("pPrDefault") {
+            p.allowed(W, &["pPr"], &[])?;
+            singleton_children(p)?;
+            if let Some(pr) = p.child("pPr") {
+                pr.allowed(W, &["spacing", "ind"], &[])?;
+                singleton_children(pr)?;
+                spacing = properties::read_spacing(pr)?;
+            }
+        }
+    }
+    Ok(StyleDefinition {
+        character: format,
+        line_height_percent: Some(spacing.line_height_percent.unwrap_or(100)),
+        space_before_half_points: Some(spacing.space_before_half_points.unwrap_or(0)),
+        space_after_half_points: Some(spacing.space_after_half_points.unwrap_or(0)),
+        left_indent_half_points: Some(spacing.left_indent_half_points.unwrap_or(0)),
+        right_indent_half_points: Some(spacing.right_indent_half_points.unwrap_or(0)),
+        first_line_half_points: Some(spacing.first_line_half_points.unwrap_or(0)),
+        ..Default::default()
+    })
 }
 pub(super) fn read(n: &Node, d: &mut Document) -> Result<Map> {
     root(n, W, "styles")?;
     n.allowed(W, &["docDefaults", "style"], &[])?;
-    let defaults =
-        xml::parse(format!("<w:styles xmlns:w=\"{W}\">{DEFAULTS}</w:styles>").as_bytes())?;
-    if n.children
-        .iter()
-        .filter(|n| n.name == "docDefaults")
-        .count()
-        != 1
-        || !equivalent(
-            n.child("docDefaults").ok_or("Missing document defaults")?,
-            defaults.child("docDefaults").unwrap(),
-        )
-    {
-        return Err(
-            "DOCX document defaults differ from the supported profile (Arial 11 pt, 125% spacing)."
-                .into(),
-        );
-    }
+    let defaults = defaults(n)?;
     let mut map = Map::default();
     let mut countp = 0;
     let mut countc = 0;
+    let mut has_default = false;
     for s in n.children.iter().filter(|n| n.name == "style") {
         s.allowed(
             W,
@@ -176,12 +197,22 @@ pub(super) fn read(n: &Node, d: &mut Document) -> Result<Map> {
                 if map.p.values().any(|v| *v == p) || map.p.insert(id.into(), p).is_some() {
                     return Err("Duplicate paragraph style identifier".into());
                 }
-                if s.attr(W, "default")
-                    .is_some_and(|v| id != "Normal" || v != "1")
-                {
-                    return Err("Unsupported default style".into());
+                if let Some(flag) = s.attr(W, "default") {
+                    match flag {
+                        "1" | "true" | "on" => {
+                            if has_default {
+                                return Err("Multiple default paragraph styles".into());
+                            }
+                            has_default = true;
+                            map.default = p;
+                        }
+                        "0" | "false" | "off" => {}
+                        _ => return Err("Invalid default style flag".into()),
+                    }
                 }
-                if !matches!(p, ParagraphStyle::Custom(_)) && name.val()? != p.name() {
+                if !matches!(p, ParagraphStyle::Custom(_))
+                    && !name.val()?.eq_ignore_ascii_case(p.name())
+                {
                     return Err("Unsupported built-in style name".into());
                 }
             }
@@ -210,12 +241,6 @@ pub(super) fn read(n: &Node, d: &mut Document) -> Result<Map> {
     }
     if countp > 64 || countc > 64 {
         return Err("Style count exceeds limit".into());
-    }
-    for id in ["Normal", "NoSpacing", "Heading1"] {
-        map.p(id)?;
-    }
-    for id in ["Strong", "Emphasis"] {
-        map.c(id)?;
     }
     for s in n.children.iter().filter(|n| n.name == "style") {
         let id = s.attr(W, "styleId").unwrap();
@@ -287,12 +312,51 @@ pub(super) fn read(n: &Node, d: &mut Document) -> Result<Map> {
                         italic: (builtin == CharacterStyle::Emphasis).then_some(true),
                         ..Default::default()
                     };
-                    if format != expected || parent.is_some() || name != builtin.name() {
+                    if format != expected
+                        || parent.is_some()
+                        || !name.eq_ignore_ascii_case(builtin.name())
+                    {
                         return Err("Modified built-in character style unsupported".into());
                     }
                 }
             }
         }
+    }
+    let native = StyleCatalog::default().resolve(ParagraphStyle::Normal);
+    if defaults.character.resolve(Style::default()) != native.character
+        || defaults.line_height_percent != Some(native.line_height_percent)
+        || defaults.space_before_half_points != Some(native.space_before_half_points)
+        || defaults.space_after_half_points != Some(native.space_after_half_points)
+        || defaults.left_indent_half_points != Some(0)
+        || defaults.right_indent_half_points != Some(0)
+        || defaults.first_line_half_points != Some(0)
+    {
+        let id = (1..=65)
+            .find(|id| !d.style_catalog.custom.iter().any(|s| s.id == *id))
+            .ok_or("No style identity available")?;
+        let mut name = "Imported document defaults".to_owned();
+        while d
+            .style_catalog
+            .custom
+            .iter()
+            .any(|s| s.name.eq_ignore_ascii_case(&name))
+        {
+            name.push('_');
+        }
+        let parents: Vec<_> = d
+            .style_catalog
+            .ids()
+            .into_iter()
+            .filter(|&id| d.style_catalog.get(id).unwrap().parent.is_none())
+            .collect();
+        for parent in parents {
+            d.style_catalog.get_mut(parent).unwrap().parent = Some(ParagraphStyle::Custom(id));
+        }
+        d.style_catalog.custom.push(CustomStyle {
+            id,
+            name,
+            definition: defaults,
+        });
     }
     d.validate()?;
     Ok(map)

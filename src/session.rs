@@ -5,7 +5,7 @@ pub struct Session {
     pub editor: Editor,
     pub path: Option<PathBuf>,
     saved: Document,
-    pub imported_docx: bool,
+    docx_source: Option<(PathBuf, Vec<u8>)>,
 }
 impl Default for Session {
     fn default() -> Self {
@@ -13,14 +13,16 @@ impl Default for Session {
     }
 }
 impl Session {
-    /// DOCX imports have no native save destination; Save must choose a .bfdoc.
+    /// Open the primary DOCX format or the optional full-model native format.
     pub fn open(path: &Path) -> Result<Self> {
+        Self::check_format(path)?;
         if path
             .extension()
             .is_some_and(|s| s.eq_ignore_ascii_case("docx"))
         {
-            let mut session = Self::new(crate::docx::load(path)?, None);
-            session.imported_docx = true;
+            let bytes = crate::docx::load_bytes(path)?;
+            let mut session = Self::new(crate::docx::decode(&bytes)?, Some(path.into()));
+            session.docx_source = Some((path.into(), bytes));
             Ok(session)
         } else {
             Ok(Self::new(storage::load(path)?, Some(path.to_path_buf())))
@@ -32,14 +34,53 @@ impl Session {
             saved: document.clone(),
             editor: Editor::new(document),
             path,
-            imported_docx: false,
+            docx_source: None,
         }
     }
     pub fn dirty(&self) -> bool {
         self.saved != self.editor.document
     }
+    pub fn is_docx(&self) -> bool {
+        self.path.as_deref().is_some_and(Self::docx_path)
+    }
+    fn docx_path(path: &Path) -> bool {
+        path.extension()
+            .is_some_and(|s| s.eq_ignore_ascii_case("docx"))
+    }
+    fn check_format(path: &Path) -> Result<()> {
+        if Self::docx_path(path)
+            || path
+                .extension()
+                .is_some_and(|s| s.eq_ignore_ascii_case("bfdoc"))
+        {
+            Ok(())
+        } else {
+            Err("Choose .docx (primary) or .bfdoc (optional). Binary .doc and macro-enabled .docm are unsupported.".into())
+        }
+    }
     pub fn save(&mut self, path: &Path) -> Result<()> {
-        storage::save(&self.editor.document, path)?;
+        Self::check_format(path)?;
+        if Self::docx_path(path) {
+            let bytes = crate::docx::encode(&self.editor.document)?;
+            if let Some((source, original)) = &self.docx_source
+                && (source == path
+                    || std::fs::canonicalize(source)
+                        .ok()
+                        .zip(std::fs::canonicalize(path).ok())
+                        .is_some_and(|(a, b)| a == b))
+                && crate::docx::load_bytes(path)? != *original
+            {
+                return Err(
+                    "The DOCX changed outside this window. Use Save As to keep both versions."
+                        .into(),
+                );
+            }
+            storage::write_bytes_checked(path, &bytes, |_| Ok(()))?;
+            self.docx_source = Some((path.into(), bytes));
+        } else {
+            storage::save(&self.editor.document, path)?;
+            self.docx_source = None;
+        }
         self.path = Some(path.into());
         self.saved = self.editor.document.clone();
         Ok(())

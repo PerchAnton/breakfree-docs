@@ -325,7 +325,7 @@ impl DocsApp {
                     match crate::docx::save(&self.session.editor.document, &path) {
                         Ok(()) => {
                             self.output_notice = Some(format!(
-                                "DOCX exported: {}. Native save destination unchanged.",
+                                "DOCX exported: {}. Current save destination unchanged.",
                                 path.display()
                             ))
                         }

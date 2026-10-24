@@ -13410,12 +13410,12 @@ fn docx_import_and_failed_import_preserve_session_boundaries() {
     let original = std::fs::read(&path).unwrap();
     app.finish(Pending::Open(path.clone()), &ctx);
     assert_eq!(app.session.editor.document, doc);
-    assert!(app.session.path.is_none());
+    assert_eq!(app.session.path.as_deref(), Some(path.as_path()));
     assert!(
         app.output_notice
             .as_ref()
             .unwrap()
-            .contains("source DOCX is unchanged")
+            .contains("DOCX document.")
     );
     std::fs::write(&path, b"damaged").unwrap();
     app.finish(Pending::Open(path.clone()), &ctx);

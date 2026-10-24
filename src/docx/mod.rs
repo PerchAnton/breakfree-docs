@@ -1,4 +1,6 @@
-//! Explicit, fail-closed OOXML interchange. Never modifies an imported source.
+//! Explicit, fail-closed OOXML interchange for the primary document format.
+mod numbering;
+mod opc;
 mod package;
 mod properties;
 mod styles;
@@ -43,6 +45,7 @@ fn singleton_children(n: &Node) -> Result<()> {
 pub fn check_export(d: &Document) -> Result<()> {
     d.validate()?;
     check_toggles(d)?;
+    numbering::check_geometry(d)?;
     let names = d
         .style_catalog
         .custom
@@ -70,9 +73,6 @@ pub fn check_export(d: &Document) -> Result<()> {
     for p in &d.paragraphs {
         if p.structure.block.is_some() {
             unsupported.insert("tables or pictures");
-        }
-        if p.structure.list.is_some() {
-            unsupported.insert("lists");
         }
         if !p.structure.links.is_empty() {
             unsupported.insert("hyperlinks");
@@ -106,10 +106,42 @@ pub fn encode(d: &Document) -> Result<Vec<u8>> {
     parts.insert("_rels/.rels".into(),format!("{DECL}<Relationships xmlns=\"{REL}\"><Relationship Id=\"rId1\" Type=\"{OFFICE_REL}officeDocument\" Target=\"word/document.xml\"/></Relationships>").into_bytes());
     parts.insert("word/_rels/document.xml.rels".into(),format!("{DECL}<Relationships xmlns=\"{REL}\"><Relationship Id=\"rIdStyles\" Type=\"{OFFICE_REL}styles\" Target=\"styles.xml\"/></Relationships>").into_bytes());
     parts.insert("word/styles.xml".into(), styles::write(d)?.into_bytes());
+    let (numbering, list_ids) = numbering::write(d)?;
+    if list_ids.iter().any(Option::is_some) {
+        parts.insert("word/numbering.xml".into(), numbering.into_bytes());
+        let types = String::from_utf8(parts["[Content_Types].xml"].clone())
+            .unwrap()
+            .replace(
+                "</Types>",
+                &format!(
+                    "<Override PartName=\"/word/numbering.xml\" ContentType=\"{}\"/></Types>",
+                    opc::NUMBER_TYPE
+                ),
+            );
+        parts.insert("[Content_Types].xml".into(), types.into_bytes());
+        let rels=String::from_utf8(parts["word/_rels/document.xml.rels"].clone()).unwrap().replace("</Relationships>",&format!("<Relationship Id=\"rIdNumbering\" Type=\"{OFFICE_REL}numbering\" Target=\"numbering.xml\"/></Relationships>"));
+        parts.insert("word/_rels/document.xml.rels".into(), rels.into_bytes());
+    }
     let mut body = String::new();
-    for p in &d.paragraphs {
+    for (index, p) in d.paragraphs.iter().enumerate() {
         body.push_str("<w:p><w:pPr>");
         body.push_str(&element("pStyle", styles::pid(p.paragraph_style)));
+        for (name, value) in [
+            ("keepNext", p.structure.keep_with_next),
+            ("keepLines", p.structure.keep_lines),
+            ("pageBreakBefore", p.structure.page_break_before),
+        ] {
+            if value {
+                body.push_str(&element(name, 1));
+            }
+        }
+        if let Some(id) = list_ids[index] {
+            body.push_str(&format!(
+                "<w:numPr><w:ilvl w:val=\"{}\"/><w:numId w:val=\"{id}\"/></w:numPr>",
+                p.structure.list.as_ref().unwrap().level
+            ));
+        }
+        body.push_str(&properties::write_spacing(&p.spacing)?);
         body.push_str(&element(
             "jc",
             match p.alignment {
@@ -119,16 +151,6 @@ pub fn encode(d: &Document) -> Result<Vec<u8>> {
                 Alignment::Justify => "both",
             },
         ));
-        body.push_str(&properties::write_spacing(&p.spacing)?);
-        for (name, value) in [
-            ("pageBreakBefore", p.structure.page_break_before),
-            ("keepNext", p.structure.keep_with_next),
-            ("keepLines", p.structure.keep_lines),
-        ] {
-            if value {
-                body.push_str(&element(name, 1));
-            }
-        }
         body.push_str("</w:pPr>");
         let chars: Vec<_> = p.text.chars().collect();
         let mut start = 0;
@@ -174,80 +196,30 @@ pub fn encode(d: &Document) -> Result<Vec<u8>> {
         format!("{DECL}<w:document xmlns:w=\"{W}\"><w:body>{body}</w:body></w:document>")
             .into_bytes(),
     );
-    package::write(&parts)
+    let bytes = package::write(&parts)?;
+    if decode(&bytes)? != *d {
+        return Err("DOCX cannot preserve this document exactly; save as .bfdoc instead.".into());
+    }
+    Ok(bytes)
 }
 pub fn decode(bytes: &[u8]) -> Result<Document> {
     let parts = package::read(bytes)?;
-    // Every package part is accounted for. Comments, signatures, macros and
-    // external relationships are rejected, never silently stripped.
-    let expected = [
-        "[Content_Types].xml",
-        "_rels/.rels",
-        "word/document.xml",
-        "word/styles.xml",
-        "word/_rels/document.xml.rels",
-    ];
-    for name in parts.keys() {
-        if !expected.contains(&name.as_str()) {
-            return Err(format!(
-                "Unsupported DOCX part: {name}. Source remains unchanged."
-            ));
-        }
-    }
-    let types = part(&parts, "[Content_Types].xml")?;
-    root(&types, CT, "Types")?;
-    types.allowed(CT, &["Default", "Override"], &[])?;
-    let mut seen = std::collections::BTreeSet::new();
-    for n in &types.children {
-        let (key, value) = if n.name == "Default" {
-            n.allowed(CT, &[], &[("", "Extension"), ("", "ContentType")])?;
-            (
-                n.attr("", "Extension").ok_or("Missing extension")?,
-                "application/vnd.openxmlformats-package.relationships+xml",
-            )
-        } else {
-            n.allowed(CT, &[], &[("", "PartName"), ("", "ContentType")])?;
-            (
-                n.attr("", "PartName").ok_or("Missing part name")?,
-                if n.attr("", "PartName") == Some("/word/document.xml") {
-                    MAIN_TYPE
-                } else {
-                    STYLE_TYPE
-                },
-            )
-        };
-        if !["rels", "/word/document.xml", "/word/styles.xml"].contains(&key)
-            || n.attr("", "ContentType") != Some(value)
-            || !seen.insert(key)
-        {
-            return Err("Unsupported, duplicate or macro-enabled content type".into());
-        }
-    }
-    if seen.len() != 3 {
-        return Err("Missing content types".into());
-    }
-    for (path, kind, target) in [
-        ("_rels/.rels", "officeDocument", "word/document.xml"),
-        ("word/_rels/document.xml.rels", "styles", "styles.xml"),
-    ] {
-        let rel = part(&parts, path)?;
-        root(&rel, REL, "Relationships")?;
-        rel.allowed(REL, &["Relationship"], &[])?;
-        if rel.children.len() != 1 {
-            return Err("Unsupported package relationships".into());
-        }
-        let n = &rel.children[0];
-        n.allowed(REL, &[], &[("", "Id"), ("", "Type"), ("", "Target")])?;
-        if n.attr("", "Type") != Some(format!("{OFFICE_REL}{kind}").as_str())
-            || n.attr("", "Target") != Some(target)
-            || n.attr("", "Id").is_none_or(str::is_empty)
-        {
-            return Err("Unsupported or external DOCX relationship".into());
-        }
-    }
+    let locations = opc::inspect(&parts)?;
     let mut d = Document::default();
-    let map = styles::read(&part(&parts, "word/styles.xml")?, &mut d)?;
-    let document = part(&parts, "word/document.xml")?;
+    let empty = xml::parse(format!("<w:styles xmlns:w=\"{W}\"/>").as_bytes())?;
+    let style_part = locations
+        .styles
+        .as_deref()
+        .map(|p| part(&parts, p))
+        .transpose()?;
+    let map = styles::read(style_part.as_ref().unwrap_or(&empty), &mut d)?;
+    let mut lists = locations
+        .numbering
+        .as_deref()
+        .map(|p| numbering::read(&part(&parts, p)?))
+        .transpose()?
+        .unwrap_or_default();
+    let document = part(&parts, &locations.document)?;
     root(&document, W, "document")?;
     document.allowed(W, &["body"], &[])?;
     singleton_children(&document)?;
@@ -266,7 +238,11 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
         if n.children.iter().filter(|n| n.name == "pPr").count() > 1 {
             return Err("Duplicate paragraph properties".into());
         }
-        let mut p = Paragraph::default();
+        let mut p = Paragraph {
+            paragraph_style: map.default_paragraph(),
+            ..Default::default()
+        };
+        p.structure.list = lists.paragraph(n.child("pPr"))?;
         if let Some(pr) = n.child("pPr") {
             pr.allowed(
                 W,
@@ -278,6 +254,7 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
                     "pageBreakBefore",
                     "keepNext",
                     "keepLines",
+                    "numPr",
                 ],
                 &[],
             )?;
@@ -365,7 +342,7 @@ fn read_section(n: &Node) -> Result<Section> {
     s.validate()?;
     Ok(s)
 }
-pub fn load(path: &Path) -> Result<Document> {
+pub fn load_bytes(path: &Path) -> Result<Vec<u8>> {
     extension(path)?;
     let mut bytes = Vec::new();
     std::fs::File::open(path)
@@ -373,7 +350,13 @@ pub fn load(path: &Path) -> Result<Document> {
         .take((package::MAX + 1) as u64)
         .read_to_end(&mut bytes)
         .map_err(|e| e.to_string())?;
-    decode(&bytes)
+    if bytes.len() > package::MAX {
+        return Err("DOCX exceeds 32 MiB".into());
+    }
+    Ok(bytes)
+}
+pub fn load(path: &Path) -> Result<Document> {
+    decode(&load_bytes(path)?)
 }
 pub fn save(d: &Document, path: &Path) -> Result<()> {
     extension(path)?;

@@ -291,3 +291,10 @@ history and failed-save guarantees apply to these commands. PDF is raster-only;
 unsupported cells/anchors/columns and general script coverage are explicitly
 excluded. Physical printing is deferred by the owner, alongside deferred Windows
 acceptance and final VoiceOver review. D01–D09 remain required.
+
+## Primary-format policy (alpha.91)
+
+The owner selected DOCX as primary/default and `.bfdoc` as optional. D01–D09 remain
+applicable to both supported save paths. Unsupported DOCX features must block
+writing without changing the destination or dirty checkpoint; explicit Save As
+`.bfdoc` retains the complete native model. See [ADR 0018](adr/0018-primary-docx-and-numbering.md).

@@ -1,7 +1,7 @@
 # ADR 0017: Bounded, fail-closed DOCX interchange
 
 Date: 2026-10-24
-Status: Implemented initial profile; broader interchange remains incremental
+Status: Initial profile implemented; Save policy superseded by [ADR 0018](0018-primary-docx-and-numbering.md); broader interchange remains incremental
 
 ## Context
 

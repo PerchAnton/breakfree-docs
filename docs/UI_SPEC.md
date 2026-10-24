@@ -2642,3 +2642,12 @@ search labels its limited subset. Open accepts `.bfdoc` and `.docx`. Successful
 import explains native Save and source preservation in File → Current document. Errors use the existing modal
 error surface; no lossy bypass is offered. Palette, icon artwork and ribbon geometry
 are unchanged. DOCX commands do not claim full-format support.
+
+## Alpha.91 primary DOCX save flow
+
+New Save proposes `Untitled.docx`; Open/Save As list Word document first and optional
+BreakFree Docs second. Existing files retain their explicitly chosen extension.
+The window title follows an opened DOCX path. File → Current document explains the
+primary format and reports successful DOCX/native saves without changing ribbon
+layout, palette or icons. Unknown DOCX properties and outside-file changes block
+saving with a visible error; Save As is explicit, never an automatic fallback.

@@ -36,5 +36,5 @@ pub fn arguments(args: impl IntoIterator<Item = OsString>) -> Result<Launch> {
     Ok(result)
 }
 pub fn capabilities() -> serde_json::Value {
-    serde_json::json!({"protocol_version":1,"app_id":"breakfree.docs","app_version":VERSION,"display_name":"BreakFree Docs","capabilities":if cfg!(feature="desktop"){vec!["new","open"]}else{vec![]},"formats":[{"id":"breakfree.docs.native","extensions":["bfdoc"],"read":true,"write":true},{"id":"ooxml.wordprocessingml","extensions":["docx"],"read":true,"write":true}]})
+    serde_json::json!({"protocol_version":1,"app_id":"breakfree.docs","app_version":VERSION,"display_name":"BreakFree Docs","capabilities":if cfg!(feature="desktop"){vec!["new","open"]}else{vec![]},"formats":[{"id":"ooxml.wordprocessingml","extensions":["docx"],"read":true,"write":true},{"id":"breakfree.docs.native","extensions":["bfdoc"],"read":true,"write":true}]})
 }
