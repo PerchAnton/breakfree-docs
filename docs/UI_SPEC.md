@@ -2599,3 +2599,38 @@ or `640 480` with modes `tab-sources`, `tab-sources-preview`,
 to an absolute PNG path. Captures test native rendering; separate OS-input
 validation is in VALIDATION. The reference build/scale remain unconfirmed;
 matched Windows 2024/DPI comparison is deferred and VoiceOver remains final.
+
+## Alpha.89 structured document and page surfaces
+
+2026-10-24. Retain the approved light ribbon, palette, original icons and group
+geometry. Insert exposes actual page-break/table/picture/link actions. Layout
+exposes page setup, paragraph pagination and output; View exposes editable Print
+Layout and preview. New-page sections can have different widths; the horizontal
+ruler follows the current paragraph's section and is centered over that page width.
+Opening a document initializes the widget cursor from the model (rather than
+letting the widget silently select the final paragraph).
+
+Page geometry uses 72 points/inch, rendered at 96 logical pixels/inch at 100% zoom;
+16 pt separates pages. Table cells have 4 pt interior padding and 0.5 pt borders.
+Header/footer text uses 9 pt; body sizes remain model/style-driven. The white page
+is actual measured geometry. Status displays the calculated page count only in
+Print Layout; continuous view retains its explicit label. No dummy page numbers.
+
+Native captures use the synthetic structured report, English/light interface,
+macOS at 1366 × 900 and 640 × 480 DIP. The retained page capture shows real lists,
+links, table content, margins and header. Separate PDF renders verify first and
+last pages of the six-page corpus. No matched Windows reference capture or
+percentage similarity is claimed. Dialog acceptance includes a synthetic
+100/125/150% scale matrix; it is not native Windows scaling evidence.
+
+![Editable page layout](screenshots/rust-structured-pages-alpha89-macos.png)
+![PDF first page](screenshots/rust-structured-pdf-page1-alpha89.png)
+![PDF last page](screenshots/rust-structured-pdf-page6-alpha89.png)
+
+Reproduce with `BREAKFREE_CAPTURE_TO=/absolute/output.png cargo run --locked
+--features capture --example capture_ui -- 1366 900 structure-pages`. Additional
+modes: `structure-preview`, `structure-table`, `structure-page-setup`.
+The table dialog edits plain cells and row/column structure; it does not simulate
+an in-page rich-cell editor. Continuous vertical ruler behavior and advanced
+contextual ribbons remain review items. Native-input automation was interrupted
+by external changes to its test window; that window was retained without discard.

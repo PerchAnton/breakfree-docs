@@ -30,11 +30,25 @@ struct Unit {
     next_alignment: Option<Alignment>,
     next_style: Option<ParagraphStyle>,
     next_spacing: Option<ParagraphSpacing>,
+    next_structure: Option<crate::structure::ParagraphStructure>,
+    link: Option<std::sync::Arc<str>>,
 }
 
 fn append(paragraphs: &mut Vec<Paragraph>, unit: Unit) {
     if unit.ch == '\n' {
+        let mut structure = unit.next_structure.unwrap_or_else(|| {
+            let mut value = paragraphs.last().unwrap().structure.clone();
+            value.section = None;
+            value.page_break_before = false;
+            value.block = None;
+            if let Some(list) = &mut value.list {
+                list.restart = None;
+            }
+            value
+        });
+        structure.links.clear();
         paragraphs.push(Paragraph {
+            structure,
             paragraph_style: unit
                 .next_style
                 .unwrap_or(paragraphs.last().unwrap().paragraph_style),
@@ -48,6 +62,23 @@ fn append(paragraphs: &mut Vec<Paragraph>, unit: Unit) {
         });
     } else {
         let paragraph = paragraphs.last_mut().unwrap();
+        let position = paragraph.styles.len();
+        if let Some(target) = unit.link {
+            if let Some(last) = paragraph
+                .structure
+                .links
+                .last_mut()
+                .filter(|l| l.end == position && l.target == target.as_ref())
+            {
+                last.end += 1;
+            } else {
+                paragraph.structure.links.push(crate::structure::Link {
+                    start: position,
+                    end: position + 1,
+                    target: target.to_string(),
+                });
+            }
+        }
         paragraph.text.push(unit.ch);
         paragraph.styles.push(unit.style);
     }
@@ -90,17 +121,41 @@ impl Editor {
         }
         let mut units = Vec::with_capacity(text.chars().count());
         for (index, paragraph) in self.document.paragraphs.iter().enumerate() {
+            let links: Vec<_> = paragraph
+                .structure
+                .links
+                .iter()
+                .map(|l| {
+                    (
+                        l.start,
+                        l.end,
+                        std::sync::Arc::<str>::from(l.target.as_str()),
+                    )
+                })
+                .collect();
+            let mut link_index = 0;
             units.extend(
                 paragraph
                     .text
                     .chars()
                     .zip(&paragraph.styles)
-                    .map(|(ch, &style)| Unit {
-                        ch,
-                        style,
-                        next_alignment: None,
-                        next_style: None,
-                        next_spacing: None,
+                    .enumerate()
+                    .map(|(position, (ch, &style))| {
+                        while links.get(link_index).is_some_and(|l| l.1 <= position) {
+                            link_index += 1;
+                        }
+                        Unit {
+                            link: links
+                                .get(link_index)
+                                .filter(|l| l.0 <= position && position < l.1)
+                                .map(|l| l.2.clone()),
+                            next_structure: None,
+                            ch,
+                            style,
+                            next_alignment: None,
+                            next_style: None,
+                            next_spacing: None,
+                        }
                     }),
             );
             if let Some(next) = self.document.paragraphs.get(index + 1) {
@@ -110,10 +165,15 @@ impl Editor {
                     next_alignment: Some(next.alignment),
                     next_style: Some(next.paragraph_style),
                     next_spacing: Some(next.spacing.clone()),
+                    next_structure: Some(next.structure.clone()),
+                    link: None,
                 });
             }
         }
+        let mut first_structure = self.document.paragraphs[0].structure.clone();
+        first_structure.links.clear();
         let mut paragraphs = vec![Paragraph {
+            structure: first_structure,
             alignment: self.document.paragraphs[0].alignment,
             spacing: self.document.paragraphs[0].spacing.clone(),
             paragraph_style: self.document.paragraphs[0].paragraph_style,
@@ -143,6 +203,8 @@ impl Editor {
                         Unit {
                             ch,
                             style: typing,
+                            next_structure: None,
+                            link: units[start].link.clone(),
                             next_alignment: None,
                             next_style: None,
                             next_spacing: None,
@@ -158,10 +220,20 @@ impl Editor {
         for unit in &units[offset..] {
             append(&mut paragraphs, unit.clone());
         }
+        for p in &mut paragraphs {
+            let edges = boundaries(&p.text);
+            p.structure
+                .links
+                .retain(|l| edges.contains(&l.start) && edges.contains(&l.end));
+            if !p.text.contains(crate::structure::OBJECT) {
+                p.structure.block = None;
+            }
+        }
         let result = Document {
             paragraphs,
             style_catalog: self.document.style_catalog.clone(),
             character_styles: self.document.character_styles.clone(),
+            page: self.document.page.clone(),
         };
         result.validate()?;
         // Inserted marks/joiners can combine with neighboring source text.

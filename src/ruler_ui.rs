@@ -95,9 +95,23 @@ impl DocsApp {
             self.ruler_key_focus = None;
             self.sync_view();
         }
-        let margin = CANVAS_MARGIN * zoom;
-        let left = rect.left() + margin;
-        let right = rect.right() - margin;
+        let (left_margin, right_margin) = if self.paged_editing {
+            let p = self
+                .session
+                .editor
+                .document
+                .locate(self.session.editor.selection.0)
+                .map_or(0, |v| v.0);
+            let section = crate::pagination::sections(&self.session.editor.document)[p].clone();
+            (
+                f32::from(section.left_points) * 4. / 3. * zoom,
+                f32::from(section.right_points) * 4. / 3. * zoom,
+            )
+        } else {
+            (CANVAS_MARGIN * zoom, CANVAS_MARGIN * zoom)
+        };
+        let left = rect.left() + left_margin;
+        let right = rect.right() - right_margin;
         paint_scale(ui, rect, left, right, zoom, false);
         let model = self
             .ruler_drag
@@ -597,16 +611,25 @@ impl DocsApp {
         let x = ui.clip_rect().left() + 2.;
         let rect = Rect::from_min_max(pos2(x, canvas.top()), pos2(x + 20., canvas.bottom()));
         self.record("ruler-vertical", rect);
+        let section = &self.session.editor.document.page;
+        let (top, bottom) = if self.paged_editing {
+            (
+                f32::from(section.top_points) * 4. / 3. * zoom,
+                f32::from(section.bottom_points) * 4. / 3. * zoom,
+            )
+        } else {
+            (CANVAS_MARGIN * zoom, CANVAS_MARGIN * zoom)
+        };
         paint_scale(
             ui,
             rect,
-            canvas.top() + CANVAS_MARGIN * zoom,
-            canvas.bottom() - CANVAS_MARGIN * zoom,
+            canvas.top() + top,
+            canvas.bottom() - bottom,
             zoom,
             true,
         );
         ui.interact(rect.intersect(ui.clip_rect()), Id::new("ruler-vertical"), Sense::hover())
-            .on_hover_text("Vertical ruler · inches from the continuous canvas text origin. Follows document scrolling. Page margins and pagination are not implemented.");
+            .on_hover_text("Vertical ruler · inches from the text origin. Follows document scrolling; page margins are configured in Layout → Page setup.");
     }
 }
 

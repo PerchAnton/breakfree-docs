@@ -910,8 +910,10 @@ impl ParagraphSpacing {
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Paragraph {
+    pub structure: crate::structure::ParagraphStructure,
     pub spacing: ParagraphSpacing,
     pub text: String,
     pub styles: Vec<CharacterFormat>,
@@ -919,8 +921,10 @@ pub struct Paragraph {
     pub alignment: Alignment,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Document {
+    pub page: crate::structure::Section,
     pub character_styles: Vec<NamedCharacterStyle>,
     pub style_catalog: StyleCatalog,
     pub paragraphs: Vec<Paragraph>,
@@ -930,6 +934,7 @@ impl Default for Document {
     fn default() -> Self {
         Self {
             paragraphs: vec![Paragraph::default()],
+            page: crate::structure::Section::default(),
             character_styles: Vec::new(),
             style_catalog: StyleCatalog::default(),
         }
@@ -1218,6 +1223,7 @@ impl Document {
     }
 
     pub fn validate(&self) -> Result<()> {
+        self.page.validate()?;
         self.style_catalog.validate()?;
         self.validate_character_styles()?;
         if self.paragraphs.is_empty() {
@@ -1225,6 +1231,7 @@ impl Document {
         }
         for p in &self.paragraphs {
             p.spacing.validate()?;
+            p.structure.validate(&p.text)?;
             if self.style_catalog.get(p.paragraph_style).is_none() {
                 return Err("Unknown paragraph style reference.".into());
             }
@@ -1238,6 +1245,14 @@ impl Document {
             if p.text.contains('\n') || p.styles.len() != p.text.chars().count() {
                 return Err("Invalid paragraph text/style mapping.".into());
             }
+        }
+        let total: usize = self
+            .paragraphs
+            .iter()
+            .map(|p| crate::structure::plain_paragraph(p).chars().count())
+            .sum();
+        if total > MAX_CHARACTERS {
+            return Err("Document, including object contents, exceeds 100,000 characters.".into());
         }
         validate_text(&self.text())
     }
@@ -1261,7 +1276,10 @@ impl Document {
     }
 
     pub fn word_count(&self) -> usize {
-        self.text().unicode_words().count()
+        self.paragraphs
+            .iter()
+            .map(|p| crate::structure::plain_paragraph(p).unicode_words().count())
+            .sum()
     }
     pub fn character_count(&self) -> usize {
         self.text().chars().count()

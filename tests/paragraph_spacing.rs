@@ -1,3 +1,4 @@
+mod support;
 use breakfree_docs::{commands::Editor, formatting, model::*, storage};
 
 #[test]
@@ -118,6 +119,7 @@ fn v10_spacing_roundtrip_migration_strictness_and_failed_write() {
     }
     let mut bad = json.clone();
     bad["content_version"] = 9.into();
+    support::strip_structure_for_legacy(&mut bad);
     assert!(storage::decode(&serde_json::to_vec(&bad).unwrap()).is_err());
     let mut missing = json.clone();
     missing["paragraphs"][0]
@@ -331,6 +333,7 @@ fn legacy_spacing_migrates_with_zero_before_and_rejects_new_fields() {
     let mut old: serde_json::Value =
         serde_json::from_slice(include_bytes!("../examples/StyleNavigation.bfdoc")).unwrap();
     old["content_version"] = 10.into();
+    support::strip_structure_for_legacy(&mut old);
     for p in old["paragraphs"].as_array_mut().unwrap() {
         p["spacing"] = serde_json::json!({"line_height_percent":150,"space_after_half_points":17});
     }
@@ -346,6 +349,7 @@ fn legacy_spacing_migrates_with_zero_before_and_rejects_new_fields() {
         for path in ["style", "direct"] {
             let mut bad = old.clone();
             bad["content_version"] = version.into();
+            support::strip_structure_for_legacy(&mut bad);
             if path == "style" {
                 bad["style_catalog"]["normal"]["space_before_half_points"] =
                     serde_json::Value::Null;

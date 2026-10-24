@@ -1,4 +1,4 @@
-//! Strict .bfdoc v1–v18 reading, v18 writing and checked temporary-file replacement.
+//! Strict .bfdoc v1–v19 reading, v19 writing and checked temporary-file replacement.
 use crate::{Result, model::*};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -8,7 +8,7 @@ use std::{
 };
 
 pub const FORMAT_ID: &str = "breakfree.docs.native";
-pub const CONTENT_VERSION: u32 = 18;
+pub const CONTENT_VERSION: u32 = 19;
 pub const MAX_FILE_BYTES: usize = 16 * 1024 * 1024;
 
 #[derive(Serialize, Deserialize)]
@@ -141,6 +141,8 @@ struct NativeV9 {
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct ParagraphV10 {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    structure: Option<crate::structure::ParagraphStructure>,
     alignment: Alignment,
     paragraph_style: ParagraphStyle,
     spacing: ParagraphSpacing,
@@ -149,6 +151,8 @@ struct ParagraphV10 {
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct NativeSpacing {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    page: Option<crate::structure::Section>,
     format: String,
     content_version: u32,
     style_catalog: StyleCatalog,
@@ -243,6 +247,7 @@ pub fn encode(document: &Document) -> Result<Vec<u8>> {
                 }
             }
             ParagraphV10 {
+                structure: Some(p.structure.clone()),
                 spacing: p.spacing.clone(),
                 alignment: p.alignment,
                 paragraph_style: p.paragraph_style,
@@ -251,6 +256,7 @@ pub fn encode(document: &Document) -> Result<Vec<u8>> {
         })
         .collect();
     let mut bytes = serde_json::to_vec_pretty(&NativeSpacing {
+        page: Some(document.page.clone()),
         format: FORMAT_ID.into(),
         content_version: CONTENT_VERSION,
         style_catalog: document.style_catalog.clone(),
@@ -269,6 +275,15 @@ fn decode_styled(paragraphs: Vec<ParagraphV3>, style_catalog: StyleCatalog) -> R
     decode_catalog(paragraphs, style_catalog, Vec::new())
 }
 fn decode_catalog(
+    paragraphs: Vec<ParagraphV3>,
+    style_catalog: StyleCatalog,
+    character_styles: Vec<NamedCharacterStyle>,
+) -> Result<Document> {
+    let result = decode_catalog_raw(paragraphs, style_catalog, character_styles)?;
+    result.validate()?;
+    Ok(result)
+}
+fn decode_catalog_raw(
     paragraphs: Vec<ParagraphV3>,
     style_catalog: StyleCatalog,
     character_styles: Vec<NamedCharacterStyle>,
@@ -303,8 +318,8 @@ fn decode_catalog(
         paragraphs,
         style_catalog,
         character_styles,
+        ..Default::default()
     };
-    result.validate()?;
     Ok(result)
 }
 
@@ -331,7 +346,7 @@ fn decode_character_paragraphs(
                 .collect(),
         })
         .collect();
-    decode_catalog(paragraphs, catalog, character_styles)
+    decode_catalog_raw(paragraphs, catalog, character_styles)
 }
 
 pub fn decode(bytes: &[u8]) -> Result<Document> {
@@ -342,6 +357,17 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
         serde_json::from_slice(bytes).map_err(|e| format!("Invalid native document: {e}"))?;
     if file.format != FORMAT_ID {
         return Err("Not a BreakFree Docs native document.".into());
+    }
+    if file.content_version < 19 {
+        let value: serde_json::Value = serde_json::from_slice(bytes).map_err(|e| e.to_string())?;
+        if value.get("page").is_some()
+            || value
+                .get("paragraphs")
+                .and_then(|p| p.as_array())
+                .is_some_and(|p| p.iter().any(|v| v.get("structure").is_some()))
+        {
+            return Err("Document structure and page settings require native content v19.".into());
+        }
     }
     // Legacy catalogs/spacing share model types. Explicitly freeze the new v11
     // property for every older schema, even when null. This is only a gate: full
@@ -536,9 +562,15 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
                 .map_err(|e| format!("Invalid native v6 document: {e}"))?;
             return decode_styled(file.paragraphs, file.style_catalog);
         }
-        10..=17 | CONTENT_VERSION => {
+        10..=18 | CONTENT_VERSION => {
             let file: NativeSpacing = serde_json::from_slice(bytes)
                 .map_err(|e| format!("Invalid native spacing document: {e}"))?;
+            if file.content_version == CONTENT_VERSION
+                && (file.page.is_none() || file.paragraphs.iter().any(|p| p.structure.is_none()))
+            {
+                return Err("Native v19 requires page settings and paragraph structure.".into());
+            }
+            let page = file.page.unwrap_or_default();
             let (paragraphs, spacing): (Vec<_>, Vec<_>) = file
                 .paragraphs
                 .into_iter()
@@ -549,16 +581,24 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
                             paragraph_style: p.paragraph_style,
                             runs: p.runs,
                         },
-                        p.spacing,
+                        (p.spacing, p.structure.unwrap_or_default()),
                     )
                 })
                 .unzip();
             let mut document =
                 decode_character_paragraphs(paragraphs, file.style_catalog, file.character_styles)?;
-            for (p, spacing) in document.paragraphs.iter_mut().zip(spacing) {
+            document.page = page;
+            for (p, (spacing, structure)) in document.paragraphs.iter_mut().zip(spacing) {
                 p.spacing = spacing;
+                p.structure = structure;
             }
             document.validate()?;
+            for paragraph in &document.paragraphs {
+                if let Some(crate::structure::Block::Picture(picture)) = &paragraph.structure.block
+                {
+                    picture.validate_pixels()?;
+                }
+            }
             return Ok(document);
         }
         7..=9 => {
@@ -586,7 +626,9 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
                     .map_err(|e| format!("Invalid native v9 document: {e}"))?;
                 (file.paragraphs, file.style_catalog, file.character_styles)
             };
-            return decode_character_paragraphs(paragraphs, catalog, character_styles);
+            let document = decode_character_paragraphs(paragraphs, catalog, character_styles)?;
+            document.validate()?;
+            return Ok(document);
         }
         2 => {
             serde_json::from_slice::<Native<Run>>(bytes)
@@ -626,12 +668,14 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
             alignment: p.alignment,
             paragraph_style: ParagraphStyle::Normal,
             spacing: ParagraphSpacing::default(),
+            ..Default::default()
         });
     }
     let result = Document {
         paragraphs,
         style_catalog: StyleCatalog::default(),
         character_styles: Vec::new(),
+        ..Default::default()
     };
     result.validate()?;
     Ok(result)
@@ -673,10 +717,19 @@ pub fn save(document: &Document, path: &Path) -> Result<()> {
 pub fn save_checked(
     document: &Document,
     path: &Path,
-    mut check: impl FnMut(SaveStage) -> Result<()>,
+    check: impl FnMut(SaveStage) -> Result<()>,
 ) -> Result<()> {
     native_path(path)?;
     let data = encode(document)?;
+    write_bytes_checked(path, &data, check)
+}
+
+/// Shared checked replacement for native documents and generated output.
+pub fn write_bytes_checked(
+    path: &Path,
+    data: &[u8],
+    mut check: impl FnMut(SaveStage) -> Result<()>,
+) -> Result<()> {
     if fs::symlink_metadata(path).is_ok_and(|m| m.file_type().is_symlink()) {
         return Err("Choose a destination that is not a symbolic link.".into());
     }

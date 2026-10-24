@@ -1,3 +1,4 @@
+mod support;
 use breakfree_docs::{
     commands::Editor,
     model::{TabKind as K, TabLeader as L},
@@ -128,17 +129,20 @@ fn leader_storage_rejects_invalid_data_and_preserves_legacy_reading() {
         ] {
             let mut j = base.clone();
             j["content_version"] = v.into();
+            support::strip_structure_for_legacy(&mut j);
             j["paragraphs"][0]["spacing"]["tab_leaders"] = bad;
             assert!(storage::decode(&serde_json::to_vec(&j).unwrap()).is_err());
         }
     }
     let mut old = base.clone();
     old["content_version"] = 16.into();
+    support::strip_structure_for_legacy(&mut old);
     assert_eq!(
         storage::decode(&serde_json::to_vec(&old).unwrap()).unwrap(),
         e.document
     );
     old["content_version"] = (storage::CONTENT_VERSION + 1).into();
+    support::strip_structure_for_legacy(&mut old);
     assert!(storage::decode(&serde_json::to_vec(&old).unwrap()).is_err());
 }
 

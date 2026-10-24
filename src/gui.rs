@@ -48,8 +48,11 @@ use tab_positions_dialog::{PositionsDialog, PositionsOutcome};
 #[path = "tab_sources_dialog.rs"]
 mod tab_sources_dialog;
 use tab_sources_dialog::TabSourcesDialog;
+#[path = "structure_ui.rs"]
+mod structure_ui;
 #[path = "zoom_dialog.rs"]
 mod zoom_dialog;
+use structure_ui::StructureDialog;
 use tab_dialog::{TabDialog, TabOutcome};
 use zoom_dialog::{ZoomDialog, ZoomOutcome};
 
@@ -78,6 +81,20 @@ const FONT_SIZE_ID: &str = "font-size-input";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Action {
+    Bullets,
+    Numbering,
+    ListSettings,
+    Link,
+    Table,
+    Picture,
+    PageSetup,
+    PageFlow,
+    PageBreak,
+    PrintLayout,
+    PrintPreview,
+    ExportPdf,
+    Print,
+
     File,
     New,
     Open,
@@ -127,6 +144,19 @@ pub enum Action {
 impl Action {
     fn label(self) -> &'static str {
         match self {
+            Self::Bullets => "Bullets",
+            Self::Numbering => "Numbering",
+            Self::ListSettings => "List settings",
+            Self::Link => "Hyperlink",
+            Self::Table => "Table",
+            Self::Picture => "Picture",
+            Self::PageSetup => "Page setup",
+            Self::PageFlow => "Paragraph pagination",
+            Self::PageBreak => "Page break before",
+            Self::PrintLayout => "Print Layout",
+            Self::PrintPreview => "Print preview",
+            Self::ExportPdf => "Export PDF",
+            Self::Print => "Print",
             Self::File => "File",
             Self::New => "New document",
             Self::Open => "Open document",
@@ -178,6 +208,19 @@ impl Action {
     }
 }
 const COMMANDS: &[Action] = &[
+    Action::Bullets,
+    Action::Numbering,
+    Action::ListSettings,
+    Action::Link,
+    Action::Table,
+    Action::Picture,
+    Action::PageSetup,
+    Action::PageFlow,
+    Action::PageBreak,
+    Action::PrintLayout,
+    Action::PrintPreview,
+    Action::ExportPdf,
+    Action::Print,
     Action::File,
     Action::New,
     Action::Open,
@@ -252,6 +295,13 @@ pub struct DocsApp {
     tab_dialog: Option<TabDialog>,
     tab_positions_dialog: Option<PositionsDialog>,
     tab_sources_dialog: Option<TabSourcesDialog>,
+    structure_dialog: Option<StructureDialog>,
+    page_preview: bool,
+    paged_editing: bool,
+    page_count: Option<usize>,
+    print_requested: bool,
+    printer_queue: String,
+    output_notice: Option<String>,
     quick_access: Vec<Action>,
     quick_access_below: bool,
     quick_access_targets: Vec<RibbonTarget>,
@@ -378,6 +428,10 @@ impl DocsApp {
             )
         });
         let buffer = session.editor.document.text();
+        let initial_cursor = CCursorRange::two(
+            CCursor::new(session.editor.selection.0),
+            CCursor::new(session.editor.selection.1),
+        );
         Self {
             session,
             tab: 0,
@@ -390,6 +444,13 @@ impl DocsApp {
             tab_dialog: None,
             tab_positions_dialog: None,
             tab_sources_dialog: None,
+            structure_dialog: None,
+            page_preview: false,
+            paged_editing: false,
+            page_count: None,
+            print_requested: false,
+            printer_queue: String::new(),
+            output_notice: None,
             quick_access: quick_access::DEFAULT.to_vec(),
             quick_access_below: false,
             quick_access_targets: Vec::new(),
@@ -424,7 +485,7 @@ impl DocsApp {
             regions: Vec::new(),
             buffer,
             composing: false,
-            cursor_override: None,
+            cursor_override: Some(initial_cursor),
             focus_document: true,
             focus_search: false,
             focus_find: false,
@@ -487,6 +548,7 @@ impl DocsApp {
             || self.tab_dialog.is_some()
             || self.tab_positions_dialog.is_some()
             || self.tab_sources_dialog.is_some()
+            || self.structure_dialog.is_some()
             || self.quick_reset
             || self.quick_order.is_some()
         {
@@ -540,6 +602,28 @@ impl DocsApp {
             Action::CharacterStyle(style) => {
                 self.session.editor.selected_character_style() == Some(style)
             }
+            Action::Bullets | Action::Numbering => {
+                let kind = if action == Action::Bullets {
+                    crate::structure::ListKind::Bullet
+                } else {
+                    crate::structure::ListKind::Decimal
+                };
+                crate::structure::paragraph_indices(
+                    &self.session.editor.document,
+                    self.session.editor.selection,
+                )
+                .is_ok_and(|indices| {
+                    indices.into_iter().all(|i| {
+                        self.session.editor.document.paragraphs[i]
+                            .structure
+                            .list
+                            .as_ref()
+                            .is_some_and(|l| l.kind == kind)
+                    })
+                })
+            }
+            Action::PrintLayout => self.paged_editing,
+            Action::PrintPreview => self.page_preview,
             Action::Navigation => self.navigation,
             Action::Rulers => self.rulers,
             Action::ZoomWidth => self.zoom_width,
@@ -671,6 +755,19 @@ impl DocsApp {
         }
         let (start, end) = self.session.editor.selection;
         match action {
+            Action::Bullets
+            | Action::Numbering
+            | Action::ListSettings
+            | Action::Link
+            | Action::Table
+            | Action::Picture
+            | Action::PageSetup
+            | Action::PageFlow
+            | Action::PageBreak
+            | Action::PrintLayout
+            | Action::PrintPreview
+            | Action::ExportPdf
+            | Action::Print => self.structure_action(action, ctx),
             Action::File => self.backstage = true,
             Action::New => self.request(Pending::New, ctx),
             Action::Open => {
@@ -789,11 +886,29 @@ impl DocsApp {
                 }
             }
             Action::IncreaseIndent | Action::DecreaseIndent => {
-                let result = self.session.editor.step_paragraph_indent(
-                    start,
-                    end,
-                    action == Action::IncreaseIndent,
+                let indices = crate::structure::paragraph_indices(
+                    &self.session.editor.document,
+                    (start, end),
                 );
+                let all_lists = indices.is_ok_and(|r| {
+                    r.into_iter().all(|i| {
+                        self.session.editor.document.paragraphs[i]
+                            .structure
+                            .list
+                            .is_some()
+                    })
+                });
+                let result = if all_lists {
+                    self.session
+                        .editor
+                        .change_list_level(action == Action::IncreaseIndent)
+                } else {
+                    self.session.editor.step_paragraph_indent(
+                        start,
+                        end,
+                        action == Action::IncreaseIndent,
+                    )
+                };
                 self.fail(result);
                 self.sync_view();
             }
@@ -879,6 +994,10 @@ impl DocsApp {
             Action::Navigation => self.navigation = !self.navigation,
             Action::Rulers => self.rulers = !self.rulers,
             Action::Formatting => self.formatting = !self.formatting,
+        }
+        if self.structure_dialog.is_some() {
+            self.focus_document = false;
+            return;
         }
         if action != Action::FontSize && action != Action::Ribbon {
             self.ribbon_temporary = false;
@@ -1807,21 +1926,15 @@ impl DocsApp {
                 }
             }
             2 => {
-                for (i, (icon, name)) in [
-                    (Icon::Bullets, "Bullets"),
-                    (Icon::Numbers, "Numbering"),
-                    (Icon::Multilevel, "Multilevel list"),
+                for (i, (icon, action)) in [
+                    (Icon::Bullets, Action::Bullets),
+                    (Icon::Numbers, Action::Numbering),
+                    (Icon::Multilevel, Action::ListSettings),
                 ]
                 .into_iter()
                 .enumerate()
                 {
-                    self.unavailable_menu(
-                        ui,
-                        r(i as f32 * 31., 5., 30., 25.),
-                        icon,
-                        name,
-                        "Lists are planned.",
-                    );
+                    self.ribbon_control(ui, r(i as f32 * 31., 5., 30., 25.), icon, "", action);
                 }
                 ui.painter().line_segment(
                     [
@@ -2562,11 +2675,13 @@ impl DocsApp {
                     self.ribbon_group = None;
                 }
             });
+        } else if self.tab == 1 || self.tab == 4 {
+            self.structure_ribbon(ui);
         } else if self.tab == 8 {
             self.view_ribbon(ui);
         } else if self.tab == 9 {
             ui.label(format!("BreakFree Docs {VERSION}"));
-            ui.label("Local .bfdoc documents · no pagination yet");
+            ui.label("Local .bfdoc documents · pages, preview and PDF");
             ui.label("Ctrl+N/O/S · Ctrl+B/I/U · Ctrl+Shift+P · Ctrl+Z/Y · Ctrl+F");
             if self.keytips.level == Some(keytips::Level::Tab(9)) {
                 ui.small("Help is informational. Esc returns to tab KeyTips.");
@@ -2655,6 +2770,7 @@ impl DocsApp {
             || self.tab_dialog.is_some()
             || self.tab_positions_dialog.is_some()
             || self.tab_sources_dialog.is_some()
+            || self.structure_dialog.is_some()
             || self.quick_reset
             || self.quick_order.is_some()
         {
@@ -2671,7 +2787,10 @@ impl DocsApp {
                 (Key::S, false, Action::Save),
                 (Key::F, false, Action::Find),
                 (Key::H, false, Action::Replace),
+                (Key::K, false, Action::Link),
+                (Key::Enter, false, Action::PageBreak),
                 (Key::P, true, Action::FontSize),
+                (Key::P, false, Action::PrintPreview),
                 (Key::D, false, Action::FontDialog),
                 (Key::F, true, Action::FontDialog),
             ] {
@@ -2878,7 +2997,7 @@ impl DocsApp {
                         let slider=ui.add(egui::Slider::new(&mut self.zoom,50.0..=200.0).show_value(false).clamping(egui::SliderClamping::Always));self.record("zoom-slider",slider.rect);if slider.changed(){self.zoom_width=false;}
                         let minus=ui.add_sized([22.,20.],Button::new("−").frame_when_inactive(false));self.record("zoom-out",minus.rect);if minus.clicked(){minus.request_focus();}
                         if minus.on_hover_text("Zoom out").clicked(){self.zoom=(self.zoom-10.).max(50.);self.zoom_width=false;}
-                        if ui.available_width()>195. {ui.separator();ui.small("Continuous layout").on_hover_text("Pagination and Print Layout are not implemented. This canvas has no computed page count.");}
+                        if ui.available_width()>195. {ui.separator();ui.small(if self.paged_editing {self.page_count.map_or("Print Layout".into(),|n|format!("Print Layout · {n} pages"))} else {"Continuous layout".into()}).on_hover_text("Use View → Print Layout for computed pages; Print preview and PDF use the same layout.");}
                     });
                 });
             });
@@ -2972,6 +3091,14 @@ impl DocsApp {
     }
 
     fn document(&mut self, ui: &mut Ui) {
+        if self.page_preview {
+            self.page_view(ui);
+            return;
+        }
+        if self.paged_editing {
+            self.paged_document(ui);
+            return;
+        }
         if self.zoom_width {
             let fit = ((ui.available_width() - 48.) / CANVAS_WIDTH * 100.).clamp(50., 200.);
             if (self.zoom - fit).abs() > 0.01 {
@@ -3007,95 +3134,310 @@ impl DocsApp {
         let min_height = (ui.available_height() - 45.)
             .max(natural + 2. * margin)
             .max(300.);
-        egui::ScrollArea::both().auto_shrink([false,false]).show(ui,|ui|{
-            let space=((ui.available_width()-width-32.)/2.).max(if self.rulers {32.} else {12.});
-            ui.add_space(10.);
-            ui.horizontal_top(|ui|{
-                ui.add_space(space);
-                ui.vertical(|ui|{
-                    if self.rulers {self.ruler(ui,width,zoom);ui.add_space(5.);}
-                    let original_clip=ui.clip_rect();
-                    let mut canvas_clip=original_clip;
-                    if self.rulers {
-                        canvas_clip.min.x+=26.;
-                        if let Some(r)=self.regions.iter().find(|r| r.name=="ruler") {canvas_clip.min.y=r.rect.bottom()+5.;}
-                    }
-                    ui.set_clip_rect(canvas_clip);
-                    let frame=egui::Frame::new().fill(Color32::WHITE).stroke(Stroke::new(1.0_f32,Color32::from_gray(197))).shadow(egui::epaint::Shadow{offset:[0,2],blur:5,spread:0,color:Color32::from_black_alpha(24)}).inner_margin(0).show(ui,|ui|{
-                        ui.set_min_size(vec2(width,min_height));
-                        ui.add_space(margin);
-                        ui.horizontal_top(|ui|{
-                            ui.add_space(margin);
-                            ui.allocate_ui_with_layout(vec2(text_width,natural.max(40.)),Layout::top_down(Align::Min),|ui|{
-                                if self.ruler_drag.is_some() || self.tab_ruler_drag.is_some() {ui.disable();}
-                                let id=Id::new(EDIT_ID);
-                                let mut state=egui::TextEdit::load_state(ui.ctx(),id).unwrap_or_default();state.clear_undoer();
-                                if let Some(range)=self.cursor_override.take(){state.cursor.set_char_range(Some(range));}state.store(ui.ctx(),id);
-                                if ui.memory(|m|m.has_focus(id)) {
-                                    ui.input_mut(|i|for event in &mut i.events {if let egui::Event::Paste(text)=event {*text=text.replace("\r\n","\n").replace('\r',"\n");}});
-                                }
-                                // Modified Tab is reserved; never let Shift+Tab delete selected text.
-                                if ui.memory(|m|m.has_focus(id)) {
-                                    ui.input_mut(|i|i.events.retain(|e| !matches!(e, egui::Event::Key { key: Key::Tab, modifiers, .. } if *modifiers != Modifiers::NONE)));
-                                }
-                                let events=ui.input(|i|i.events.clone());
-                                let focused=ui.memory(|m|m.has_focus(id));
-                                let mut commit=false;let mut cancel=false;
-                                if focused {for event in &events {if let egui::Event::Ime(ime)=event {match ime {egui::ImeEvent::Enabled|egui::ImeEvent::Preedit(_)=>self.composing=true,egui::ImeEvent::Commit(text)=>{self.composing=false;if text.is_empty()||text=="\n"||text=="\r"{cancel=true;}else{commit=true;}},egui::ImeEvent::Disabled=>{if self.composing{cancel=true;}self.composing=false;}}}}}
-                                let search_range = if self.navigation && !self.composing && !self.find_composing
-                                    && self.find_query.search(&self.buffer).active(self.session.editor.selection).is_some() {
-                                    let (a,b)=self.session.editor.selection;
-                                    Some(CCursorRange::two(CCursor::new(b),CCursor::new(a)))
-                                } else {None};
-                                let mut layouter=|ui:&Ui,text:&dyn egui::TextBuffer,wrap:f32| {
-                                    let mut galley=layout::galley(ui.ctx(),&model,text.as_str(),typing,typing_position,wrap,font_size);
-                                    if !ui.memory(|m|m.has_focus(id)) && let Some(range)=search_range {
-                                        egui::text_selection::visuals::paint_text_selection(&mut galley,ui.visuals(),&range,None);
-                                    }
-                                    galley
-                                };
-                                let mut output=egui::TextEdit::multiline(&mut self.buffer).lock_focus(true).id(id).frame(false).margin(0).desired_width(text_width).desired_rows(1).font(FontId::new(font_size,egui::FontFamily::Name("body".into()))).layouter(&mut layouter).show(ui);
-                                if self.focus_document && ui.input(|i| i.focused) {
-                                    if !output.response.has_focus() {output.response.request_focus();}
-                                    ui.memory_mut(|m|m.set_focus_lock_filter(id,egui::EventFilter{horizontal_arrows:true,vertical_arrows:true,..Default::default()}));
-                                    self.focus_document=false;
-                                }
-                                let keyboard_enter = !commit && events.iter().any(|e| matches!(e, egui::Event::Key { key: Key::Enter, pressed: true, .. })) && !events.iter().any(|e| matches!(e, egui::Event::Paste(_) | egui::Event::Ime(_)));
-                                let selected_break = keyboard_enter && {
-                                    let (a,b)=self.session.editor.selection;
-                                    b == a + 1 && self.session.editor.document.text().chars().nth(a)==Some('\n')
-                                };
-                                if cancel&&!commit||output.response.lost_focus()&&self.composing {self.composing=false;self.sync_view();}
-                                else if output.response.changed()&&!self.composing&&(self.buffer!=self.session.editor.document.text() || selected_break){
-                                    // Preserve the user's replacement range when equal prefixes/suffixes
-                                    // would narrow a minimal diff and therefore the undo selection.
-                                    let(a,b,text)=text_change_from_selection(&self.session.editor.document.text(),&self.buffer,self.session.editor.selection);
-                                    let paragraph_enter = keyboard_enter && text.contains('\n');
-                                    let result=if paragraph_enter {self.session.editor.replace_keyboard_text(a,b,&text)} else {self.session.editor.replace(a,b,&text,if commit{"Input method commit"}else{"Text input"})};self.fail(result);self.sync_view();
-                                }else if !self.composing&&output.response.has_focus() && let Some(range)=output.cursor_range {
-                                        let range=range.as_sorted_char_range();let selection=snap(&self.buffer,range.start,range.end);
-                                        if selection!=self.session.editor.selection {self.session.editor.selection=selection;self.session.editor.typing_style=self.session.editor.document.style_at(selection.0);}
-                                }
-                                output.state.clear_undoer();output.state.store(ui.ctx(),id);
-                                output.response.context_menu(|ui|{for action in [Action::Cut,Action::Copy,Action::Paste,Action::SelectAll]{self.command(ui,action.label(),action,vec2(150.,26.));}});
-                                if self.scroll_to_selection {
-                                    let caret = output.galley.pos_from_cursor(CCursor::new(self.session.editor.selection.0)).translate(output.galley_pos.to_vec2());
-                                    ui.scroll_to_rect(caret,Some(Align::Center));
-                                    self.scroll_to_selection=false;
-                                }
-                                self.record("document-text",output.response.rect);
+        egui::ScrollArea::both()
+            .auto_shrink([false, false])
+            .show(ui, |ui| {
+                let space = ((ui.available_width() - width - 32.) / 2.).max(if self.rulers {
+                    32.
+                } else {
+                    12.
+                });
+                ui.add_space(10.);
+                ui.horizontal_top(|ui| {
+                    ui.add_space(space);
+                    ui.vertical(|ui| {
+                        if self.rulers {
+                            self.ruler(ui, width, zoom);
+                            ui.add_space(5.);
+                        }
+                        let original_clip = ui.clip_rect();
+                        let mut canvas_clip = original_clip;
+                        if self.rulers {
+                            canvas_clip.min.x += 26.;
+                            if let Some(r) = self.regions.iter().find(|r| r.name == "ruler") {
+                                canvas_clip.min.y = r.rect.bottom() + 5.;
+                            }
+                        }
+                        ui.set_clip_rect(canvas_clip);
+                        let frame = egui::Frame::new()
+                            .fill(Color32::WHITE)
+                            .stroke(Stroke::new(1.0_f32, Color32::from_gray(197)))
+                            .shadow(egui::epaint::Shadow {
+                                offset: [0, 2],
+                                blur: 5,
+                                spread: 0,
+                                color: Color32::from_black_alpha(24),
+                            })
+                            .inner_margin(0)
+                            .show(ui, |ui| {
+                                ui.set_min_size(vec2(width, min_height));
+                                ui.add_space(margin);
+                                ui.horizontal_top(|ui| {
+                                    ui.add_space(margin);
+                                    ui.allocate_ui_with_layout(
+                                        vec2(text_width, natural.max(40.)),
+                                        Layout::top_down(Align::Min),
+                                        |ui| {
+                                            if self.ruler_drag.is_some()
+                                                || self.tab_ruler_drag.is_some()
+                                            {
+                                                ui.disable();
+                                            }
+                                            self.text_surface(
+                                                ui,
+                                                &model,
+                                                typing,
+                                                typing_position,
+                                                text_width,
+                                                font_size,
+                                                zoom,
+                                                false,
+                                            );
+                                        },
+                                    );
+                                });
+                                ui.add_space(margin);
                             });
-                        });
-                        ui.add_space(margin);
-                    });self.record("continuous-canvas",frame.response.rect);
-                    if self.rulers {
-                        ui.set_clip_rect(Rect::from_min_max(pos2(original_clip.left(),canvas_clip.top()),original_clip.max));
-                        self.vertical_ruler(ui,frame.response.rect,zoom);
-                    }
-                    ui.set_clip_rect(original_clip);
+                        self.record("continuous-canvas", frame.response.rect);
+                        if self.rulers {
+                            ui.set_clip_rect(Rect::from_min_max(
+                                pos2(original_clip.left(), canvas_clip.top()),
+                                original_clip.max,
+                            ));
+                            self.vertical_ruler(ui, frame.response.rect, zoom);
+                        }
+                        ui.set_clip_rect(original_clip);
+                    });
                 });
             });
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn text_surface(
+        &mut self,
+        ui: &mut Ui,
+        model: &crate::model::Document,
+        typing: crate::model::CharacterFormat,
+        typing_position: usize,
+        text_width: f32,
+        font_size: f32,
+        zoom: f32,
+        paged: bool,
+    ) {
+        let id = Id::new(EDIT_ID);
+        let mut state = egui::TextEdit::load_state(ui.ctx(), id).unwrap_or_default();
+        state.clear_undoer();
+        if let Some(range) = self.cursor_override.take() {
+            state.cursor.set_char_range(Some(range));
+        }
+        state.store(ui.ctx(), id);
+        if ui.memory(|m| m.has_focus(id)) {
+            ui.input_mut(|i| {
+                for event in &mut i.events {
+                    if let egui::Event::Paste(text) = event {
+                        *text = text.replace("\r\n", "\n").replace('\r', "\n");
+                    }
+                }
+            });
+        }
+        // Modified Tab is reserved; never let Shift+Tab delete selected text.
+        if ui.memory(|m| m.has_focus(id)) {
+            ui.input_mut(|i|i.events.retain(|e| !matches!(e, egui::Event::Key { key: Key::Tab, modifiers, .. } if *modifiers != Modifiers::NONE)));
+        }
+        let events = ui.input(|i| i.events.clone());
+        let focused = ui.memory(|m| m.has_focus(id));
+        let mut commit = false;
+        let mut cancel = false;
+        if focused {
+            for event in &events {
+                if let egui::Event::Ime(ime) = event {
+                    match ime {
+                        egui::ImeEvent::Enabled | egui::ImeEvent::Preedit(_) => {
+                            self.composing = true
+                        }
+                        egui::ImeEvent::Commit(text) => {
+                            self.composing = false;
+                            if text.is_empty() || text == "\n" || text == "\r" {
+                                cancel = true;
+                            } else {
+                                commit = true;
+                            }
+                        }
+                        egui::ImeEvent::Disabled => {
+                            if self.composing {
+                                cancel = true;
+                            }
+                            self.composing = false;
+                        }
+                    }
+                }
+            }
+        }
+        let search_range = if self.navigation
+            && !self.composing
+            && !self.find_composing
+            && self
+                .find_query
+                .search(&self.buffer)
+                .active(self.session.editor.selection)
+                .is_some()
+        {
+            let (a, b) = self.session.editor.selection;
+            Some(CCursorRange::two(CCursor::new(b), CCursor::new(a)))
+        } else {
+            None
+        };
+        let mut layouter = |ui: &Ui, text: &dyn egui::TextBuffer, wrap: f32| {
+            let mut galley = if paged {
+                let mut draft = crate::commands::Editor::new(model.clone());
+                draft.typing_style = typing;
+                if draft.document.text() != text.as_str() {
+                    let (a, b, t) = text_change(&draft.document.text(), text.as_str());
+                    let _ = draft.replace(a, b, &t, "Input projection");
+                }
+                crate::page_layout::Layout::build(ui.ctx(), &draft.document)
+                    .map(|l| l.editable_galley(ui.ctx(), &draft.document, font_size / 11.))
+                    .unwrap_or_else(|_| {
+                        layout::galley(
+                            ui.ctx(),
+                            model,
+                            text.as_str(),
+                            typing,
+                            typing_position,
+                            wrap,
+                            font_size,
+                        )
+                    })
+            } else {
+                layout::galley(
+                    ui.ctx(),
+                    model,
+                    text.as_str(),
+                    typing,
+                    typing_position,
+                    wrap,
+                    font_size,
+                )
+            };
+            if !ui.memory(|m| m.has_focus(id))
+                && let Some(range) = search_range
+            {
+                egui::text_selection::visuals::paint_text_selection(
+                    &mut galley,
+                    ui.visuals(),
+                    &range,
+                    None,
+                );
+            }
+            galley
+        };
+        let mut output = egui::TextEdit::multiline(&mut self.buffer)
+            .lock_focus(true)
+            .id(id)
+            .frame(false)
+            .margin(0)
+            .desired_width(text_width)
+            .desired_rows(1)
+            .font(FontId::new(
+                font_size,
+                egui::FontFamily::Name("body".into()),
+            ))
+            .layouter(&mut layouter)
+            .show(ui);
+        if self.focus_document && ui.input(|i| i.focused) {
+            if !output.response.has_focus() {
+                output.response.request_focus();
+            }
+            ui.memory_mut(|m| {
+                m.set_focus_lock_filter(
+                    id,
+                    egui::EventFilter {
+                        horizontal_arrows: true,
+                        vertical_arrows: true,
+                        ..Default::default()
+                    },
+                )
+            });
+            self.focus_document = false;
+        }
+        let keyboard_enter = !commit
+            && events.iter().any(|e| {
+                matches!(
+                    e,
+                    egui::Event::Key {
+                        key: Key::Enter,
+                        pressed: true,
+                        ..
+                    }
+                )
+            })
+            && !events
+                .iter()
+                .any(|e| matches!(e, egui::Event::Paste(_) | egui::Event::Ime(_)));
+        let selected_break = keyboard_enter && {
+            let (a, b) = self.session.editor.selection;
+            b == a + 1 && self.session.editor.document.text().chars().nth(a) == Some('\n')
+        };
+        if cancel && !commit || output.response.lost_focus() && self.composing {
+            self.composing = false;
+            self.sync_view();
+        } else if output.response.changed()
+            && !self.composing
+            && (self.buffer != self.session.editor.document.text() || selected_break)
+        {
+            // Preserve the user's replacement range when equal prefixes/suffixes
+            // would narrow a minimal diff and therefore the undo selection.
+            let (a, b, text) = text_change_from_selection(
+                &self.session.editor.document.text(),
+                &self.buffer,
+                self.session.editor.selection,
+            );
+            let paragraph_enter = keyboard_enter && text.contains('\n');
+            let result = if paragraph_enter {
+                self.session.editor.replace_keyboard_text(a, b, &text)
+            } else {
+                self.session.editor.replace(
+                    a,
+                    b,
+                    &text,
+                    if commit {
+                        "Input method commit"
+                    } else {
+                        "Text input"
+                    },
+                )
+            };
+            self.fail(result);
+            self.sync_view();
+        } else if !self.composing
+            && output.response.has_focus()
+            && let Some(range) = output.cursor_range
+        {
+            let range = range.as_sorted_char_range();
+            let selection = snap(&self.buffer, range.start, range.end);
+            if selection != self.session.editor.selection {
+                self.session.editor.selection = selection;
+                self.session.editor.typing_style =
+                    self.session.editor.document.style_at(selection.0);
+            }
+        }
+        output.state.clear_undoer();
+        output.state.store(ui.ctx(), id);
+        output.response.context_menu(|ui| {
+            for action in [Action::Cut, Action::Copy, Action::Paste, Action::SelectAll] {
+                self.command(ui, action.label(), action, vec2(150., 26.));
+            }
         });
+        if self.scroll_to_selection {
+            let caret = output
+                .galley
+                .pos_from_cursor(CCursor::new(self.session.editor.selection.0))
+                .translate(output.galley_pos.to_vec2());
+            ui.scroll_to_rect(caret, Some(Align::Center));
+            self.scroll_to_selection = false;
+        }
+        self.object_overlays(ui, &output.galley, output.galley_pos, zoom);
+        self.record("document-text", output.response.rect);
     }
 
     fn file_view(&mut self, ui: &mut Ui) {
@@ -3161,8 +3503,8 @@ impl DocsApp {
                 ui.separator();
 
                 let (rect, _) = ui.allocate_exact_size(vec2(156., 34.), Sense::hover());
-                chrome::control(ui, rect, Icon::Print, "Print", "Print", false, false)
-                    .on_disabled_hover_text("Printing requires pagination, planned for D3.");
+                self.ribbon_control(ui, rect, Icon::Print, "Print", Action::Print);
+                self.command(ui, "Export PDF", Action::ExportPdf, vec2(156., 30.));
 
                 ui.add_space(8.);
 
@@ -3308,13 +3650,16 @@ impl DocsApp {
                         crate::storage::CONTENT_VERSION
                     ));
 
-                    ui.small("Continuous layout. Pagination and printing are planned.");
+                    ui.small("View → Print Layout edits computed pages. Print preview and PDF share that layout.");
                 }
             });
         });
     }
 
     fn dialogs(&mut self, ctx: &egui::Context) {
+        if self.structure_dialogs(ctx) {
+            return;
+        }
         if let Some(mut dialog) = self.tab_sources_dialog.take() {
             if dialog.show(ctx, &mut self.regions) {
                 dialog.restore_focus(ctx);
@@ -3642,6 +3987,7 @@ impl DocsApp {
                 || self.tab_dialog.is_some()
                 || self.tab_positions_dialog.is_some()
                 || self.tab_sources_dialog.is_some()
+                || self.structure_dialog.is_some()
                 || self.quick_reset
                 || self.quick_order.is_some())
         {

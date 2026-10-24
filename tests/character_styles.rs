@@ -1,3 +1,4 @@
+mod support;
 use breakfree_docs::{commands::Editor, model::*, session::Session, storage};
 
 #[test]
@@ -163,6 +164,7 @@ fn v7_roundtrip_strict_references_legacy_migration_and_failed_save_preserve_byte
     }
     let mut legacy = value.clone();
     legacy["content_version"] = 6.into();
+    support::strip_structure_for_legacy(&mut legacy);
     legacy.as_object_mut().unwrap().remove("character_styles");
     assert!(storage::decode(&serde_json::to_vec(&legacy).unwrap()).is_err());
     for p in legacy["paragraphs"].as_array_mut().unwrap() {

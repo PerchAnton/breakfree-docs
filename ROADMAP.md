@@ -16,6 +16,22 @@ Every delivered change set increments the current prerelease counter and updates
 CHANGELOG, including documentation-only work. Every work report includes the
 current application version for owner approval.
 
+## Alpha.89 implementation checkpoint — 2026-10-24
+
+The owner authorized D2/D3 together. Shared-model lists/links, plain-cell tables,
+PNG blocks, heading navigation, page settings/sections, keep rules, editable pages,
+preview and raster PDF are implemented for review. Physical printing is explicitly
+deferred; Windows acceptance remains deferred and VoiceOver remains final.
+This is a bounded implementation, not closure of every long-term product feature.
+The detailed milestones and original D01–D09 below remain intact.
+
+| Dependency | Delivered behavior | Completion evidence / remaining gate |
+| --- | --- | --- |
+| D1 commands/storage → D2 structure | Lists, links, table/image edits commit one undoable candidate | Structure/Unicode/history/roundtrip/corruption tests; native fixture review |
+| D2 measured text/objects → D3 placement | Actual page geometry, sections, numbering, keep rules and repeated table headers | Shared paginator and editable-caret tests; page/PDF corpus |
+| D3 placement → output | Preview and 144 dpi raster PDF; explicit CUPS queue adapter | PDF raster inspection; physical printing deferred, Windows adapter absent |
+| Native UI acceptance | Existing palette/icons, real commands and tool states | macOS captures/input; Windows and VoiceOver remain open |
+
 ## 1. Product destination and current position
 
 Build a local-first word processor that grows from everyday writing into structured, reviewable and interoperable documents. A visible feature is not complete until editing, undo, persistence and output work together.
@@ -23,7 +39,7 @@ Build a local-first word processor that grows from everyday writing into structu
 | Dimension | Current evidence | Required evidence later |
 | :--- | :--- | :--- |
 | Feature coverage and depth | Basic D1 prototype; [acceptance evidence](docs/VALIDATION.md) | Versioned feature inventory and expanded workflow tests |
-| Layout and typography | Rust galley wrapping/alignment and hit-test assertions; no pagination/fidelity measurements | Semantic assertions and controlled visual fixtures |
+| Layout and typography | Shared measured pagination, editable pages and raster PDF prototype; see alpha.89 validation | Semantic assertions and controlled visual fixtures |
 | DOCX fidelity | Not implemented | Separate import, edit, export and reopen reports |
 | File safety and recovery | Write-then-replace and fault-injection tests; no crash recovery | Interrupted-process, power-loss and recovery tests |
 | Performance | No baseline | Published hardware, corpus, versions and timings |
@@ -233,20 +249,20 @@ Rust selection is complete; this gate evaluates GUI behavior and visual fidelity
 - [x] Alpha.40: add an 18-case synthetic dependency-keyboard/scale matrix, roundtripped 32-style fixture and reproducible Windows acceptance checklist/review-artifact workflow.
 - [x] Alpha.41: direct line-height/space-after overrides, partial/reset dialog, one undo, shared layout/provenance, Enter/Replace All preservation and strict v10 roundtrip; depends on alpha.31.
 - [ ] Execute native Windows dependency keyboard and 100/125/150% display-scaling acceptance using docs/WINDOWS_ACCEPTANCE.md; deferred by the owner until a Windows desktop is available. Linked styles and first-line/hanging indents remain separate increments.
-- [ ] Complete lists, first-line/hanging indents, tabs and links; search/replace, intervals and left/right indents have incremental implementations above.
-- [ ] Add table editing and images with explicit sizing and anchoring semantics.
-- [ ] Add navigation, command search and understandable tool states.
+- [x] Implement bounded lists and hyperlinks (alpha.89), extending existing first-line/hanging indents and typed/leader tabulation. Broader list templates and linked paragraph/character style pairs remain future scope.
+- [x] Add plain-cell rectangular table editing and sized PNG blocks with separate-paragraph anchoring (alpha.89). Merged/rich cells and floating wrap are not implemented.
+- [x] Add search/replace navigation, Heading 1 ancestry outline, command search and actionable/disabled states. Bookmarks and multiple outline levels remain separate scope.
 - [ ] Expand fixtures for English, Ukrainian, Russian, combining characters and mixed scripts; investigate CJK and right-to-left text explicitly.
 
 **Exit:** a synthetic letter and a structured report survive editing, undo and native round trips. Features unsupported by the current text/layout stack are listed, not silently normalized.
 
 ### D3 — Pages, layout and output
 
-- [ ] Add page size, margins, breaks, section behavior, headers, footers and numbering.
-- [ ] Define pagination rules for tables, images, keep-with-next and paragraph splitting.
-- [ ] Use a consistent document/layout model for screen, preview and export.
+- [x] Add page size/margins, explicit breaks, new-page sections, single-line headers/footers and page numbering (alpha.89).
+- [x] Define and test row-boundary table splits/repeated headers, whole images, keep chains/lines and widow/orphan avoidance (alpha.89).
+- [x] Share measurements and page placement between editable Print Layout, preview and raster PDF (alpha.89).
 - [ ] Implement print preview, PDF export and tested physical-printer integration.
-- [ ] Declare font substitution, fallback and embedding policies with redistribution checks.
+- [x] Declare installed-font/bundled-fallback policy and raster output without embedded font programs; no font assets or redistribution rights added (ADR 0016).
 
 **Exit:** a fixed-font test corpus has reviewed page counts, object positions and output comparisons. Test physical printing separately; a correct PDF is not printer-fidelity evidence.
 

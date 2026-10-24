@@ -1,3 +1,4 @@
+mod support;
 use breakfree_docs::{commands::Editor, model::*, storage, tab_ruler};
 fn stop(position: u16, kind: TabKind, leader: Option<TabLeader>) -> StyleTabStop {
     StyleTabStop {
@@ -207,10 +208,11 @@ fn native_roundtrip_strict_version_gates_and_failed_writes() {
     let bytes = storage::encode(&e.document).unwrap();
     assert_eq!(storage::decode(&bytes).unwrap(), e.document);
     let value: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
-    assert_eq!(value["content_version"], 18);
+    assert_eq!(value["content_version"], storage::CONTENT_VERSION);
     for v in 1..=17 {
         let mut old = value.clone();
         old["content_version"] = v.into();
+        support::strip_structure_for_legacy(&mut old);
         assert!(storage::decode(&serde_json::to_vec(&old).unwrap()).is_err());
     }
     for (pointer, bad) in [
@@ -230,7 +232,10 @@ fn native_roundtrip_strict_version_gates_and_failed_writes() {
             "/paragraphs/0/spacing/clear_tab_stops",
             serde_json::json!(null),
         ),
-        ("/content_version", serde_json::json!(19)),
+        (
+            "/content_version",
+            serde_json::json!(storage::CONTENT_VERSION + 1),
+        ),
         ("/format", serde_json::json!("foreign")),
     ] {
         let mut bad_file = value.clone();

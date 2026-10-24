@@ -2240,3 +2240,47 @@ approval; alpha.86–88 await approval. Windows is deferred and VoiceOver is las
   release, dependency or license change. Windows/reference comparison, VoiceOver,
   full IME, pagination, decimal tabs and per-stop inheritance remain unverified or
   future work as recorded in the roadmap.
+
+## Alpha.89 structure and page validation
+
+Local suites: **470 full / 212 without desktop features** passed. Formatting,
+Clippy with warnings denied, release build and repository checks passed. Changes
+after the full run were limited to hoisting the paragraph split count, covered by
+the targeted structure regression rerun. CI for this head is reported in PROJECT_LOG.
+
+2026-10-24, macOS arm64, Rust 1.99.1, locked eframe/egui stack. D2/D3 implementation
+is under review; neither a release nor full platform acceptance is claimed.
+
+- Shared command tests cover list continuation/exit/levels/restarts, Unicode link
+  boundaries and invalid targets, table editing, object whole-range replacement,
+  exact undo/redo, section settings and caret page breaks. Native v19 round trips,
+  old-format defaults and strict version/unknown-field gates are exercised.
+- Save fault injection at write/sync/replace preserves the prior file. PDF invalid
+  layout preserves the prior PDF. PNG checksum/framing/pixel validation rejects
+  corrupt images before an object command can change the document.
+- Pagination tests cover page sizes, section numbers, row splits, repeated table
+  headers, keep chains and explicit-break precedence. Editable-page tests retain
+  logical Unicode/caret indices and exercise typing through the same editor history.
+- Dialog Cancel and one-commit Table application pass. Fifteen dialog/scale cases
+  keep OK/Cancel reachable at 640 × 480 logical pixels, synthetic 100/125/150%.
+- The standalone structured-report generator saves a native fixture and raster
+  PDF. Poppler reports six pages: two 595 × 842 pt and four 842 × 595 pt; section
+  numbering is 1, 2, 10, 11, 12, 13. Every page was rendered and reviewed. A new
+  raster regression requires visible header and body ink in every measured text
+  row, including late pages. Found/fixed raw font-UV export and stale cross-frame
+  font-atlas defects; per-page renderer lifetime now isolates atlas state.
+- Native capture reviewed editable pages and compact Table/Page setup surfaces.
+  Actual native View → Print Layout and New actions showed correct page counts.
+  Pointer-focused Unicode paste and Undo were verified. Fast automated typing and
+  later keyboard steps were inconclusive because focus/external window changes
+  interrupted the sequence; the unsaved test window was retained. This is not a
+  clean full physical-keyboard/IME or spoken-accessibility acceptance.
+- Existing regressions caught a Ctrl/Command+P versus Shift+P conflict; specific
+  shifted shortcuts now dispatch first. Initial widget cursor now follows the
+  model, preserving the initial active section/ruler width.
+
+PDF is raster-only at 144 dpi: no searchable/selectable text, font program
+embedding, tags or PDF accessibility claim. Header/footer lines must fit the text
+width. Oversized kept paragraphs/rows/images fail visibly. Font fallback remains
+platform-dependent. No broad RTL/CJK or 500-page performance claim. No physical
+print jobs were submitted; paper printing and Windows are deferred, VoiceOver last.

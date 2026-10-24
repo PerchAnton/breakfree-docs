@@ -1,3 +1,4 @@
+mod support;
 use breakfree_docs::{commands::Editor, model::*, session::Session, storage};
 
 fn format() -> CharacterFormat {
@@ -201,6 +202,7 @@ fn native_v8_validation_legacy_reading_and_failed_writes_are_lossless() {
     assert!(storage::decode(&serde_json::to_vec(&bad).unwrap()).is_err());
     bad = value.clone();
     bad["content_version"] = 7.into();
+    support::strip_structure_for_legacy(&mut bad);
     bad.as_object_mut().unwrap().remove("character_styles");
     assert!(storage::decode(&serde_json::to_vec(&bad).unwrap()).is_err());
     let old = include_bytes!("../examples/CharacterStyles.bfdoc");
@@ -600,6 +602,7 @@ fn native_parent_migration_strict_v8_and_invalid_v9() {
     }
     let mut bad = json.clone();
     bad["content_version"] = 8.into();
+    support::strip_structure_for_legacy(&mut bad);
     for p in bad["paragraphs"].as_array_mut().unwrap() {
         p.as_object_mut().unwrap().remove("spacing");
     }

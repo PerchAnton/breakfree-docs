@@ -105,7 +105,23 @@ impl DocsApp {
                 }
                 tips
             }
+            Level::Tab(1) => vec![
+                Tip::action("B", Action::PageBreak),
+                Tip::action("T", Action::Table),
+                Tip::action("P", Action::Picture),
+                Tip::action("I", Action::Link),
+            ],
+            Level::Tab(4) => vec![
+                Tip::action("SP", Action::PageSetup),
+                Tip::action("PF", Action::PageFlow),
+                Tip::action("PG", Action::ParagraphSpacing),
+                Tip::action("T", Action::TabPositions),
+                Tip::action("V", Action::PrintPreview),
+                Tip::action("E", Action::ExportPdf),
+            ],
             Level::Tab(8) => vec![
+                Tip::action("P", Action::PrintLayout),
+                Tip::action("V", Action::PrintPreview),
                 Tip::action("K", Action::Navigation),
                 Tip::action("R", Action::Rulers),
                 Tip::action("Q", Action::Zoom),
@@ -324,6 +340,7 @@ impl DocsApp {
             || self.tab_dialog.is_some()
             || self.tab_positions_dialog.is_some()
             || self.tab_sources_dialog.is_some()
+            || self.structure_dialog.is_some()
             || self.quick_reset
             || self.quick_order.is_some()
             || self.pending.is_some()
@@ -551,6 +568,7 @@ impl DocsApp {
             || self.tab_dialog.is_some()
             || self.tab_positions_dialog.is_some()
             || self.tab_sources_dialog.is_some()
+            || self.structure_dialog.is_some()
             || self.quick_reset
             || self.quick_order.is_some()
             || self.pending.is_some()

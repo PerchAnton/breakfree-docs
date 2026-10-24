@@ -1,6 +1,6 @@
 # Native BreakFree Docs document format
 
-Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v18.
+Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v19.
 This is not a DOCX container. Process protocol and file-content versions are independent.
 
 ```json
@@ -300,3 +300,32 @@ intervals; the writer emits v18. Legacy files have no style tabulation, so their
 existing effective layout remains unchanged on import. Default/empty settings
 can inherit a later explicit style edit; authored direct settings are preserved.
 Alpha.85 and older reject v18; Save As preserves an older source. Protocol stays v1.
+
+## Structure and page settings (v19)
+
+The v19 writer retains paragraph runs, catalogs and direct spacing. It requires a
+root `page` object and a `structure` object on every paragraph. Older v1–v18 files
+import default Letter pages with 72 pt margins and empty structure; declaring an
+older version while including these fields is rejected. Alpha.88 and older reject
+v19; use Save As to preserve an older source.
+
+`page` and optional `structure.section` contain integer point dimensions/margins,
+single-line header/footer strings, `page_numbers` and nullable `number_start`.
+Sections start a new page. Dimensions are 144–1440 pt; margins at least 18 pt and
+leave at least 72 pt of content in each dimension.
+
+`structure` contains nullable `list` (`kind`: bullet/decimal, `level`: 0–8,
+nullable positive `restart`), sorted nonoverlapping `links` (`start`, `end`,
+`target`, scalar offsets on grapheme boundaries), nullable `block`, boolean
+`page_break_before`, `keep_with_next`, `keep_lines`, and nullable `section`.
+Block paragraphs contain exactly U+FFFC and one format entry. A table block has
+`kind: table`, `widths_points` (18–720), rectangular string `rows` (1–100 × 1–12)
+and `repeat_header`. A picture block has `kind: picture`, PNG byte array `png`,
+`width_points`/`height_points` (12–1440) and `alt` (up to 1024 characters).
+PNG limits: 4 MiB, 16 megapixels, 8192 pixels per dimension, valid chunk framing,
+checksums and pixel data. The total native file limit remains 16 MiB; oversized
+serialized documents fail before replacing a prior file. Cell text contributes to
+the overall 100,000-character limit and has its own 50,000-character table limit.
+
+All structures reject unknown fields and invalid values. The schema does not
+store platform print queues, PDF bytes or UI state. See [ADR 0016](adr/0016-document-structure-and-pages.md).

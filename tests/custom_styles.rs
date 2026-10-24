@@ -1,3 +1,4 @@
+mod support;
 use breakfree_docs::{commands::Editor, model::*, storage};
 
 fn based_on(parent: ParagraphStyle) -> StyleDefinition {
@@ -260,6 +261,7 @@ fn v4_import_preserves_definitions_without_rewriting_and_rejects_custom_extensio
     let mut v4: serde_json::Value =
         serde_json::from_slice(&storage::encode(&e.document).unwrap()).unwrap();
     v4["content_version"] = 4.into();
+    support::strip_structure_for_legacy(&mut v4);
     for p in v4["paragraphs"].as_array_mut().unwrap() {
         p.as_object_mut().unwrap().remove("spacing");
     }

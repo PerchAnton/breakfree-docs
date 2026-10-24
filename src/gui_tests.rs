@@ -13314,3 +13314,84 @@ fn tab_sources_moved_marker_retains_authored_source_in_accessibility() {
     )));
     assert!(app.session.editor.undo_stack.is_empty());
 }
+
+#[test]
+fn structure_dialog_cancel_apply_and_paged_typing_use_shared_history() {
+    let (ctx, mut app) = setup();
+    app.session
+        .editor
+        .replace(0, 0, "Report\nEnglish Україна", "Fixture")
+        .unwrap();
+    app.sync_view();
+    app.execute(Action::Numbering, &ctx);
+    let before = app.session.editor.document.clone();
+    let depth = app.session.editor.undo_stack.len();
+    app.execute(Action::Table, &ctx);
+    frame(&ctx, &mut app, vec![], [800., 600.], 1.);
+    assert!(app.regions.iter().any(|r| r.name == "structure-ok"));
+    frame(
+        &ctx,
+        &mut app,
+        vec![key(Key::Escape, false)],
+        [800., 600.],
+        1.,
+    );
+    assert!(app.structure_dialog.is_none());
+    assert_eq!(app.session.editor.document, before);
+    assert_eq!(app.session.editor.undo_stack.len(), depth);
+    app.execute(Action::Table, &ctx);
+    frame(&ctx, &mut app, vec![], [800., 600.], 1.);
+    click_region_at(&ctx, &mut app, "structure-ok", [800., 600.]);
+    assert!(app.structure_dialog.is_none());
+    assert_eq!(app.session.editor.undo_stack.len(), depth + 1);
+    app.session.editor.undo();
+    assert_eq!(app.session.editor.document, before);
+    app.session.editor.selection = (0, 0);
+    app.sync_view();
+    app.execute(Action::PrintLayout, &ctx);
+    for _ in 0..3 {
+        frame(&ctx, &mut app, vec![], [1366., 900.], 1.);
+    }
+    assert!(app.page_count.is_some());
+    ctx.memory_mut(|m| m.request_focus(Id::new(EDIT_ID)));
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::Text("Typed ".into())],
+        [1366., 900.],
+        1.,
+    );
+    assert!(app.session.editor.document.text().starts_with("Typed "));
+    app.session.editor.undo();
+    assert_eq!(app.session.editor.document, before);
+}
+
+#[test]
+fn structure_dialogs_fit_minimum_logical_window_at_synthetic_scales() {
+    for dpi in [1., 1.25, 1.5] {
+        let (ctx, mut app) = setup();
+        for action in [
+            Action::Table,
+            Action::PageSetup,
+            Action::PageFlow,
+            Action::ListSettings,
+            Action::Link,
+        ] {
+            app.execute(action, &ctx);
+            let size = [640. * dpi, 480. * dpi];
+            for _ in 0..3 {
+                frame(&ctx, &mut app, vec![], size, dpi);
+            }
+            for name in ["structure-ok", "structure-cancel"] {
+                let rect = app.regions.iter().find(|r| r.name == name).unwrap().rect;
+                assert!(
+                    ctx.content_rect().contains_rect(rect),
+                    "{action:?}, {dpi}: {rect:?}"
+                );
+            }
+            frame(&ctx, &mut app, vec![key(Key::Escape, false)], size, dpi);
+            assert!(app.structure_dialog.is_none());
+            assert!(app.session.editor.undo_stack.is_empty());
+        }
+    }
+}

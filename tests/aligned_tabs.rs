@@ -1,3 +1,4 @@
+mod support;
 use breakfree_docs::{
     commands::Editor,
     model::{AlignedTabStop, TabStopAlignment},
@@ -79,6 +80,7 @@ fn aligned_tabs_reject_conflicts_capacity_and_malformed_storage() {
     for version in 1..=15 {
         let mut json = base.clone();
         json["content_version"] = version.into();
+        support::strip_structure_for_legacy(&mut json);
         for value in [serde_json::json!([]), serde_json::json!(null)] {
             json["paragraphs"][0]["spacing"]["aligned_tab_stops"] = value;
             assert!(storage::decode(&serde_json::to_vec(&json).unwrap()).is_err());
@@ -86,6 +88,7 @@ fn aligned_tabs_reject_conflicts_capacity_and_malformed_storage() {
     }
     let mut legacy = base;
     legacy["content_version"] = 15.into();
+    support::strip_structure_for_legacy(&mut legacy);
     assert_eq!(
         storage::decode(&serde_json::to_vec(&legacy).unwrap()).unwrap(),
         before

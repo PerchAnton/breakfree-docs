@@ -37,7 +37,7 @@ impl Editor {
         }
     }
 
-    fn commit(
+    pub(crate) fn commit(
         &mut self,
         document: Document,
         label: &str,
@@ -101,6 +101,14 @@ impl Editor {
         validate_text(text)?;
         let (first, left) = self.document.locate(start)?;
         let (last, right) = self.document.locate(end)?;
+        if following
+            && text == "\n"
+            && start == end
+            && self.document.paragraphs[first].text.is_empty()
+            && self.document.paragraphs[first].structure.list.is_some()
+        {
+            return self.set_list(None);
+        }
         let a = &self.document.paragraphs[first];
         let b = &self.document.paragraphs[last];
         let joined = format!(
@@ -118,6 +126,7 @@ impl Editor {
         let mut paragraphs = self.document.paragraphs[..first].to_vec();
         let mut offset = 0;
         let mut paragraph_style = a.paragraph_style;
+        let paragraph_count = joined.split('\n').count();
         for (index, part) in joined.split('\n').enumerate() {
             if following && index > 0 {
                 paragraph_style = self
@@ -134,6 +143,16 @@ impl Editor {
                 alignment: a.alignment,
                 spacing: a.spacing.clone(),
                 paragraph_style,
+                structure: crate::structure_edit::replacement_structure(
+                    a,
+                    b,
+                    index,
+                    paragraph_count,
+                    left,
+                    right,
+                    text,
+                    part,
+                )?,
             });
             offset += len + 1;
         }
@@ -142,6 +161,7 @@ impl Editor {
             paragraphs,
             style_catalog: self.document.style_catalog.clone(),
             character_styles: self.document.character_styles.clone(),
+            page: self.document.page.clone(),
         };
         result.validate()?;
         let after = start + text.chars().count();

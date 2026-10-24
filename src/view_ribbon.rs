@@ -63,29 +63,20 @@ impl DocsApp {
                 );
             }
         }
-        for (x, label, reason) in [
-            (0., "Read Mode", "Read Mode is not implemented."),
-            (
-                60.,
-                "Print Layout",
-                "Pagination is not implemented. The document uses a continuous canvas.",
-            ),
-        ] {
-            chrome::control(
-                ui,
-                rect(x, 0., 58., 66.),
-                Icon::Document,
-                if label == "Read Mode" {
-                    "Read\nMode"
-                } else {
-                    "Print\nLayout"
-                },
-                label,
-                false,
-                false,
-            )
-            .on_disabled_hover_text(reason);
-        }
+        self.ribbon_control(
+            ui,
+            rect(0., 0., 58., 66.),
+            Icon::Document,
+            "Print\nLayout",
+            Action::PrintLayout,
+        );
+        self.ribbon_control(
+            ui,
+            rect(60., 0., 58., 66.),
+            Icon::Document,
+            "Print\npreview",
+            Action::PrintPreview,
+        );
         self.ribbon_group = Some(0);
         self.view_check(ui, rect(134., 2., 146., 23.), "Ruler", Action::Rulers);
         ui.scope_builder(

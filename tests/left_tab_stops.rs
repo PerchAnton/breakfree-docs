@@ -1,3 +1,4 @@
+mod support;
 use breakfree_docs::{commands::Editor, storage};
 
 #[test]
@@ -68,12 +69,14 @@ fn invalid_positions_are_transactional_and_legacy_key_is_rejected() {
         serde_json::from_slice(&storage::encode(&before).unwrap()).unwrap();
     assert_eq!(json["content_version"], storage::CONTENT_VERSION);
     json["content_version"] = 14.into();
+    support::strip_structure_for_legacy(&mut json);
     assert_eq!(
         storage::decode(&serde_json::to_vec(&json).unwrap()).unwrap(),
         before
     );
     for version in 1..=14 {
         json["content_version"] = version.into();
+        support::strip_structure_for_legacy(&mut json);
         for bad in [
             serde_json::json!([]),
             serde_json::Value::Null,
@@ -84,6 +87,7 @@ fn invalid_positions_are_transactional_and_legacy_key_is_rejected() {
         }
     }
     json["content_version"] = 15.into();
+    support::strip_structure_for_legacy(&mut json);
     for bad in [
         serde_json::Value::Null,
         serde_json::json!([1.5]),

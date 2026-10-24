@@ -1,6 +1,6 @@
 [package]
 name = "breakfree-docs"
-version = "0.1.0-alpha.88"
+version = "0.1.0-alpha.89"
 edition = "2024"
 rust-version = "1.88"
 description = "Independent Rust document editor with an office ribbon"
@@ -9,7 +9,7 @@ publish = false
 
 [features]
 default = ["desktop"]
-desktop = ["dep:eframe", "dep:rfd", "dep:image", "dep:arboard"]
+desktop = ["dep:eframe", "dep:rfd", "dep:arboard"]
 capture = ["desktop", "eframe/__screenshot"]
 
 [dependencies]
@@ -20,7 +20,7 @@ regex = { version = "1.12", default-features = false, features = ["std", "unicod
 tempfile = "3.23"
 eframe = { version = "=0.33.0", optional = true, default-features = false, features = ["default_fonts", "glow", "x11", "wayland", "accesskit"] }
 rfd = { version = "0.15", optional = true, default-features = false, features = ["xdg-portal", "async-std"] }
-image = { version = "0.25", optional = true, default-features = false, features = ["webp", "png"] }
+image = { version = "0.25", default-features = false, features = ["webp", "png"] }
 arboard = { version = "3.6", optional = true, default-features = false }
 
 [[bin]]
@@ -34,3 +34,7 @@ strip = true
 [[example]]
 name = "capture_ui"
 required-features = ["capture"]
+
+[[example]]
+name = "structured_report"
+required-features = ["desktop"]

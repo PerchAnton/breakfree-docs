@@ -80,7 +80,27 @@ pub fn group_widths(width: f32) -> [f32; 5] {
     }
 }
 pub fn selected_text(document: &Document, range: (usize, usize)) -> String {
-    crate::model::slice(&document.text(), range.0, range.1)
+    let mut offset = 0;
+    let mut out = String::new();
+    for (index, p) in document.paragraphs.iter().enumerate() {
+        let end = offset + p.styles.len();
+        if range.0 < end && range.1 > offset {
+            if p.structure.block.is_some() {
+                out.push_str(&crate::structure::plain_paragraph(p));
+            } else {
+                out.push_str(&crate::model::slice(
+                    &p.text,
+                    range.0.saturating_sub(offset),
+                    (range.1 - offset).min(p.styles.len()),
+                ));
+            }
+        }
+        if index + 1 < document.paragraphs.len() && range.0 <= end && range.1 > end {
+            out.push('\n');
+        }
+        offset = end + 1;
+    }
+    out
 }
 
 /// Prefer the actual edit selection when equal adjacent characters make a diff ambiguous.

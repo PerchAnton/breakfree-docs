@@ -698,6 +698,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().skip(1).collect();
     if args.len() != 3
         || ![
+            "structure-pages",
+            "structure-preview",
+            "structure-table",
+            "structure-page-setup",
             "home",
             "clipboard",
             "tab-sources",
@@ -796,7 +800,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Err("Capture dimensions outside 640–2560 × 480–1440 DIP".into());
     }
     let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(
-        if [
+        if args[2].starts_with("structure-") {
+            "examples/StructuredReport.bfdoc"
+        } else if [
             "styles-character-custom",
             "styles-character-modify",
             "styles-character-delete",
@@ -1053,6 +1059,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 app.execute(Action::SelectAll, &cc.egui_ctx);
             }
             match mode.as_str() {
+                "structure-pages" => app.execute(Action::PrintLayout, &cc.egui_ctx),
+                "structure-preview" => app.execute(Action::PrintPreview, &cc.egui_ctx),
+                "structure-table" => app.execute(Action::Table, &cc.egui_ctx),
+                "structure-page-setup" => app.execute(Action::PageSetup, &cc.egui_ctx),
                 "tab-sources" | "tab-sources-preview" => {
                     app.execute(Action::SelectAll, &cc.egui_ctx)
                 }

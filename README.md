@@ -262,12 +262,11 @@ to the replacement and rejects a descendant replacement that would create a cycl
 [Character-style rules](docs/adr/0011-character-style-precedence.md).
 [Style rules](docs/adr/0008-custom-named-styles.md) · [Deletion rules](docs/adr/0009-delete-custom-styles.md).
 
-This build reads native content v1/v2/v3/v4/v5/v6/v7/v8/v9/v10/v11/v12/v13 and **saves v13**. Opening an older file
-does not change it; an explicit save converts it to v13. Earlier builds cannot
-open new v13 saves. Use Save As to keep an older copy. See [format details](docs/NATIVE_FORMAT.md).
-File provides New/Open/Save/Save As, unsaved Save/Discard/Cancel and view settings;
-Print is disabled. Navigation and the formatting pane operate on real model ranges.
-The white canvas is continuous; pagination, page numbers and print layout are absent.
+This build reads native content v1–v19 and saves **v19**. Earlier builds reject new
+v19 saves; use Save As to retain older files. See [format details](docs/NATIVE_FORMAT.md).
+File provides New/Open/Save/Save As, unsaved Save/Discard/Cancel, PDF export and
+print preview. View → Print Layout enables editable pages with actual page counts;
+continuous editing remains available. Physical printing is a separate unverified gate.
 Status reports real word/paragraph counts and zoom. The ribbon uses compact vector controls, two-row Font/Paragraph groups and
 an active paragraph-style gallery; it compacts and moves commands into overflow menus as
 the window narrows. File has Home/Options navigation and real document properties.
@@ -1111,3 +1110,43 @@ at entry; nested style dialogs describe the style draft. See [ADR 0015](docs/adr
 
 Paste's board and front-sheet proportions are also corrected from the supplied
 video. No format migration, new runtime dependency or release is introduced.
+
+
+## Structured documents and pages (alpha.89)
+
+Home adds real bullets, numbering and list settings. Increase/Decrease Indent
+changes levels for selected list paragraphs. Enter continues a list; Enter in an
+empty item exits it. Insert offers page breaks, tables, PNG pictures and hyperlinks.
+Table dialogs edit plain-text cells, rows/columns, widths and repeated header rows;
+double-click an existing object to edit it. Pictures use separate paragraph anchors,
+explicit point sizes and alternative text. Hyperlinks require selected text within
+one paragraph; Ctrl/Command+K opens their dialog. Open address is explicit.
+Navigation shows headings derived from Heading 1 without inferring structure from
+visual font size. Copying a table yields tab-separated cell text.
+
+Layout → Page setup controls size, orientation, margins, header/footer and page
+numbers, either document-wide or as a new-page section at the current paragraph.
+Paragraph pagination controls page-break-before, keep-with-next and keep-lines.
+Ctrl/Command+Enter inserts a page break at the caret. View → Print Layout retains
+normal editing and undo on actual pages. Ctrl/Command+P opens preview without
+printing. File → Export PDF saves the same layout as **144 dpi raster PDF** (not
+searchable or tagged). CUPS printing on macOS/Linux requires an explicit queue and
+Print document action; Windows can export PDF. No paper-output validation is claimed.
+
+Run the standalone editor using the existing Cargo instructions on macOS/Linux or
+Windows. Generate the reproducible corpus with:
+
+```sh
+cargo run --locked --example structured_report -- report.bfdoc report.pdf
+cargo run --locked -- --open /absolute/path/report.bfdoc
+```
+
+On Windows use an absolute path such as `C:\Docs\report.bfdoc` with `--open`;
+`target\release\breakfree-docs.exe --capabilities` remains GUI-free. Windows GUI
+acceptance is deferred. No Office checkout or service is needed.
+
+These are bounded D2/D3 implementations: no merged/rich table cells, floating images,
+columns, bookmarks, searchable PDF, full RTL/CJK support or DOCX exchange. See
+[ADR 0016](docs/adr/0016-document-structure-and-pages.md) and
+[validation](docs/VALIDATION.md#alpha89-structure-and-page-validation). Design,
+palette and approved icons are retained; Windows reference equivalence is unverified.

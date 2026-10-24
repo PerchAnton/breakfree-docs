@@ -1,3 +1,4 @@
+mod support;
 use breakfree_docs::{commands::Editor, storage};
 
 #[test]
@@ -42,6 +43,7 @@ fn tab_interval_validation_and_strict_legacy_import() {
         serde_json::from_slice(&storage::encode(&before).unwrap()).unwrap();
     assert_eq!(value["content_version"], storage::CONTENT_VERSION);
     value["content_version"] = 13.into();
+    support::strip_structure_for_legacy(&mut value);
     assert_eq!(
         storage::decode(&serde_json::to_vec(&value).unwrap()).unwrap(),
         before
@@ -49,6 +51,7 @@ fn tab_interval_validation_and_strict_legacy_import() {
     value["paragraphs"][0]["spacing"]["tab_interval_half_points"] = serde_json::Value::Null;
     assert!(storage::decode(&serde_json::to_vec(&value).unwrap()).is_err());
     value["content_version"] = 14.into();
+    support::strip_structure_for_legacy(&mut value);
     value["paragraphs"][0]["spacing"]["tab_interval_half_points"] = 0.into();
     assert!(storage::decode(&serde_json::to_vec(&value).unwrap()).is_err());
 }

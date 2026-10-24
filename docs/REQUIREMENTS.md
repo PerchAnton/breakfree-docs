@@ -282,3 +282,12 @@ including direct/style/ancestor/default sources and mixed ownership. Formatting,
 dialogs, marker descriptions, context menus and keyboard inspection share the
 same core report. Inspection preserves content, drafts, caret/selection and history.
 Native v18 remains unchanged; D01–D09 and deferred platform acceptance still apply.
+
+
+Alpha.89 extends authorized D2/D3 through [ADR 0016](adr/0016-document-structure-and-pages.md):
+model-owned lists/links, plain-cell table/PNG objects, page/section/flow settings,
+shared editable/preview/output placement and versioned v19 persistence. Model
+history and failed-save guarantees apply to these commands. PDF is raster-only;
+unsupported cells/anchors/columns and general script coverage are explicitly
+excluded. Physical printing is deferred by the owner, alongside deferred Windows
+acceptance and final VoiceOver review. D01–D09 remain required.

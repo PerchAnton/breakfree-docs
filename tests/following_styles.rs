@@ -1,3 +1,4 @@
+mod support;
 use breakfree_docs::{commands::Editor, model::*, storage};
 
 fn configured() -> Editor {
@@ -153,8 +154,10 @@ fn migration_is_strict_and_deleted_successor_is_remapped_and_undoable() {
     let mut json: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(json["content_version"], storage::CONTENT_VERSION);
     json["content_version"] = 5.into();
+    support::strip_structure_for_legacy(&mut json);
     assert!(storage::decode(&serde_json::to_vec(&json).unwrap()).is_err());
     json["content_version"] = 13.into();
+    support::strip_structure_for_legacy(&mut json);
     json["style_catalog"]["normal"]["next_style"] = serde_json::json!({"custom":999});
     assert!(storage::decode(&serde_json::to_vec(&json).unwrap()).is_err());
     let dir = tempfile::tempdir().unwrap();

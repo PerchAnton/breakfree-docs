@@ -1,3 +1,4 @@
+mod support;
 use breakfree_docs::{
     commands::{Editor, ParagraphGeometryPatch},
     formatting,
@@ -145,6 +146,7 @@ fn special_indent_editing_roundtrip_legacy_and_failed_save() {
     assert_eq!(json["content_version"], storage::CONTENT_VERSION);
     for version in 1..13 {
         json["content_version"] = version.into();
+        support::strip_structure_for_legacy(&mut json);
         assert!(
             storage::decode(&serde_json::to_vec(&json).unwrap())
                 .unwrap_err()
@@ -152,11 +154,13 @@ fn special_indent_editing_roundtrip_legacy_and_failed_save() {
         );
     }
     json["content_version"] = 13.into();
+    support::strip_structure_for_legacy(&mut json);
     json["paragraphs"][0]["spacing"]["first_line_half_points"] = (-289).into();
     assert!(storage::decode(&serde_json::to_vec(&json).unwrap()).is_err());
     let mut old: serde_json::Value =
         serde_json::from_slice(&storage::encode(&Document::default()).unwrap()).unwrap();
     old["content_version"] = 12.into();
+    support::strip_structure_for_legacy(&mut old);
     let imported = storage::decode(&serde_json::to_vec(&old).unwrap()).unwrap();
     assert_eq!(
         imported

@@ -39,6 +39,23 @@ impl DocsApp {
                         }
                     });
                 });
+                if self.find.is_empty() && !self.replace_mode {
+                    egui::CollapsingHeader::new("Headings").default_open(true).show(ui, |ui| {
+                        let headings = crate::structure::headings(&self.session.editor.document);
+                        if headings.is_empty() { ui.small("Apply Heading 1 or a derived style to create an outline."); }
+                        egui::ScrollArea::vertical().id_salt("heading-outline").max_height(180.).show(ui, |ui| {
+                            for (start, end, title) in headings {
+                                let response = ui.add_sized([ui.available_width(), 24.], Button::new(title).truncate());
+                                self.record(&format!("heading-{start}"), response.rect);
+                                if response.clicked() {
+                                    self.session.editor.selection = (start, end);
+                                    self.sync_view();
+                                    self.scroll_to_selection = true;
+                                }
+                            }
+                        });
+                    });
+                }
                 let id = Id::new("find-text");
                 let focused = ui.memory(|m| m.has_focus(id));
                 // Do not interpret IME confirmation as a navigation command.

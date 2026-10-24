@@ -3,6 +3,21 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.89 — 2026-10-24
+
+- Add shared-model lists, nested levels/restarts, hyperlinks, rectangular table
+  editing, sized PNG blocks and heading navigation, with transactional undo/redo.
+- Add native v19 structure/page settings and strict legacy gates; retain old-file
+  reading, Unicode boundaries, Replace All metadata and failed-save preservation.
+- Add page sizes/margins, new-page sections, headers/footers/numbering, caret page
+  breaks, keep rules, repeated table headers, editable Print Layout and preview.
+- Export the shared layout as 144 dpi raster PDF; expose explicit macOS/Linux CUPS
+  queue submission. Paper printing is deferred; no print job was sent.
+- Add Insert/Layout commands and KeyTips, output shortcuts, structured-report
+  fixtures and regression tests. Fix missing export glyphs and keep-chain placement.
+- Preserve palette/icons. Windows deferred; VoiceOver last. No release, DOCX,
+  searchable PDF, merged cells, floating objects or general RTL/CJK claim.
+
 ## 0.1.0-alpha.88 — 2026-10-24
 
 - Correct Paste proportions from the supplied reference: a broader clipboard,

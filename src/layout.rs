@@ -104,6 +104,7 @@ pub fn galley(
     let active_paragraph = source.locate(typing_position).ok().map(|(p, _)| p);
     let mut whole = LayoutJob::default();
     let mut paragraphs = Vec::new();
+    let labels = crate::structure::labels(source);
     for (index, p) in source.paragraphs.iter().enumerate() {
         let resolved = source.resolved_paragraph(p);
         let mut job = LayoutJob::default();
@@ -112,6 +113,9 @@ pub fn galley(
         let mut special = f32::from(resolved.first_line_half_points) * size / 22.;
         let scale = crate::ruler::indent_scale(resolved, size / 22., width);
         left *= scale;
+        if let Some(list) = &p.structure.list {
+            left += (24. + 18. * f32::from(list.level)) * size / 11.;
+        }
         right *= scale;
         special *= scale;
         let first_left = left + special.max(0.);
@@ -125,28 +129,32 @@ pub fn galley(
         let mut start = 0;
         while start < chars.len() {
             let mut end = start + 1;
-            while end < chars.len() && p.styles[end] == p.styles[start] {
+            while end < chars.len()
+                && p.styles[end] == p.styles[start]
+                && !p
+                    .structure
+                    .links
+                    .iter()
+                    .any(|l| l.start == end || l.end == end)
+            {
                 end += 1;
             }
             let text: String = chars[start..end].iter().collect();
-            job.append(
-                &text,
-                0.,
-                format(
-                    p.styles[start].resolve_with(resolved.character, &source.character_styles),
-                    size,
-                    resolved.line_height(),
-                ),
+            let mut text_format = format(
+                p.styles[start].resolve_with(resolved.character, &source.character_styles),
+                size,
+                resolved.line_height(),
             );
-            whole.append(
-                &text,
-                0.,
-                format(
-                    p.styles[start].resolve_with(resolved.character, &source.character_styles),
-                    size,
-                    resolved.line_height(),
-                ),
-            );
+            if p.structure
+                .links
+                .iter()
+                .any(|l| l.start <= start && start < l.end)
+            {
+                text_format.color = Color32::from_rgb(35, 95, 160);
+                text_format.underline = egui::Stroke::new(0.8_f32, text_format.color);
+            }
+            job.append(&text, 0., text_format.clone());
+            whole.append(&text, 0., text_format);
             start = end;
         }
         if chars.is_empty() {
@@ -211,6 +219,27 @@ pub fn galley(
                 }
                 row.visuals.mesh_bounds = row.visuals.mesh_bounds.translate(egui::vec2(shift, 0.));
                 row.size.x += shift;
+            }
+        }
+        if let Some(block) = &p.structure.block {
+            crate::object_layout::apply_block(ctx, &mut paragraph, block, width, size);
+        }
+        if let Some(label) = &labels[index] {
+            let label = ctx.fonts_mut(|f| {
+                f.layout_no_wrap(
+                    label.clone(),
+                    FontId::new(size, FontFamily::Name("body".into())),
+                    Color32::from_gray(24),
+                )
+            });
+            if let Some(first) = paragraph.rows.first_mut() {
+                let row = Arc::make_mut(&mut first.row);
+                for label_row in &label.rows {
+                    let mut mesh = label_row.visuals.mesh.clone();
+                    mesh.translate(egui::vec2((first_left - 18. * size / 11.).max(0.), 0.));
+                    row.visuals.mesh.append(mesh);
+                }
+                row.visuals.mesh_bounds = row.visuals.mesh.calc_bounds();
             }
         }
         // Justification measures visible ink and excludes trailing whitespace.
