@@ -8,16 +8,16 @@ require a separate owner instruction.
 
 ## Текущее состояние
 
-| Area | State as of 2026-10-24 22:51 EEST | Evidence |
+| Area | State as of 2026-10-24 22:59 EEST | Evidence |
 | :--- | :--- | :--- |
-| Application version | Owner approved alpha.94; 0.1.0-alpha.95 awaits approval. No merge/tag/release | [Changelog](../CHANGELOG.md) |
-| Runtime and data | Primary DOCX preserves passive custom property XML and accepts derived positive PAGE caches; optional native v21, frozen older readers | [Profile](DOCX_SUBSET.md), [Code](https://github.com/PerchAnton/breakfree-docs/commit/3bc9859fb73fa24bc5ec92c965879d821df8c673) |
-| Interface | Existing design, palette and icons unchanged; no new GUI/Word interaction check this iteration | [UI specification](UI_SPEC.md) |
-| Local checks | 512 full / 252 core tests, fmt/Clippy/release/repository checks and supplement regression pass; archive CRC/hashes and isolated CLI pass | [Validation](VALIDATION.md#alpha95-docx-metadata-and-dependency-evidence) |
-| Dependency evidence | 22 missing full texts recovered from pinned revisions; eight statement-only and two no-text entries remain unresolved among 184 conservative macOS entries; SDK provenance still open | [License review](LICENSE_REVIEW.md) |
-| Server CI | Alpha.94 code/journal CI successful; alpha.95 code CI running at audit | [Current run](https://github.com/PerchAnton/breakfree-docs/actions/runs/40127187646) |
-| Remaining D4 | External save-back corpus, broader external profiles and distribution/license review remain open. Windows/paper deferred; VoiceOver last | [Roadmap](../ROADMAP.md) |
-| Publication | Code and updated draft PR published; unsigned local review package only. No merge/tag/release | [PR #1](https://github.com/PerchAnton/breakfree-docs/pull/1) |
+| Application version | Owner approved alpha.95; 0.1.0-alpha.96 awaits approval. No merge/tag/release | [Changelog](../CHANGELOG.md) |
+| Runtime and data | DOCX remains primary, native v21 unchanged. Unsupported relationships identify part/ID/type. Seven original corpus cases retain raw external output and source/tool hashes | [Corpus](DOCX_CORPUS.md), [Code](https://github.com/PerchAnton/breakfree-docs/commit/4e4250e07295749437b6183aef4997936ecec603) |
+| Interface | Design, palette and icons unchanged; no GUI/Word interaction recheck | [UI specification](UI_SPEC.md) |
+| Local checks | 513 full / 253 core tests, fmt/Clippy/release/repository/hash and supplement checks pass; isolated CLI passes. Shared-session save-back exact for accepted cases | [Validation](VALIDATION.md#alpha96-external-save-back-corpus) |
+| External save-back | Cocoa preserves tested text/Unicode/bold/italic/alignment; returned DOCX fails safely on unsupported customXml. Five raw external negative cases, not newly supported imports | [Corpus report](DOCX_CORPUS.md) |
+| Server CI | Alpha.95 code/journal CI successful; alpha.96 code CI running at audit | [Current run](https://github.com/PerchAnton/breakfree-docs/actions/runs/40127779441) |
+| Remaining D4 | Full external save-back, themes/metadata/settings and broader profiles, ten incomplete notice entries/SDK review remain open. Windows/paper deferred; VoiceOver last | [Roadmap](../ROADMAP.md), [license review](LICENSE_REVIEW.md) |
+| Publication | Code and updated draft PR published; no merge/tag/release or distribution approval | [PR #1](https://github.com/PerchAnton/breakfree-docs/pull/1) |
 
 ## Работа и проверки
 
@@ -218,6 +218,8 @@ require a separate owner instruction.
 
 | 2026-10-24 22:51 EEST | Alpha.95: custom DOCX properties, derived PAGE cache handling, native v21, pinned supplemental notices and offline packaging validation. Version/changelog/docs updated; owner approved alpha.94 | 512/252 Rust tests, lint/build/repository and Python regression passed; fixture roundtrip, failed-write protection, archive checksums and isolated CLI verified. Ten notice entries and SDK provenance unresolved; no GUI/Word recheck or redistribution clearance | [Code](https://github.com/PerchAnton/breakfree-docs/commit/3bc9859fb73fa24bc5ec92c965879d821df8c673), [validation](VALIDATION.md#alpha95-docx-metadata-and-dependency-evidence) |
 
+| 2026-10-24 22:59 EEST | Alpha.96: seven original corpus fixtures, independent input and raw Cocoa save-back, reproducible probe, precise rejection diagnostics and checksum-preserving Git attributes. Version/changelog/docs updated; owner approved alpha.95 | 513/253 Rust tests, lint/build/repository/hash/supplement checks and isolated CLI passed. Two accepted inputs use shared Session history/same-path saves; five external inputs reject unchanged. External text/emphasis/alignment retained; full reimport fails. No GUI/Word recheck | [Code](https://github.com/PerchAnton/breakfree-docs/commit/4e4250e07295749437b6183aef4997936ecec603), [validation](VALIDATION.md#alpha96-external-save-back-corpus) |
+
 ## Комментарии и ревью
 
 | Checked at | Author / kind | Event and requested action | Direct source | Handling |
@@ -227,7 +229,7 @@ require a separate owner instruction.
 
 | 2026-10-18 17:12 EEST | No new human/bot authors | Incremental PR/issue/review audit after 16:54 EEST; no new human or bot comments in checked sources | [PR #1](https://github.com/PerchAnton/breakfree-docs/pull/1) | No response required; Discussions disabled |
 
-| 2026-10-24 22:51 EEST | No new human/bot comment or review authors returned | All issue/commit comments, PR #1 inline comments/reviews/threads checked, including old replies; PR description updated by @PerchAnton account through the assistant | [PR #1](https://github.com/PerchAnton/breakfree-docs/pull/1) | No requested response in checked sources; no public reply sent |
+| 2026-10-24 22:59 EEST | No new human/bot comment or review authors returned | All issue/commit comments, PR #1 inline comments/reviews/threads checked, including old replies; PR description updated by @PerchAnton account through the assistant | [PR #1](https://github.com/PerchAnton/breakfree-docs/pull/1) | No requested response in checked sources; no public reply sent |
 
 ## Предложения и просьбы о помощи
 
@@ -237,14 +239,14 @@ require a separate owner instruction.
 
 | 2026-10-18 17:12 EEST | No new help offers/requests in checked public comments/reviews | [PR #1](https://github.com/PerchAnton/breakfree-docs/pull/1) | No reply required | No assignment inferred |
 
-| 2026-10-24 22:51 EEST | No new external offers/requests in checked repository and PR discussions | [PR #1](https://github.com/PerchAnton/breakfree-docs/pull/1); audit since previous check, including old replies | No owner reply required by checked sources | No assignment inferred |
+| 2026-10-24 22:59 EEST | No new external offers/requests in checked repository and PR discussions | [PR #1](https://github.com/PerchAnton/breakfree-docs/pull/1); audit since previous check, including old replies | No owner reply required by checked sources | No assignment inferred |
 
 ## Следующие действия
 
 | Priority | Concrete task | Source | Confirmed owner | Status / obstacle |
 | :--- | :--- | :--- | :--- | :--- |
-| P0 | Approve or revise proposed application version 0.1.0-alpha.95 | [Version policy](VERSIONING.md); owner instruction | Owner version approval requested | Alpha.94 explicitly approved; alpha.95 pending; earlier records retained; no merge/tag/release authorization |
-| P1 | Complete independent external DOCX save-back corpus and richer tables/settings/themes/font support | [D4 profile](DOCX_SUBSET.md), owner D4 request | Unassigned | Bounded structured exchange implemented; external save-back unavailable in installed read-only Word |
+| P0 | Approve or revise proposed application version 0.1.0-alpha.96 | [Version policy](VERSIONING.md); owner instruction | Owner version approval requested | Alpha.95 explicitly approved; alpha.96 pending; earlier records retained; no merge/tag/release authorization |
+| P1 | Complete independent external DOCX save-back corpus and richer tables/settings/themes/font support | [D4 profile](DOCX_SUBSET.md), owner D4 request | Unassigned | Seven-case corpus added; Cocoa semantic projection passes but returned DOCX rejects customXml/theme parts. Define safe preservation before expanding acceptance. Word save-back unavailable |
 | P1 | Verify external Word save-back and extend glyph fallback | [Alpha.91 validation](VALIDATION.md#alpha91-primary-docx-and-list-validation) | Unassigned | Native post-dialog keyboard/AX passed; Word editing unavailable in activation-required mode; emoji glyph missing despite preserved data |
 | P0 | Review the implemented standalone loop | [PR #1](https://github.com/PerchAnton/breakfree-docs/pull/1); D01–D09 | No maintainer assignment confirmed | Code and local tests ready for review; full D1 gate remains open |
 | P0 | Retain failed-write and invalid-file regression coverage | D07–D08; [validation](https://github.com/PerchAnton/breakfree-docs/blob/6102b06fbb3f3861183369645640f935d2c5d10f/docs/VALIDATION.md) | No maintainer assignment confirmed | Tests pass locally; future interruption/recovery work remains separate |
@@ -548,3 +550,5 @@ require a separate owner instruction.
 | 2026-10-24 22:38 EEST | Alpha.94 incremental audit after 2026-10-24 12:37 EEST | Safe fetch; connector refreshed draft PR #1 metadata, conversation/inline comments, reviews/threads, issue search and PR-triggered CI. No comments/reviews/threads or issue-search items returned. Prior alpha.93 journal PR CI succeeded; [alpha.94 code PR CI](https://github.com/PerchAnton/breakfree-docs/actions/runs/40126122173) in progress. Code and updated description published | CLI GitHub API rate-limited: commit comments, complete all-state PR inventory, releases and Discussions flag not refreshed; do not infer absence. Push CI not returned by connector. Office/history exposure not re-audited. No public replies, assignments, merge/tag/release or print job |
 
 | 2026-10-24 22:51 EEST | Alpha.95 incremental audit after 2026-10-24 22:38 EEST, including old PR replies | Safe fetch; all-state issues/PRs, repository issue/commit comments, PR #1 inline/reviews/GraphQL thread count, releases, Discussions flag and CI refreshed. Collections fit one page: one draft PR; no standalone issues/comments/reviews/help/releases. Alpha.94 CI succeeded; alpha.95 code CI running | Discussions disabled. API access restored; previous limited audit retained. Office/history not re-audited. No public replies, assignments, merge/tag/release or printer job |
+
+| 2026-10-24 22:59 EEST | Alpha.96 incremental audit after 2026-10-24 22:51 EEST, including old PR replies | Safe fetch; all-state issues/PRs, repository issue/commit comments, PR #1 inline/reviews/GraphQL thread count, releases, Discussions flag and CI. Collections fit one page: one draft PR; no standalone issues/comments/reviews/help/releases. Alpha.95 CI succeeded; alpha.96 code CI running | Discussions disabled; Office/history not re-audited. No public replies, assignments, merge/tag/release or printer job |
