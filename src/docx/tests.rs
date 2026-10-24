@@ -169,7 +169,7 @@ fn failed_export_and_write_preserve_previous_file() {
     save(&d, &path).unwrap();
     let previous = std::fs::read(&path).unwrap();
     let mut unsupported = d.clone();
-    unsupported.page.header = "Header".into();
+    unsupported.paragraphs[0].spacing.tab_interval_half_points = Some(80);
     assert!(save(&unsupported, &path).is_err());
     assert_eq!(std::fs::read(&path).unwrap(), previous);
     for stage in [
@@ -434,7 +434,9 @@ fn unsupported_primary_save_keeps_destination_and_offers_native_path() {
     save(&Document::default(), &path).unwrap();
     let original = std::fs::read(&path).unwrap();
     let mut s = crate::session::Session::open(&path).unwrap();
-    s.editor.document.page.header = "Not in DOCX subset".into();
+    s.editor.document.paragraphs[0]
+        .spacing
+        .tab_interval_half_points = Some(80);
     assert!(s.save(&path).is_err());
     assert!(s.dirty());
     assert_eq!(s.path.as_deref(), Some(path.as_path()));
@@ -782,4 +784,212 @@ fn table_limits_and_unrepresentable_object_properties_fail_before_writing() {
         s.replacen(row, &row.repeat(101), 1).into_bytes(),
     );
     assert!(decode(&package::write(&p).unwrap()).is_err());
+}
+
+fn extended() -> Document {
+    use crate::structure::{Picture, Section};
+    use image::ImageEncoder;
+    let mut d = sample();
+    d.page.header = "D4 · Україна".into();
+    d.page.footer = "Synthetic fixture".into();
+    d.page.page_numbers = true;
+    d.paragraphs[1].structure.section = Some(Section {
+        width_points: 842,
+        height_points: 595,
+        number_start: Some(7),
+        header: "Section two".into(),
+        page_numbers: true,
+        ..Default::default()
+    });
+    d.style_catalog.normal.character.family = Some(TextFamily::TimesNewRoman);
+    d.paragraphs[0].styles[5].family = Some(TextFamily::CourierNew);
+    d.style_catalog.normal.tab_stops = Some(vec![
+        StyleTabStop {
+            position_half_points: 144,
+            kind: TabKind::Left,
+            leader: Some(TabLeader::Dots),
+        },
+        StyleTabStop {
+            position_half_points: 360,
+            kind: TabKind::Center,
+            leader: Some(TabLeader::Dashes),
+        },
+    ]);
+    d.paragraphs[0]
+        .spacing
+        .set_tab_positions(&[(144, TabKind::Right), (500, TabKind::Center)])
+        .unwrap();
+    d.paragraphs[0].spacing.tab_leaders = vec![TabLeaderStop {
+        position_half_points: 500,
+        leader: TabLeader::Line,
+    }];
+    let mut png = Vec::new();
+    image::codecs::png::PngEncoder::new(&mut png)
+        .write_image(&[100, 70, 180, 255], 1, 1, image::ExtendedColorType::Rgba8)
+        .unwrap();
+    d.paragraphs.push(pictures::paragraph(Picture {
+        png,
+        width_points: 72,
+        height_points: 36,
+        alt: "Original <test> & Ї".into(),
+    }));
+    d.package_properties.insert("core".into(), format!("<cp:coreProperties xmlns:cp=\"{}\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\"><dc:title>Test &amp; Україна</dc:title></cp:coreProperties>", metadata::CORE));
+    d.package_properties.insert("app".into(), format!("<Properties xmlns=\"{}\"><Application>Fixture</Application><Words>9</Words></Properties>", metadata::APP));
+    d
+}
+fn change_part(parts: &mut Parts, path: &str, old: &str, new: &str) {
+    let text = String::from_utf8(parts[path].clone()).unwrap();
+    assert!(text.contains(old), "{path}: {old}");
+    parts.insert(path.into(), text.replace(old, new).into_bytes());
+}
+#[test]
+fn combined_sections_png_fonts_tabs_metadata_exact_roundtrip_and_history() {
+    let d = extended();
+    assert_eq!(decode(&encode(&d).unwrap()).unwrap(), d);
+    assert_eq!(
+        crate::storage::decode(&crate::storage::encode(&d).unwrap()).unwrap(),
+        d
+    );
+    let mut e = crate::commands::Editor::new(d.clone());
+    e.replace(0, 0, "Їe\u{301}", "Type").unwrap();
+    let edited = e.document.clone();
+    assert_eq!(edited.package_properties, d.package_properties);
+    e.undo();
+    assert_eq!(e.document, d);
+    e.redo();
+    assert_eq!(e.document, edited);
+    assert_eq!(decode(&encode(&edited).unwrap()).unwrap(), edited);
+}
+#[test]
+fn explicit_empty_and_inherited_tab_lists_survive() {
+    let mut d = extended();
+    d.paragraphs[0].spacing.set_tab_positions(&[]).unwrap();
+    assert_eq!(decode(&encode(&d).unwrap()).unwrap(), d);
+    d.paragraphs[0].spacing.clear_tab_stops = false;
+    assert_eq!(decode(&encode(&d).unwrap()).unwrap(), d);
+}
+#[test]
+fn external_document_default_tabs_are_retained_as_parent() {
+    let bytes = mutate(|p| {
+        change_part(
+            p,
+            "word/styles.xml",
+            "<w:pPrDefault><w:pPr>",
+            "<w:pPrDefault><w:pPr><w:tabs><w:tab w:val=\"right\" w:pos=\"1440\" w:leader=\"dot\"/></w:tabs>",
+        )
+    });
+    let d = decode(&bytes).unwrap();
+    assert_eq!(
+        d.style_catalog
+            .resolve_tabs(d.paragraphs[0].paragraph_style)
+            .tab_positions(),
+        vec![(144, TabKind::Right)]
+    );
+    assert_eq!(decode(&encode(&d).unwrap()).unwrap(), d);
+}
+#[test]
+fn invalid_picture_geometry_data_and_external_relationship_fail() {
+    let source = package::read(&encode(&extended()).unwrap()).unwrap();
+    for (path, old, new) in [
+        ("word/document.xml", "cx=\"914400\"", "cx=\"914401\""),
+        (
+            "word/document.xml",
+            "<a:stretch>",
+            "<a:srcRect l=\"10\"/><a:stretch>",
+        ),
+        (
+            "word/_rels/document.xml.rels",
+            "Target=\"media/image3.png\"",
+            "Target=\"https://example.com/image.png\" TargetMode=\"External\"",
+        ),
+    ] {
+        let mut parts = source.clone();
+        change_part(&mut parts, path, old, new);
+        assert!(decode(&package::write(&parts).unwrap()).is_err());
+    }
+    let mut parts = source;
+    parts.insert("word/media/image3.png".into(), b"not PNG".to_vec());
+    assert!(decode(&package::write(&parts).unwrap()).is_err());
+}
+#[test]
+fn unsupported_sections_fields_fonts_and_tab_inheritance_fail() {
+    let source = package::read(&encode(&extended()).unwrap()).unwrap();
+    for (path, old, new) in [
+        (
+            "word/document.xml",
+            "w:val=\"nextPage\"",
+            "w:val=\"continuous\"",
+        ),
+        ("word/footer1.xml", " PAGE ", " DATE "),
+        ("word/styles.xml", "Times New Roman", "Unknown Font"),
+        (
+            "word/document.xml",
+            "<w:tab w:val=\"clear\" w:pos=\"3600\"/>",
+            "",
+        ),
+        (
+            "word/document.xml",
+            "w:val=\"center\" w:pos=\"5000\"",
+            "w:val=\"decimal\" w:pos=\"5000\"",
+        ),
+    ] {
+        let mut parts = source.clone();
+        change_part(&mut parts, path, old, new);
+        assert!(decode(&package::write(&parts).unwrap()).is_err(), "{old}");
+    }
+}
+#[test]
+fn absent_later_header_reference_inherits_without_losing_text() {
+    let mut d = extended();
+    d.paragraphs[1].structure.section.as_mut().unwrap().header = d.page.header.clone();
+    let mut parts = package::read(&encode(&d).unwrap()).unwrap();
+    change_part(
+        &mut parts,
+        "word/document.xml",
+        "<w:headerReference w:type=\"default\" r:id=\"rIdheader2\"/>",
+        "",
+    );
+    change_part(
+        &mut parts,
+        "word/_rels/document.xml.rels",
+        &format!(
+            "<Relationship Id=\"rIdheader2\" Type=\"{OFFICE_REL}header\" Target=\"header2.xml\"/>"
+        ),
+        "",
+    );
+    change_part(
+        &mut parts,
+        "[Content_Types].xml",
+        "<Override PartName=\"/word/header2.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml\"/>",
+        "",
+    );
+    parts.remove("word/header2.xml");
+    assert_eq!(decode(&package::write(&parts).unwrap()).unwrap(), d);
+}
+#[test]
+fn native_v20_rejects_old_version_extensions_and_invalid_metadata() {
+    let d = extended();
+    let mut value: serde_json::Value =
+        serde_json::from_slice(&crate::storage::encode(&d).unwrap()).unwrap();
+    value["content_version"] = 19.into();
+    assert!(crate::storage::decode(&serde_json::to_vec(&value).unwrap()).is_err());
+    let mut invalid = d;
+    invalid
+        .package_properties
+        .insert("core".into(), "<bad/>".into());
+    assert!(crate::storage::encode(&invalid).is_err());
+    assert!(encode(&invalid).is_err());
+}
+#[test]
+fn extended_failed_save_keeps_previous_bytes() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("D4.docx");
+    let d = extended();
+    save(&d, &path).unwrap();
+    let before = std::fs::read(&path).unwrap();
+    let mut bad = d.clone();
+    bad.paragraphs[0].spacing.tab_interval_half_points = Some(80);
+    assert!(save(&bad, &path).is_err());
+    assert_eq!(std::fs::read(&path).unwrap(), before);
+    assert_eq!(load(&path).unwrap(), d);
 }

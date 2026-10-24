@@ -1,6 +1,6 @@
 # Native BreakFree Docs document format
 
-Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v19.
+Extension `.bfdoc`; type `breakfree.docs.native`. Current writer: content v20.
 This is not a DOCX container. Process protocol and file-content versions are independent.
 
 ```json
@@ -329,3 +329,15 @@ the overall 100,000-character limit and has its own 50,000-character table limit
 
 All structures reject unknown fields and invalid values. The schema does not
 store platform print queues, PDF bytes or UI state. See [ADR 0016](adr/0016-document-structure-and-pages.md).
+
+
+## V20: named fonts and retained package properties
+
+V20 adds optional `family` in direct/style character properties: `Arial`,
+`TimesNewRoman`, or `CourierNew`. Absent values inherit; the default remains
+Arial. Optional top-level `package_properties` holds original `core`/`app`
+metadata XML, each bounded to 128 KiB with validated namespace/root and no DTD.
+Metadata survives native/DOCX conversion and history; imported counters are not
+updated after edits. Host font files are never embedded. Earlier v1–v19 inputs
+reject these new fields even when null. Page/structure requirements from v19 stay.
+See [ADR 0019](adr/0019-docx-sections-pictures-tabs-fonts.md).

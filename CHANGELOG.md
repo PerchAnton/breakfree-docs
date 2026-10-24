@@ -3,6 +3,21 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.94 — 2026-10-24
+
+- Extend primary DOCX with inline PNG, next-page sections, plain headers/footers,
+  PAGE numbering/restarts and explicit left/center/right tab stops with leaders.
+- Preserve parent tab dependencies/clear lists and inherited section headers;
+  validate table width against the active section.
+- Add three named font families through the shared cascade, native layout and
+  transactional Font dialog; preserve bounded original core/app metadata.
+- Write native v20 with frozen v1–v19 readers; retain all prior model features.
+- Add combined fixtures, exact roundtrip/history/error tests, and a local review
+  archive script collecting provenance, checksums and dependency notices.
+- Preserve ribbon design, palette and icons. External save-back, broader OOXML
+  presentation and release approval remain open; Windows/paper printing deferred,
+  VoiceOver last.
+
 ## 0.1.0-alpha.93 — 2026-10-24
 
 - Add primary DOCX read/write for fixed-grid plain-cell tables: exact column

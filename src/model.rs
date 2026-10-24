@@ -94,8 +94,37 @@ impl std::str::FromStr for FontSize {
     }
 }
 
+/// Named installed-font preference; font programs are never embedded.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum TextFamily {
+    #[default]
+    Arial,
+    TimesNewRoman,
+    CourierNew,
+}
+impl TextFamily {
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Arial => "Arial",
+            Self::TimesNewRoman => "Times New Roman",
+            Self::CourierNew => "Courier New",
+        }
+    }
+    pub fn key(self, bold: bool) -> &'static str {
+        match (self, bold) {
+            (Self::Arial, false) => "body",
+            (Self::Arial, true) => "body-bold",
+            (Self::TimesNewRoman, false) => "serif",
+            (Self::TimesNewRoman, true) => "serif-bold",
+            (Self::CourierNew, false) => "mono",
+            (Self::CourierNew, true) => "mono-bold",
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Style {
+    pub family: TextFamily,
     pub bold: bool,
     pub italic: bool,
     pub underline: bool,
@@ -132,6 +161,8 @@ impl CharacterStyle {
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct CharacterFormat {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub family: Option<TextFamily>,
     // Serialized separately by the versioned run schema, never in paragraph definitions.
     #[serde(skip)]
     pub character_style: Option<CharacterStyle>,
@@ -147,6 +178,7 @@ impl CharacterFormat {
             .character_style
             .map_or(base, |style| style.resolve(base));
         Style {
+            family: self.family.unwrap_or(base.family),
             bold: self.bold.unwrap_or(base.bold),
             italic: self.italic.unwrap_or(base.italic),
             underline: self.underline.unwrap_or(base.underline),
@@ -185,6 +217,7 @@ impl CharacterFormat {
     pub fn explicit(style: Style) -> Self {
         Self {
             character_style: None,
+            family: (style.family != TextFamily::Arial).then_some(style.family),
             bold: Some(style.bold),
             italic: Some(style.italic),
             underline: Some(style.underline),
@@ -924,6 +957,8 @@ pub struct Paragraph {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Document {
+    /// Preserved non-rendering XML properties from supported package metadata parts.
+    pub package_properties: std::collections::BTreeMap<String, String>,
     pub page: crate::structure::Section,
     pub character_styles: Vec<NamedCharacterStyle>,
     pub style_catalog: StyleCatalog,
@@ -933,6 +968,7 @@ pub struct Document {
 impl Default for Document {
     fn default() -> Self {
         Self {
+            package_properties: Default::default(),
             paragraphs: vec![Paragraph::default()],
             page: crate::structure::Section::default(),
             character_styles: Vec::new(),
@@ -1223,6 +1259,15 @@ impl Document {
     }
 
     pub fn validate(&self) -> Result<()> {
+        if self.package_properties.len() > 2
+            || self
+                .package_properties
+                .iter()
+                .any(|(k, v)| !matches!(k.as_str(), "core" | "app") || v.len() > 128 * 1024)
+        {
+            return Err("Unsupported or oversized package metadata".into());
+        }
+
         self.page.validate()?;
         self.style_catalog.validate()?;
         self.validate_character_styles()?;

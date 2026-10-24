@@ -3672,6 +3672,7 @@ fn clear_formatting_control_space_respects_focus_modifiers_and_modal_guards() {
         assert_eq!(
             app.session.editor.selected_font(),
             crate::commands::FontPatch {
+                family: Some(crate::model::TextFamily::Arial),
                 character_style: None,
                 bold: Some(false),
                 italic: Some(false),
@@ -13424,4 +13425,51 @@ fn docx_import_and_failed_import_preserve_session_boundaries() {
     std::fs::write(&path, original).unwrap();
     app.session.save(&dir.path().join("native.bfdoc")).unwrap();
     assert_eq!(crate::docx::load(&path).unwrap(), doc);
+}
+
+#[test]
+fn imported_font_family_dialog_preserves_metadata_cancel_and_one_undo() {
+    use crate::model::TextFamily;
+    for width in [640., 1366.] {
+        let (ctx, mut app) = setup();
+        app.session
+            .editor
+            .replace(0, 0, "English Ї e\u{301}", "Type")
+            .unwrap();
+        app.session.editor.document.package_properties.insert("core".into(), "<coreProperties xmlns=\"http://schemas.openxmlformats.org/package/2006/metadata/core-properties\"/>".into());
+        app.execute(Action::SelectAll, &ctx);
+        let before = app.session.editor.document.clone();
+        let history = app.session.editor.undo_stack.len();
+        app.execute(Action::FontDialog, &ctx);
+        click_region_at(
+            &ctx,
+            &mut app,
+            "font-dialog-family-Times New Roman",
+            [width, 480.],
+        );
+        click_region_at(&ctx, &mut app, "font-dialog-cancel", [width, 480.]);
+        assert_eq!(app.session.editor.document, before);
+        app.execute(Action::FontDialog, &ctx);
+        click_region_at(
+            &ctx,
+            &mut app,
+            "font-dialog-family-Courier New",
+            [width, 480.],
+        );
+        click_region_at(&ctx, &mut app, "font-dialog-ok", [width, 480.]);
+        assert_eq!(app.session.editor.undo_stack.len(), history + 1);
+        assert_eq!(
+            app.session.editor.selected_font().family,
+            Some(TextFamily::CourierNew)
+        );
+        let after = app.session.editor.document.clone();
+        assert_eq!(
+            crate::docx::decode(&crate::docx::encode(&after).unwrap()).unwrap(),
+            after
+        );
+        app.execute(Action::Undo, &ctx);
+        assert_eq!(app.session.editor.document, before);
+        app.execute(Action::Redo, &ctx);
+        assert_eq!(app.session.editor.document, after);
+    }
 }

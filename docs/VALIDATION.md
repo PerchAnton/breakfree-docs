@@ -2435,3 +2435,51 @@ Owner approved alpha.92; DOCX remains primary, native v19 optional.
   repository references and whitespace checks passed. The copied executable in a
   fresh directory reported alpha.93 and DOCX-first capabilities, and rejected
   missing/relative/unknown arguments without GUI or neighboring repositories.
+
+## Alpha.94 combined D4 validation
+
+2026-10-24, macOS aarch64, Rust 1.99.1. Candidate only; no release or merge.
+
+- 508 full-feature tests and 248 core-only tests pass. All-target Clippy with
+  capture enabled and denied warnings, formatting, release build and repository
+  references/brand checks pass.
+- Eight new DOCX tests cover combined PNG/sections/fonts/tabs/metadata equality,
+  exact native v20 roundtrip, editing/history, explicit empty/inherited tab lists,
+  independently modified document-default tabs, missing later header references,
+  corrupt/external/transformed images, invalid sections/fields/fonts/tab semantics,
+  old-version extension rejection and failed-save preservation.
+- One new actual-widget test covers both 640/1366-DIP windows: Font family draft,
+  cancel, one-step application, exact Undo/Redo and DOCX reopen with metadata.
+  Existing modal DPI/keyboard and renderer tests pass; these are not native
+  Windows scaling evidence.
+- The docx_extended example generates the original combined DOCX/native pair
+  and asserts complete model equality. Includes English/Ukrainian/Russian/
+  combining text, two families, tab leaders, lists, a table, PNG, sections,
+  headers/footers and number restart.
+- Word for Mac 16.114 (16.114.26101123), activation-required read-only mode,
+  opened the combined fixture without a repair prompt. First-page text, families,
+  tab leaders and lists were visible; page two showed the table, PNG and number
+  **7** in the landscape section. [First page](screenshots/alpha94-word-page1.png)
+  and [second page](screenshots/alpha94-word-page2.png) record this scoped check.
+  Captures precede final explicit header/footer font/indent reset hardening;
+  that hardening passed the full final automated suite. No external save-back,
+  rich external corpus, pagination equivalence or Windows result is claimed.
+- The independent alpha.94 native app opened the final fixture through the system
+  dialog, displayed its text/table/PNG and existing chrome, selected the Unicode
+  paragraph, showed its Times New Roman family/preview and cancelled the Font
+  dialog with Escape. [Native Font dialog](screenshots/alpha94-font-dialog.png).
+  Native family apply/undo was not manually repeated; it is covered by widget/core
+  tests. The native check used continuous layout, not page-equivalence comparison.
+- Local review packaging built a macOS executable archive, inventoried 184 locked
+  target-resolution dependencies, copied available notices and verified every
+  manifest SHA-256 and ZIP entry. 32 entries lack packaged notice files and remain
+  explicitly flagged for manual license review; embedded-font notices are included.
+  An initial pre-1980 upstream-file timestamp error was corrected using ZIP's
+  supported timestamp clamping and validated by rebuilding the archive.
+- The extracted executable ran --capabilities in a new temporary directory:
+  version alpha.94, protocol 1, DOCX first/native second, without a sibling checkout
+  or Office service. Existing CLI argument/error tests passed.
+
+Server CI is separate and recorded in the journal after publication. External
+save-back, distribution/license clearance and general DOCX compatibility remain
+open. Windows and physical printing are deferred; VoiceOver remains last.

@@ -1,4 +1,4 @@
-# DOCX profile — alpha.93
+# DOCX profile — alpha.94
 
 **DOCX is the primary/default document format.** `.bfdoc` is optional and can retain
 all current model features. Primary status does not imply general Word compatibility:
@@ -12,14 +12,17 @@ are not supported.
 | :--- | :--- |
 | Package | Stored/deflated ZIP, CRC/header checks and checked descriptors; safe internal relationship paths, no disk extraction |
 | Text | Paragraphs/runs, escaped XML, preserved spaces and literal default-grid tabs; Unicode fixture |
-| Character properties | Bold, italic, single underline and exact half-point size; explicit Arial declarations accepted, other families/themes rejected |
+| Character properties | Bold, italic, single underline and exact half-point size; Arial, Times New Roman and Courier New family overrides; other families/themes rejected |
 | Paragraphs | Alignment, before/after and proportional line spacing, left/right/first-line/hanging indents, keep rules and break before |
 | Styles | Named paragraph/character graphs, stable exported IDs, parents and next references; unused built-ins may be absent |
 | Imported defaults | Optional styles/defaults; supported non-baseline defaults become a named root style so inheritance remains editable |
 | Lists | Decimal `1.` and bullets `•`, `◦`, `▪`; levels 0–8, independent streams and explicit starts/restarts |
 | Tables | Fixed rectangular plain-cell profile, exact widths, empty/Unicode/multiline cells, first-row repeat flag; see strict boundary below |
-| Page | One section, exact whole-point dimensions and margins |
-| Relationships | Internal main document, styles and numbering; parts can use other locations; referenced external HTTP/HTTPS/mailto hyperlinks |
+| Page | Next-page sections, exact whole-point dimensions/margins, plain headers/footers and PAGE restarts |
+| PNG | Inline atomic images, exact pixels/whole-point size/alternative text; no transforms |
+| Tabulation | Explicit left/center/right positions, dot/dash/line leaders and style/direct replacement lists |
+| Metadata | Original bounded core/app properties retained verbatim; counters may be stale after edits |
+| Relationships | Internal main document, styles, numbering, images, headers/footers and core/app properties; parts can use other locations; referenced external HTTP/HTTPS/mailto hyperlinks |
 | Hyperlinks | Grapheme-aligned ranges, mixed runs, shared relationship targets and links in lists; no automatic activation |
 
 Unspecified imported defaults use Arial 11 pt, single lines and zero paragraph
@@ -95,7 +98,7 @@ arbitrarily styled external tables until the model can represent their propertie
 Merged cells, row spans, nested tables, multiple cell paragraphs, rich text, links,
 images, table styles, custom border/margin/alignment, auto-fit and row heights fail.
 Table-object paragraph style/format/flow overrides also block export rather than
-disappear. Native v19 remains unchanged; optional `.bfdoc` retains those model
+disappear. Native v20 retains the prior table model; optional `.bfdoc` retains those model
 properties. Fixed native and Word renderers can differ in line metrics/pagination;
 no pixel-identical table layout is claimed.
 
@@ -107,11 +110,11 @@ Native Windows checks remain deferred.
 
 ## Explicit rejection rather than loss
 
-Images, multiple sections, headers/footers, page numbering,
-explicit/style tab stops, revision marks, comments, fields, colors and unsupported
-fonts/themes are still rejected. Additional unaccounted parts, including document
-properties/theme/settings parts, are not silently stripped. No lossy bypass or
-hidden native sidecar is included in DOCX.
+Revision marks, comments, non-PAGE fields, colors, unsupported fonts/themes,
+rendering settings and custom property parts remain errors. Non-default periodic
+tab intervals, additive/partial tab inheritance, first/even headers, continuous
+sections, rich headers/footers, floating images, crop/effects and merged/rich cells
+are not silently flattened. No lossy bypass or hidden native sidecar is included.
 
 Limits: 32 MiB compressed/total expanded, 8 MiB per part, 128 ZIP entries, XML depth
 64 and 200,000 nodes per part, plus existing model limits. ZIP64/encrypted/split
@@ -158,9 +161,46 @@ with relocated parts, absent styles and start-at-3 numbering; they do not rely o
 on self-produced files. See [validation](VALIDATION.md#alpha91-primary-docx-and-list-validation)
 for actual external/native checks. External save-back remains unverified.
 
-## Next D4 increments
+## Combined profile boundaries (alpha.94)
 
-Expand ordinary external defaults/fonts and metadata preservation, then
-broader tables/PNG, sections/headers/footers and tabulation. Extend independent fixtures and
-save-back checks before preparing tested-target archives and reviewing distribution
-notices. D4 remains in progress; no tag, merge or public alpha package is authorized.
+PNG must be an isolated paragraph object with no authored paragraph overrides.
+The package uses the canonical inline DrawingML structure, no crop/transform,
+whole-point display dimensions and checked pixels (4 MiB, 16 MP, 8192 pixels/side).
+Names/IDs are not model identities; alternative text is retained. Unrepresented
+drawing properties fail even when another application writes equivalent defaults.
+
+Sections begin after a text paragraph, never at document offset zero. A section
+immediately after an object is not representable in this profile; insert a text
+paragraph explicitly. Header/footer text is one line, up to 200 characters; the
+canonical auxiliary paragraph is Arial 9 pt with a right tab for PAGE. Distances
+are half the corresponding page margin. First/even/linked rich variants and
+noncanonical auxiliary formatting remain outside the model. Imported missing
+later references inherit previous text; exported empty text gets its own part.
+PAGE caches are canonical placeholders; the viewer computes actual numbering.
+
+Tab positions use exact half points and the model limits. Default periodic stops
+remain 36 pt. Style/direct list overrides emit explicit clear records for removed
+parent positions, retaining empty versus inherited lists. Unsupported periodic
+overrides must use optional .bfdoc.
+
+Font family names are retained through paragraph/character/direct inheritance and
+can be selected in the Font dialog. Installed fonts are used where found; local
+fallback can change metrics. No host fonts are bundled, no exact Word pagination
+is promised, and font provenance inspection remains limited to existing properties.
+
+Core/app XML is retained unchanged, bounded to 128 KiB each and namespace-validated.
+Its imported page/word counters may be stale; the editor's displayed counts come
+from the current model. Metadata is never interpreted as instructions or fetched.
+
+Reproduce: `cargo run --locked --no-default-features --example docx_extended`.
+The combined pair exercises Unicode, fonts, tabs/leaders, lists, tables, PNG,
+portrait/landscape sections and number restart. See [validation](VALIDATION.md).
+Local archive preparation is documented in [REVIEW_PACKAGE](REVIEW_PACKAGE.md).
+
+## Remaining D4 acceptance
+
+External save-back remains unavailable in the installed read-only Word. Broader
+external tables/themes/settings/fonts need additional model design and fixtures,
+not a silent compatibility switch. A local unsigned review archive is not a
+published alpha: license review, tested-target acceptance and owner publication
+approval remain gates. D4 remains in progress.

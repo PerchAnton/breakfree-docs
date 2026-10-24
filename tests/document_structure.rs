@@ -199,7 +199,7 @@ fn strict_v19_gate_and_legacy_defaults() {
     let e = editor("text");
     let mut value: serde_json::Value =
         serde_json::from_slice(&storage::encode(&e.document).unwrap()).unwrap();
-    assert_eq!(value["content_version"], 19);
+    assert_eq!(value["content_version"], storage::CONTENT_VERSION);
     value["content_version"] = 18.into();
     assert!(storage::decode(&serde_json::to_vec(&value).unwrap()).is_err());
     value.as_object_mut().unwrap().remove("page");

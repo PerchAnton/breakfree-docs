@@ -274,7 +274,20 @@ Rust selection is complete; this gate evaluates GUI behavior and visual fidelity
 - [ ] Test native round trips, DOCX round trips and exported files reopened in a named external application/build.
 - [ ] Publish per-feature import/write limitations and an alpha package only for tested targets.
 
-**Alpha.93 progress:** DOCX is primary/default, `.bfdoc` optional. Text/styles/geometry plus scoped decimal/bullet levels/restarts exchange through standard parts. Relationship-located parts, optional styles and supported inherited defaults now import. HTTP/HTTPS/mailto hyperlink ranges now preserve mixed runs and list context. Fixed-grid plain-cell tables now preserve widths, rows, line breaks and first-row repeat metadata. Broader table formatting, images, multiple sections, broad fonts/defaults/metadata and external save-back remain open. D4 is not complete; no alpha package published.
+**Alpha.94 progress:** Combined bounded read/write now covers text/styles, scoped
+lists, hyperlinks, fixed plain-cell tables, inline PNG, next-page sections with
+plain headers/footers and PAGE restarts, explicit tab stops/leaders, three named
+font families and original core/app metadata. Optional native v20 retains these
+values through shared editing/history. A reproducible local review-package tool
+collects provenance and dependency notices. General external table presentation,
+themes/rendering settings and save-back remain open; no public alpha is published.
+
+- [x] Implement the declared PNG/section/tab/font/metadata subset with exact model
+  roundtrips and rejection tests (alpha.94).
+- [ ] Complete external save-back and cross-application corpus review.
+- [ ] Finish redistribution/license review and approve a tested-target alpha.
+- [ ] Windows and physical printing remain deferred; VoiceOver remains the final
+  accessibility gate, per owner instruction.
 
 **Exit:** D1–D3 core workflows pass, the declared DOCX subset exchanges successfully, and no known release-blocking data-loss issue remains. The alpha label does not imply broad Word equivalence.
 

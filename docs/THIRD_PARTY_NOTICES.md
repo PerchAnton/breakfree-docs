@@ -39,3 +39,11 @@ The historical Python archive retains its identical packaged copy and original
 regex/PySide/Qt/build-tool metadata. Those are not dependencies of the Rust editor.
 Historical Qt/PySide distributions retain their LGPL/GPL and component notices;
 see [Qt for Python licensing](https://doc.qt.io/qtforpython-6/licenses.html).
+
+Alpha.94 adds [local review archive preparation](REVIEW_PACKAGE.md). Its macOS
+preflight inventories 184 locked target-resolution packages and copies available
+license/notice files plus the embedded-font notices above. 32 packages lack
+notice files in the downloaded crate and are flagged in DEPENDENCIES.json for
+manual review. This conservative dependency inventory may include build/dev
+packages; it does not certify the binary's exact linkage or clear redistribution.
+No new runtime dependency, project license or host font redistribution was added.

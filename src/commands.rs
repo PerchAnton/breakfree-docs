@@ -158,6 +158,7 @@ impl Editor {
         }
         paragraphs.extend_from_slice(&self.document.paragraphs[last + 1..]);
         let result = Document {
+            package_properties: self.document.package_properties.clone(),
             paragraphs,
             style_catalog: self.document.style_catalog.clone(),
             character_styles: self.document.character_styles.clone(),
@@ -379,6 +380,9 @@ impl Editor {
             return Ok(());
         }
         self.format_range(start, end, "Font", |style, _base| {
+            if let Some(value) = patch.family {
+                style.family = Some(value);
+            }
             if let Some(value) = patch.bold {
                 style.bold = Some(value);
             }
@@ -397,6 +401,7 @@ impl Editor {
     /// Uniform values for the selection; None means mixed or only separators.
     pub fn selected_font(&self) -> FontPatch {
         FontPatch {
+            family: self.selected_value(|s| s.family),
             character_style: None,
             bold: self.selected_value(|s| s.bold),
             italic: self.selected_value(|s| s.italic),

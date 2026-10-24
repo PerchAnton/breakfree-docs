@@ -5,9 +5,12 @@ pub(super) const NUMBER_TYPE: &str =
     "application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml";
 pub(super) struct Locations {
     pub document: String,
+    pub metadata: BTreeMap<String, String>,
     pub styles: Option<String>,
     pub numbering: Option<String>,
     pub links: BTreeMap<String, String>,
+    pub images: BTreeMap<String, String>,
+    pub sections: BTreeMap<String, (String, String)>,
 }
 fn resolve(base: &str, target: &str) -> Result<String> {
     if target.contains(['\\', ':', '%', '?', '#'])
@@ -44,6 +47,8 @@ fn relationships(
     base: &str,
     allowed: &[&str],
     links: &mut BTreeMap<String, String>,
+    images: &mut BTreeMap<String, String>,
+    sections: &mut BTreeMap<String, (String, String)>,
 ) -> Result<BTreeMap<String, String>> {
     let n = part(parts, path)?;
     root(&n, REL, "Relationships")?;
@@ -62,7 +67,7 @@ fn relationships(
         }
         let kind = r
             .attr("", "Type")
-            .and_then(|s| s.strip_prefix(OFFICE_REL))
+            .and_then(|s| s.strip_prefix(OFFICE_REL).or_else(||(s=="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties").then_some("core-properties")))
             .filter(|s| allowed.contains(s))
             .ok_or("Unsupported DOCX relationship type")?;
         if kind == "hyperlink" {
@@ -81,6 +86,20 @@ fn relationships(
             base,
             r.attr("", "Target").ok_or("Missing relationship target")?,
         )?;
+        if matches!(kind, "header" | "footer") {
+            if !parts.contains_key(&target) {
+                return Err("Missing header/footer part".into());
+            }
+            sections.insert(id.into(), (kind.into(), target));
+            continue;
+        }
+        if kind == "image" {
+            if !parts.contains_key(&target) {
+                return Err("Missing image part".into());
+            }
+            images.insert(id.into(), target);
+            continue;
+        }
         if !parts.contains_key(&target) || result.insert(kind.into(), target).is_some() {
             return Err("Missing or duplicate DOCX relationship target".into());
         }
@@ -89,7 +108,17 @@ fn relationships(
 }
 pub(super) fn inspect(parts: &Parts) -> Result<Locations> {
     let mut links = BTreeMap::new();
-    let main = relationships(parts, "_rels/.rels", "", &["officeDocument"], &mut links)?;
+    let mut images = BTreeMap::new();
+    let mut sections = BTreeMap::new();
+    let main = relationships(
+        parts,
+        "_rels/.rels",
+        "",
+        &["officeDocument", "core-properties", "extended-properties"],
+        &mut links,
+        &mut images,
+        &mut sections,
+    )?;
     let document = main
         .get("officeDocument")
         .ok_or("Missing main document relationship")?
@@ -105,17 +134,32 @@ pub(super) fn inspect(parts: &Parts) -> Result<Locations> {
             parts,
             &relpath,
             &document,
-            &["styles", "numbering", "hyperlink"],
+            &[
+                "styles",
+                "numbering",
+                "hyperlink",
+                "image",
+                "header",
+                "footer",
+            ],
             &mut links,
+            &mut images,
+            &mut sections,
         )?
     } else {
         BTreeMap::new()
     };
     let locations = Locations {
+        metadata: [("core", "core-properties"), ("app", "extended-properties")]
+            .into_iter()
+            .filter_map(|(k, v)| main.get(v).map(|p| (k.into(), p.clone())))
+            .collect(),
         document,
         styles: rels.get("styles").cloned(),
         numbering: rels.get("numbering").cloned(),
         links,
+        images,
+        sections,
     };
     let mut expected = BTreeMap::from([
         (
@@ -140,6 +184,30 @@ pub(super) fn inspect(parts: &Parts) -> Result<Locations> {
             return Err("One package part cannot serve multiple roles".into());
         }
     }
+    for (key, path) in &locations.metadata {
+        if expected.insert(path.clone(), metadata::mime(key)).is_some() {
+            return Err("Metadata part has another role".into());
+        }
+    }
+    for (kind, path) in locations.sections.values() {
+        let mime = if kind == "header" {
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"
+        } else {
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"
+        };
+        if let Some(prior) = expected.insert(path.clone(), mime)
+            && prior != mime
+        {
+            return Err("Header/footer part has another role".into());
+        }
+    }
+    for path in locations.images.values() {
+        if let Some(prior) = expected.insert(path.clone(), "image/png")
+            && prior != "image/png"
+        {
+            return Err("Image part has another role".into());
+        }
+    }
     let n = part(parts, "[Content_Types].xml")?;
     root(&n, CT, "Types")?;
     n.allowed(CT, &["Default", "Override"], &[])?;
@@ -153,6 +221,7 @@ pub(super) fn inspect(parts: &Parts) -> Result<Locations> {
             if !matches!(
                 (ext, content),
                 ("xml", "application/xml")
+                    | ("png", "image/png")
                     | (
                         "rels",
                         "application/vnd.openxmlformats-package.relationships+xml"

@@ -71,6 +71,29 @@ pub(super) fn write(d: &Document) -> Result<String> {
             s += &element("next", pid(p));
         }
         s += "<w:pPr>";
+        let mut tab_spacing = ParagraphSpacing::default();
+        if let Some(stops) = &def.tab_stops {
+            tab_spacing.set_tab_positions(
+                &stops
+                    .iter()
+                    .map(|s| (s.position_half_points, s.kind))
+                    .collect::<Vec<_>>(),
+            )?;
+            tab_spacing.tab_leaders = stops
+                .iter()
+                .filter_map(|s| {
+                    s.leader.map(|leader| TabLeaderStop {
+                        position_half_points: s.position_half_points,
+                        leader,
+                    })
+                })
+                .collect();
+        }
+        let parent = def
+            .parent
+            .map(|id| d.style_catalog.resolve_tabs(id))
+            .unwrap_or_default();
+        s += &tabs::write(&tab_spacing, &parent);
         s += &properties::write_spacing(&properties::spacing(def))?;
         s += "</w:pPr><w:rPr>";
         s += &properties::write_run(def.character);
@@ -144,14 +167,21 @@ fn defaults(n: &Node) -> Result<StyleDefinition> {
             p.allowed(W, &["pPr"], &[])?;
             singleton_children(p)?;
             if let Some(pr) = p.child("pPr") {
-                pr.allowed(W, &["spacing", "ind"], &[])?;
+                pr.allowed(W, &["spacing", "ind", "tabs"], &[])?;
                 singleton_children(pr)?;
                 spacing = properties::read_spacing(pr)?;
+                tabs::validate_clears(pr, &Default::default(), &spacing)?;
             }
         }
     }
+    if format.family == Some(TextFamily::Arial) {
+        format.family = None;
+    }
     Ok(StyleDefinition {
         character: format,
+        tab_stops: spacing
+            .has_direct_tab_stops()
+            .then(|| spacing.style_tab_stops()),
         line_height_percent: Some(spacing.line_height_percent.unwrap_or(100)),
         space_before_half_points: Some(spacing.space_before_half_points.unwrap_or(0)),
         space_after_half_points: Some(spacing.space_after_half_points.unwrap_or(0)),
@@ -269,7 +299,7 @@ pub(super) fn read(n: &Node, d: &mut Document) -> Result<Map> {
                 })
                 .transpose()?;
             let spacing = if let Some(pr) = s.child("pPr") {
-                pr.allowed(W, &["spacing", "ind"], &[])?;
+                pr.allowed(W, &["spacing", "ind", "tabs"], &[])?;
                 singleton_children(pr)?;
                 properties::read_spacing(pr)?
             } else {
@@ -285,6 +315,9 @@ pub(super) fn read(n: &Node, d: &mut Document) -> Result<Map> {
                 left_indent_half_points: spacing.left_indent_half_points,
                 right_indent_half_points: spacing.right_indent_half_points,
                 first_line_half_points: spacing.first_line_half_points,
+                tab_stops: spacing
+                    .has_direct_tab_stops()
+                    .then(|| spacing.style_tab_stops()),
                 ..Default::default()
             };
             match map.p(id)? {
@@ -330,6 +363,7 @@ pub(super) fn read(n: &Node, d: &mut Document) -> Result<Map> {
         || defaults.left_indent_half_points != Some(0)
         || defaults.right_indent_half_points != Some(0)
         || defaults.first_line_half_points != Some(0)
+        || defaults.tab_stops.is_some()
     {
         let id = (1..=65)
             .find(|id| !d.style_catalog.custom.iter().any(|s| s.id == *id))
@@ -359,5 +393,22 @@ pub(super) fn read(n: &Node, d: &mut Document) -> Result<Map> {
         });
     }
     d.validate()?;
+    for s in n
+        .children
+        .iter()
+        .filter(|s| s.name == "style" && s.attr(W, "type") == Some("paragraph"))
+    {
+        if let Some(pr) = s.child("pPr") {
+            let def = d
+                .style_catalog
+                .get(map.p(s.attr(W, "styleId").unwrap())?)
+                .unwrap();
+            let parent = def
+                .parent
+                .map(|id| d.style_catalog.resolve_tabs(id))
+                .unwrap_or_default();
+            tabs::validate_clears(pr, &parent, &properties::read_spacing(pr)?)?;
+        }
+    }
     Ok(map)
 }

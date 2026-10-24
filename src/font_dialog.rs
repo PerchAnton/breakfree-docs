@@ -60,11 +60,13 @@ impl FontDialog {
             ui.horizontal_top(|ui| {
                 ui.allocate_ui_with_layout(vec2(172., 158.), Layout::top_down(Align::Min), |ui| {
                     ui.label("Font:");
-                    let response = ui.add_enabled(false, Button::new(family).min_size(vec2(164., 25.)))
-                        .on_disabled_hover_text("The document uses this host font. Font-family selection is not implemented.");
-                    record(regions, "font-dialog-family", response.rect);
-                    ui.add_space(7.);
-                    ui.small("Font-family selection is planned.");
+                    for font in [crate::model::TextFamily::Arial, crate::model::TextFamily::TimesNewRoman, crate::model::TextFamily::CourierNew] {
+                        let selected = self.patch.family.or(self.initial.family) == Some(font);
+                        let response = ui.add_sized([164., 25.], Button::selectable(selected, font.name()))
+                            .on_hover_text(format!("Use {}. Missing installed fonts use a local fallback (body: {family}).", font.name()));
+                        record(regions, &format!("font-dialog-family-{}", font.name()), response.rect);
+                        if response.clicked() { self.patch.family = Some(font); }
+                    }
                 });
                 ui.allocate_ui_with_layout(vec2(136., 158.), Layout::top_down(Align::Min), |ui| {
                     ui.label("Font style:");
@@ -136,7 +138,7 @@ impl FontDialog {
                     let italic = self.patch.italic.or(self.initial.italic).unwrap_or(false);
                     let size = self.size.parse::<FontSize>().unwrap_or_default().points() * 4. / 3.;
                     let mut preview = RichText::new("AaBbCc Її").font(FontId::new(size,
-                        egui::FontFamily::Name(if bold { "body-bold" } else { "body" }.into())));
+                        egui::FontFamily::Name(self.patch.family.or(self.initial.family).unwrap_or_default().key(bold).into())));
                     if italic { preview = preview.italics(); }
                     if underline == Some(true) { preview = preview.underline(); }
                     let galley = egui::WidgetText::from(preview).into_galley(

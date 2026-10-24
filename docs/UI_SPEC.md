@@ -2665,3 +2665,17 @@ Supported DOCX tables open as the same editable table blocks as native documents
 Save uses the fixed plain-cell profile; unsupported presentation/flow settings
 produce an explicit error and retain the current destination. No ribbon, palette
 or icon changes accompany this adapter increment.
+
+## Alpha.94: bounded font-family selection
+
+Keep the existing ribbon, palette, icons, modal dimensions and command routing.
+Font's former inactive family area now contains three 164×25-DIP selectable rows:
+Arial, Times New Roman and Courier New. Selection changes only the draft; OK uses
+one shared FontPatch transaction and Cancel/Escape preserves the document. The
+preview uses the draft's resolved family; the ribbon reports the selected family
+or Mixed fonts. Narrow ribbon fields retain clipping, with full names in the dialog.
+System-font fallback can change metrics; no host font programs are distributed.
+
+[Native macOS dialog](screenshots/alpha94-font-dialog.png) and actual-widget
+640/1366-DIP cases were inspected/tested. No new Windows/reference equivalence,
+native DPI or spoken-accessibility claim. DOCX improvements do not redesign Home.

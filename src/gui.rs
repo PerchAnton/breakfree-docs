@@ -1837,8 +1837,13 @@ impl DocsApp {
                 let response = chrome::field(
                     ui,
                     r(2., 5., family, 25.),
-                    &self.body_font,
-                    "Current body font. Changing fonts is planned.",
+                    self.session
+                        .editor
+                        .selected_font()
+                        .family
+                        .map(|f| f.name())
+                        .unwrap_or("Mixed fonts"),
+                    "Font family. Choose a family in the Font dialog; missing installed fonts use a local fallback.",
                 );
                 self.record("font-family", response.rect);
                 self.font_size_control(ui, r(family + 4., 5., 64., 25.));
@@ -2083,9 +2088,7 @@ impl DocsApp {
                         .character;
                     let mut preview = RichText::new("AaBbCcDd").font(FontId::new(
                         resolved.font_size.points().clamp(14., 18.),
-                        egui::FontFamily::Name(
-                            if resolved.bold { "body-bold" } else { "body" }.into(),
-                        ),
+                        egui::FontFamily::Name(resolved.family.key(resolved.bold).into()),
                     ));
                     if resolved.italic {
                         preview = preview.italics();

@@ -1,4 +1,4 @@
-//! Strict .bfdoc v1–v19 reading, v19 writing and checked temporary-file replacement.
+//! Strict .bfdoc v1–v20 reading, v20 writing and checked temporary-file replacement.
 use crate::{Result, model::*};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -8,7 +8,7 @@ use std::{
 };
 
 pub const FORMAT_ID: &str = "breakfree.docs.native";
-pub const CONTENT_VERSION: u32 = 19;
+pub const CONTENT_VERSION: u32 = 20;
 pub const MAX_FILE_BYTES: usize = 16 * 1024 * 1024;
 
 #[derive(Serialize, Deserialize)]
@@ -152,6 +152,8 @@ struct ParagraphV10 {
 #[serde(deny_unknown_fields)]
 struct NativeSpacing {
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    package_properties: Option<std::collections::BTreeMap<String, String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     page: Option<crate::structure::Section>,
     format: String,
     content_version: u32,
@@ -229,6 +231,7 @@ struct NativeV5 {
 }
 
 pub fn encode(document: &Document) -> Result<Vec<u8>> {
+    crate::docx::metadata::validate(&document.package_properties)?;
     document.validate()?;
     let paragraphs = document
         .paragraphs
@@ -256,6 +259,8 @@ pub fn encode(document: &Document) -> Result<Vec<u8>> {
         })
         .collect();
     let mut bytes = serde_json::to_vec_pretty(&NativeSpacing {
+        package_properties: (!document.package_properties.is_empty())
+            .then(|| document.package_properties.clone()),
         page: Some(document.page.clone()),
         format: FORMAT_ID.into(),
         content_version: CONTENT_VERSION,
@@ -357,6 +362,23 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
         serde_json::from_slice(bytes).map_err(|e| format!("Invalid native document: {e}"))?;
     if file.format != FORMAT_ID {
         return Err("Not a BreakFree Docs native document.".into());
+    }
+    if file.content_version < 20 {
+        let value: serde_json::Value = serde_json::from_slice(bytes).map_err(|e| e.to_string())?;
+        fn new_fields(v: &serde_json::Value) -> bool {
+            match v {
+                serde_json::Value::Object(m) => {
+                    m.contains_key("family")
+                        || m.contains_key("package_properties")
+                        || m.values().any(new_fields)
+                }
+                serde_json::Value::Array(a) => a.iter().any(new_fields),
+                _ => false,
+            }
+        }
+        if new_fields(&value) {
+            return Err("Font families and package metadata require native v20".into());
+        }
     }
     if file.content_version < 19 {
         let value: serde_json::Value = serde_json::from_slice(bytes).map_err(|e| e.to_string())?;
@@ -562,14 +584,15 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
                 .map_err(|e| format!("Invalid native v6 document: {e}"))?;
             return decode_styled(file.paragraphs, file.style_catalog);
         }
-        10..=18 | CONTENT_VERSION => {
+        10..=19 | CONTENT_VERSION => {
             let file: NativeSpacing = serde_json::from_slice(bytes)
                 .map_err(|e| format!("Invalid native spacing document: {e}"))?;
-            if file.content_version == CONTENT_VERSION
+            if file.content_version >= 19
                 && (file.page.is_none() || file.paragraphs.iter().any(|p| p.structure.is_none()))
             {
                 return Err("Native v19 requires page settings and paragraph structure.".into());
             }
+            let package_properties = file.package_properties.unwrap_or_default();
             let page = file.page.unwrap_or_default();
             let (paragraphs, spacing): (Vec<_>, Vec<_>) = file
                 .paragraphs
@@ -587,6 +610,8 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
                 .unzip();
             let mut document =
                 decode_character_paragraphs(paragraphs, file.style_catalog, file.character_styles)?;
+            document.package_properties = package_properties;
+            crate::docx::metadata::validate(&document.package_properties)?;
             document.page = page;
             for (p, (spacing, structure)) in document.paragraphs.iter_mut().zip(spacing) {
                 p.spacing = spacing;
@@ -657,6 +682,7 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
                     italic: run.italic,
                     underline: run.underline,
                     font_size: run.font_size_half_points,
+                    family: TextFamily::Arial,
                 }),
                 count,
             ));

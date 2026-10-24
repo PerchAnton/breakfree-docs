@@ -578,9 +578,7 @@ impl StyleDialog {
                             let mut text =
                                 RichText::new("AaBbCc Україна Русский café").font(FontId::new(
                                     style.font_size.points() * 4. / 3.,
-                                    egui::FontFamily::Name(
-                                        if style.bold { "body-bold" } else { "body" }.into(),
-                                    ),
+                                    egui::FontFamily::Name(style.family.key(style.bold).into()),
                                 ));
                             if style.italic {
                                 text = text.italics();

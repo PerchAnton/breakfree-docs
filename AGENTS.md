@@ -30,7 +30,7 @@ Use local evidence reporting and the pinned `contracts/v1/` snapshot until it ex
   Keep toolkit-specific text rendering/hit testing in a replaceable layout adapter.
 - Do not execute imported macros/scripts or silently upload documents.
 - DOCX is the primary/default document format; `.bfdoc` is optional. Preserve an
-  explicitly opened format/destination. Follow ADR 0018: unsupported DOCX content
+  explicitly opened format/destination. Follow ADR 0018 and ADR 0019: unsupported DOCX content
   blocks saving; offer explicit Save As `.bfdoc` without silent conversion.
 - Do not discard unsupported content silently or overwrite a valid file after a failed save.
 - Test Unicode, editing, undo/redo, layout and persistence separately.

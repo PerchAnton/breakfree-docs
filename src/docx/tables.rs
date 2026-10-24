@@ -14,12 +14,14 @@ pub(super) fn paragraph(table: Table) -> Paragraph {
         ..Default::default()
     }
 }
-pub(super) fn check(d: &Document, p: &Paragraph, t: &Table) -> Result<()> {
-    if *p != paragraph(t.clone()) {
+pub(super) fn check(page: &Section, p: &Paragraph, t: &Table) -> Result<()> {
+    let mut expected = paragraph(t.clone());
+    expected.structure.section = p.structure.section.clone();
+    if *p != expected {
         return Err("DOCX tables cannot preserve formatting or flow overrides on the object paragraph; save as .bfdoc instead".into());
     }
     let width: u32 = t.widths_points.iter().map(|v| u32::from(*v)).sum();
-    if width > u32::from(d.page.width_points - d.page.left_points - d.page.right_points) {
+    if width > u32::from(page.width_points - page.left_points - page.right_points) {
         return Err(
             "DOCX table exceeds the page text width; adjust columns or save as .bfdoc".into(),
         );
@@ -238,6 +240,7 @@ fn read_cell(n: &Node, header: bool, map: &styles::Map) -> Result<String> {
         let f = properties::read_run(rp, map)?;
         if f != (CharacterFormat {
             bold: Some(header),
+            family: Some(TextFamily::Arial),
             italic: Some(false),
             underline: Some(false),
             font_size: Some(FontSize::try_from(22)?),

@@ -264,8 +264,8 @@ fn rejects_corrupt_foreign_unknown_and_duplicate_fields() {
     }
     let mut duplicate = String::from_utf8(storage::encode(&sample().document).unwrap()).unwrap();
     duplicate = duplicate.replacen(
-        "\"content_version\": 19",
-        "\"content_version\": 19, \"content_version\": 19",
+        "\"content_version\": 20",
+        "\"content_version\": 20, \"content_version\": 20",
         1,
     );
     assert!(storage::decode(duplicate.as_bytes()).is_err());
@@ -699,6 +699,7 @@ fn clear_at_caret_only_resets_pending_style_without_dirtying_or_losing_redo() {
     e.undo();
     e.selection = (2, 2);
     e.typing_style = CharacterFormat {
+        family: None,
         character_style: None,
         bold: Some(true),
         italic: Some(true),

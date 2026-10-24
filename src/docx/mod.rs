@@ -1,11 +1,15 @@
 //! Explicit, fail-closed OOXML interchange for the primary document format.
 mod links;
+pub(crate) mod metadata;
 mod numbering;
 mod opc;
 mod package;
+mod pictures;
 mod properties;
+mod sections;
 mod styles;
 mod tables;
+mod tabs;
 mod xml;
 use crate::{Result, model::*, structure::Section};
 use package::Parts;
@@ -65,31 +69,23 @@ pub fn check_export(d: &Document) -> Result<()> {
         );
     }
     let mut unsupported = std::collections::BTreeSet::new();
-    if !d.page.header.is_empty()
-        || !d.page.footer.is_empty()
-        || d.page.page_numbers
-        || d.page.number_start.is_some()
-    {
-        unsupported.insert("headers, footers or page numbering");
-    }
+    let mut page = &d.page;
     for p in &d.paragraphs {
+        if let Some(section) = &p.structure.section {
+            page = section;
+        }
         match &p.structure.block {
-            Some(crate::structure::Block::Picture(_)) => {
-                unsupported.insert("pictures");
-            }
-            Some(crate::structure::Block::Table(t)) => tables::check(d, p, t)?,
+            Some(crate::structure::Block::Picture(image)) => pictures::check(p, image)?,
+            Some(crate::structure::Block::Table(t)) => tables::check(page, p, t)?,
             None => {}
         }
-        if p.structure.section.is_some() {
-            unsupported.insert("multiple sections");
-        }
-        if p.spacing.has_direct_tab_stops() || p.spacing.tab_interval_half_points.is_some() {
+        if p.spacing.tab_interval_half_points.is_some() {
             unsupported.insert("explicit or overridden tabulation");
         }
     }
     for id in d.style_catalog.ids() {
         let s = d.style_catalog.get(id).unwrap();
-        if s.tab_stops.is_some() || s.tab_interval_half_points.is_some() {
+        if s.tab_interval_half_points.is_some() {
             unsupported.insert("style tabulation");
         }
     }
@@ -125,10 +121,31 @@ pub fn encode(d: &Document) -> Result<Vec<u8>> {
         let rels=String::from_utf8(parts["word/_rels/document.xml.rels"].clone()).unwrap().replace("</Relationships>",&format!("<Relationship Id=\"rIdNumbering\" Type=\"{OFFICE_REL}numbering\" Target=\"numbering.xml\"/></Relationships>"));
         parts.insert("word/_rels/document.xml.rels".into(), rels.into_bytes());
     }
+    let mut section_settings = vec![(0, d.page.clone())];
+    for (i, p) in d.paragraphs.iter().enumerate() {
+        if let Some(section) = &p.structure.section {
+            if i == 0 || d.paragraphs[i - 1].structure.block.is_some() {
+                return Err(
+                    "Section must follow a text paragraph and cannot start at document offset zero"
+                        .into(),
+                );
+            }
+            section_settings.push((i, section.clone()));
+        }
+    }
+    let section_xml: Vec<_> = section_settings
+        .iter()
+        .enumerate()
+        .map(|(i, (_, s))| sections::write(s, i + 1, &mut parts))
+        .collect();
     let mut link_relationships = String::new();
     let mut link_id = 0usize;
     let mut body = String::new();
     for (index, p) in d.paragraphs.iter().enumerate() {
+        if let Some(crate::structure::Block::Picture(image)) = &p.structure.block {
+            body += &pictures::write(image, index + 1, &mut parts);
+            continue;
+        }
         if let Some(crate::structure::Block::Table(t)) = &p.structure.block {
             body += &tables::write(t);
             continue;
@@ -150,6 +167,7 @@ pub fn encode(d: &Document) -> Result<Vec<u8>> {
                 p.structure.list.as_ref().unwrap().level
             ));
         }
+        body += &tabs::write(&p.spacing, &d.style_catalog.resolve_tabs(p.paragraph_style));
         body.push_str(&properties::write_spacing(&p.spacing)?);
         body.push_str(&element(
             "jc",
@@ -160,6 +178,12 @@ pub fn encode(d: &Document) -> Result<Vec<u8>> {
                 Alignment::Justify => "both",
             },
         ));
+        if let Some(next) = section_settings
+            .iter()
+            .position(|(start, _)| *start == index + 1)
+        {
+            body += &section_xml[next - 1];
+        }
         body.push_str("</w:pPr>");
         let chars: Vec<_> = p.text.chars().collect();
         let mut start = 0;
@@ -229,8 +253,7 @@ pub fn encode(d: &Document) -> Result<Vec<u8>> {
             &(link_relationships + "</Relationships>"),
         );
     parts.insert("word/_rels/document.xml.rels".into(), rels.into_bytes());
-    let p = &d.page;
-    body.push_str(&format!("<w:sectPr><w:pgSz w:w=\"{}\" w:h=\"{}\"/><w:pgMar w:left=\"{}\" w:right=\"{}\" w:top=\"{}\" w:bottom=\"{}\"/></w:sectPr>",p.width_points*20,p.height_points*20,p.left_points*20,p.right_points*20,p.top_points*20,p.bottom_points*20));
+    body += section_xml.last().unwrap();
     parts.insert(
         "word/document.xml".into(),
         format!(
@@ -239,6 +262,7 @@ pub fn encode(d: &Document) -> Result<Vec<u8>> {
         )
         .into_bytes(),
     );
+    metadata::write(d, &mut parts)?;
     let bytes = package::write(&parts)?;
     if decode(&bytes)? != *d {
         return Err("DOCX cannot preserve this document exactly; save as .bfdoc instead.".into());
@@ -249,6 +273,13 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
     let parts = package::read(bytes)?;
     let locations = opc::inspect(&parts)?;
     let mut d = Document::default();
+    for (key, path) in &locations.metadata {
+        d.package_properties.insert(
+            key.clone(),
+            String::from_utf8(parts[path].clone()).map_err(|_| "Metadata must be UTF-8")?,
+        );
+    }
+    metadata::validate(&d.package_properties)?;
     let empty = xml::parse(format!("<w:styles xmlns:w=\"{W}\"/>").as_bytes())?;
     let style_part = locations
         .styles
@@ -269,18 +300,36 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
     let body = document.child("body").ok_or("Missing DOCX body")?;
     body.allowed(W, &["p", "tbl", "sectPr"], &[])?;
     d.paragraphs.clear();
+    let mut section_ends: Vec<(usize, Section)> = Vec::new();
+    let mut used_sections = std::collections::BTreeSet::new();
+    let mut used_images = std::collections::BTreeSet::new();
     let mut used_links = std::collections::BTreeSet::new();
     for (index, n) in body.children.iter().enumerate() {
         if n.name == "sectPr" {
             if index + 1 != body.children.len() {
                 return Err("Section settings must be final".into());
             }
-            d.page = read_section(n)?;
+            section_ends.push((
+                d.paragraphs.len(),
+                sections::read(
+                    n,
+                    &parts,
+                    &locations,
+                    &mut used_sections,
+                    section_ends.last().map(|s| &s.1),
+                )?,
+            ));
             continue;
         }
         if n.name == "tbl" {
             lists.paragraph(None)?;
             d.paragraphs.push(tables::read(n, &map)?);
+            continue;
+        }
+        if n.children.iter().any(|r| r.child("drawing").is_some()) {
+            lists.paragraph(None)?;
+            d.paragraphs
+                .push(pictures::read(n, &parts, &locations, &mut used_images)?);
             continue;
         }
         n.allowed(W, &["pPr", "r", "hyperlink"], &[])?;
@@ -299,15 +348,29 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
                     "pStyle",
                     "jc",
                     "spacing",
+                    "tabs",
                     "ind",
                     "pageBreakBefore",
                     "keepNext",
                     "keepLines",
                     "numPr",
+                    "sectPr",
                 ],
                 &[],
             )?;
             singleton_children(pr)?;
+            if let Some(section) = pr.child("sectPr") {
+                section_ends.push((
+                    d.paragraphs.len() + 1,
+                    sections::read(
+                        section,
+                        &parts,
+                        &locations,
+                        &mut used_sections,
+                        section_ends.last().map(|s| &s.1),
+                    )?,
+                ));
+            }
             if let Some(s) = pr.child("pStyle") {
                 properties::leaf(s)?;
                 p.paragraph_style = map.p(s.val()?)?;
@@ -323,6 +386,11 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
                 };
             }
             p.spacing = properties::read_spacing(pr)?;
+            tabs::validate_clears(
+                pr,
+                &d.style_catalog.resolve_tabs(p.paragraph_style),
+                &p.spacing,
+            )?;
             p.structure.page_break_before =
                 properties::flag(pr, "pageBreakBefore")?.unwrap_or(false);
             p.structure.keep_with_next = properties::flag(pr, "keepNext")?.unwrap_or(false);
@@ -336,6 +404,25 @@ pub fn decode(bytes: &[u8]) -> Result<Document> {
             }
         }
         d.paragraphs.push(p);
+    }
+    if !section_ends.is_empty() {
+        if section_ends.last().unwrap().0 != d.paragraphs.len() {
+            return Err("Missing final section settings".into());
+        }
+        d.page = section_ends[0].1.clone();
+        for pair in section_ends.windows(2) {
+            let start = pair[0].0;
+            if start >= pair[1].0 || start >= d.paragraphs.len() {
+                return Err("Empty or duplicate section boundary".into());
+            }
+            d.paragraphs[start].structure.section = Some(pair[1].1.clone());
+        }
+    }
+    if used_sections.len() != locations.sections.len() {
+        return Err("Unreferenced header/footer relationship".into());
+    }
+    if used_images.len() != locations.images.len() {
+        return Err("Unreferenced PNG relationship".into());
     }
     if used_links.len() != locations.links.len() {
         return Err("Unreferenced DOCX hyperlink relationship".into());

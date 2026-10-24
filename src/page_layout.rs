@@ -78,6 +78,7 @@ impl Layout {
                             .and_then(|l| l.trim_end_matches('.').parse().ok());
                     }
                     let single = Document {
+                        package_properties: document.package_properties.clone(),
                         paragraphs: vec![paragraph],
                         page: document.page.clone(),
                         style_catalog: document.style_catalog.clone(),
@@ -296,6 +297,7 @@ impl Layout {
                 Content::Text(g) => g.clone(),
                 _ => {
                     let single = Document {
+                        package_properties: document.package_properties.clone(),
                         paragraphs: vec![document.paragraphs[p].clone()],
                         page: document.page.clone(),
                         style_catalog: document.style_catalog.clone(),

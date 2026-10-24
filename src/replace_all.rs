@@ -230,6 +230,7 @@ impl Editor {
             }
         }
         let result = Document {
+            package_properties: self.document.package_properties.clone(),
             paragraphs,
             style_catalog: self.document.style_catalog.clone(),
             character_styles: self.document.character_styles.clone(),

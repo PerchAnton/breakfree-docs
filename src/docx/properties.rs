@@ -27,6 +27,13 @@ pub(super) fn unit(n: &Node, key: &str, divisor: u16) -> Result<u16> {
 }
 pub(super) fn write_run(f: CharacterFormat) -> String {
     let mut s = String::new();
+    if let Some(family) = f.family {
+        s += &format!(
+            "<w:rFonts w:ascii=\"{}\" w:hAnsi=\"{}\"/>",
+            family.name(),
+            family.name()
+        );
+    }
     if let Some(id) = f.character_style {
         s += &element("rStyle", styles::cid(id));
     }
@@ -46,17 +53,27 @@ pub(super) fn write_run(f: CharacterFormat) -> String {
 pub(super) fn read_run(n: &Node, map: &Map) -> Result<CharacterFormat> {
     n.allowed(W, &["b", "i", "u", "sz", "rStyle", "rFonts"], &[])?;
     singleton_children(n)?;
-    if let Some(font) = n.child("rFonts") {
-        font.allowed(W, &[], &[(W, "ascii"), (W, "hAnsi")])?;
-        if font.attrs.values().any(|v| v != "Arial") {
-            return Err("Only explicit Arial font families are supported; theme and substitute fonts are not silently changed".into());
-        }
-    }
     let mut f = CharacterFormat {
         bold: flag(n, "b")?,
         italic: flag(n, "i")?,
         ..Default::default()
     };
+    if let Some(font) = n.child("rFonts") {
+        font.allowed(W, &[], &[(W, "ascii"), (W, "hAnsi")])?;
+        let name = font
+            .attr(W, "ascii")
+            .or_else(|| font.attr(W, "hAnsi"))
+            .ok_or("Missing font family")?;
+        if font.attrs.values().any(|v| v != name) {
+            return Err("Mixed script fonts are unsupported".into());
+        }
+        f.family = Some(match name {
+            "Arial" => TextFamily::Arial,
+            "Times New Roman" => TextFamily::TimesNewRoman,
+            "Courier New" => TextFamily::CourierNew,
+            _ => return Err("Unsupported font family/theme".into()),
+        });
+    }
     if let Some(u) = n.child("u") {
         leaf(u)?;
         f.underline = Some(match u.attr(W, "val").unwrap_or("single") {
@@ -172,6 +189,7 @@ pub(super) fn read_spacing(n: &Node) -> Result<ParagraphSpacing> {
             }
         }
     }
+    tabs::read(n, &mut p)?;
     p.validate()?;
     Ok(p)
 }

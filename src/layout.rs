@@ -62,6 +62,27 @@ pub fn configure_fonts(ctx: &egui::Context) -> String {
             .unwrap()
             .insert(0, "interface".into());
     }
+    for (key, win, mac) in [
+        ("serif", "times.ttf", "Times New Roman.ttf"),
+        ("serif-bold", "timesbd.ttf", "Times New Roman Bold.ttf"),
+        ("mono", "cour.ttf", "Courier New.ttf"),
+        ("mono-bold", "courbd.ttf", "Courier New Bold.ttf"),
+    ] {
+        let mut family = fallback.clone();
+        for path in [
+            format!("C:/Windows/Fonts/{win}"),
+            format!("/System/Library/Fonts/Supplemental/{mac}"),
+        ] {
+            if let Ok(data) = std::fs::read(path) {
+                fonts
+                    .font_data
+                    .insert(key.into(), FontData::from_owned(data).into());
+                family.insert(0, key.into());
+                break;
+            }
+        }
+        fonts.families.insert(FontFamily::Name(key.into()), family);
+    }
     ctx.set_fonts(fonts);
     name
 }
@@ -69,10 +90,7 @@ pub fn configure_fonts(ctx: &egui::Context) -> String {
 fn format(style: Style, size: f32, line_height: f32) -> TextFormat {
     let size = size * style.font_size.points() / Style::default().font_size.points();
     TextFormat {
-        font_id: FontId::new(
-            size,
-            FontFamily::Name(if style.bold { "body-bold" } else { "body" }.into()),
-        ),
+        font_id: FontId::new(size, FontFamily::Name(style.family.key(style.bold).into())),
         italics: style.italic,
         underline: if style.underline {
             egui::Stroke::new((size / 14.).max(1.), Color32::from_rgb(24, 24, 24))
