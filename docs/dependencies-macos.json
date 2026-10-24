@@ -734,6 +734,12 @@
       "repository": "http://github.com/tailhook/quick-error"
     },
     {
+      "name": "quick-xml",
+      "version": "0.41.0",
+      "license": "MIT",
+      "repository": "https://github.com/tafia/quick-xml"
+    },
+    {
       "name": "quote",
       "version": "1.0.47",
       "license": "MIT OR Apache-2.0",

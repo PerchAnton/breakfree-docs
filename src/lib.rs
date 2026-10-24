@@ -2,6 +2,7 @@
 #[cfg(feature = "desktop")]
 mod chrome;
 pub mod commands;
+pub mod docx;
 pub mod formatting;
 #[cfg(feature = "desktop")]
 pub mod gui;

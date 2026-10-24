@@ -268,11 +268,13 @@ Rust selection is complete; this gate evaluates GUI behavior and visual fidelity
 
 ### D4 — DOCX exchange and public alpha
 
-- [ ] Implement bounded OOXML packaging and an explicit initial WordprocessingML subset.
+- [x] Implement bounded OOXML packaging and an explicit initial WordprocessingML subset (alpha.90; [profile](docs/DOCX_SUBSET.md), package/XML/round-trip tests).
 - [ ] Cover text, runs, styles, lists, tables, images, relationships and section settings incrementally.
-- [ ] Report unsupported content before a potentially lossy edit or export.
+- [x] Report unsupported content before a potentially lossy edit or export (alpha.90 rejects unsupported parts/properties and preserves source/destination).
 - [ ] Test native round trips, DOCX round trips and exported files reopened in a named external application/build.
 - [ ] Publish per-feature import/write limitations and an alpha package only for tested targets.
+
+**Alpha.90 progress:** strict paragraph/run/style/geometry profile implemented; external open in Word for Mac verified. Lists, tables, images, hyperlinks, multiple sections, arbitrary external defaults and external save-back remain open. D4 is not complete; no alpha package published.
 
 **Exit:** D1–D3 core workflows pass, the declared DOCX subset exchanges successfully, and no known release-blocking data-loss issue remains. The alpha label does not imply broad Word equivalence.
 

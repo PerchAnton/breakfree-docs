@@ -3,6 +3,20 @@
 Only published entries are releases. This file records candidate scope; version
 and publication approval follow [docs/VERSIONING.md](docs/VERSIONING.md).
 
+## 0.1.0-alpha.90 — 2026-10-24
+
+- Begin D4 with a bounded ZIP/XML DOCX adapter and an explicit restricted profile:
+  paragraphs/runs, supported formatting, named style graphs, spacing/indents,
+  keep rules and single-section page dimensions/margins.
+- Add validated File/CLI import and explicit File/command-search export. Imported
+  documents save as native `.bfdoc`; export preserves session history/destination.
+- Reject unsupported parts/properties, external relationships, macro types,
+  ambiguous style-toggle combinations and inexact measurements before data loss.
+- Add Unicode/native/DOCX round trips, hostile package/XML and failed-write tests,
+  reproducible fixture pair, profile documentation and external open evidence.
+- Preserve palette/icons; D4 remains incremental, with objects, broader input
+  profiles and package publication still open. Windows deferred; VoiceOver last.
+
 ## 0.1.0-alpha.89 — 2026-10-24
 
 - Add shared-model lists, nested levels/restarts, hyperlinks, rectangular table

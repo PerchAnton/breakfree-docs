@@ -2634,3 +2634,11 @@ The table dialog edits plain cells and row/column structure; it does not simulat
 an in-page rich-cell editor. Continuous vertical ruler behavior and advanced
 contextual ribbons remain review items. Native-input automation was interrupted
 by external changes to its test window; that window was retained without discard.
+
+## Alpha.90 DOCX commands
+
+File adds a real Export DOCX command using the existing button style; command
+search labels its limited subset. Open accepts `.bfdoc` and `.docx`. Successful
+import explains native Save and source preservation in File → Current document. Errors use the existing modal
+error surface; no lossy bypass is offered. Palette, icon artwork and ribbon geometry
+are unchanged. DOCX commands do not claim full-format support.

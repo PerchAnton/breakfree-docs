@@ -30,7 +30,8 @@
 > **Working Rust editor, native ribbon prototype.** Create, edit, format, undo,
 > save and reopen local `.bfdoc` documents in a standalone desktop window. No Office
 > installation, cloud service or neighboring repository is required. There are no
-> installers, releases or DOCX compatibility claims. The detailed roadmap remains
+> installers or releases. A [restricted DOCX profile](docs/DOCX_SUBSET.md) is available;
+> general Word compatibility is not claimed. The detailed roadmap remains
 > the longer-term plan; the [validation report](docs/VALIDATION.md) separates actual
 > checks from pending work.
 
@@ -1146,7 +1147,17 @@ On Windows use an absolute path such as `C:\Docs\report.bfdoc` with `--open`;
 acceptance is deferred. No Office checkout or service is needed.
 
 These are bounded D2/D3 implementations: no merged/rich table cells, floating images,
-columns, bookmarks, searchable PDF, full RTL/CJK support or DOCX exchange. See
+columns, bookmarks, searchable PDF, full RTL/CJK support or general DOCX exchange. See
 [ADR 0016](docs/adr/0016-document-structure-and-pages.md) and
 [validation](docs/VALIDATION.md#alpha89-structure-and-page-validation). Design,
 palette and approved icons are retained; Windows reference equivalence is unverified.
+
+## Restricted DOCX exchange (alpha.90)
+
+File → Open and `--open <absolute.docx>` import the declared text/style profile;
+File → Export DOCX writes that profile without changing the native save destination.
+Unsupported content produces an error before replacement or writing. Imported
+files use Save As `.bfdoc`, preserving the original DOCX. Most existing Word files
+are currently outside this strict profile. See [supported properties, errors,
+fixtures and Windows commands](docs/DOCX_SUBSET.md). D4 and public-alpha packaging
+remain in progress; no release is published.

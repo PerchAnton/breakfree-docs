@@ -15,6 +15,8 @@ copyright and license files; do not strip them when distributing binaries.
 | eframe / egui / epaint | Native desktop, widgets and text projection | MIT OR Apache-2.0 |
 | rfd | Native file picker / Linux XDG portal | MIT |
 | arboard | Plain-text OS clipboard | MIT OR Apache-2.0 |
+| quick-xml | Bounded namespace-aware DOCX XML parsing | MIT |
+| flate2 / crc32fast | DOCX deflate and ZIP checksums | MIT OR Apache-2.0 |
 | image | Approved WebP logo decode and PNG capture | MIT OR Apache-2.0 |
 
 Exact resolved macOS versions, repository URLs and declared SPDX expressions are

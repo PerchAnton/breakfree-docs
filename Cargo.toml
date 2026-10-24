@@ -1,6 +1,6 @@
 [package]
 name = "breakfree-docs"
-version = "0.1.0-alpha.89"
+version = "0.1.0-alpha.90"
 edition = "2024"
 rust-version = "1.88"
 description = "Independent Rust document editor with an office ribbon"
@@ -13,6 +13,9 @@ desktop = ["dep:eframe", "dep:rfd", "dep:arboard"]
 capture = ["desktop", "eframe/__screenshot"]
 
 [dependencies]
+quick-xml = "=0.41.0"
+flate2 = { version = "=1.1.10", default-features = false, features = ["rust_backend"] }
+crc32fast = "1.5"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 unicode-segmentation = "1.12"

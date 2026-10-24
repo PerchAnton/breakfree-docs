@@ -311,6 +311,29 @@ impl DocsApp {
                 self.backstage = false;
                 return;
             }
+            Action::ExportDocx => {
+                if let Err(e) = crate::docx::check_export(&self.session.editor.document) {
+                    self.error = Some(e);
+                    return;
+                }
+                if let Some(path) = rfd::FileDialog::new()
+                    .set_title("Export supported DOCX subset")
+                    .set_file_name("Document.docx")
+                    .add_filter("DOCX", &["docx"])
+                    .save_file()
+                {
+                    match crate::docx::save(&self.session.editor.document, &path) {
+                        Ok(()) => {
+                            self.output_notice = Some(format!(
+                                "DOCX exported: {}. Native save destination unchanged.",
+                                path.display()
+                            ))
+                        }
+                        Err(e) => self.error = Some(e),
+                    }
+                }
+                return;
+            }
             Action::ExportPdf => {
                 self.export_pdf(ctx);
                 return;

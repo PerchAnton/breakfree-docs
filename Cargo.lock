@@ -490,11 +490,14 @@ dependencies = [
 
 [[package]]
 name = "breakfree-docs"
-version = "0.1.0-alpha.89"
+version = "0.1.0-alpha.90"
 dependencies = [
  "arboard",
+ "crc32fast",
  "eframe",
+ "flate2",
  "image",
+ "quick-xml",
  "regex",
  "rfd",
  "serde",

@@ -47,7 +47,7 @@ fn capabilities_and_version_are_clean_outside_checkout() {
     );
     assert_eq!(
         value["formats"],
-        serde_json::json!([{"id":"breakfree.docs.native","extensions":["bfdoc"],"read":true,"write":true}])
+        serde_json::json!([{"id":"breakfree.docs.native","extensions":["bfdoc"],"read":true,"write":true},{"id":"ooxml.wordprocessingml","extensions":["docx"],"read":true,"write":true}])
     );
     assert_eq!(
         value["capabilities"],

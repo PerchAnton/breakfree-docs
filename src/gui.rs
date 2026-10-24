@@ -6,7 +6,6 @@ use crate::{
     model::{Alignment, CharacterStyle, FONT_SIZE_PRESETS, FontSize, ParagraphStyle, boundaries},
     presentation::*,
     session::Session,
-    storage,
 };
 use eframe::egui::{
     self, Align, Align2, Button, Color32, FontId, Id, Key, Layout, Modifiers, Rect, RichText,
@@ -93,6 +92,7 @@ pub enum Action {
     PrintLayout,
     PrintPreview,
     ExportPdf,
+    ExportDocx,
     Print,
 
     File,
@@ -156,6 +156,7 @@ impl Action {
             Self::PrintLayout => "Print Layout",
             Self::PrintPreview => "Print preview",
             Self::ExportPdf => "Export PDF",
+            Self::ExportDocx => "Export DOCX (limited subset)",
             Self::Print => "Print",
             Self::File => "File",
             Self::New => "New document",
@@ -220,6 +221,7 @@ const COMMANDS: &[Action] = &[
     Action::PrintLayout,
     Action::PrintPreview,
     Action::ExportPdf,
+    Action::ExportDocx,
     Action::Print,
     Action::File,
     Action::New,
@@ -427,6 +429,9 @@ impl DocsApp {
                 Default::default(),
             )
         });
+        let output_notice = session.imported_docx.then(|| {
+            "DOCX imported. Save creates a native .bfdoc; the source DOCX is unchanged.".into()
+        });
         let buffer = session.editor.document.text();
         let initial_cursor = CCursorRange::two(
             CCursor::new(session.editor.selection.0),
@@ -450,7 +455,7 @@ impl DocsApp {
             page_count: None,
             print_requested: false,
             printer_queue: String::new(),
-            output_notice: None,
+            output_notice,
             quick_access: quick_access::DEFAULT.to_vec(),
             quick_access_below: false,
             quick_access_targets: Vec::new(),
@@ -710,8 +715,8 @@ impl DocsApp {
     fn finish(&mut self, pending: Pending, ctx: &egui::Context) {
         match pending {
             Pending::New => self.session = Session::default(),
-            Pending::Open(path) => match storage::load(&path) {
-                Ok(document) => self.session = Session::new(document, Some(path)),
+            Pending::Open(path) => match Session::open(&path) {
+                Ok(session) => self.session = session,
                 Err(e) => {
                     self.error = Some(e);
                     return;
@@ -723,6 +728,9 @@ impl DocsApp {
                 return;
             }
         }
+        self.output_notice = self.session.imported_docx.then(|| {
+            "DOCX imported. Save creates a native .bfdoc; the source DOCX is unchanged.".into()
+        });
         self.backstage = false;
         self.font_size_dirty = false;
         self.sync_view();
@@ -767,16 +775,17 @@ impl DocsApp {
             | Action::PrintLayout
             | Action::PrintPreview
             | Action::ExportPdf
+            | Action::ExportDocx
             | Action::Print => self.structure_action(action, ctx),
             Action::File => self.backstage = true,
             Action::New => self.request(Pending::New, ctx),
             Action::Open => {
                 if let Some(path) = rfd::FileDialog::new()
-                    .set_title("Open BreakFree Docs document")
-                    .add_filter("BreakFree Docs", &["bfdoc"])
+                    .set_title("Open document (DOCX subset is restricted)")
+                    .add_filter("Documents", &["bfdoc", "docx"])
                     .pick_file()
                 {
-                    match storage::load(&path) {
+                    match Session::open(&path) {
                         Ok(_) => self.request(Pending::Open(path), ctx),
                         Err(e) => self.error = Some(e),
                     }
@@ -3505,6 +3514,7 @@ impl DocsApp {
                 let (rect, _) = ui.allocate_exact_size(vec2(156., 34.), Sense::hover());
                 self.ribbon_control(ui, rect, Icon::Print, "Print", Action::Print);
                 self.command(ui, "Export PDF", Action::ExportPdf, vec2(156., 30.));
+                self.command(ui, "Export DOCX", Action::ExportDocx, vec2(156., 30.));
 
                 ui.add_space(8.);
 
@@ -3605,6 +3615,9 @@ impl DocsApp {
                     ui.add_space(18.);
 
                     ui.label(RichText::new("Current document").size(18.));
+                    if let Some(notice) = &self.output_notice {
+                        ui.label(notice);
+                    }
 
                     ui.add_space(12.);
 

@@ -2284,3 +2284,43 @@ embedding, tags or PDF accessibility claim. Header/footer lines must fit the tex
 width. Oversized kept paragraphs/rows/images fail visibly. Font fallback remains
 platform-dependent. No broad RTL/CJK or 500-page performance claim. No physical
 print jobs were submitted; paper printing and Windows are deferred, VoiceOver last.
+
+## Alpha.90 DOCX profile validation
+
+2026-10-24, macOS aarch64, Rust 1.99.1; candidate `0.1.0-alpha.90`.
+
+- 480 full tests and 221 no-default-feature tests passed; fmt, locked all-target
+  Clippy with denied warnings, release build and repository/brand checks passed.
+- Nine dedicated adapter tests cover exact Unicode/style/geometry DOCX → model →
+  native round trips, local save/load, unsupported parts/properties/relationships,
+  macro type rejection, truncation/CRC/expansion/path limits, XML entities/depth,
+  namespace identity, style cycles/toggle loss, checked descriptors and injected
+  write/sync/replace failures preserving previous bytes. Existing engine history
+  tests remain passing; the GUI import test verifies failed import preserves the
+  current model and native Save leaves the source DOCX unchanged.
+- CLI capabilities advertise the limited DOCX format, remain JSON-only outside the
+  checkout, and preserve argument/error behavior. The Rust adapter has no GUI or
+  Office dependency. `examples/docx_exchange.rs` regenerates the fixture pair and
+  asserts exact model equality; native content remains v19, process protocol v1.
+- Apple's `/usr/bin/textutil -convert txt -stdout` independently extracted the
+  complete four-paragraph fixture, including Ukrainian/Russian, combining accent,
+  emoji, escaped XML characters and literal tab. Python's independent ZIP/XML
+  readers accepted the native-GUI export and verified CRCs and package parts.
+- Microsoft Word for Mac **16.114 (16.114.26101123)** opened the exported fixture
+  without a repair prompt. The page displayed heading, bold/italic/underline,
+  indented paragraph and complete text. See the [native capture](screenshots/alpha90-docx-word-macos.png).
+  Word reported compatibility mode and activation-required read-only mode;
+  external editing/save-back was not tested. This is not Windows Word 2024 or a
+  pagination-equivalence test. No account activation or print action was attempted.
+- A separate copied release executable opened the DOCX through `--open` in the
+  native Docs window: four paragraphs and the actual model text appeared. File →
+  Export DOCX opened the real system save dialog and produced a byte-identical
+  DOCX at a separate temporary path. Further AX/screenshot calls timed out after
+  closing that dialog, including reselecting the app. The process remained alive;
+  a short stack sample showed the AppKit event loop. This does not establish full
+  post-dialog keyboard/AX acceptance; retain it as an open native regression check.
+  No old open document was discarded or closed.
+- Windows and paper printing remain deferred, VoiceOver remains last. No public
+  binary, installer, tag, merge or release. D4 remains open: broader input defaults,
+  lists/tables/images/links/sections/tabulation mapping, external save-back and
+  release packaging/notice review need additional evidence.

@@ -2,7 +2,6 @@ use breakfree_docs::{
     VERSION,
     integration::{self, Launch},
     session::Session,
-    storage,
 };
 fn main() {
     let launch = match integration::arguments(std::env::args_os().skip(1)) {
@@ -28,8 +27,8 @@ fn main() {
             return;
         }
         Launch::New => Session::default(),
-        Launch::Open(path) => match storage::load(&path) {
-            Ok(doc) => Session::new(doc, Some(path)),
+        Launch::Open(path) => match Session::open(&path) {
+            Ok(session) => session,
             Err(e) => {
                 eprintln!("BreakFree Docs: {e}");
                 std::process::exit(1)

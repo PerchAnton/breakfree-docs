@@ -1,6 +1,7 @@
 //! Event-loop tests on the actual Rust widgets, without a native window or OS clipboard.
 use super::*;
 use crate::model::{CharacterFormat, Document};
+use crate::storage;
 use eframe::egui::Pos2;
 
 fn frame(
@@ -13394,4 +13395,33 @@ fn structure_dialogs_fit_minimum_logical_window_at_synthetic_scales() {
             assert!(app.session.editor.undo_stack.is_empty());
         }
     }
+}
+
+#[test]
+fn docx_import_and_failed_import_preserve_session_boundaries() {
+    let (ctx, mut app) = setup();
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("import.docx");
+    let mut doc = Document::default();
+    doc.paragraphs[0].text = "Imported Україна".into();
+    doc.paragraphs[0].styles =
+        vec![CharacterFormat::default(); doc.paragraphs[0].text.chars().count()];
+    crate::docx::save(&doc, &path).unwrap();
+    let original = std::fs::read(&path).unwrap();
+    app.finish(Pending::Open(path.clone()), &ctx);
+    assert_eq!(app.session.editor.document, doc);
+    assert!(app.session.path.is_none());
+    assert!(
+        app.output_notice
+            .as_ref()
+            .unwrap()
+            .contains("source DOCX is unchanged")
+    );
+    std::fs::write(&path, b"damaged").unwrap();
+    app.finish(Pending::Open(path.clone()), &ctx);
+    assert_eq!(app.session.editor.document, doc);
+    assert!(app.error.is_some());
+    std::fs::write(&path, original).unwrap();
+    app.session.save(&dir.path().join("native.bfdoc")).unwrap();
+    assert_eq!(crate::docx::load(&path).unwrap(), doc);
 }
